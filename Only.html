@@ -1,0 +1,318 @@
+
+<html>
+
+<head>
+
+    <title>OnlyKey Subscription Wizard</title>
+
+    <link rel="stylesheet" href="style.css">
+       
+</head>
+
+<body>
+
+    <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
+
+        <tr>
+
+            <td data-step="Step1">
+
+                Step 1: Getting Started</td>
+
+            <td data-step="Step2">
+
+                Step 2: Insert OpenKey and Select Mode</td>
+
+            <td data-step="Step3">
+
+                Step 3:&nbsp; Set Your Passcode</td>
+
+            <td data-step="Step4">
+
+                Step 4: Select subscriptions</td>
+
+            <td data-step="Step5">
+
+                Step:5 Finalize &amp; Submit</td>
+
+        </tr>
+
+    </table>
+
+    <br />
+<div id="stepContent">
+    <span id="Step1"><strong>
+
+        Welcome to the OnlyKey Subscription Wizard!<br />
+
+        </strong>
+
+            <br />
+
+        This wizard initializes the OnlyKey. Each step is highlighted in the header. 
+
+        <br />
+
+        This step is intended to provide the user with everything they need to know to get started.
+
+        <br />
+
+    </span>
+
+    <span id="Step2">
+
+       <!----------------------------- Step 1:-------------------------------------------- -->
+          <h3><label>Step 2: Insert OpenKey and Select Mode</label></h3><br>
+    	<!-- Mode radio buttons -->
+    	<B>Modes: </B><br>
+    	<input type=radio name=ConfigMode value="Unencrypted">
+    	Unencrypted Password Manager
+    	<br>
+
+    	<input type=radio checked=true name=ConfigMode value="TwoFactor">
+    	Two Factor Authentication and Password Manager (default)
+    	<br>
+
+    	<input type=radio name=ConfigMode value="DualProfile">
+    	Dual Profile - Two Factor Authentication and Password Manage
+    	   Plausible Deniability Unencrypted Password Manager
+    	<br><br>
+    	</span>
+
+    	<span id="Step3">
+
+    	    <table border="0" cellpadding="5" cellspacing="0">
+
+    		<tr>
+
+    		    <td align="right">
+
+    		        Email:</td>
+
+    		    <td>
+
+    		        <input id="TextEmail" name="Email" type="text" /></td>
+
+    		</tr>
+
+    		<tr>
+
+    		    <td align="right">
+
+    		        Password:</td>
+
+    		    <td>
+
+    		        <input id="TextPassword" name="Password" type="password" /></td>
+
+    		</tr>
+
+    	    </table>
+
+    </span>
+
+    <span id="Step4">
+
+        <table border="0" cellpadding="5" cellspacing="0">
+
+            <tr>
+
+                <td align="left" colspan="2">
+
+                    <strong>
+
+                    Select your subscription:</strong></td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    HtmlGoodies.com:</td>
+
+                <td>
+
+                    <input id="CheckboxHtmlGoodies" name="CheckboxHtmlGoodies" type="checkbox" value="Yes" /></td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    JavaScript.com:</td>
+
+                <td>
+
+                    <input id="CheckboxJavaScript" name="CheckboxJavaScript" type="checkbox" value="Yes" /></td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    wdvl.com</td>
+
+                <td>
+
+                    <input id="CheckboxWdvl" name="CheckboxWdvl" type="checkbox" value="Yes" /></td>
+
+            </tr>
+
+        </table>
+
+    </span>
+
+    <span id="Step5">
+
+        <table border="0" cellpadding="5" cellspacing="0">
+
+            <tr>
+
+                <td colspan="2">
+
+                    <strong>Final Review:</strong></td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    First name:</td>
+
+                <td id="ReviewFirstName">
+
+                    </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    Middle name:</td>
+
+                <td id="ReviewMiddleName">
+
+                    </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    Last name:</td>
+
+                <td id="ReviewLastName">
+
+                    </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    Email:</td>
+
+                <td id="ReviewEmail">
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    Password:</td>
+
+                <td id="ReviewPassword">
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="left">
+
+                    <strong>
+
+                    Subscribed to:</strong></td>
+
+                <td>
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    HtmlGoodies.com:</td>
+
+                <td id="ReviewHtmlGoodies">
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    JavaScript.com:</td>
+
+                <td id="ReviewJavaScript">
+
+                </td>
+
+            </tr>
+
+            <tr>
+
+                <td align="right">
+
+                    wdvl.com:</td>
+
+                <td id="ReviewWdvl">
+
+                </td>
+
+            </tr>
+
+        </table>
+
+    </span>
+</div>
+<br />    
+
+<table border="0" cellpadding="5" cellspacing="0">
+
+    <tr>
+
+        <td>
+            <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
+        </td>
+        <td>
+    		<button id="ButtonNext" type="button">Next</button>
+        </td>
+        <td>
+            <button id="SubmitFinal" type="submit" value="Finish" disabled="disabled">Finish</button>
+        </td>
+
+    </tr>
+
+</table>
+
+<script src="OnlyKeySubcriptionWizard.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,32 @@
+body {
+  font-family: monospace;
+  font-size: 10pt;
+  display: flex;
+  flex-flow: row wrap;
+}
+
+div {
+  padding: 8px;
+  flex: 1 100%;
+}
+
+#output-panel,
+#input-panel {
+  flex: 1 0;
+}
+
+#stepContent > span {
+	display: none;
+}
+
+#stepContent > span.active {
+	display: block;
+}
+
+td[data-step] {
+	background-color: silver;
+}
+
+td[data-step].active {
+	background-color: yellow;
+}
