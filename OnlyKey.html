@@ -19,7 +19,8 @@
                 <td data-step="Step4">Step 4: Confirm Passcode</td>
                 <td data-step="Step5">Step 5: Set Self-Destruct Passcode</td>
                 <td data-step="Step6">Step 6: Confirm Self-Destruct Passcode</td>
-                <td data-step="Step7">N/A</td>
+                <td data-step="Step7">Step 7: Set Plausible Deniability Passcode</td>
+                <td data-step="Step8">Step 8: Confirm Plausible Deniability Passcode</td>
             </tr>
         </table>
 
@@ -102,7 +103,7 @@
             </div>
 
             <div class="step" id="Step6">
-                <h3>Re-enter Self-Destruct Passcode on OnlyKey Keypad</h3>
+                <h3>Step 6: Re-enter Self-Destruct Passcode on OnlyKey Keypad</h3>
                 <p>
                     (This completes the configuration if you selected Two-Factor Authentication and Password Manager.)
                 </p>
@@ -110,49 +111,30 @@
             </div>
 
             <div class="step" id="Step7">
-                <table border="0" cellpadding="5" cellspacing="0">
-                    <tr>
-                        <td coldiv="2"><strong>Final Review:</strong></td>
-                    </tr>
-                    <tr>
-                        <td align="right">First name:</td>
-                        <td id="ReviewFirstName"></td>
-                    </tr>
-                    <tr>
-                        <td align="right">Middle name:</td>
-                        <td id="ReviewMiddleName"></td>
-                    </tr>
-                    <tr>
-                        <td align="right">Last name:</td>
-                        <td id="ReviewLastName"></td>
-                    </tr>
-                    <tr>
-                        <td align="right">Email:</td>
-                        <td id="ReviewEmail"></td>
-                    </tr>
-                    <tr>
-                        <td align="right">Password:</td>
-                        <td id="ReviewPassword"></td>
-                    </tr>
-                    <tr>
-                        <td align="left"><strong>Subscribed to:</strong></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td align="right">HtmlGoodies.com:</td>
-                        <td id="ReviewHtmlGoodies"></td>
-                    </tr>
-                    <tr>
-                        <td align="right">JavaScript.com:</td>
-                        <td id="ReviewJavaScript"></td>
-                    </tr>
-                    <tr>
-                        <td align="right">wdvl.com:</td>
-                        <td id="ReviewWdvl"></td>
-                    </tr>
-                </table>
+                <h3>Step 7: Set Plausible Deniability Passcode (7-10 characters, Two-Factor Authentication Mode and Dual-Profile only)</h3>
+                <p>
+                    WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is also good to have a secure backup of your passcode somewhere just in case you forget.
+                </p>
+                <p>
+                    DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to  perform a factory default which wipes all sensitive information.
+                </p>
+                <label>
+                    <input type="checkbox" name="passcode2Disclaimer" />
+                    I understand and accept the above risk.
+                </label>
+                <p>
+                    Only select submit after your passcode has been entered and the checkbox selected.
+                </p>
+                <input type="button" name="passcode2Submit" id="passcode2Submit" value="Submit" />
             </div>
-        </div>
+
+            <div class="step" id="Step8">
+                <h3>Step 8: Re-enter Plausible Deniability Passcode on OnlyKey Keypad</h3>
+                <p>
+                    (This completes the configuration.)
+                </p>
+                <input type="button" name="passcode2Confirm" id="passcode2Confirm" value="Confirm" />
+            </div>
 
         <br />    
 
@@ -170,6 +152,11 @@
             </tr>
         </table>
     </div>
+
+    <dialog id="finalStep">
+        <h2>Your OnlyKey is ready!!</h2>
+        <a href="" id="closeFinal">CLOSE</a>
+    </dialog>
 
     <div id="control-panel" style="display: none;">
         <div id="device-panel">

@@ -16,6 +16,18 @@ var steps = {
     },
     Step5: {
         prev: 'Step4',
+        next: 'Step6'
+    },
+    Step6: {
+        prev: 'Step5',
+        next: 'Step7'
+    },
+    Step7: {
+        prev: 'Step6',
+        next: 'Step8'
+    },
+    Step8: {
+        prev: 'Step7',
         fn  : 'loadReview'
     }
 };
@@ -39,6 +51,12 @@ Wizard.prototype.uiInit = function () {
 
     this.btnNext.onclick = moveStep.bind(this, 'next');
     this.btnPrev.onclick = moveStep.bind(this, 'prev');
+
+    document.getElementById('closeFinal').addEventListener('click', function (e) {
+        e.preventDefault();
+        document.getElementById('finalStep').close();
+        return false;
+    });
 
     setActiveStepUI.call(this);
 };
@@ -105,10 +123,11 @@ function setActiveStepUI() {
 
 // This function handles loading the review table innerHTML for the user to review before final submission
 function loadReview() {
+    document.getElementById('finalStep').showModal();
+    return;
+
+
     // Assign values to appropriate cells in review table
-    // document.getElementById('ReviewFirstName').innerHTML = document.getElementById('TextFirstName').value;
-    // document.getElementById('ReviewMiddleName').innerHTML = document.getElementById('TextMiddleName').value;
-    // document.getElementById('ReviewLastName').innerHTML = document.getElementById('TextLastName').value;
     document.getElementById('ReviewEmail').innerHTML = document.getElementById('TextEmail').value;
 
     // Indicate Yes or No based on checkboxes
