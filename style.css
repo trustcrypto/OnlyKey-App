@@ -15,18 +15,18 @@ div {
   flex: 1 0;
 }
 
-#stepContent > span {
-	display: none;
+.step {
+  display: none;
 }
 
-#stepContent > span.active {
-	display: block;
+.step.active {
+  display: block;
 }
 
 td[data-step] {
-	background-color: silver;
+  background-color: silver;
 }
 
 td[data-step].active {
-	background-color: yellow;
+  background-color: yellow;
 }

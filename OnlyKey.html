@@ -1,322 +1,211 @@
-
+<!DOCTYPE html>
 <html>
-
 <head>
-
     <title>OnlyKey Configuration Wizard</title>
-
     <link rel="stylesheet" href="style.css">
-       
 </head>
 
 <body>
+    <p>
+        <a class="cp-toggle" href="">Show Testing Tool</a>
+    </p>
 
-    <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
-
-        <tr>
-
-            <td data-step="Step1">
-
-                Step 1: Insert OpenKey and Select Mode</td>
-
-            <td data-step="Step2">
-
-                Step 2: Set Your Passcode</td>
-
-            <td data-step="Step3">
-
-                Step 3:&nbsp; Confirm Your Passcode</td>
-
-            <td data-step="Step4">
-
-                Step 4: Set self-destruct Passcode (Two Factor Authentication Mode
-
-and Dual Mode only)</td>
-
-            <td data-step="Step5">
-
-                Step:5 Confirm Your self-destruct Passcode (Two Factor
-
-Authentication Mode and Dual Mode only)</td>
-
-        </tr>
-
-    </table>
-
-    <br />
-<div id="stepContent">
-    <span id="Step1"><strong>
-
-        Welcome to the OnlyKey Configuration Wizard!<br />
-
-        </strong>
-
-            <br />
-
-        This wizard initializes the OnlyKey. Each step is highlighted in the header. 
+    <div id="wizard-panel">
+        <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
+            <tr>
+                <td data-step="Step1">Step 1: Getting Started</td>
+                <td data-step="Step2">Step 2: Insert OnlyKey and Select Mode</td>
+                <td data-step="Step3">Step 3: Set Your Passcode</td>
+                <td data-step="Step4">Step 4: Confirm Passcode</td>
+                <td data-step="Step5">Step 5: Set Self-Destruct Passcode</td>
+                <td data-step="Step6">Step 6: Confirm Self-Destruct Passcode</td>
+                <td data-step="Step7">N/A</td>
+            </tr>
+        </table>
 
         <br />
 
-        This step is intended to provide the user with everything they need to know to get started.
+        <div id="stepContent">
+            <div class="step" id="Step1">
+                <h3>Welcome to the OnlyKey Configuration Wizard!</h3>
+                This wizard initializes the OnlyKey. Each step is highlighted in the header. 
+                <br/><br />
+                This step is intended to provide the user with everything they need to know to get started.
+            </div>
 
-        <br />
+            <div class="step" id="Step2">
+                <h3>Step 2: Insert OpenKey and Select Mode</h3>
+                <b>Modes:</b>
+                <br/>
+                <label>
+                    <input type=radio name=ConfigMode value="Unencrypted" />
+                    Unencrypted Password Manager
+                </label>
+                <br/>
 
-    </span>
+                <label>
+                    <input type=radio checked name=ConfigMode value="TwoFactor" />
+                    Two-Factor Authentication and Password Manager (default)
+                </label>
+                <br/>
 
-    <span id="Step2">
+                <label>
+                    <input type=radio name=ConfigMode value="DualProfile" />
+                    Dual-Profile - Two-Factor Authentication and Password Manage
+                       Plausible Deniability Unencrypted Password Manager
+                </label>
+                <br/><br/>
+            </div>
 
-       <!----------------------------- Step 1:-------------------------------------------- -->
-          <h3><label>Step 2: Insert OpenKey and Select Mode</label></h3><br>
-    	<!-- Mode radio buttons -->
-    	<B>Modes: </B><br>
-    	<input type=radio name=ConfigMode value="Unencrypted">
-    	Unencrypted Password Manager
-    	<br>
+            <div class="step" id="Step3">
+                <h3>Step 3: Enter passcode on OnlyKey keypad</h3>
+                <p>
+                    WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is also good to have a secure backup of your passcode somewhere just in case you forget.
+                </p>
+                <p>
+                    DISCLAIMER &mdash; I understand that there is no way to recover my passcode and if I forget it the only way to recover the OnlyKey is to perform a factory default which wipes all sensitive information.
+                </p>
+                <label>
+                    <input type="checkbox" name="passcode1Disclaimer" />
+                    I understand and accept the above risk.
+                </label>
+                <p>
+                    Only select submit after your passcode has been entered and the checkbox selected.
+                </p>
+                <input type="button" name="passcode1Submit" id="passcode1Submit" value="Submit" />
+            </div>
 
-    	<input type=radio checked=true name=ConfigMode value="TwoFactor">
-    	Two Factor Authentication and Password Manager (default)
-    	<br>
+            <div class="step" id="Step4">
+                <h3>Step 4: Re-enter Passcode on OnlyKey Keypad</h3>
+                <p>
+                    (This completes the configuration if you selected Unencrypted Password Manager.)
+                </p>
+                <input type="button" name="passcode1Confirm" id="passcode1Confirm" value="Confirm" />
+            </div>
 
-    	<input type=radio name=ConfigMode value="DualProfile">
-    	Dual Profile - Two Factor Authentication and Password Manage
-    	   Plausible Deniability Unencrypted Password Manager
-    	<br><br>
-    	</span>
+            <div class="step" id="Step5">
+                <h3>Step 5: Set Self-Destruct Passcode (7-10 characters, Two-Factor Authentication Mode and Dual-Profile only)</h3>
+                <p>
+                    WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is also good to have a secure backup of your passcode somewhere just in case you forget.
+                </p>
+                <p>
+                    DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to  perform a factory default which wipes all sensitive information.
+                </p>
+                <label>
+                    <input type="checkbox" name="passcode2Disclaimer" />
+                    I understand and accept the above risk.
+                </label>
+                <p>
+                    Only select submit after your passcode has been entered and the checkbox selected.
+                </p>
+                <input type="button" name="passcode2Submit" id="passcode2Submit" value="Submit" />
+            </div>
 
-    	<span id="Step3">
+            <div class="step" id="Step6">
+                <h3>Re-enter Self-Destruct Passcode on OnlyKey Keypad</h3>
+                <p>
+                    (This completes the configuration if you selected Two-Factor Authentication and Password Manager.)
+                </p>
+                <input type="button" name="passcode2Confirm" id="passcode2Confirm" value="Confirm" />
+            </div>
 
-    	    <table border="0" cellpadding="5" cellspacing="0">
+            <div class="step" id="Step7">
+                <table border="0" cellpadding="5" cellspacing="0">
+                    <tr>
+                        <td coldiv="2"><strong>Final Review:</strong></td>
+                    </tr>
+                    <tr>
+                        <td align="right">First name:</td>
+                        <td id="ReviewFirstName"></td>
+                    </tr>
+                    <tr>
+                        <td align="right">Middle name:</td>
+                        <td id="ReviewMiddleName"></td>
+                    </tr>
+                    <tr>
+                        <td align="right">Last name:</td>
+                        <td id="ReviewLastName"></td>
+                    </tr>
+                    <tr>
+                        <td align="right">Email:</td>
+                        <td id="ReviewEmail"></td>
+                    </tr>
+                    <tr>
+                        <td align="right">Password:</td>
+                        <td id="ReviewPassword"></td>
+                    </tr>
+                    <tr>
+                        <td align="left"><strong>Subscribed to:</strong></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td align="right">HtmlGoodies.com:</td>
+                        <td id="ReviewHtmlGoodies"></td>
+                    </tr>
+                    <tr>
+                        <td align="right">JavaScript.com:</td>
+                        <td id="ReviewJavaScript"></td>
+                    </tr>
+                    <tr>
+                        <td align="right">wdvl.com:</td>
+                        <td id="ReviewWdvl"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
 
-    		<tr>
-
-    		    <td align="right">
-
-    		        Email:</td>
-
-    		    <td>
-
-    		        <input id="TextEmail" name="Email" type="text" /></td>
-
-    		</tr>
-
-    		<tr>
-
-    		    <td align="right">
-
-    		        Password:</td>
-
-    		    <td>
-
-    		        <input id="TextPassword" name="Password" type="password" /></td>
-
-    		</tr>
-
-    	    </table>
-
-    </span>
-
-    <span id="Step4">
+        <br />    
 
         <table border="0" cellpadding="5" cellspacing="0">
-
             <tr>
-
-                <td align="left" colspan="2">
-
-                    <strong>
-
-                    Select your subscription:</strong></td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    HtmlGoodies.com:</td>
-
                 <td>
-
-                    <input id="CheckboxHtmlGoodies" name="CheckboxHtmlGoodies" type="checkbox" value="Yes" /></td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    JavaScript.com:</td>
-
+                    <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
+                </td>
                 <td>
-
-                    <input id="CheckboxJavaScript" name="CheckboxJavaScript" type="checkbox" value="Yes" /></td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    wdvl.com</td>
-
+                    <button id="ButtonNext" type="button">Next</button>
+                </td>
                 <td>
-
-                    <input id="CheckboxWdvl" name="CheckboxWdvl" type="checkbox" value="Yes" /></td>
-
+                    <button id="SubmitFinal" type="submit" value="Finish" disabled="disabled">Finish</button>
+                </td>
             </tr>
-
         </table>
-
-    </span>
-
-    <span id="Step5">
-
-        <table border="0" cellpadding="5" cellspacing="0">
-
-            <tr>
-
-                <td colspan="2">
-
-                    <strong>Final Review:</strong></td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    First name:</td>
-
-                <td id="ReviewFirstName">
-
-                    </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    Middle name:</td>
-
-                <td id="ReviewMiddleName">
-
-                    </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    Last name:</td>
-
-                <td id="ReviewLastName">
-
-                    </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    Email:</td>
-
-                <td id="ReviewEmail">
-
-                </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    Password:</td>
-
-                <td id="ReviewPassword">
-
-                </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="left">
-
-                    <strong>
-
-                    Subscribed to:</strong></td>
-
-                <td>
-
-                </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    HtmlGoodies.com:</td>
-
-                <td id="ReviewHtmlGoodies">
-
-                </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    JavaScript.com:</td>
-
-                <td id="ReviewJavaScript">
-
-                </td>
-
-            </tr>
-
-            <tr>
-
-                <td align="right">
-
-                    wdvl.com:</td>
-
-                <td id="ReviewWdvl">
-
-                </td>
-
-            </tr>
-
-        </table>
-
-    </span>
-</div>
-<br />    
-
-<table border="0" cellpadding="5" cellspacing="0">
-
-    <tr>
-
-        <td>
-            <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
-        </td>
-        <td>
-    		<button id="ButtonNext" type="button">Next</button>
-        </td>
-        <td>
-            <button id="SubmitFinal" type="submit" value="Finish" disabled="disabled">Finish</button>
-        </td>
-
-    </tr>
-
-</table>
-
-<script src="OnlyKeyWizard.js"></script>
-
+    </div>
+
+    <div id="control-panel" style="display: none;">
+        <div id="device-panel">
+          <select id="device-selector"></select>
+          <button id="connect">Connect</button>
+          <button id="disconnect">Disconnect</button>
+          <button id="add-device">Add Device...</button>
+        </div>
+        <div id="output-panel">
+          <h3>OUTPUT</h3>
+          <label>Report ID (0 for none):</label>
+          <input type="number" id="out-id" min="0" max="255" value="1">
+          <br>
+          <label>Report Contents (ASCII; you may use \xNN to escape bytes):</label><br>
+          <input id="out-data" value="" size="68" style="width:100%"><br>
+          <label>Report Size (bytes, not including report ID):</label>
+          <input type="number" id="out-size" min="0" max="64" value="63"><br>
+          <label>Report Padding Byte<br>
+            (appended to |contents| up to |size| bytes):<br></label>
+          <input type="number" id="out-pad" min="0" max="255" value="0"><br>
+          <button id="send">Send Report</button>
+        </div>
+        <div id="input-panel">
+          <h3>INPUT</h3>
+          <label>Expected Report Size</label>
+          <input type="number" id="in-size" value="64" min="1" max="64"><br>
+          <label>Poll?</label>
+          <input type="checkbox" id="in-poll"><br>
+          <label>Input Log:</label><br>
+          <textarea id="input-log" style="width:100%" rows="20" readonly></textarea><br>
+          <button id="receive">Read Report (cancels polling)</button>
+          <button id="clear">Clear Log</button>
+        </div>
+    </div>
+
+    <script src="OnlyKeyWizard.js"></script>
+    <script src="control-panel.js"></script>
 </body>
-
 </html>
