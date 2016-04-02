@@ -145,6 +145,7 @@
     contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function(match, capture) {
       return String.fromCharCode(parseInt(capture, 16));
     });
+
     for (var i = 0; i < contents.length && i < bytes.length; ++i) {
       if (contents.charCodeAt(i) > 255) {
         throw "I am not smart enough to decode non-ASCII data.";
@@ -156,7 +157,13 @@
       bytes[i] = pad;
     }
     ui.send.disabled = true;
+console.info("CONTENTS:", bytes.buffer);
     chrome.hid.send(connection, id, bytes.buffer, function() {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+      } else {
+        console.info("SEND COMPLETE");
+      }
       ui.send.disabled = false;
     });
   };
