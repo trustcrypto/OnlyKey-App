@@ -170,11 +170,11 @@
     //#define OKWIPEU2FCERT     (0xE9)  
     //#define OKSETYUBI    (0xEA)   
     //#define OKWIPEYUBI     (0xEB)   Last vendor defined command
-    bytes[5] = 228; //228 = E4 in decimal this is SETSLOT
+    bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
     //The next byte is the slot number we have 12 slots to choose from
-    bytes[6] = 10; //slot 10 chosen
+    bytes[5] = 10; //slot 10 chosen
     //The next byte is the value number, each slot can store values like username, password, delay, additional characters etc.
-    bytes[7] = 5; //Value #5 is the password value
+    bytes[6] = 5; //Value #5 is the password value
     //The next 32 bytes are the password you want to set, Just enter all 0s in the Report Contents field of the to send your password of 303030... (30 is ASCII for 0)
     
     var pad = +ui.outPad.value;
