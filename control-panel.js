@@ -261,8 +261,8 @@ console.info("CONTENTS:", bytes.buffer);
 
   function toggleControlPanel() {
       // "this" = element clicked
-      var wiz = { text: "Show Configuration Wizard", id: "wizard-panel" };
-      var cp = { text: "Show Testing Tool", id: "control-panel" };
+      var wiz = { text: "Show Initial Setup Wizard", id: "wizard-panel" };
+      var cp = { text: "Show Configuration", id: "control-panel" };
 
       switch (this.innerText) {
           case wiz.text:
