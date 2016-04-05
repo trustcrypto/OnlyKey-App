@@ -157,7 +157,6 @@
     bytes[1] = 255;
     bytes[2] = 255;
     bytes[3] = 255;
-    bytes[4] = 255;
     //The next byte is the Message ID defined in the config packet document
     //If you dont have the doc in front of you here are the message IDs
     //#define OKSETPIN       (0xE1)  
