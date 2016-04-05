@@ -152,6 +152,32 @@
       }
       bytes[i] = contents.charCodeAt(i);
     }
+    //All packets should be sent with the following header
+    bytes[0] = 255;
+    bytes[1] = 255;
+    bytes[2] = 255;
+    bytes[3] = 255;
+    bytes[4] = 255;
+    //The next byte is the Message ID defined in the config packet document
+    //If you dont have the doc in front of you here are the message IDs
+    //#define OKSETPIN       (0xE1)  
+    //#define OKSETTIME       (0xE2)  
+    //#define OKGETLABELS     (0xE3)  
+    //#define OKSETSLOT       (0xE4)   
+    //#define OKWIPESLOT      (0xE5)  
+    //#define OKSETU2FPRIV    (0xE6)  
+    //#define OKWIPEU2FPRIV     (0xE7)   
+    //#define OKSETU2FCERT    (0xE8)   
+    //#define OKWIPEU2FCERT     (0xE9)  
+    //#define OKSETYUBI    (0xEA)   
+    //#define OKWIPEYUBI     (0xEB)   Last vendor defined command
+    bytes[5] = 228; //228 = E4 in decimal this is SETSLOT
+    //The next byte is the slot number we have 12 slots to choose from
+    bytes[6] = 10; //slot 10 chosen
+    //The next byte is the value number, each slot can store values like username, password, delay, additional characters etc.
+    bytes[7] = 5; //Value #5 is the password value
+    //The next 32 bytes are the password you want to set, Just enter all 0s in the Report Contents field of the to send your password of 303030... (30 is ASCII for 0)
+    
     var pad = +ui.outPad.value;
     for (var i = contents.length; i < bytes.length; ++i) {
       bytes[i] = pad;
