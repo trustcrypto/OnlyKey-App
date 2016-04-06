@@ -1,4 +1,9 @@
 (function() {
+  var ONLYKEY = {
+    vendorId: 5824,
+    productId: 1158
+  };
+
   var ui = {
     deviceSelector: null,
     connect: null,
@@ -17,6 +22,7 @@
   };
 
   var connection = -1;
+  var isReceivePending = false;
 
   var initializeWindow = function() {
     for (var k in ui) {
@@ -48,19 +54,18 @@
   };
 
   var enumerateDevices = function() {
-    chrome.hid.getDevices({}, onDevicesEnumerated);
+    chrome.hid.getDevices(ONLYKEY, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
     chrome.hid.onDeviceRemoved.addListener(onDeviceRemoved);
   };
 
   var onDevicesEnumerated = function(devices) {
-    console.info("HID devices:", devices);
-
     if (chrome.runtime.lastError) {
-      console.error("Unable to enumerate devices: " +
-                    chrome.runtime.lastError.message);
+      console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
       return;
     }
+
+    console.info("HID devices:", devices);
 
     for (var device of devices) {
       onDeviceAdded(device);
@@ -83,6 +88,11 @@
     if (selectedIndex != -1) {
       ui.deviceSelector.selectedIndex = selectedIndex;
     }
+
+    // auto connect desired device
+    if (device.maxInputReportSize === 64 && device.maxOutputReportSize === 32) {
+      onConnectClicked(device.deviceId);
+    }
   };
 
   var onDeviceRemoved = function(deviceId) {
@@ -97,39 +107,54 @@
     ui.deviceSelector.remove(option.index);
   };
 
-  var onConnectClicked = function() {
-    var selectedItem = ui.deviceSelector.options[ui.deviceSelector.selectedIndex];
-    if (!selectedItem) {
-      return;
-    }
-    var deviceId = parseInt(selectedItem.id.substr('device-'.length), 10);
-    if (!deviceId) {
-      return;
-    }
-    chrome.hid.connect(deviceId, function(connectInfo) {
-      if (!connectInfo) {
-        console.warn("Unable to connect to device.");
+  var onConnectClicked = function(deviceId) {
+    if (typeof deviceId !== 'number') {
+      var selectedItem = ui.deviceSelector.options[ui.deviceSelector.selectedIndex];
+      if (!selectedItem) {
+        return;
       }
+
+      deviceId = parseInt(selectedItem.id.substr('device-'.length), 10);
+      if (!deviceId) {
+        return;
+      }
+    }
+
+    console.info('CONNECTING deviceId:', deviceId);
+
+    chrome.hid.connect(deviceId, function(connectInfo) {
+      if (chrome.runtime.lastError) {
+        console.error("ERROR CONNECTING:", chrome.runtime.lastError);
+      } else if (!connectInfo) {
+        console.warn("Unable to connect to device.");
+      } else {
+        console.info("CONNECTINFO:", connectInfo);
+      }
+
       connection = connectInfo.connectionId;
       enableIOControls(true);
     });
   };
 
   var onDisconnectClicked = function() {
-    if (connection === -1)
-      return;
+    if (connection === -1) return;
+
     chrome.hid.disconnect(connection, function() {
+      if (chrome.runtime.lastError) {
+        console.warn('DISCONNECT ERROR:', chrome.runtime.lastError);
+      }
+
+      console.info("DISCONNECTED CONNECTION", connection);
       connection = -1;
     });
+
     enableIOControls(false);
   };
 
   var onAddDeviceClicked = function() {
-    chrome.hid.getUserSelectedDevices({ 'multiple': false },
-        function(devices) {
+    chrome.hid.getUserSelectedDevices({ 'multiple': false }, function(devices) {
       if (chrome.runtime.lastError != undefined) {
-        console.warn('chrome.hid.getUserSelectedDevices error: ' +
-                     chrome.runtime.lastError.message);
+        console.warn('getUserSelectedDevices ERROR:', chrome.runtime.lastError);
         return;
       }
       for (var device of devices) {
@@ -182,27 +207,35 @@
       bytes[i] = pad;
     }
     ui.send.disabled = true;
-console.info("CONTENTS:", bytes.buffer);
+
+    console.info("CONTENTS:", bytes);
+    
     chrome.hid.send(connection, id, bytes.buffer, function() {
       if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError);
+        console.error("ERROR SENDING:", chrome.runtime.lastError);
       } else {
         console.info("SEND COMPLETE");
       }
       ui.send.disabled = false;
+      pollForInput();
     });
   };
 
-  var isReceivePending = false;
   var pollForInput = function() {
     var size = +ui.inSize.value;
     isReceivePending = true;
     chrome.hid.receive(connection, function(reportId, data) {
-      isReceivePending = false;
-      logInput(new Uint8Array(data));
-      if (ui.inPoll.checked) {
-        setTimeout(pollForInput, 0);
+      if (chrome.runtime.lastError) {
+        console.error("ERROR RECEIVING:", chrome.runtime.lastError);
+      } else {
+        var msg = new Uint8Array(data);
+        logInput(msg);
+        if (ui.inPoll.checked) {
+          setTimeout(pollForInput, 0);
+        }
       }
+
+      isReceivePending = false;
     });
   };
 
@@ -257,6 +290,9 @@ console.info("CONTENTS:", bytes.buffer);
 
   function init() {
     document.querySelector('.cp-toggle').onclick = toggleControlPanel;
+    if (connection === -1) {
+      initializeWindow();
+    }
   }
 
   function toggleControlPanel() {
@@ -275,10 +311,6 @@ console.info("CONTENTS:", bytes.buffer);
               document.getElementById(cp.id).style.display = 'block';
               this.innerText = wiz.text;
               break;
-      }
-
-      if (connection === -1) {
-        initializeWindow();
       }
 
       return false;

@@ -181,12 +181,12 @@
         <div id="output-panel">
           <h3>OUTPUT</h3>
           <label>Report ID (0 for none):</label>
-          <input type="number" id="out-id" min="0" max="255" value="1">
+          <input type="number" id="out-id" min="0" max="255" value="0">
           <br>
           <label>Report Contents (ASCII; you may use \xNN to escape bytes):</label><br>
           <input id="out-data" value="" size="68" style="width:100%"><br>
           <label>Report Size (bytes, not including report ID):</label>
-          <input type="number" id="out-size" min="0" max="64" value="63"><br>
+          <input type="number" id="out-size" min="0" max="32" value="32"><br>
           <label>Report Padding Byte<br>
             (appended to |contents| up to |size| bytes):<br></label>
           <input type="number" id="out-pad" min="0" max="255" value="0"><br>
