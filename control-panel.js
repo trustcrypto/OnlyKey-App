@@ -195,12 +195,22 @@
     //#define OKWIPEU2FCERT     (0xE9)  
     //#define OKSETYUBI    (0xEA)   
     //#define OKWIPEYUBI     (0xEB)   Last vendor defined command
-    bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
+    //bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
     //The next byte is the slot number we have 12 slots to choose from
-    bytes[5] = 12; //slot 10 chosen
+    //bytes[5] = 12; //slot 10 chosen
     //The next byte is the value number, each slot can store values like username, password, delay, additional characters etc.
-    bytes[6] = 5; //Value #5 is the password value
+    //bytes[6] = 5; //Value #5 is the password value
     //The next 32 bytes are the password you want to set, Just enter all 0s in the Report Contents field of the to send your password of 303030... (30 is ASCII for 0)
+    
+    
+    //The code above is for OKSETSLOT the code below is for OKSETTIME
+    bytes[4] = 226; //226 = E2 in decimal this is SETTIME
+    //The current time is 57081218 in hex see http://www.epochconverter.com/hex
+    bytes[5] = 87; //57 hex to decimal = 87
+    bytes[6] = 08;//08 hex to decimal = 08
+    bytes[7] = 18;//12 hex to decimal = 18
+    bytes[8] = 24;//18 hex to decimal = 24 
+    
     
     var pad = +ui.outPad.value;
     for (var i = contents.length; i < bytes.length; ++i) {
