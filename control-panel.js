@@ -19,7 +19,7 @@
       OKSETU2FCERT  : 232, //0xE8
       OKWIPEU2FCERT : 233, //0xE9
       OKSETYUBI     : 234, //0xEA
-      OKWIPEYUBI    : 235 //0xEB
+      OKWIPEYUBI    : 235  //0xEB
     },
     values: {
       PASSWORD: 5
@@ -87,7 +87,7 @@
     ui.connect.addEventListener('click', onConnectClicked);
     ui.disconnect.addEventListener('click', onDisconnectClicked);
     ui.addDevice.addEventListener('click', onAddDeviceClicked);
-    ui.send.addEventListener('click', onSend);
+    ui.send.addEventListener('click', sendMessage);
     ui.inPoll.addEventListener('change', onPollToggled);
     ui.receive.addEventListener('click', onReceiveClicked);
     ui.clear.addEventListener('click', onClearClicked);
@@ -188,7 +188,7 @@
       console.info("Setting current epoch time =", currentEpochTime);
 
       var timeParts = currentEpochTime.match(/.{2}/g);
-      onSend(timeParts, 'OKSETTIME', null);
+      sendMessage(timeParts, 'OKSETTIME', null);
       enableIOControls(true);
     });
   };
@@ -220,20 +220,19 @@
     });
   };
 
-  var onSend = function(contents, msgId, slotId, valueId) {
+  var sendMessage = function(contents, msgId, slotId, valueId) {
     if (msgId === undefined || slotId === undefined) {
       throw new Error('msgId and slotId are required. slotId can be null.');
       return;
     }
 
     var reportId = 0; //+ui.outId.value
-    var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value
+    var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value)
     var cursor = 0;
     var contents = contents || ui.outData.value;
 
-    for (var i = 0; i < ONLYKEY.messageHeader.length; i++) {
-      bytes[i] = ONLYKEY.messageHeader[i];
-      cursor++;
+    for (; cursor < ONLYKEY.messageHeader.length; cursor++) {
+      bytes[cursor] = ONLYKEY.messageHeader[cursor];
     }
 
     if (msgId && ONLYKEY.messages[msgId]) {
@@ -251,23 +250,21 @@
         return String.fromCharCode(parseInt(capture, 16));
       });
 
-      for (var i = cursor; i < contents.length && i < bytes.length; i++) {
+      for (var i = 0; i < contents.length && cursor < bytes.length; i++) {
         if (contents.charCodeAt(i) > 255) {
           throw "I am not smart enough to decode non-ASCII data.";
         }
-        bytes[i] = contents.charCodeAt(i);
-        cursor++;
+        bytes[cursor++] = contents.charCodeAt(i);
       }
     } else {
       contents.forEach(function(val) {
-        bytes[cursor] = hexStrToDec(val);
-        cursor++;
+        bytes[cursor++] = hexStrToDec(val);
       });
     }
 
     var pad = 0; //+ui.outPad.value
-    for (var i = cursor; i < bytes.length; i++) {
-      bytes[i] = pad;
+    for (; cursor < bytes.length;) {
+      bytes[cursor++] = pad;
     }
     ui.send.disabled = true;
 

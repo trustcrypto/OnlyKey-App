@@ -27,8 +27,8 @@ var steps = {
         next: 'Step8'
     },
     Step8: {
-        prev: 'Step7',
-        fn  : 'loadReview'
+        prev: 'Step7'
+        //fn  : 'loadReview'
     }
 };
 
@@ -48,6 +48,7 @@ Wizard.prototype.uiInit = function () {
 
     this.btnNext.onclick = moveStep.bind(this, 'next');
     this.btnPrev.onclick = moveStep.bind(this, 'prev');
+    this.btnFinal.onclick = loadReview;
 
     document.getElementById('closeFinal').addEventListener('click', function (e) {
         e.preventDefault();
