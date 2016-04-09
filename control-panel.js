@@ -184,10 +184,10 @@
       }
 
       connection = connectInfo.connectionId;
-      var currentEpochTime = Math.round(new Date().getTime()/1000.0);
+      var currentEpochTime = Math.round(new Date().getTime()/1000.0).toString(16);
       console.info("Setting current epoch time =", currentEpochTime);
 
-      var timeParts = currentEpochTime.toString().match(/.{2}/g);
+      var timeParts = currentEpochTime.match(/.{2}/g);
       onSend(timeParts, 'OKSETTIME', null);
       enableIOControls(true);
     });
