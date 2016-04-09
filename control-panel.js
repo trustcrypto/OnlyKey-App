@@ -1,8 +1,58 @@
 (function() {
   var ONLYKEY = {
-    vendorId: 5824,
-    productId: 1158
+    id: {
+      vendorId: 5824,
+      productId: 1158
+    },
+    maxInputReportSize: 64,
+    maxOutputReportSize: 64,
+    maxFeatureReportSize: 0,
+    messageHeader: [ 255, 255, 255, 255 ],
+    messages: {
+      OKSETPIN      : 225, //0xE1
+      OKSETTIME     : 226, //0xE2
+      OKGETLABELS   : 227, //0xE3
+      OKSETSLOT     : 228, //0xE4
+      OKWIPESLOT    : 229, //0xE5
+      OKSETU2FPRIV  : 230, //0xE6
+      OKWIPEU2FPRIV : 231, //0xE7
+      OKSETU2FCERT  : 232, //0xE8
+      OKWIPEU2FCERT : 233, //0xE9
+      OKSETYUBI     : 234, //0xEA
+      OKWIPEYUBI    : 235 //0xEB
+    },
+    values: {
+      PASSWORD: 5
+    }
   };
+    //The next byte is the Message ID defined in the config packet document
+    //If you dont have the doc in front of you here are the message IDs
+    //#define OKSETPIN       (0xE1)  
+    //#define OKSETTIME       (0xE2)  
+    //#define OKGETLABELS     (0xE3)  
+    //#define OKSETSLOT       (0xE4)   
+    //#define OKWIPESLOT      (0xE5)  
+    //#define OKSETU2FPRIV    (0xE6)  
+    //#define OKWIPEU2FPRIV     (0xE7)   
+    //#define OKSETU2FCERT    (0xE8)   
+    //#define OKWIPEU2FCERT     (0xE9)  
+    //#define OKSETYUBI    (0xEA)   
+    //#define OKWIPEYUBI     (0xEB)   Last vendor defined command
+    //bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
+    //The next byte is the slot number we have 12 slots to choose from
+    //bytes[5] = 12; //slot 10 chosen
+    //The next byte is the value number, each slot can store values like username, password, delay, additional characters etc.
+    //bytes[6] = 5; //Value #5 is the password value
+    //The next 32 bytes are the password you want to set, Just enter all 0s in the Report Contents field of the to send your password of 303030... (30 is ASCII for 0)
+    
+    
+    //The code above is for OKSETSLOT the code below is for OKSETTIME
+    //bytes[4] = 226; //226 = E2 in decimal this is SETTIME
+    //The current time is 57081218 in hex see http://www.epochconverter.com/hex
+    //bytes[5] = 87; //57 hex to decimal = 87
+    //bytes[6] = 08; //08 hex to decimal = 08
+    //bytes[7] = 18; //12 hex to decimal = 18
+    //bytes[8] = 24; //18 hex to decimal = 24 
 
   var ui = {
     deviceSelector: null,
@@ -37,7 +87,7 @@
     ui.connect.addEventListener('click', onConnectClicked);
     ui.disconnect.addEventListener('click', onDisconnectClicked);
     ui.addDevice.addEventListener('click', onAddDeviceClicked);
-    ui.send.addEventListener('click', onSendClicked);
+    ui.send.addEventListener('click', onSend);
     ui.inPoll.addEventListener('change', onPollToggled);
     ui.receive.addEventListener('click', onReceiveClicked);
     ui.clear.addEventListener('click', onClearClicked);
@@ -54,7 +104,7 @@
   };
 
   var enumerateDevices = function() {
-    chrome.hid.getDevices(ONLYKEY, onDevicesEnumerated);
+    chrome.hid.getDevices(ONLYKEY.id, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
     chrome.hid.onDeviceRemoved.addListener(onDeviceRemoved);
   };
@@ -90,8 +140,10 @@
     }
 
     // auto connect desired device
-    if (device.maxInputReportSize === 64 && device.maxOutputReportSize === 32) {
-      onConnectClicked(device.deviceId);
+    if (device.maxInputReportSize === ONLYKEY.maxInputReportSize &&
+        device.maxOutputReportSize === ONLYKEY.maxOutputReportSize &&
+        device.maxFeatureReportSize === ONLYKEY.maxFeatureReportSize) {
+          onConnectClicked(device.deviceId);
     }
   };
 
@@ -132,6 +184,11 @@
       }
 
       connection = connectInfo.connectionId;
+      var currentEpochTime = Math.round(new Date().getTime()/1000.0);
+      console.info("Setting current epoch time =", currentEpochTime);
+
+      var timeParts = currentEpochTime.toString().match(/.{2}/g);
+      onSend(timeParts, 'OKSETTIME', null);
       enableIOControls(true);
     });
   };
@@ -163,71 +220,66 @@
     });
   };
 
-  var onSendClicked = function() {
-    var id = +ui.outId.value;
-    var bytes = new Uint8Array(+ui.outSize.value);
-    var contents = ui.outData.value;
-    contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function(match, capture) {
-      return String.fromCharCode(parseInt(capture, 16));
-    });
-
-    for (var i = 0; i < contents.length && i < bytes.length; ++i) {
-      if (contents.charCodeAt(i) > 255) {
-        throw "I am not smart enough to decode non-ASCII data.";
-      }
-      bytes[i] = contents.charCodeAt(i);
+  var onSend = function(contents, msgId, slotId, valueId) {
+    if (msgId === undefined || slotId === undefined) {
+      throw new Error('msgId and slotId are required. slotId can be null.');
+      return;
     }
-    //All packets should be sent with the following header
-    bytes[0] = 255;
-    bytes[1] = 255;
-    bytes[2] = 255;
-    bytes[3] = 255;
-    //The next byte is the Message ID defined in the config packet document
-    //If you dont have the doc in front of you here are the message IDs
-    //#define OKSETPIN       (0xE1)  
-    //#define OKSETTIME       (0xE2)  
-    //#define OKGETLABELS     (0xE3)  
-    //#define OKSETSLOT       (0xE4)   
-    //#define OKWIPESLOT      (0xE5)  
-    //#define OKSETU2FPRIV    (0xE6)  
-    //#define OKWIPEU2FPRIV     (0xE7)   
-    //#define OKSETU2FCERT    (0xE8)   
-    //#define OKWIPEU2FCERT     (0xE9)  
-    //#define OKSETYUBI    (0xEA)   
-    //#define OKWIPEYUBI     (0xEB)   Last vendor defined command
-    //bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
-    //The next byte is the slot number we have 12 slots to choose from
-    //bytes[5] = 12; //slot 10 chosen
-    //The next byte is the value number, each slot can store values like username, password, delay, additional characters etc.
-    //bytes[6] = 5; //Value #5 is the password value
-    //The next 32 bytes are the password you want to set, Just enter all 0s in the Report Contents field of the to send your password of 303030... (30 is ASCII for 0)
-    
-    
-    //The code above is for OKSETSLOT the code below is for OKSETTIME
-    bytes[4] = 226; //226 = E2 in decimal this is SETTIME
-    //The current time is 57081218 in hex see http://www.epochconverter.com/hex
-    bytes[5] = 87; //57 hex to decimal = 87
-    bytes[6] = 08;//08 hex to decimal = 08
-    bytes[7] = 18;//12 hex to decimal = 18
-    bytes[8] = 24;//18 hex to decimal = 24 
-    
-    
-    var pad = +ui.outPad.value;
-    for (var i = contents.length; i < bytes.length; ++i) {
+
+    var reportId = 0; //+ui.outId.value
+    var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value
+    var cursor = 0;
+    var contents = contents || ui.outData.value;
+
+    for (var i = 0; i < ONLYKEY.messageHeader.length; i++) {
+      bytes[i] = ONLYKEY.messageHeader[i];
+      cursor++;
+    }
+
+    if (msgId && ONLYKEY.messages[msgId]) {
+      bytes[cursor] = ONLYKEY.messages[msgId];
+      cursor++;
+    }
+
+    if (typeof valueId === 'number') {
+      bytes[cursor] = valueId;
+      cursor++;
+    }
+
+    if (!Array.isArray(contents)) {
+      contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function(match, capture) {
+        return String.fromCharCode(parseInt(capture, 16));
+      });
+
+      for (var i = cursor; i < contents.length && i < bytes.length; i++) {
+        if (contents.charCodeAt(i) > 255) {
+          throw "I am not smart enough to decode non-ASCII data.";
+        }
+        bytes[i] = contents.charCodeAt(i);
+        cursor++;
+      }
+    } else {
+      contents.forEach(function(val) {
+        bytes[cursor] = hexStrToDec(val);
+        cursor++;
+      });
+    }
+
+    var pad = 0; //+ui.outPad.value
+    for (var i = cursor; i < bytes.length; i++) {
       bytes[i] = pad;
     }
     ui.send.disabled = true;
 
     console.info("CONTENTS:", bytes);
     
-    chrome.hid.send(connection, id, bytes.buffer, function() {
+    chrome.hid.send(connection, reportId, bytes.buffer, function() {
       if (chrome.runtime.lastError) {
         console.error("ERROR SENDING:", chrome.runtime.lastError);
       } else {
         console.info("SEND COMPLETE");
       }
       ui.send.disabled = false;
-      pollForInput();
     });
   };
 
@@ -271,6 +323,10 @@
     if (value < 16)
       return '0' + value.toString(16);
     return value.toString(16);
+  };
+
+  var hexStrToDec = function (hexStr) {
+    return new Number('0x' + hexStr).toString(10);
   };
 
   var logInput = function(bytes) {

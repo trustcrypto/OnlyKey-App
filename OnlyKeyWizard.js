@@ -37,9 +37,6 @@ function Wizard() {
 }
 
 Wizard.prototype.init = function () {
-    var currentEpochTime = new Date().getTime();
-    console.info("current epoch time =", currentEpochTime);
-
     this.uiInit();
     this.usbInit();
 };
