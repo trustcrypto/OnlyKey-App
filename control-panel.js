@@ -1,14 +1,16 @@
-(function() {
-  var ONLYKEY = {
-    id: {
+var OnlyKeyHID = function(onlyKeyConfigWizard) {
+  var myOnlyKey = new OnlyKey();
+
+  function OnlyKey() {
+    this.deviceInfo = {
       vendorId: 5824,
       productId: 1158
-    },
-    maxInputReportSize: 64,
-    maxOutputReportSize: 64,
-    maxFeatureReportSize: 0,
-    messageHeader: [ 255, 255, 255, 255 ],
-    messages: {
+    };
+    this.maxInputReportSize = 64;
+    this.maxOutputReportSize = 64;
+    this.maxFeatureReportSize = 0;
+    this.messageHeader = [ 255, 255, 255, 255 ];
+    this.messages = {
       OKSETPIN      : 225, //0xE1
       OKSETTIME     : 226, //0xE2
       OKGETLABELS   : 227, //0xE3
@@ -20,11 +22,88 @@
       OKWIPEU2FCERT : 233, //0xE9
       OKSETYUBI     : 234, //0xEA
       OKWIPEYUBI    : 235  //0xEB
-    },
-    values: {
+    };
+    this.messageValues = {
       PASSWORD: 5
+    };
+    this.isReceivePending = false;
+  }
+
+  OnlyKey.prototype.setConnection = function (connectionId) {
+    this.connection = connectionId;
+    if (connectionId === -1) {
+      if (!ui.disconnected.open) {
+        ui.disconnected.showModal();
+      }
+    } else {
+      if (ui.disconnected.open) {
+        ui.disconnected.close();
+      }
+      onlyKeyConfigWizard.init();
     }
   };
+
+  OnlyKey.prototype.sendMessage = function(contents, msgId, slotId, valueId) {
+    var self = this;
+
+    msgId = typeof msgId === 'string' ? msgId : null;
+    slotId = typeof slotId === 'number' ? slotId : null;
+    valueId = typeof valueId === 'string' ? valueId : null;
+    contents = contents || ui.outData.value;
+
+    var reportId = 0; //+ui.outId.value
+    var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value)
+    var cursor = 0;
+
+    for (; cursor < self.messageHeader.length; cursor++) {
+      bytes[cursor] = self.messageHeader[cursor];
+    }
+
+    if (msgId && self.messages[msgId]) {
+      bytes[cursor] = self.messages[msgId];
+      cursor++;
+    }
+
+    if (valueId && self.messageValues[valueId]) {
+      bytes[cursor] = self.messageValues[valueId];
+      cursor++;
+    }
+
+    if (!Array.isArray(contents)) {
+      contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function(match, capture) {
+        return String.fromCharCode(parseInt(capture, 16));
+      });
+
+      for (var i = 0; i < contents.length && cursor < bytes.length; i++) {
+        if (contents.charCodeAt(i) > 255) {
+          throw "I am not smart enough to decode non-ASCII data.";
+        }
+        bytes[cursor++] = contents.charCodeAt(i);
+      }
+    } else {
+      contents.forEach(function(val) {
+        bytes[cursor++] = hexStrToDec(val);
+      });
+    }
+
+    var pad = 0; //+ui.outPad.value
+    for (; cursor < bytes.length;) {
+      bytes[cursor++] = pad;
+    }
+    ui.send.disabled = true;
+
+    console.info("CONTENTS:", bytes);
+    
+    chrome.hid.send(self.connection, reportId, bytes.buffer, function() {
+      if (chrome.runtime.lastError) {
+        console.error("ERROR SENDING:", chrome.runtime.lastError);
+      } else {
+        console.info("SEND COMPLETE");
+      }
+      ui.send.disabled = false;
+    });
+  };
+
     //The next byte is the Message ID defined in the config packet document
     //If you dont have the doc in front of you here are the message IDs
     //#define OKSETPIN       (0xE1)  
@@ -68,11 +147,9 @@
     inPoll: null,
     inputLog: null,
     receive: null,
-    clear: null
+    clear: null,
+    disconnected: null
   };
-
-  var connection = -1;
-  var isReceivePending = false;
 
   var initializeWindow = function() {
     for (var k in ui) {
@@ -87,7 +164,9 @@
     ui.connect.addEventListener('click', onConnectClicked);
     ui.disconnect.addEventListener('click', onDisconnectClicked);
     ui.addDevice.addEventListener('click', onAddDeviceClicked);
-    ui.send.addEventListener('click', sendMessage);
+    ui.send.addEventListener('click', function () {
+      myOnlyKey.sendMessage.call(myOnlyKey);
+    });
     ui.inPoll.addEventListener('change', onPollToggled);
     ui.receive.addEventListener('click', onReceiveClicked);
     ui.clear.addEventListener('click', onClearClicked);
@@ -104,7 +183,7 @@
   };
 
   var enumerateDevices = function() {
-    chrome.hid.getDevices(ONLYKEY.id, onDevicesEnumerated);
+    chrome.hid.getDevices(myOnlyKey.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
     chrome.hid.onDeviceRemoved.addListener(onDeviceRemoved);
   };
@@ -140,9 +219,9 @@
     }
 
     // auto connect desired device
-    if (device.maxInputReportSize === ONLYKEY.maxInputReportSize &&
-        device.maxOutputReportSize === ONLYKEY.maxOutputReportSize &&
-        device.maxFeatureReportSize === ONLYKEY.maxFeatureReportSize) {
+    if (device.maxInputReportSize === myOnlyKey.maxInputReportSize &&
+        device.maxOutputReportSize === myOnlyKey.maxOutputReportSize &&
+        device.maxFeatureReportSize === myOnlyKey.maxFeatureReportSize) {
           onConnectClicked(device.deviceId);
     }
   };
@@ -183,26 +262,28 @@
         console.info("CONNECTINFO:", connectInfo);
       }
 
-      connection = connectInfo.connectionId;
+      ui.disconnected.close();
+
+      myOnlyKey.setConnection(connectInfo.connectionId);
       var currentEpochTime = Math.round(new Date().getTime()/1000.0).toString(16);
       console.info("Setting current epoch time =", currentEpochTime);
 
       var timeParts = currentEpochTime.match(/.{2}/g);
-      sendMessage(timeParts, 'OKSETTIME', null);
+      myOnlyKey.sendMessage(timeParts, 'OKSETTIME', null);
       enableIOControls(true);
     });
   };
 
   var onDisconnectClicked = function() {
-    if (connection === -1) return;
+    if (myOnlyKey.connection === -1) return;
 
-    chrome.hid.disconnect(connection, function() {
+    chrome.hid.disconnect(myOnlyKey.connection, function() {
       if (chrome.runtime.lastError) {
         console.warn('DISCONNECT ERROR:', chrome.runtime.lastError);
       }
 
-      console.info("DISCONNECTED CONNECTION", connection);
-      connection = -1;
+      console.info("DISCONNECTED CONNECTION", myOnlyKey.connection);
+      myOnlyKey.setConnection(-1);
     });
 
     enableIOControls(false);
@@ -219,71 +300,10 @@
       }
     });
   };
-
-  var sendMessage = function(contents, msgId, slotId, valueId) {
-    if (msgId === undefined || slotId === undefined) {
-      throw new Error('msgId and slotId are required. slotId can be null.');
-      return;
-    }
-
-    var reportId = 0; //+ui.outId.value
-    var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value)
-    var cursor = 0;
-    var contents = contents || ui.outData.value;
-
-    for (; cursor < ONLYKEY.messageHeader.length; cursor++) {
-      bytes[cursor] = ONLYKEY.messageHeader[cursor];
-    }
-
-    if (msgId && ONLYKEY.messages[msgId]) {
-      bytes[cursor] = ONLYKEY.messages[msgId];
-      cursor++;
-    }
-
-    if (typeof valueId === 'number') {
-      bytes[cursor] = valueId;
-      cursor++;
-    }
-
-    if (!Array.isArray(contents)) {
-      contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function(match, capture) {
-        return String.fromCharCode(parseInt(capture, 16));
-      });
-
-      for (var i = 0; i < contents.length && cursor < bytes.length; i++) {
-        if (contents.charCodeAt(i) > 255) {
-          throw "I am not smart enough to decode non-ASCII data.";
-        }
-        bytes[cursor++] = contents.charCodeAt(i);
-      }
-    } else {
-      contents.forEach(function(val) {
-        bytes[cursor++] = hexStrToDec(val);
-      });
-    }
-
-    var pad = 0; //+ui.outPad.value
-    for (; cursor < bytes.length;) {
-      bytes[cursor++] = pad;
-    }
-    ui.send.disabled = true;
-
-    console.info("CONTENTS:", bytes);
-    
-    chrome.hid.send(connection, reportId, bytes.buffer, function() {
-      if (chrome.runtime.lastError) {
-        console.error("ERROR SENDING:", chrome.runtime.lastError);
-      } else {
-        console.info("SEND COMPLETE");
-      }
-      ui.send.disabled = false;
-    });
-  };
-
   var pollForInput = function() {
     var size = +ui.inSize.value;
-    isReceivePending = true;
-    chrome.hid.receive(connection, function(reportId, data) {
+    myOnlyKey.isReceivePending = true;
+    chrome.hid.receive(myOnlyKey.connection, function(reportId, data) {
       if (chrome.runtime.lastError) {
         console.error("ERROR RECEIVING:", chrome.runtime.lastError);
       } else {
@@ -294,13 +314,13 @@
         }
       }
 
-      isReceivePending = false;
+      myOnlyKey.isReceivePending = false;
     });
   };
 
   var enablePolling = function(pollEnabled) {
     ui.inPoll.checked = pollEnabled;
-    if (pollEnabled && !isReceivePending) {
+    if (pollEnabled && !myOnlyKey.isReceivePending) {
       pollForInput();
     }
   };
@@ -311,7 +331,7 @@
 
   var onReceiveClicked = function() {
     enablePolling(false);
-    if (!isReceivePending) {
+    if (!myOnlyKey.isReceivePending) {
       pollForInput();
     }
   };
@@ -353,9 +373,8 @@
 
   function init() {
     document.querySelector('.cp-toggle').onclick = toggleControlPanel;
-    if (connection === -1) {
-      initializeWindow();
-    }
+    initializeWindow();
+    myOnlyKey.setConnection(-1);
   }
 
   function toggleControlPanel() {
@@ -379,6 +398,5 @@
       return false;
   }
 
-  //window.addEventListener('load', initializeWindow);
   window.addEventListener('load', init);
-}());
+};

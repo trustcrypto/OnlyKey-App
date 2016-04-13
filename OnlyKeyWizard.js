@@ -1,3 +1,5 @@
+var onlyKeyConfigWizard;
+
 var steps = {
     Step1: {
         next: 'Step2'
@@ -33,10 +35,10 @@ var steps = {
 };
 
 function Wizard() {
-    this.currentStep = Object.keys(steps)[0];
 }
 
 Wizard.prototype.init = function () {
+    this.currentStep = Object.keys(steps)[0];
     this.uiInit();
     this.usbInit();
 };
@@ -148,6 +150,7 @@ function loadReview() {
 
 document.addEventListener('DOMContentLoaded', function init() {
     console.info("Creating wizard instance...");
-    var wizard = new Wizard();
-    wizard.init();
+    onlyKeyConfigWizard = new Wizard();
+    onlyKeyConfigWizard.init();
+    OnlyKeyHID(onlyKeyConfigWizard);
 }, false);
