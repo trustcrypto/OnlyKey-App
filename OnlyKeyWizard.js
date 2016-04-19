@@ -30,15 +30,15 @@ var steps = {
     },
     Step8: {
         prev: 'Step7'
-        //fn  : 'loadReview'
     }
 };
 
 function Wizard() {
+    this.steps = steps;
 }
 
 Wizard.prototype.init = function () {
-    this.currentStep = Object.keys(steps)[0];
+    this.currentStep = Object.keys(this.steps)[0];
     this.uiInit();
     this.usbInit();
 };
@@ -50,7 +50,7 @@ Wizard.prototype.uiInit = function () {
 
     this.btnNext.onclick = moveStep.bind(this, 'next');
     this.btnPrev.onclick = moveStep.bind(this, 'prev');
-    this.btnFinal.onclick = loadReview;
+    this.btnFinal.onclick = Wizard.loadReview;
 
     document.getElementById('closeFinal').addEventListener('click', function (e) {
         e.preventDefault();
@@ -66,23 +66,48 @@ Wizard.prototype.usbInit = function () {
 };
 
 function moveStep(direction) {
-    // if a next/prev step exists, make it the current step
-    if (steps[this.currentStep][direction]) {
-        this.currentStep = steps[this.currentStep][direction];
+    // if a next/prev step exists, call current step-related exit function
+    // and set new current step
+    if (this.steps[this.currentStep][direction]) {
+        if (this.steps[this.currentStep].exitFn) {
+            this.steps[this.currentStep].exitFn(function (err, res) {
+                if (err) {
+                    console.error(err);
+                } else {
+                    console.info(res);
+                    setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);                    
+                }
+            }.bind(this));
+        } else {
+            setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
+        }
+
+
     }
 
-    setActiveStepUI.call(this);
-
-    // call step-related function
-    if (steps[this.currentStep].fn && typeof window[steps[this.currentStep].fn] === 'function') {
-        window[steps[this.currentStep].fn].call(this);
-    }
     return false;
 }
 
+function setNewCurrentStep(stepId) {
+    this.currentStep = stepId;
+    setActiveStepUI.call(this);
+
+    // call new current step-related enter function
+    if (this.steps[stepId].enterFn) {
+        this.steps[stepId].enterFn(function (err, res) {
+            if (err) {
+                console.error(err);
+            } else {
+                console.info(res);
+            }
+        });
+    }
+}
+
+
 function setActiveStepUI() {
     // set display style for all steps
-    for(var stepId in steps) {
+    for(var stepId in this.steps) {
         var el = document.getElementById(stepId);
         if (el) {
             // el.style.display = (stepId === this.currentStep ? '' : 'none');
@@ -105,7 +130,7 @@ function setActiveStepUI() {
         }
     }
 
-    if (steps[this.currentStep].next) {
+    if (this.steps[this.currentStep].next) {
         this.btnNext.removeAttribute('disabled');
         this.btnFinal.setAttribute('disabled', 'disabled');
     } else {
@@ -113,7 +138,7 @@ function setActiveStepUI() {
         this.btnFinal.removeAttribute('disabled');
     }
 
-    if (steps[this.currentStep].prev) {
+    if (this.steps[this.currentStep].prev) {
         this.btnPrev.removeAttribute('disabled');
     } else {
         this.btnPrev.setAttribute('disabled', 'disabled');
@@ -122,7 +147,7 @@ function setActiveStepUI() {
 }
 
 // This function handles loading the review table innerHTML for the user to review before final submission
-function loadReview() {
+Wizard.loadReview = function() {
     document.getElementById('finalStep').showModal();
     return;
 
@@ -146,11 +171,10 @@ function loadReview() {
 
     document.getElementById('ReviewPassword').innerHTML = passwordMasked;
     return false;
-}
+};
 
 document.addEventListener('DOMContentLoaded', function init() {
     console.info("Creating wizard instance...");
     onlyKeyConfigWizard = new Wizard();
-    onlyKeyConfigWizard.init();
     OnlyKeyHID(onlyKeyConfigWizard);
 }, false);

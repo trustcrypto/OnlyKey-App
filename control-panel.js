@@ -43,13 +43,15 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     }
   };
 
-  OnlyKey.prototype.sendMessage = function(contents, msgId, slotId, valueId) {
+  OnlyKey.prototype.sendMessage = function(contents, msgId, slotId, valueId, callback) {
     var self = this;
 
     msgId = typeof msgId === 'string' ? msgId : null;
     slotId = typeof slotId === 'number' ? slotId : null;
     valueId = typeof valueId === 'string' ? valueId : null;
-    contents = contents || ui.outData.value;
+    contents = contents !== null ? contents : ui.outData.value;
+
+    callback = typeof callback === 'function' ? callback : function noop(){};
 
     var reportId = 0; //+ui.outId.value
     var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value)
@@ -97,8 +99,10 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     chrome.hid.send(self.connection, reportId, bytes.buffer, function() {
       if (chrome.runtime.lastError) {
         console.error("ERROR SENDING:", chrome.runtime.lastError);
+        callback('ERROR SENDING PACKETS');
       } else {
         console.info("SEND COMPLETE");
+        callback(null, 'OK');
       }
       ui.send.disabled = false;
     });
@@ -106,17 +110,17 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     //The next byte is the Message ID defined in the config packet document
     //If you dont have the doc in front of you here are the message IDs
-    //#define OKSETPIN       (0xE1)  
+    //#define OKSETPIN        (0xE1)  
     //#define OKSETTIME       (0xE2)  
     //#define OKGETLABELS     (0xE3)  
     //#define OKSETSLOT       (0xE4)   
     //#define OKWIPESLOT      (0xE5)  
     //#define OKSETU2FPRIV    (0xE6)  
-    //#define OKWIPEU2FPRIV     (0xE7)   
+    //#define OKWIPEU2FPRIV   (0xE7)   
     //#define OKSETU2FCERT    (0xE8)   
-    //#define OKWIPEU2FCERT     (0xE9)  
-    //#define OKSETYUBI    (0xEA)   
-    //#define OKWIPEYUBI     (0xEB)   Last vendor defined command
+    //#define OKWIPEU2FCERT   (0xE9)  
+    //#define OKSETYUBI       (0xEA)   
+    //#define OKWIPEYUBI      (0xEB)   Last vendor defined command
     //bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
     //The next byte is the slot number we have 12 slots to choose from
     //bytes[5] = 12; //slot 10 chosen
@@ -132,6 +136,17 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     //bytes[6] = 08; //08 hex to decimal = 08
     //bytes[7] = 18; //12 hex to decimal = 18
     //bytes[8] = 24; //18 hex to decimal = 24 
+
+  OnlyKey.prototype.setTime = function () {
+    var currentEpochTime = Math.round(new Date().getTime()/1000.0).toString(16);
+    console.info("Setting current epoch time =", currentEpochTime);
+    var timeParts = currentEpochTime.match(/.{2}/g);
+    this.sendMessage(timeParts, 'OKSETTIME', null);
+  };
+
+  OnlyKey.prototype.sendSetPin = function (callback) {
+    this.sendMessage('', 'OKSETPIN', null, null, callback);
+  };
 
   var ui = {
     deviceSelector: null,
@@ -265,11 +280,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       ui.disconnected.close();
 
       myOnlyKey.setConnection(connectInfo.connectionId);
-      var currentEpochTime = Math.round(new Date().getTime()/1000.0).toString(16);
-      console.info("Setting current epoch time =", currentEpochTime);
-
-      var timeParts = currentEpochTime.match(/.{2}/g);
-      myOnlyKey.sendMessage(timeParts, 'OKSETTIME', null);
+      myOnlyKey.setTime();
       enableIOControls(true);
     });
   };
@@ -300,6 +311,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       }
     });
   };
+
   var pollForInput = function() {
     var size = +ui.inSize.value;
     myOnlyKey.isReceivePending = true;
@@ -397,6 +409,11 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
       return false;
   }
+
+  onlyKeyConfigWizard.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
 
   window.addEventListener('load', init);
 };
