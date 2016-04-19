@@ -137,11 +137,11 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     //bytes[7] = 18; //12 hex to decimal = 18
     //bytes[8] = 24; //18 hex to decimal = 24 
 
-  OnlyKey.prototype.setTime = function () {
+  OnlyKey.prototype.setTime = function (callback) {
     var currentEpochTime = Math.round(new Date().getTime()/1000.0).toString(16);
     console.info("Setting current epoch time =", currentEpochTime);
     var timeParts = currentEpochTime.match(/.{2}/g);
-    this.sendMessage(timeParts, 'OKSETTIME', null);
+    this.sendMessage(timeParts, 'OKSETTIME', null, null, callback);
   };
 
   OnlyKey.prototype.sendSetPin = function (callback) {
@@ -280,7 +280,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       ui.disconnected.close();
 
       myOnlyKey.setConnection(connectInfo.connectionId);
-      myOnlyKey.setTime();
+      myOnlyKey.setTime(pollForInput);
       enableIOControls(true);
     });
   };
@@ -371,7 +371,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         if (lineBytes[j] < 32 || lineBytes[j] > 126)
           ch = '.';
         log += ch;
-      }
+      }      
       log += '\n';
     }
     log += "================================================================\n";
