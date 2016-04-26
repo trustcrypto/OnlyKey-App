@@ -180,18 +180,119 @@
           <button id="add-device">Add Device...</button>
         </div>
         <div id="output-panel">
-          <h3>OUTPUT</h3>
-          <label>Report ID (0 for none):</label>
-          <input type="number" id="out-id" min="0" max="255" value="0">
-          <br>
-          <label>Report Contents (ASCII; you may use \xNN to escape bytes):</label><br>
-          <input id="out-data" value="" size="68" style="width:100%"><br>
-          <label>Report Size (bytes, not including report ID):</label>
-          <input type="number" id="out-size" min="0" max="63" value="63"><br>
-          <label>Report Padding Byte<br>
-            (appended to |contents| up to |size| bytes):<br></label>
-          <input type="number" id="out-pad" min="0" max="255" value="0"><br>
-          <button id="send">Send Report</button>
+          <div>OnlyKey Slot Configuration</div>
+        <table>
+            <!-- Row 1 -->
+            <tr>
+                <th>Slot 1a</th>
+              
+            </tr>
+            <!-- Row 2 -->
+            <tr>
+                <td>Load Defaults From Template</td>
+                <td>
+                    <select>
+                        <option value="test">Check</option>  
+                    </select>
+                </td>
+            </tr>
+            
+             <!-- Row 3 -->
+            <tr>
+                <td><input type="checkbox" name="Label" value="Label"/>Label</td>
+                <td>
+                    <input type="text" name="txtLabel" value="testData"/>
+                </td>
+            </tr>
+            
+             <!-- Row 4 -->
+            <tr>
+                <td><input type="checkbox" name="Label" value="UserName"/>UserName</td>
+                <td>
+                    <input type="text" name="txtLabel" value="UserName"/>
+                </td>
+            </tr>
+            
+            <tr>
+                 <td><input type="radio" name="FirstTabReturn" value="UserName"/>Tab
+                
+                    <input type="radio" name="FirstTabReturn" value="UserName"/>Return
+                </td>
+            </tr>
+            
+             <!-- Row 5 -->
+            <tr>
+                <td><input type="checkbox" name="Label" value="UserName"/>Delay(Seconds)</td>
+                <td>
+                    <input type="text" name="txtLabel" value="Delay"/>
+                </td>
+            </tr>
+            
+             <!-- Row 6 -->
+            <tr>
+                <td><input type="checkbox" name="Label" value="UserName"/>Password</td>
+                <td>
+                    <input type="text" name="txtLabel" value=""/>
+                </td>
+            </tr>
+            
+             <!-- Row 7 -->
+            <tr>
+                <td>Re-enter Password</td>
+                <td>
+                    <input type="text" name="txtLabel" value=""/>
+                </td>
+            </tr>
+            
+            <tr>
+                <td><input type="radio" name="SecondTabReturn" value="UserName"/>Tab
+                
+                    <input type="radio" name="SecondTabReturn" value="UserName"/>Return
+                </td>
+            </tr>
+            
+            <tr>
+                <td>Options below only work for 2FA Mode</td>
+            </tr>
+            
+             <!-- Row 8 -->
+            <tr>
+                <td><input type="checkbox" name="Label" value="UserName"/>Delay(Seconds)</td>
+                <td>
+                    <input type="text" name="txtLabel" value=""/>
+                </td>
+            </tr>
+            
+            <tr>
+                <td>Please select one:</td>
+            </tr>
+            
+             <!-- Row 9 -->
+            <tr>
+                <td><input type="radio" name="mode" value="UserName"/>Google Auth OTP</td>
+                <td>
+                    <input type="text" name="txtLabel" value="UserName"/>
+                </td>
+            </tr>
+            
+            <tr>
+                <td><input type="radio" name="mode" value="YubikeyOTP"/>Yubikey OTP</td>
+            </tr>
+            <tr>
+                <td><input type="radio" name="mode" value="U2F"/>U2F</td>
+            </tr>
+            
+            <!-- Row 10 -->
+            <tr>
+                <td>
+                    <input type="button" name="Wipe" value="Wipe"/>
+                </td>
+                <td>
+                    <input type="button" name="Submit" value="Submit"/>
+                </td>
+            </tr>
+            
+        </table>
         </div>
         <div id="input-panel">
           <h3>INPUT</h3>
