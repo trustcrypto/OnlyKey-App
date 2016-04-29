@@ -163,15 +163,17 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     inputLog: null,
     receive: null,
     clear: null,
-    disconnected: null
+    disconnected: null,
+    slotConfigBtns: null,
+    slotConfigDialog: null
   };
 
   var initializeWindow = function() {
     for (var k in ui) {
-      var id = k.replace(/([A-Z])/, '-$1').toLowerCase();
+      var id = k.replace(/([A-Z])/g, '-$1').toLowerCase();
       var element = document.getElementById(id);
       if (!element) {
-        throw "Missing UI element: " + k;
+        throw "Missing UI element: " + k + ", " + id;
       }
       ui[k] = element;
     }
@@ -387,6 +389,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     document.querySelector('.cp-toggle').onclick = toggleControlPanel;
     initializeWindow();
     myOnlyKey.setConnection(-1);
+    initSlotConfigForm();
   }
 
   function toggleControlPanel() {
@@ -408,6 +411,33 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       }
 
       return false;
+  }
+
+  function initSlotConfigForm() {
+    // TODO: loop through labels returned from OKGETLABELS
+    var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName('input'));
+    configBtns.forEach(function (btn) {
+        btn.addEventListener('click', showSlotConfigForm);
+    });
+    ui.slotConfigDialog.getElementsByClassName('slot-config-close')[0].addEventListener('click', closeSlotConfigForm);
+  }
+
+  function showSlotConfigForm(e) {
+    var slotId = e.target.dataset.slotid;
+    ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
+    document.getElementById('txtSlotLabel').value = e.target.value.toLowerCase() === 'empty' ? '' : e.target.value;
+    ui.slotConfigDialog.showModal();
+    return false;
+  }
+
+  function closeSlotConfigForm(e) {
+    // if this was a mouseclick, don't follow link
+    if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault();
+    }
+
+    ui.slotConfigDialog.close();
+    return false;
   }
 
   onlyKeyConfigWizard.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);

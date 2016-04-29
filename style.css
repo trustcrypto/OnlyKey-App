@@ -38,3 +38,13 @@ td[data-step].active {
   background-color: maroon;
   color: white;
 }
+
+#slot-config-dialog {
+  position: relative;
+}
+
+.slot-config-close {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+}
