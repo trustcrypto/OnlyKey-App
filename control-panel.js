@@ -282,7 +282,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       ui.disconnected.close();
 
       myOnlyKey.setConnection(connectInfo.connectionId);
-      myOnlyKey.setTime(pollForInput);
+      myOnlyKey.setTime(function (err, msg) {
+        console.info("OKSETTIME", err, msg);
+        myOnlyKey.sendMessage('', 'OKGETLABELS', null, null, function (err, msg) {
+            console.info("OKGETLABELS", err, msg);
+            pollForInput();
+        });
+      });
       enableIOControls(true);
     });
   };
