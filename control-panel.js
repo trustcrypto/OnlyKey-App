@@ -27,6 +27,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       PASSWORD: 5
     };
     this.isReceivePending = false;
+    this.isInitialized = false;
   }
 
   OnlyKey.prototype.setConnection = function (connectionId) {
@@ -94,14 +95,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     }
     ui.send.disabled = true;
 
-    console.info("CONTENTS:", bytes);
+    console.info("SENDING " + msgId + ":", bytes);
     
     chrome.hid.send(self.connection, reportId, bytes.buffer, function() {
       if (chrome.runtime.lastError) {
         console.error("ERROR SENDING:", chrome.runtime.lastError);
         callback('ERROR SENDING PACKETS');
       } else {
-        console.info("SEND COMPLETE");
         callback(null, 'OK');
       }
       ui.send.disabled = false;
@@ -164,8 +164,10 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     receive: null,
     clear: null,
     disconnected: null,
-    slotConfigBtns: null,
-    slotConfigDialog: null
+    slotSetupPanel: null,
+    slotConfigDialog: null,
+    initWizardPanel: null,
+    main: null
   };
 
   var initializeWindow = function() {
@@ -191,12 +193,30 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   };
 
   var enableIOControls = function(ioEnabled) {
+    if (ioEnabled) {
+        ui.main.classList.remove('hide');
+    } else {
+        ui.main.classList.add('hide');
+    }
+
     ui.deviceSelector.disabled = ioEnabled;
     ui.connect.style.display = ioEnabled ? 'none' : 'inline';
     ui.disconnect.style.display = ioEnabled ? 'inline' : 'none';
     ui.inPoll.disabled = !ioEnabled;
     ui.send.disabled = !ioEnabled;
     ui.receive.disabled = !ioEnabled;
+
+    if (ui.slotConfigDialog.open) {
+        ui.slotConfigDialog.close();
+    }
+
+    if (myOnlyKey.isInitialized) {
+        ui.slotSetupPanel.classList.remove('hide');
+        ui.initWizardPanel.classList.add('hide');
+    } else {
+        ui.slotSetupPanel.classList.add('hide');
+        ui.initWizardPanel.classList.remove('hide');
+    }
   };
 
   var enumerateDevices = function() {
@@ -283,9 +303,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
       myOnlyKey.setConnection(connectInfo.connectionId);
       myOnlyKey.setTime(function (err, msg) {
-        console.info("OKSETTIME", err, msg);
         myOnlyKey.sendMessage('', 'OKGETLABELS', null, null, function (err, msg) {
-            console.info("OKGETLABELS", err, msg);
             pollForInput();
         });
       });
@@ -328,7 +346,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         console.error("ERROR RECEIVING:", chrome.runtime.lastError);
       } else {
         var msg = new Uint8Array(data);
-        logInput(msg);
+        readBytes(msg);
         if (ui.inPoll.checked) {
           setTimeout(pollForInput, 0);
         }
@@ -366,6 +384,20 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     return new Number('0x' + hexStr).toString(10);
   };
 
+  var readBytes = function (bytes) {
+    var msgStr = '';
+    var msgBytes = new Uint8Array(bytes.buffer);
+
+    for (var i = 0; i < msgBytes.length; i++) {
+        if (msgBytes[i] > 31 && msgBytes[i] < 127)
+            msgStr += String.fromCharCode(msgBytes[i]);
+    }
+    console.info("RECEIVED:", msgStr);
+    logInput(bytes);
+
+    return msgStr;
+  };
+
   var logInput = function(bytes) {
     var log = '';
     for (var i = 0; i < bytes.length; i += 16) {
@@ -400,19 +432,21 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
   function toggleControlPanel() {
       // "this" = element clicked
-      var wiz = { text: "Show Initial Setup Wizard", id: "wizard-panel" };
-      var cp = { text: "Show Configuration", id: "control-panel" };
+      var initPanel = { text: "Show Initialization Wizard", id: "init-wizard-panel" };
+      var slotPanel = { text: "Show Slot Setup", id: "slot-setup-panel" };
+      var ctrlPanel = { text: "Show Configuration", id: "control-panel" };
+      var activeWiz = myOnlyKey.isInitialized ? slotPanel : initPanel;
 
       switch (this.innerText) {
-          case wiz.text:
-              document.getElementById(cp.id).style.display = 'none';
-              document.getElementById(wiz.id).style.display = 'block';
-              this.innerText = cp.text;
+          case activeWiz.text:
+              document.getElementById(ctrlPanel.id).classList.add('hide');
+              document.getElementById(activeWiz.id).classList.remove('hide');
+              this.innerText = ctrlPanel.text;
               break;
-          case cp.text:
-              document.getElementById(wiz.id).style.display = 'none';
-              document.getElementById(cp.id).style.display = 'block';
-              this.innerText = wiz.text;
+          case ctrlPanel.text:
+              document.getElementById(activeWiz.id).classList.add('hide');
+              document.getElementById(ctrlPanel.id).classList.remove('hide');
+              this.innerText = activeWiz.text;
               break;
       }
 
@@ -421,7 +455,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
   function initSlotConfigForm() {
     // TODO: loop through labels returned from OKGETLABELS
-    var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName('input'));
+    var configBtns = Array.from(ui.slotSetupPanel.getElementsByTagName('input'));
     configBtns.forEach(function (btn) {
         btn.addEventListener('click', showSlotConfigForm);
     });
@@ -429,9 +463,11 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   }
 
   function showSlotConfigForm(e) {
-    var slotId = e.target.dataset.slotid;
+    var slotId = e.target.value;
+    var slotLabel = document.getElementById('slotLabel' + slotId).innerText;
     ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
-    document.getElementById('txtSlotLabel').value = e.target.value.toLowerCase() === 'empty' ? '' : e.target.value;
+
+    document.getElementById('txtSlotLabel').value = slotLabel.toLowerCase() === 'empty' ? '' : slotLabel;
     ui.slotConfigDialog.showModal();
     return false;
   }

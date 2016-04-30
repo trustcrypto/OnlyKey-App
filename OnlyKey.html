@@ -6,161 +6,248 @@
 </head>
 
 <body>
-    <p>
-        <a class="cp-toggle" href="">Show Configuration</a>
-    </p>
+    <div id="main" class="hide">
+        <p>
+            <a class="cp-toggle" href="">Show Configuration</a>
+        </p>
 
-    <div id="wizard-panel">
-        <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
-            <tr>
-                <td data-step="Step1">Step 1: Getting Started</td>
-                <td data-step="Step2">Step 2: Select OnlyKey Mode</td>
-                <td data-step="Step3">Step 3: Set Your Passcode</td>
-                <td data-step="Step4">Step 4: Confirm Passcode</td>
-                <td data-step="Step5">Step 5: Set Self-Destruct Passcode</td>
-                <td data-step="Step6">Step 6: Confirm Self-Destruct Passcode</td>
-                <td data-step="Step7">Step 7: Set Plausible Deniability Passcode</td>
-                <td data-step="Step8">Step 8: Confirm Plausible Deniability Passcode</td>
-            </tr>
-        </table>
+        <div id="init-wizard-panel" class="hide">
+            <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
+                <tr>
+                    <td data-step="Step1">Step 1: Getting Started</td>
+                    <td data-step="Step2">Step 2: Select OnlyKey Mode</td>
+                    <td data-step="Step3">Step 3: Set Your Passcode</td>
+                    <td data-step="Step4">Step 4: Confirm Passcode</td>
+                    <td data-step="Step5">Step 5: Set Self-Destruct Passcode</td>
+                    <td data-step="Step6">Step 6: Confirm Self-Destruct Passcode</td>
+                    <td data-step="Step7">Step 7: Set Plausible Deniability Passcode</td>
+                    <td data-step="Step8">Step 8: Confirm Plausible Deniability Passcode</td>
+                </tr>
+            </table>
 
-        <br />
+            <br />
 
-        <div id="stepContent">
-            <div class="step" id="Step1">
-                <h3>Welcome to the OnlyKey Initial Setup Wizard!</h3>
-                This wizard initializes the OnlyKey. Each step is highlighted in the header. 
-                <br/><br />
-                Click [Next] to get started.
+            <div id="stepContent">
+                <div class="step" id="Step1">
+                    <h3>Welcome to the OnlyKey Initial Setup Wizard!</h3>
+                    This wizard initializes the OnlyKey. Each step is highlighted in the header. 
+                    <br/><br />
+                    Click [Next] to get started.
+                </div>
+
+                <div class="step" id="Step2">
+                    <h3>Step 2: Select OnlyKey Mode</h3>
+                    <b>Modes:</b>
+                    <br/>
+                    <label>
+                        <input type=radio name=ConfigMode value="Unencrypted" />
+                        Unencrypted Password Manager (International Version)
+                    </label>
+                    <br/>
+
+                    <label>
+                        <input type=radio checked name=ConfigMode value="TwoFactor" />
+                        Two-Factor Authentication and Password Manager (U.S. Version - default)
+                    </label>
+     
+                    <br/><br/>
+                </div>
+
+                <div class="step" id="Step3">
+                    <h3>Step 3: Enter passcode on OnlyKey keypad</h3>
+                    <p>
+                        WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is also good to have a secure backup of your passcode somewhere just in case you forget.
+                    </p>
+                    <p>
+                        DISCLAIMER &mdash; I understand that there is no way to recover my passcode and if I forget it the only way to recover the OnlyKey is to perform a factory default which wipes all sensitive information.
+                    </p>
+                    <label>
+                        <input type="checkbox" name="passcode1Disclaimer" />
+                        I understand and accept the above risk.
+                    </label>
+                    <p>
+                        Your OnlyKey should now be blinking about once every second. Enter a 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click submit below.
+                    </p>
+                    <input type="button" name="passcode1Submit" id="passcode1Submit" value="Submit" />
+                    <!-- The following packet should be sent when submit or next button is pressed -->
+                    <!-- FFFFFFFFE1 -->
+                </div>
+
+                <div class="step" id="Step4">
+                    <h3>Step 4: Re-enter Passcode on OnlyKey Keypad</h3>
+                    <p>
+                        Your OnlyKey should now be blinking about once every second. Re-enter the 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click confirm below.
+                    </p>
+                    <input type="button" name="passcode1Confirm" id="passcode1Confirm" value="Confirm" />
+                    <!-- The following packet should be sent when submit is pressed -->
+                    <!-- FFFFFFFFE1 -->
+                </div>
+
+                <div class="step" id="Step5">
+                    <h3>Step 5. Enter self-destruct passcode on OnlyKey keypad</h3>
+                    <p>
+                        WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. Also this passcode should not be similar to your regular passcode as this could result in unintentionally wiping your OnlyKey. It is your responsibility to maintain a secure backup of your passcode somewhere just in case you forget.
+                    </p>
+                    <p>
+                        DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to perform a factory default which wipes all sensitive information.
+                    </p>
+                    <label>
+                        <input type="checkbox" name="passcode2Disclaimer" />
+                        I understand and accept the above risk.
+                    </label>
+                    <p>
+                        Your OnlyKey should now be blinking about once every second. Enter a 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click submit below.
+                    </p>
+                    <input type="button" name="passcode2Submit" id="passcode2Submit" value="Submit" />
+                    <!-- The following packet should be sent when submit is pressed -->
+                    <!-- FFFFFFFFE1 -->
+                </div>
+
+                <div class="step" id="Step6">
+                    <h3>Step 6: Re-enter Self-Destruct Passcode on OnlyKey Keypad</h3>
+                    <p>
+                        Your OnlyKey should now be blinking about once every second. Re-enter the 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click confirm below.
+                    </p>
+                    <input type="button" name="passcode2Confirm" id="passcode2Confirm" value="Confirm" />
+                    <!-- The following packet should be sent when submit is pressed -->
+                    <!-- FFFFFFFFE1 -->
+                </div>
+
+                <div class="step" id="Step7">
+                    <h3>Step 7: Enter Plausible Deniability Passcode on OnlyKey keypad</h3>
+                    <p>
+                        If you are using Unencrypted Password Manager (International Version) mode or Two-Factor Authentication and Password Manager (U.S. Version - default) mode you may exit now by selecting "Show Configuration" in the left corner of the window. If you have loaded the Plausible Deniability Mode firmware on your OnlyKey proceed to enter plausible deniability passcode.
+                    </p>
+                    <p>
+                        WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is your responsibility to maintain a secure backup of your passcode somewhere just in case you forget.
+                    </p>
+                    <p>
+                        DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to  perform a factory default which wipes all sensitive information.
+                    </p>
+                    <label>
+                        <input type="checkbox" name="passcode2Disclaimer" />
+                        I understand and accept the above risk.
+                    </label>
+                    <p>
+                        Your OnlyKey should now be blinking about once every second. Enter a 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click submit below.
+                    </p>
+                    <input type="button" name="passcode2Submit" id="passcode2Submit" value="Submit" />
+                    <!-- The following packet should be sent when submit is pressed -->
+                    <!-- FFFFFFFFE1 -->
+                </div>
+
+                <div class="step" id="Step8">
+                    <h3>Step 8: Re-enter Plausible Deniability Passcode on OnlyKey Keypad</h3>
+                    <p>
+                       Your OnlyKey should now be blinking about once every second. Re-enter the 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click confirm below.
+                    </p>
+                    <input type="button" name="passcode2Confirm" id="passcode2Confirm" value="Confirm" />
+                    <!-- The following packet should be sent when submit is pressed -->
+                    <!-- FFFFFFFFE1 -->
+                </div>
             </div>
+            
+            <br />    
 
-            <div class="step" id="Step2">
-                <h3>Step 2: Select OnlyKey Mode</h3>
-                <b>Modes:</b>
-                <br/>
-                <label>
-                    <input type=radio name=ConfigMode value="Unencrypted" />
-                    Unencrypted Password Manager (International Version)
-                </label>
-                <br/>
+            <table border="0" cellpadding="5" cellspacing="0">
+                <tr>
+                    <td>
+                        <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
+                    </td>
+                    <td>
+                        <button id="ButtonNext" type="button">Next</button>
+                    </td>
+                    <td>
+                        <button id="SubmitFinal" type="submit" value="Finish" disabled="disabled">Finish</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
-                <label>
-                    <input type=radio checked name=ConfigMode value="TwoFactor" />
-                    Two-Factor Authentication and Password Manager (U.S. Version - default)
-                </label>
- 
-                <br/><br/>
+        <div id="slot-setup-panel" class="hide">
+            <table id="slot-config-btns">
+                <tr>
+                    <td align="right">
+                        <span class="slotLabel" id="slotLabel1a">empty</span>
+                        <input type="button" id="slot1aConfig" value="1a"/><br/>
+                        <span class="slotLabel" id="slotLabel1b">empty</span>
+                        <input type="button" id="slot1bConfig" value="1b"/>
+                    </td>
+                    <td>
+                        <input type="button" id="slot2aConfig" value="2a"/>
+                        <span class="slotLabel" id="slotLabel2a">empty</span>
+                        <br/>
+                        <input type="button" id="slot2bConfig" value="2b"/>
+                        <span class="slotLabel" id="slotLabel2b">empty</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right">
+                        <span class="slotLabel" id="slotLabel3a">empty</span>
+                        <input type="button" id="slot3aConfig" value="3a"/><br/>
+                        <span class="slotLabel" id="slotLabel3b">empty</span>
+                        <input type="button" id="slot3bConfig" value="3b"/>
+                    </td>
+                    <td>
+                        <input type="button" id="slot4aConfig" value="4a"/>
+                        <span class="slotLabel" id="slotLabel4a">empty</span>
+                        <br/>
+                        <input type="button" id="slot4bConfig" value="4b"/>
+                        <span class="slotLabel" id="slotLabel4b">empty</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td align="right">
+                        <span class="slotLabel" id="slotLabel5a">empty</span>
+                        <input type="button" id="slot5aConfig" value="5a"/><br/>
+                        <span class="slotLabel" id="slotLabel5b">empty</span>
+                        <input type="button" id="slot5bConfig" value="5b"/>
+                    </td>
+                    <td>
+                        <input type="button" id="slot6aConfig" value="6a"/>
+                        <span class="slotLabel" id="slotLabel6a">empty</span>
+                        <br/>
+                        <input type="button" id="slot6bConfig" value="6b"/>
+                        <span class="slotLabel" id="slotLabel6b">empty</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+
+        <div id="control-panel" class="hide">
+            <div id="device-panel">
+              <select id="device-selector"></select>
+              <button id="connect">Connect</button>
+              <button id="disconnect">Disconnect</button>
+              <button id="add-device">Add Device...</button>
             </div>
-
-            <div class="step" id="Step3">
-                <h3>Step 3: Enter passcode on OnlyKey keypad</h3>
-                <p>
-                    WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is also good to have a secure backup of your passcode somewhere just in case you forget.
-                </p>
-                <p>
-                    DISCLAIMER &mdash; I understand that there is no way to recover my passcode and if I forget it the only way to recover the OnlyKey is to perform a factory default which wipes all sensitive information.
-                </p>
-                <label>
-                    <input type="checkbox" name="passcode1Disclaimer" />
-                    I understand and accept the above risk.
-                </label>
-                <p>
-                    Your OnlyKey should now be blinking about once every second. Enter a 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click submit below.
-                </p>
-                <input type="button" name="passcode1Submit" id="passcode1Submit" value="Submit" />
-                <!-- The following packet should be sent when submit or next button is pressed -->
-                <!-- FFFFFFFFE1 -->
+            <div id="output-panel">
+              <h3>OUTPUT</h3>
+              <label>Report ID (0 for none):</label>
+              <input type="number" id="out-id" min="0" max="255" value="0">
+              <br>
+              <label>Report Contents (ASCII; you may use \xNN to escape bytes):</label><br>
+              <input id="out-data" value="" size="68" style="width:100%"><br>
+              <label>Report Size (bytes, not including report ID):</label>
+              <input type="number" id="out-size" min="0" max="63" value="63"><br>
+              <label>Report Padding Byte<br>
+                (appended to |contents| up to |size| bytes):<br></label>
+              <input type="number" id="out-pad" min="0" max="255" value="0"><br>
+              <button id="send">Send Report</button>
             </div>
-
-            <div class="step" id="Step4">
-                <h3>Step 4: Re-enter Passcode on OnlyKey Keypad</h3>
-                <p>
-                    Your OnlyKey should now be blinking about once every second. Re-enter the 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click confirm below.
-                </p>
-                <input type="button" name="passcode1Confirm" id="passcode1Confirm" value="Confirm" />
-                <!-- The following packet should be sent when submit is pressed -->
-                <!-- FFFFFFFFE1 -->
-            </div>
-
-            <div class="step" id="Step5">
-                <h3>Step 5. Enter self-destruct passcode on OnlyKey keypad</h3>
-                <p>
-                    WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. Also this passcode should not be similar to your regular passcode as this could result in unintentionally wiping your OnlyKey. It is your responsibility to maintain a secure backup of your passcode somewhere just in case you forget.
-                </p>
-                <p>
-                    DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to perform a factory default which wipes all sensitive information.
-                </p>
-                <label>
-                    <input type="checkbox" name="passcode2Disclaimer" />
-                    I understand and accept the above risk.
-                </label>
-                <p>
-                    Your OnlyKey should now be blinking about once every second. Enter a 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click submit below.
-                </p>
-                <input type="button" name="passcode2Submit" id="passcode2Submit" value="Submit" />
-                <!-- The following packet should be sent when submit is pressed -->
-                <!-- FFFFFFFFE1 -->
-            </div>
-
-            <div class="step" id="Step6">
-                <h3>Step 6: Re-enter Self-Destruct Passcode on OnlyKey Keypad</h3>
-                <p>
-                    Your OnlyKey should now be blinking about once every second. Re-enter the 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click confirm below.
-                </p>
-                <input type="button" name="passcode2Confirm" id="passcode2Confirm" value="Confirm" />
-                <!-- The following packet should be sent when submit is pressed -->
-                <!-- FFFFFFFFE1 -->
-            </div>
-
-            <div class="step" id="Step7">
-                <h3>Step 7: Enter Plausible Deniability Passcode on OnlyKey keypad</h3>
-                <p>
-                    If you are using Unencrypted Password Manager (International Version) mode or Two-Factor Authentication and Password Manager (U.S. Version - default) mode you may exit now by selecting "Show Configuration" in the left corner of the window. If you have loaded the Plausible Deniability Mode firmware on your OnlyKey proceed to enter plausible deniability passcode.
-                </p>
-                <p>
-                    WARNING &mdash; Make sure to choose a passcode that you will not forget and that only you know. It is your responsibility to maintain a secure backup of your passcode somewhere just in case you forget.
-                </p>
-                <p>
-                    DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to  perform a factory default which wipes all sensitive information.
-                </p>
-                <label>
-                    <input type="checkbox" name="passcode2Disclaimer" />
-                    I understand and accept the above risk.
-                </label>
-                <p>
-                    Your OnlyKey should now be blinking about once every second. Enter a 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click submit below.
-                </p>
-                <input type="button" name="passcode2Submit" id="passcode2Submit" value="Submit" />
-                <!-- The following packet should be sent when submit is pressed -->
-                <!-- FFFFFFFFE1 -->
-            </div>
-
-            <div class="step" id="Step8">
-                <h3>Step 8: Re-enter Plausible Deniability Passcode on OnlyKey Keypad</h3>
-                <p>
-                   Your OnlyKey should now be blinking about once every second. Re-enter the 7 - 10 digit passcode on your OnlyKey six button keypad and when you are finished click confirm below.
-                </p>
-                <input type="button" name="passcode2Confirm" id="passcode2Confirm" value="Confirm" />
-                <!-- The following packet should be sent when submit is pressed -->
-                <!-- FFFFFFFFE1 -->
+            <div id="input-panel">
+              <h3>INPUT</h3>
+              <label>Expected Report Size</label>
+              <input type="number" id="in-size" value="64" min="1" max="64"><br>
+              <label>Poll?</label>
+              <input type="checkbox" id="in-poll"><br>
+              <label>Input Log:</label><br>
+              <textarea id="input-log" style="width:100%" rows="20" readonly></textarea><br>
+              <button id="receive">Read Report (cancels polling)</button>
+              <button id="clear">Clear Log</button>
             </div>
         </div>
-        
-        <br />    
-
-        <table border="0" cellpadding="5" cellspacing="0">
-            <tr>
-                <td>
-                    <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
-                </td>
-                <td>
-                    <button id="ButtonNext" type="button">Next</button>
-                </td>
-                <td>
-                    <button id="SubmitFinal" type="submit" value="Finish" disabled="disabled">Finish</button>
-                </td>
-            </tr>
-        </table>
     </div>
 
     <dialog id="finalStep">
@@ -172,35 +259,8 @@
         <h1>Please connect your OnlyKey</h1>
     </dialog>
 
-    <table id="slot-config-btns">
-        <tr>
-            <td>
-                1a: <input type="button" data-slotId="1a" id="slot1aConfig" value="SAMPLE LABEL"/>
-                <br/>
-                1b: <input type="button" data-slotId="1b" id="slot1bConfig" value="empty"/>
-            </td>
-            <td>
-                2a: <input type="button" data-slotId="2a" id="slot2aConfig" value="ANOTHER LABEL"/>
-                <br/>
-                2b: <input type="button" data-slotId="2b" id="slot2bConfig" value="empty"/>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                3a: <input type="button" data-slotId="3a" id="slot3aConfig" value="empty"/>
-                <br/>
-                3b: <input type="button" data-slotId="3b" id="slot3bConfig" value="empty"/>
-            </td>
-            <td>
-                4a: <input type="button" data-slotId="4a" id="slot4aConfig" value="empty"/>
-                <br/>
-                4b: <input type="button" data-slotId="4b" id="slot4bConfig" value="empty"/>
-            </td>
-        </tr>
-    </table>
-
     <dialog id="slot-config-dialog">
-        <a href="" class="slot-config-close">close [x]</a>
+        <a href="" class="slot-config-close">cancel [x]</a>
         <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
         <form name="slot-config-form" id="slot-config-form">
             <table>
@@ -335,40 +395,6 @@
             </table>
         </form>
     </dialog>
-
-    <div id="control-panel" style="display: none;">
-        <div id="device-panel">
-          <select id="device-selector"></select>
-          <button id="connect">Connect</button>
-          <button id="disconnect">Disconnect</button>
-          <button id="add-device">Add Device...</button>
-        </div>
-        <div id="output-panel">
-          <h3>OUTPUT</h3>
-          <label>Report ID (0 for none):</label>
-          <input type="number" id="out-id" min="0" max="255" value="0">
-          <br>
-          <label>Report Contents (ASCII; you may use \xNN to escape bytes):</label><br>
-          <input id="out-data" value="" size="68" style="width:100%"><br>
-          <label>Report Size (bytes, not including report ID):</label>
-          <input type="number" id="out-size" min="0" max="63" value="63"><br>
-          <label>Report Padding Byte<br>
-            (appended to |contents| up to |size| bytes):<br></label>
-          <input type="number" id="out-pad" min="0" max="255" value="0"><br>
-          <button id="send">Send Report</button>
-        </div>
-        <div id="input-panel">
-          <h3>INPUT</h3>
-          <label>Expected Report Size</label>
-          <input type="number" id="in-size" value="64" min="1" max="64"><br>
-          <label>Poll?</label>
-          <input type="checkbox" id="in-poll"><br>
-          <label>Input Log:</label><br>
-          <textarea id="input-log" style="width:100%" rows="20" readonly></textarea><br>
-          <button id="receive">Read Report (cancels polling)</button>
-          <button id="clear">Clear Log</button>
-        </div>
-    </div>
 
     <script src="OnlyKeyWizard.js"></script>
     <script src="control-panel.js"></script>
