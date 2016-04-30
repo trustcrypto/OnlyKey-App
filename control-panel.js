@@ -395,7 +395,20 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     console.info("RECEIVED:", msgStr);
     logInput(bytes);
 
+    handleMessage(msgStr);
     return msgStr;
+  };
+
+  var handleMessage = function (msg) {
+    switch (msg) {
+        case "UNINITIALIZED":
+        case "INITIALIZED":
+            myOnlyKey.isInitialized = (msg === "INITIALIZED");
+            enableIOControls(true);
+            break;
+        default:
+            break;
+    }
   };
 
   var logInput = function(bytes) {
