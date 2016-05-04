@@ -12,16 +12,16 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     this.messageHeader = [ 255, 255, 255, 255 ];
     this.messages = {
       OKSETPIN      : 225, //0xE1
-      OKSETTIME     : 226, //0xE2
-      OKGETLABELS   : 227, //0xE3
-      OKSETSLOT     : 228, //0xE4
-      OKWIPESLOT    : 229, //0xE5
-      OKSETU2FPRIV  : 230, //0xE6
-      OKWIPEU2FPRIV : 231, //0xE7
-      OKSETU2FCERT  : 232, //0xE8
-      OKWIPEU2FCERT : 233, //0xE9
-      OKSETYUBI     : 234, //0xEA
-      OKWIPEYUBI    : 235  //0xEB
+      OKSETSDPIN    : 226, //0xE2
+      OKSETPDPIN    : 227, //0xE3
+      OKSETTIME     : 228, //0xE4
+      OKGETLABELS   : 229, //0xE5
+      OKSETSLOT     : 230, //0xE6
+      OKWIPESLOT    : 231, //0xE7
+      OKSETU2FPRIV  : 232, //0xE8
+      OKWIPEU2FPRIV : 233, //0xE9
+      OKSETU2FCERT  : 234, //0xEA
+      OKWIPEU2FCERT : 235, //0xEB
     };
     this.messageValues = {
       PASSWORD: 5
@@ -146,6 +146,14 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
   OnlyKey.prototype.sendSetPin = function (callback) {
     this.sendMessage('', 'OKSETPIN', null, null, callback);
+  };
+  
+    OnlyKey.prototype.sendSetSDPin = function (callback) {
+    this.sendMessage('', 'OKSETSDPIN', null, null, callback);
+  };
+  
+     OnlyKey.prototype.sendSetPDPin = function (callback) {
+    this.sendMessage('', 'OKSETPDPIN', null, null, callback);
   };
 
   var ui = {
@@ -499,6 +507,14 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   onlyKeyConfigWizard.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
   onlyKeyConfigWizard.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
   onlyKeyConfigWizard.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step5.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step7.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+  onlyKeyConfigWizard.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
 
   window.addEventListener('load', init);
 };
