@@ -37,10 +37,23 @@ function Wizard() {
     this.steps = steps;
 }
 
-Wizard.prototype.init = function () {
+Wizard.prototype.init = function (myOnlyKey) {
     this.currentStep = Object.keys(this.steps)[0];
     this.uiInit();
     this.usbInit();
+
+    this.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+    this.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+    this.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+    this.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+    this.steps.Step5.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+    this.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+    this.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+    this.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+    this.steps.Step7.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+    this.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+    this.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+    this.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
 };
 
 Wizard.prototype.uiInit = function () {

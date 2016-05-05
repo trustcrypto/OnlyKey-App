@@ -27,12 +27,16 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       PASSWORD: 5
     };
     this.isReceivePending = false;
+    this.pollEnabled = false;
     this.isInitialized = false;
+    this.isLocked = true;
   }
 
   OnlyKey.prototype.setConnection = function (connectionId) {
+    console.info("Setting connectionId to " + connectionId);
     this.connection = connectionId;
     if (connectionId === -1) {
+      myOnlyKey = new OnlyKey();
       if (!ui.disconnected.open) {
         ui.disconnected.showModal();
       }
@@ -40,7 +44,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       if (ui.disconnected.open) {
         ui.disconnected.close();
       }
-      onlyKeyConfigWizard.init();
+      onlyKeyConfigWizard.init(myOnlyKey);
     }
   };
 
@@ -93,18 +97,16 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     for (; cursor < bytes.length;) {
       bytes[cursor++] = pad;
     }
-    ui.send.disabled = true;
 
-    console.info("SENDING " + msgId + ":", bytes);
+    console.info("SENDING " + msgId + " to connectionId " + self.connection + ":", bytes);
     
     chrome.hid.send(self.connection, reportId, bytes.buffer, function() {
       if (chrome.runtime.lastError) {
-        console.error("ERROR SENDING:", chrome.runtime.lastError);
+        console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
         callback('ERROR SENDING PACKETS');
       } else {
         callback(null, 'OK');
       }
-      ui.send.disabled = false;
     });
   };
 
@@ -157,24 +159,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   };
 
   var ui = {
-    deviceSelector: null,
-    connect: null,
-    disconnect: null,
-    addDevice: null,
-    outId: null,
-    outData: null,
-    outSize: null,
-    outPad: null,
-    send: null,
-    inSize: null,
-    inPoll: null,
-    inputLog: null,
-    receive: null,
-    clear: null,
     disconnected: null,
-    slotSetupPanel: null,
     slotConfigDialog: null,
-    initWizardPanel: null,
+    showSlotPanel: null,
+    showInitPanel: null,
+    initPanel: null,
+    slotPanel: null,
+    lockedDialog: null,
     main: null
   };
 
@@ -187,16 +178,10 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       }
       ui[k] = element;
     }
+
+    ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
+    ui.showInitPanel.addEventListener('click', toggleConfigPanel);
     enableIOControls(false);
-    ui.connect.addEventListener('click', onConnectClicked);
-    ui.disconnect.addEventListener('click', onDisconnectClicked);
-    ui.addDevice.addEventListener('click', onAddDeviceClicked);
-    ui.send.addEventListener('click', function () {
-      myOnlyKey.sendMessage.call(myOnlyKey);
-    });
-    ui.inPoll.addEventListener('change', onPollToggled);
-    ui.receive.addEventListener('click', onReceiveClicked);
-    ui.clear.addEventListener('click', onClearClicked);
     enumerateDevices();
   };
 
@@ -207,23 +192,26 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         ui.main.classList.add('hide');
     }
 
-    ui.deviceSelector.disabled = ioEnabled;
-    ui.connect.style.display = ioEnabled ? 'none' : 'inline';
-    ui.disconnect.style.display = ioEnabled ? 'inline' : 'none';
-    ui.inPoll.disabled = !ioEnabled;
-    ui.send.disabled = !ioEnabled;
-    ui.receive.disabled = !ioEnabled;
-
-    if (ui.slotConfigDialog.open) {
-        ui.slotConfigDialog.close();
-    }
+    closeSlotConfigForm();
 
     if (myOnlyKey.isInitialized) {
-        ui.slotSetupPanel.classList.remove('hide');
-        ui.initWizardPanel.classList.add('hide');
+        if (!myOnlyKey.isLocked) {
+            ui.slotPanel.classList.remove('hide');
+            ui.initPanel.classList.add('hide');
+            ui.showInitPanel.classList.add('hide');
+            ui.showSlotPanel.classList.add('hide');
+            ui.lockedDialog.classList.add('hide');
+        } else {
+            ui.showInitPanel.classList.remove('hide');
+            ui.showSlotPanel.classList.remove('hide');
+            ui.lockedDialog.classList.remove('hide');
+        }
     } else {
-        ui.slotSetupPanel.classList.add('hide');
-        ui.initWizardPanel.classList.remove('hide');
+        ui.slotPanel.classList.add('hide');
+        ui.initPanel.classList.remove('hide');
+        ui.lockedDialog.classList.add('hide');
+        ui.showInitPanel.classList.add('hide');
+        ui.showSlotPanel.classList.add('hide');
     }
   };
 
@@ -248,54 +236,15 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
   var onDeviceAdded = function(device) {
     var optionId = 'device-' + device.deviceId;
-    if (ui.deviceSelector.namedItem(optionId)) {
-      return;
-    }
-
-    var selectedIndex = ui.deviceSelector.selectedIndex;
-    var option = document.createElement('option');
-    option.text = "Device #" + device.deviceId + " [" +
-                  device.vendorId.toString(16) + ":" +
-                  device.productId.toString(16) + "]";
-    option.id = optionId;
-    ui.deviceSelector.options.add(option);
-    if (selectedIndex != -1) {
-      ui.deviceSelector.selectedIndex = selectedIndex;
-    }
-
     // auto connect desired device
     if (device.maxInputReportSize === myOnlyKey.maxInputReportSize &&
         device.maxOutputReportSize === myOnlyKey.maxOutputReportSize &&
         device.maxFeatureReportSize === myOnlyKey.maxFeatureReportSize) {
-          onConnectClicked(device.deviceId);
+          connectDevice(device.deviceId);
     }
   };
 
-  var onDeviceRemoved = function(deviceId) {
-    var option = ui.deviceSelector.options.namedItem('device-' + deviceId);
-    if (!option) {
-      return;
-    }
-
-    if (option.selected) {
-      onDisconnectClicked();
-    }
-    ui.deviceSelector.remove(option.index);
-  };
-
-  var onConnectClicked = function(deviceId) {
-    if (typeof deviceId !== 'number') {
-      var selectedItem = ui.deviceSelector.options[ui.deviceSelector.selectedIndex];
-      if (!selectedItem) {
-        return;
-      }
-
-      deviceId = parseInt(selectedItem.id.substr('device-'.length), 10);
-      if (!deviceId) {
-        return;
-      }
-    }
-
+  var connectDevice = function(deviceId) {
     console.info('CONNECTING deviceId:', deviceId);
 
     chrome.hid.connect(deviceId, function(connectInfo) {
@@ -311,15 +260,14 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
       myOnlyKey.setConnection(connectInfo.connectionId);
       myOnlyKey.setTime(function (err, msg) {
-        myOnlyKey.sendMessage('', 'OKGETLABELS', null, null, function (err, msg) {
-            pollForInput();
-        });
+          pollForInput();
       });
       enableIOControls(true);
     });
   };
 
-  var onDisconnectClicked = function() {
+  var onDeviceRemoved = function() {
+    console.info("ONDEVICEREMOVED was triggered with connectionId", myOnlyKey.connection);
     if (myOnlyKey.connection === -1) return;
 
     chrome.hid.disconnect(myOnlyKey.connection, function() {
@@ -334,20 +282,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     enableIOControls(false);
   };
 
-  var onAddDeviceClicked = function() {
-    chrome.hid.getUserSelectedDevices({ 'multiple': false }, function(devices) {
-      if (chrome.runtime.lastError != undefined) {
-        console.warn('getUserSelectedDevices ERROR:', chrome.runtime.lastError);
-        return;
-      }
-      for (var device of devices) {
-        onDeviceAdded(device);
-      }
-    });
-  };
-
   var pollForInput = function() {
-    var size = +ui.inSize.value;
     myOnlyKey.isReceivePending = true;
     chrome.hid.receive(myOnlyKey.connection, function(reportId, data) {
       if (chrome.runtime.lastError) {
@@ -355,9 +290,6 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
       } else {
         var msg = new Uint8Array(data);
         readBytes(msg);
-        if (ui.inPoll.checked) {
-          setTimeout(pollForInput, 0);
-        }
       }
 
       myOnlyKey.isReceivePending = false;
@@ -365,19 +297,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   };
 
   var enablePolling = function(pollEnabled) {
-    ui.inPoll.checked = pollEnabled;
-    if (pollEnabled && !myOnlyKey.isReceivePending) {
-      pollForInput();
-    }
-  };
-
-  var onPollToggled = function() {
-    enablePolling(ui.inPoll.checked);
-  };
-
-  var onReceiveClicked = function() {
-    enablePolling(false);
-    if (!myOnlyKey.isReceivePending) {
+    if (myOnlyKey.pollEnabled && !myOnlyKey.isReceivePending) {
       pollForInput();
     }
   };
@@ -401,7 +321,6 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             msgStr += String.fromCharCode(msgBytes[i]);
     }
     console.info("RECEIVED:", msgStr);
-    logInput(bytes);
 
     handleMessage(msgStr);
     return msgStr;
@@ -417,66 +336,42 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         default:
             break;
     }
-  };
 
-  var logInput = function(bytes) {
-    var log = '';
-    for (var i = 0; i < bytes.length; i += 16) {
-      var sliceLength = Math.min(bytes.length - i, 16);
-      var lineBytes = new Uint8Array(bytes.buffer, i, sliceLength);
-      for (var j = 0; j < lineBytes.length; ++j) {
-        log += byteToHex(lineBytes[j]) + ' ';
-      }
-      for (var j = 0; j < lineBytes.length; ++j) {
-        var ch = String.fromCharCode(lineBytes[j]);
-        if (lineBytes[j] < 32 || lineBytes[j] > 126)
-          ch = '.';
-        log += ch;
-      }      
-      log += '\n';
+    if (msg === "INITIALIZED") {
+        pollForInput();
     }
-    log += "================================================================\n";
-    ui.inputLog.textContent += log;
-    ui.inputLog.scrollTop = ui.inputLog.scrollHeight;
-  };
 
-  var onClearClicked = function() {
-    ui.inputLog.textContent = "";
+    if (msg.toLowerCase().indexOf("unlocked") >= 0) {
+        myOnlyKey.sendMessage('', 'OKGETLABELS', null, null, function (err, msg) {
+            pollForInput();
+        });
+    }
   };
 
   function init() {
-    document.querySelector('.cp-toggle').onclick = toggleControlPanel;
+    console.info("OnlyKeyComm init() called");
     initializeWindow();
     myOnlyKey.setConnection(-1);
     initSlotConfigForm();
   }
 
-  function toggleControlPanel() {
-      // "this" = element clicked
-      var initPanel = { text: "Show Initialization Wizard", id: "init-wizard-panel" };
-      var slotPanel = { text: "Show Slot Setup", id: "slot-setup-panel" };
-      var ctrlPanel = { text: "Show Configuration", id: "control-panel" };
-      var activeWiz = myOnlyKey.isInitialized ? slotPanel : initPanel;
+    function toggleConfigPanel(e) {
+        e.preventDefault();
+        // "this" = element clicked
+        if (this.id === "show-init-panel") {
+            ui.initPanel.classList.remove('hide');
+            ui.slotPanel.classList.add('hide');
+        }
 
-      switch (this.innerText) {
-          case activeWiz.text:
-              document.getElementById(ctrlPanel.id).classList.add('hide');
-              document.getElementById(activeWiz.id).classList.remove('hide');
-              this.innerText = ctrlPanel.text;
-              break;
-          case ctrlPanel.text:
-              document.getElementById(activeWiz.id).classList.add('hide');
-              document.getElementById(ctrlPanel.id).classList.remove('hide');
-              this.innerText = activeWiz.text;
-              break;
-      }
-
-      return false;
-  }
+        if (this.id === 'show-slot-panel') {
+            ui.slotPanel.classList.remove('hide');
+            ui.initPanel.classList.add('hide');
+        }
+    }
 
   function initSlotConfigForm() {
     // TODO: loop through labels returned from OKGETLABELS
-    var configBtns = Array.from(ui.slotSetupPanel.getElementsByTagName('input'));
+    var configBtns = Array.from(ui.slotPanel.getElementsByTagName('input'));
     configBtns.forEach(function (btn) {
         btn.addEventListener('click', showSlotConfigForm);
     });
@@ -484,6 +379,8 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   }
 
   function showSlotConfigForm(e) {
+    e && e.preventDefault && e.preventDefault();
+
     var slotId = e.target.value;
     var slotLabel = document.getElementById('slotLabel' + slotId).innerText;
     ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
@@ -494,27 +391,12 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
   }
 
   function closeSlotConfigForm(e) {
-    // if this was a mouseclick, don't follow link
-    if (e && typeof e.preventDefault === 'function') {
-        e.preventDefault();
+    e && e.preventDefault && e.preventDefault();
+
+    if (ui.slotConfigDialog.open) {
+        ui.slotConfigDialog.close();
     }
-
-    ui.slotConfigDialog.close();
-    return false;
   }
-
-  onlyKeyConfigWizard.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step5.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step7.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-  onlyKeyConfigWizard.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
 
   window.addEventListener('load', init);
 };

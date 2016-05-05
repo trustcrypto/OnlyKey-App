@@ -7,11 +7,11 @@
 
 <body>
     <div id="main" class="hide">
-        <p>
-            <a class="cp-toggle" href="">Show Configuration</a>
-        </p>
+        <div id="init-panel" class="hide">
+            <p>
+                <a id="show-slot-panel" href="">Setup OnlyKey Slots</a>
+            </p>
 
-        <div id="init-wizard-panel" class="hide">
             <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
                 <tr>
                     <td data-step="Step1">Step 1: Getting Started</td>
@@ -164,7 +164,10 @@
             </table>
         </div>
 
-        <div id="slot-setup-panel" class="hide">
+        <div id="slot-panel" class="hide">
+            <p>
+                <a id="show-init-panel" href="">Setup OnlyKey PIN</a>
+            </p>
             <table id="slot-config-btns">
                 <tr>
                     <td align="right">
@@ -213,41 +216,6 @@
                 </tr>
             </table>
         </div>
-
-
-        <div id="control-panel" class="hide">
-            <div id="device-panel">
-              <select id="device-selector"></select>
-              <button id="connect">Connect</button>
-              <button id="disconnect">Disconnect</button>
-              <button id="add-device">Add Device...</button>
-            </div>
-            <div id="output-panel">
-              <h3>OUTPUT</h3>
-              <label>Report ID (0 for none):</label>
-              <input type="number" id="out-id" min="0" max="255" value="0">
-              <br>
-              <label>Report Contents (ASCII; you may use \xNN to escape bytes):</label><br>
-              <input id="out-data" value="" size="68" style="width:100%"><br>
-              <label>Report Size (bytes, not including report ID):</label>
-              <input type="number" id="out-size" min="0" max="63" value="63"><br>
-              <label>Report Padding Byte<br>
-                (appended to |contents| up to |size| bytes):<br></label>
-              <input type="number" id="out-pad" min="0" max="255" value="0"><br>
-              <button id="send">Send Report</button>
-            </div>
-            <div id="input-panel">
-              <h3>INPUT</h3>
-              <label>Expected Report Size</label>
-              <input type="number" id="in-size" value="64" min="1" max="64"><br>
-              <label>Poll?</label>
-              <input type="checkbox" id="in-poll"><br>
-              <label>Input Log:</label><br>
-              <textarea id="input-log" style="width:100%" rows="20" readonly></textarea><br>
-              <button id="receive">Read Report (cancels polling)</button>
-              <button id="clear">Clear Log</button>
-            </div>
-        </div>
     </div>
 
     <dialog id="finalStep">
@@ -257,6 +225,16 @@
 
     <dialog id="disconnected">
         <h1>Please connect your OnlyKey</h1>
+    </dialog>
+
+    <dialog id="working-dialog">
+        <h1>Working...</h1>
+        <h2>Please wait</h2>
+    </dialog>
+
+    <dialog id="locked-dialog">
+        <h1>Your OnlyKey is locked</h1>
+        <h3>Please enter your PIN</h3>
     </dialog>
 
     <dialog id="slot-config-dialog">
@@ -397,6 +375,6 @@
     </dialog>
 
     <script src="OnlyKeyWizard.js"></script>
-    <script src="control-panel.js"></script>
+    <script src="OnlyKeyComm.js"></script>
 </body>
 </html>
