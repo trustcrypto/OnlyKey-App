@@ -206,8 +206,8 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
                 ui.main.classList.remove('hide');
                 ui.slotPanel.classList.remove('hide');
                 ui.initPanel.classList.add('hide');
-                ui.showInitPanel.classList.add('hide');
-                ui.showSlotPanel.classList.add('hide');
+                ui.showInitPanel.classList.remove('hide');
+                ui.showSlotPanel.classList.remove('hide');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -288,12 +288,9 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     var pollForInput = function() {
         console.info("Polling...");
-        if (myOnlyKey.isReceivePending) {
-            return;
-        }
+        clearTimeout(myOnlyKey.poll);
 
         var msg;
-        myOnlyKey.isReceivePending = true;
         chrome.hid.receive(myOnlyKey.connection, function(reportId, data) {
             if (chrome.runtime.lastError) {
                 console.error("ERROR RECEIVING:", chrome.runtime.lastError);
@@ -301,17 +298,20 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
                 msg = readBytes(new Uint8Array(data));
             }
 
-            myOnlyKey.isReceivePending = false;
             if (!msg && myOnlyKey.pollEnabled) {
                 pollForInput();
             } else {
                 myOnlyKey.pollEnabled = false;
             }
         });
+
+        if (myOnlyKey.pollEnabled) {
+            myOnlyKey.poll = setTimeout(pollForInput, 500);
+        }
     };
 
     var enablePolling = function() {
-        myOnlyKey.pollEnable = true;
+        myOnlyKey.pollEnabled = true;
         pollForInput();
     };
 
@@ -340,28 +340,33 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     };
 
     var handleMessage = function(msg) {
+        dialog.close(ui.workingDialog);
+
         switch (msg) {
             case "UNINITIALIZED":
             case "INITIALIZED":
                 myOnlyKey.isInitialized = (msg === "INITIALIZED");
-                enableIOControls(true);
                 break;
             default:
                 break;
         }
 
-        if (msg === "INITIALIZED") {
-            pollForInput();
+        if (msg === "INITIALIZED") { // OK should still be locked
+            enablePolling();
         }
 
         if (msg.toLowerCase().indexOf("unlocked") >= 0) {
-            myOnlyKey.isLocked = false;
-            myOnlyKey.setTime(function () {
-                myOnlyKey.getLabels(enablePolling);
-            });
+            if (myOnlyKey.isLocked) {
+                myOnlyKey.isLocked = false;
+                myOnlyKey.setTime(function () {
+                    myOnlyKey.getLabels(enablePolling);
+                });
+            }
         } else if (msg.toLowerCase().indexOf("locked") >= 0) {
             myOnlyKey.isLocked = true;
         }
+
+        enableIOControls(true);
     };
 
     function init() {
