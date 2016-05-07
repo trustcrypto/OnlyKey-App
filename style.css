@@ -1,54 +1,57 @@
 body {
-  font-family: monospace;
-  font-size: 10pt;
-  display: flex;
-  flex-flow: row wrap;
+    font-family: monospace;
+    font-size: 10pt;
+    display: flex;
+    flex-flow: row wrap;
 }
 
 div {
-  padding: 8px;
-  flex: 1 100%;
+    padding: 8px;
+    flex: 1 100%;
 }
 
 .hide {
-  display: none;
+    display: none;
 }
 
-#output-panel,
-#input-panel {
-  flex: 1 0;
+#output-panel, #input-panel {
+    flex: 1 0;
 }
 
 .step {
-  display: none;
+    display: none;
 }
 
 .step.active {
-  display: block;
+    display: block;
 }
 
 td[data-step] {
-  background-color: silver;
+    background-color: silver;
 }
 
 td[data-step].active {
-  background-color: yellow;
+    background-color: yellow;
 }
 
-#disconnected {
-  border-radius: 10px;
-  box-shadow: 0px 0px 8px 2px rgba(0,0,0,0.5);
-  border-color: white;
-  background-color: maroon;
-  color: white;
+dialog {
+    border-radius: 10px;
+    box-shadow: 0px 0px 8px 2px rgba(0, 0, 0, 0.5);
+    border-color: white;
+    background-color: maroon;
+    color: white;
+}
+
+dialog::backdrop {
+    background-color: rgba(0,0,0,.8);
 }
 
 #slot-config-dialog {
-  position: relative;
+    position: relative;
 }
 
 .slot-config-close {
-  position: absolute;
-  top: 1em;
-  right: 1em;
+    position: absolute;
+    top: 1em;
+    right: 1em;
 }
