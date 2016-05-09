@@ -149,7 +149,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.sendSetPin = function(callback) {
-        enablePolling();
+        pollForInput();
         this.sendMessage('', 'OKSETPIN', null, null, callback);
     };
 
@@ -265,7 +265,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             }
 
             myOnlyKey.setConnection(connectInfo.connectionId);
-            enablePolling();
+            myOnlyKey.setTime(pollForInput);
             enableIOControls(true);
         });
     };
@@ -352,15 +352,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
 
         if (msg === "INITIALIZED") { // OK should still be locked
-            enablePolling();
+            pollForInput();
         }
 
         if (msg.toLowerCase().indexOf("unlocked") >= 0) {
             if (myOnlyKey.isLocked) {
                 myOnlyKey.isLocked = false;
-                myOnlyKey.setTime(function () {
-                    myOnlyKey.getLabels(enablePolling);
-                });
+                myOnlyKey.getLabels(pollForInput);
             }
         } else if (msg.toLowerCase().indexOf("locked") >= 0) {
             myOnlyKey.isLocked = true;
