@@ -303,7 +303,6 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             }
         });
 
-        console.info("POLLFORINPUT: myOnlyKey.pollEnabled = ", myOnlyKey.pollEnabled);
         if (myOnlyKey.pollEnabled) {
             myOnlyKey.poll = setTimeout(pollForInput, 1000);
         }
@@ -311,7 +310,6 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     var enablePolling = function() {
         myOnlyKey.pollEnabled = true;
-        console.info("ENABLEPOLLING: myOnlyKey.pollEnabled = ", myOnlyKey.pollEnabled);
         pollForInput();
     };
 
@@ -353,8 +351,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
 
         if (msg === "INITIALIZED" && !myOnlyKey.pollEnabled) { // OK should still be locked
-            console.info("HANDLEMESSAGE: myOnlyKey.pollEnabled = ", myOnlyKey.pollEnabled)
-            enablePolling();
+            pollForInput();
         }
 
         if (msg.indexOf("UNLOCKED") >= 0) {
