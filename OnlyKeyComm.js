@@ -32,6 +32,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         this.pollEnabled = false;
         this.isInitialized = false;
         this.isLocked = true;
+        this.lastMessageReceived = '';
     }
 
     OnlyKey.prototype.setConnection = function(connectionId) {
@@ -339,12 +340,14 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     var handleMessage = function(msg) {
         var msg = msg.trim();
+        var updateUI = false;
         dialog.close(ui.workingDialog);
 
         switch (msg) {
             case "UNINITIALIZED":
             case "INITIALIZED":
                 myOnlyKey.isInitialized = (msg === "INITIALIZED");
+                updateUI = true;
                 break;
             default:
                 break;
@@ -359,12 +362,16 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             if (myOnlyKey.isLocked) {
                 myOnlyKey.isLocked = false;
                 myOnlyKey.getLabels(pollForInput);
+                updateUI = true;
             }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
         }
 
-        enableIOControls(true);
+        onlyKeyConfigWizard.setLastMessage(msg);
+        if (updateUI) {
+            enableIOControls(true);
+        }
     };
 
     function init() {

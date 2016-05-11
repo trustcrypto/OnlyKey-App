@@ -159,6 +159,11 @@ function setActiveStepUI() {
     return false;
 }
 
+Wizard.prototype.setLastMessage = function (msg) {
+    var container = document.getElementById('lastMessage');
+    container.getElementsByTagName('span')[0].innerText = msg;
+};
+
 // This function handles loading the review table innerHTML for the user to review before final submission
 Wizard.loadReview = function() {
     document.getElementById('finalStep').showModal();

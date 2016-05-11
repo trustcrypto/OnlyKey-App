@@ -55,3 +55,17 @@ dialog::backdrop {
     top: 1em;
     right: 1em;
 }
+
+#lastMessage {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: .5em 1em;
+    background-color: white;
+    color: red;
+
+}
+
+#lastMessage > span {
+    font-weight: bold;
+}
