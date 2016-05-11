@@ -65,6 +65,14 @@ Wizard.prototype.uiInit = function () {
     this.btnPrev.onclick = moveStep.bind(this, 'prev');
     this.btnFinal.onclick = Wizard.loadReview;
 
+    this.slotSubmit = document.getElementById('slotSubmit');
+    this.slotSubmit.onclick = function (e) {
+        var form = document['slot-config-form'];
+        if (form.chkSlotLabel.checked) {
+            console.info(form.txtSlotLabel.value);
+        }
+    };
+
     document.getElementById('closeFinal').addEventListener('click', function (e) {
         e.preventDefault();
         document.getElementById('finalStep').close();
