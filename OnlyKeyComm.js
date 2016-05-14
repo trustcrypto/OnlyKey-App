@@ -24,15 +24,27 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             OKSETU2FCERT: 234, //0xEA
             OKWIPEU2FCERT: 235, //0xEB
         };
-        this.messageValues = {
-            PASSWORD: 5
+        this.messageFields = {
+            LABEL: 1,
+            USERNAME: 2,
+            NEXTKEY1: 3,
+            DELAY1: 4,
+            PASSWORD: 5,
+            NEXTKEY2: 6,
+            DELAY2: 7,
+            TFATYPE: 8,
+            TFAUSERNAME: 9
         };
         this.connection = -1;
         this.isReceivePending = false;
         this.pollEnabled = false;
         this.isInitialized = false;
         this.isLocked = true;
-        this.lastMessageReceived = '';
+        this.lastMessage = {
+            sent: '',
+            received: ''
+        };
+        this.currentSlotId = null;
     }
 
     OnlyKey.prototype.setConnection = function(connectionId) {
@@ -47,18 +59,18 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     };
 
-    OnlyKey.prototype.sendMessage = function(contents, msgId, slotId, valueId, callback) {
+    OnlyKey.prototype.sendMessage = function(contents, msgId, slotId, fieldId, callback) {
         var self = this;
 
-        msgId = typeof msgId === 'string' ? msgId : null;
+        msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
         slotId = typeof slotId === 'number' ? slotId : null;
-        valueId = typeof valueId === 'string' ? valueId : null;
-        contents = contents !== null ? contents : ui.outData.value;
+        fieldId = typeof fieldId === 'string' ? fieldId : null;
+        contents = contents || '';
 
         callback = typeof callback === 'function' ? callback : function noop() {};
 
-        var reportId = 0; //+ui.outId.value
-        var bytes = new Uint8Array(63); //new Uint8Array(+ui.outSize.value)
+        var reportId = 0;
+        var bytes = new Uint8Array(63);
         var cursor = 0;
 
         for (; cursor < self.messageHeader.length; cursor++) {
@@ -66,12 +78,17 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
 
         if (msgId && self.messages[msgId]) {
-            bytes[cursor] = self.messages[msgId];
+            bytes[cursor] = strPad(self.messages[msgId], 2, 0);
             cursor++;
         }
 
-        if (valueId && self.messageValues[valueId]) {
-            bytes[cursor] = self.messageValues[valueId];
+        if (slotId !== null) {
+            bytes[cursor] = strPad(slotId, 2, 0);
+            cursor++;
+        }
+
+        if (fieldId && self.messageFields[fieldId]) {
+            bytes[cursor] = strPad(self.messageFields[fieldId], 2, 0);
             cursor++;
         }
 
@@ -104,6 +121,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
                 console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
                 callback('ERROR SENDING PACKETS');
             } else {
+                myOnlyKey.lastMessage.sent = msgId;
                 callback(null, 'OK');
             }
         });
@@ -150,7 +168,6 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.sendSetPin = function(callback) {
-        pollForInput();
         this.sendMessage('', 'OKSETPIN', null, null, callback);
     };
 
@@ -160,6 +177,17 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     OnlyKey.prototype.sendSetPDPin = function(callback) {
         this.sendMessage('', 'OKSETPDPIN', null, null, callback);
+    };
+
+    OnlyKey.prototype.setSlot = function(slot, field, value, callback) {
+        slot = slot || this.getSlotNum();
+        this.sendMessage(value, 'OKSETSLOT', slot, field, callback);
+    };
+
+    OnlyKey.prototype.getSlotNum = function(slotId) {
+        slotId = slotId || this.currentSlotId;
+        var parts = slotId.split('');
+        return parseInt(parts[0], 10) + (parts[1].toLowerCase() === 'a' ? 0 : 6);
     };
 
     var ui = {
@@ -287,41 +315,27 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         enableIOControls(false);
     };
 
-    var pollForInput = function() {
+    var pollForInput = function(callback) {
         console.info("Polling...");
         clearTimeout(myOnlyKey.poll);
+        callback = callback || handleMessage;
 
         var msg;
         chrome.hid.receive(myOnlyKey.connection, function(reportId, data) {
             if (chrome.runtime.lastError) {
-                console.error("ERROR RECEIVING:", chrome.runtime.lastError);
+                return callback(chrome.runtime.lastError);
             } else {
                 msg = readBytes(new Uint8Array(data));
             }
 
-            if (!msg && myOnlyKey.pollEnabled) {
-                pollForInput();
+            console.info("RECEIVED:", msg);
+    
+            if (myOnlyKey.pollEnabled) {
+                myOnlyKey.poll = setTimeout(pollForInput, 0);
             }
+
+            return callback(null, msg);
         });
-
-        if (myOnlyKey.pollEnabled) {
-            myOnlyKey.poll = setTimeout(pollForInput, 1000);
-        }
-    };
-
-    var enablePolling = function() {
-        myOnlyKey.pollEnabled = true;
-        pollForInput();
-    };
-
-    var byteToHex = function(value) {
-        if (value < 16)
-            return '0' + value.toString(16);
-        return value.toString(16);
-    };
-
-    var hexStrToDec = function(hexStr) {
-        return new Number('0x' + hexStr).toString(10);
     };
 
     var readBytes = function(bytes) {
@@ -332,13 +346,15 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             if (msgBytes[i] > 31 && msgBytes[i] < 127)
                 msgStr += String.fromCharCode(msgBytes[i]);
         }
-        console.info("RECEIVED:", msgStr);
 
-        handleMessage(msgStr);
         return msgStr;
     };
 
-    var handleMessage = function(msg) {
+    var handleMessage = function(err, msg) {
+        if (err) {
+            return console.error("MESSAGE ERROR:", err);
+        }
+
         var msg = msg.trim();
         var updateUI = false;
         dialog.close(ui.workingDialog);
@@ -363,15 +379,34 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
                 myOnlyKey.isLocked = false;
                 myOnlyKey.getLabels(pollForInput);
                 updateUI = true;
+            } else if (myOnlyKey.lastMessage.sent === 'OKGETLABELS') {
+                enablePolling();
             }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
         }
 
+        myOnlyKey.lastMessage.received = msg;
         onlyKeyConfigWizard.setLastMessage(msg);
+
         if (updateUI) {
             enableIOControls(true);
         }
+    };
+
+    var enablePolling = function() {
+        myOnlyKey.pollEnabled = true;
+        pollForInput();
+    };
+
+    var hexStrToDec = function(hexStr) {
+        return new Number('0x' + hexStr).toString(10);
+    };
+
+    var byteToHex = function(value) {
+        if (value < 16)
+            return '0' + value.toString(16);
+        return value.toString(16);
     };
 
     function init() {
@@ -407,6 +442,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     function showSlotConfigForm(e) {
         var slotId = e.target.value;
+        myOnlyKey.currentSlotId = slotId;
         var slotLabel = document.getElementById('slotLabel' + slotId).innerText;
         ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
 
@@ -422,6 +458,15 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     window.addEventListener('load', init);
 };
+
+
+function strPad(val, places, char) {
+    while (val.length < places) {
+        val = "" + (char || 0) + val;
+    }
+
+    return val;
+}
 
 function dialogMgr() {
     var self = this;

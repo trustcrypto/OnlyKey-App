@@ -38,6 +38,7 @@ function Wizard() {
 }
 
 Wizard.prototype.init = function (myOnlyKey) {
+    this.onlyKey = myOnlyKey;
     this.currentStep = Object.keys(this.steps)[0];
     this.uiInit();
     this.usbInit();
@@ -57,19 +58,35 @@ Wizard.prototype.init = function (myOnlyKey) {
 };
 
 Wizard.prototype.uiInit = function () {
-    this.btnNext = document.getElementById('ButtonNext');
-    this.btnPrev = document.getElementById('ButtonPrevious');
-    this.btnFinal = document.getElementById('SubmitFinal');
+    var self = this;
+    self.btnNext = document.getElementById('ButtonNext');
+    self.btnPrev = document.getElementById('ButtonPrevious');
+    self.btnFinal = document.getElementById('SubmitFinal');
 
-    this.btnNext.onclick = moveStep.bind(this, 'next');
-    this.btnPrev.onclick = moveStep.bind(this, 'prev');
-    this.btnFinal.onclick = Wizard.loadReview;
+    self.btnNext.onclick = moveStep.bind(this, 'next');
+    self.btnPrev.onclick = moveStep.bind(this, 'prev');
+    self.btnFinal.onclick = Wizard.loadReview;
 
-    this.slotSubmit = document.getElementById('slotSubmit');
-    this.slotSubmit.onclick = function (e) {
+    self.slotSubmit = document.getElementById('slotSubmit');
+    self.slotSubmit.onclick = function (e) {
         var form = document['slot-config-form'];
+        var fieldMap = {
+            chkSlotLabel: form.txtSlotLabel,
+            chkUserName: form.txtUserName,
+            chkDelay1: form.numDelay1,
+            chkPassword: form.txtPassword,
+            chkDelay2: form.numDelay2            
+        };
+
+        for (var field in fieldMap) {
+            if (form[field].checked) {
+
+            }
+        }
         if (form.chkSlotLabel.checked) {
-            console.info(form.txtSlotLabel.value);
+            self.onlyKey.setSlot(null, 'LABEL', form.txtSlotLabel.value, function(err, msg) {
+                console.info("reply:", msg);
+            });
         }
     };
 
