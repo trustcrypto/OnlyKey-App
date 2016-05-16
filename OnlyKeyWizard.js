@@ -67,27 +67,23 @@ Wizard.prototype.uiInit = function () {
     self.btnPrev.onclick = moveStep.bind(this, 'prev');
     self.btnFinal.onclick = Wizard.loadReview;
 
+    self.slotConfigForm = document['slot-config-form'];
+
+    self.slotWipe = document.getElementById('slotWipe');
+    self.slotWipe.onclick = function (e) {
+        self.onlyKey.wipeSlot(null, function (err, msg) {
+            self.onlyKey.listen(function (err, msg) {
+                console.info("reply:", err || msg);
+            });
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    };
+
     self.slotSubmit = document.getElementById('slotSubmit');
     self.slotSubmit.onclick = function (e) {
-        var form = document['slot-config-form'];
-        var fieldMap = {
-            chkSlotLabel: form.txtSlotLabel,
-            chkUserName: form.txtUserName,
-            chkDelay1: form.numDelay1,
-            chkPassword: form.txtPassword,
-            chkDelay2: form.numDelay2            
-        };
-
-        for (var field in fieldMap) {
-            if (form[field].checked) {
-
-            }
-        }
-        if (form.chkSlotLabel.checked) {
-            self.onlyKey.setSlot(null, 'LABEL', form.txtSlotLabel.value, function(err, msg) {
-                console.info("reply:", msg);
-            });
-        }
+        setSlot.call(self);
+        e && e.preventDefault && e.preventDefault();
     };
 
     document.getElementById('closeFinal').addEventListener('click', function (e) {
@@ -99,7 +95,106 @@ Wizard.prototype.uiInit = function () {
     setActiveStepUI.call(this);
 };
 
+function setSlot() {
+    var self = this; // wizard
+    var form = self.slotConfigForm;
+    var fieldMap = {
+        chkSlotLabel: {
+            input: form.txtSlotLabel,
+            msgId: 'LABEL'
+        },
+        chkUserName: {
+            input: form.txtUserName,
+            msgId: 'USERNAME'
+        },
+        chkDelay1: {
+            input: form.numDelay1,
+            msgId: 'DELAY1'
+        },
+        chkPassword: {
+            input: form.txtPassword,
+            msgId: 'PASSWORD'
+        },
+        chkDelay2: {
+            input: form.numDelay2,
+            msgId: 'DELAY2'
+        },
+        tabReturn1: {
+            input: form.tabReturn1,
+            msgId: 'NEXTKEY1'
+        },
+        tabReturn2: {
+            input: form.tabReturn2,
+            msgId: 'NEXTKEY2'
+        },
+        mode: {
+            input: form.mode,
+            msgId: 'TFATYPE'
+        },
+        txt2FAUserName: {
+            input: form.txt2FAUserName,
+            msgId: 'TFAUSERNAME'
+        }
+    };
+
+    for (var field in fieldMap) {
+        var isChecked = false;
+        var formValue = null;
+        switch(form[field].type) {
+            case 'checkbox':
+                if (form[field].checked) {
+                    isChecked = true;
+                    formValue = ('' + (fieldMap[field].input).value).trim();
+                    form[field].checked = false;
+                }
+                break;
+            case 'hidden':
+            case 'number':
+            case 'text':
+                var checkVar = ('' + (form[field].value)).trim();
+                if (checkVar.length) {
+                    isChecked = true;
+                    formValue = ('' + (fieldMap[field].input).value).trim();
+                    form[field].value = '';
+                }
+                break;
+            case 'radio':
+                if (form[field].value) {
+                    isChecked = true;
+                    formValue = (fieldMap[field].input).value;
+                    clearRadios(field);
+                }
+            default:
+                break;
+        }
+        if (isChecked) {
+            self.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
+                console.info("reply:", err || msg);
+                if (!err) {
+                    setSlot.call(self);
+                }
+            });
+            return;
+        }
+
+        if (document.getElementById('slot-config-dialog').open) {
+            document.getElementById('slot-config-dialog').close();
+        }
+    }
+}
+
+function clearRadios(name) {
+    var btns = document.getElementsByName('name');
+    for (var i = 0; i < btns.length; i++) {
+        if(btns[i].checked) btns[i].checked = false;
+    }
+}
+
 Wizard.prototype.usbInit = function () {
+
+};
+
+Wizard.prototype.setLabels = function (labels) {
 
 };
 
@@ -187,6 +282,19 @@ function setActiveStepUI() {
 Wizard.prototype.setLastMessage = function (msg) {
     var container = document.getElementById('lastMessage');
     container.getElementsByTagName('span')[0].innerText = msg;
+};
+
+Wizard.prototype.setSlotLabel = function (slot, label) {
+    var slotLabel;
+    if (typeof slot === 'number') {
+        slot = slot;
+        var slotLabels = Array.from(document.getElementsByClassName('slotLabel'));
+        slotLabel = slotLabels[slot];
+    } else {
+        slot = slot.toLowerCase();
+        slotLabel = document.getElementById('slotLabel' + slot);
+    }
+    slotLabel.innerText = label;
 };
 
 // This function handles loading the review table innerHTML for the user to review before final submission

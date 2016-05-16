@@ -45,6 +45,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             received: ''
         };
         this.currentSlotId = null;
+        this.labels = [];
     }
 
     OnlyKey.prototype.setConnection = function(connectionId) {
@@ -154,7 +155,11 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     //bytes[5] = 87; //57 hex to decimal = 87
     //bytes[6] = 08; //08 hex to decimal = 08
     //bytes[7] = 18; //12 hex to decimal = 18
-    //bytes[8] = 24; //18 hex to decimal = 24 
+    //bytes[8] = 24; //18 hex to decimal = 24
+
+    OnlyKey.prototype.listen = function(callback) {
+        pollForInput(callback);
+    };
 
     OnlyKey.prototype.setTime = function(callback) {
         var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -164,8 +169,34 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.getLabels = function(callback) {
-        this.sendMessage('', 'OKGETLABELS', null, null, callback);
+        this.labels = 'GETTING';
+        this.sendMessage('', 'OKGETLABELS', null, null, handleGetLabels);
     };
+
+    function handleGetLabels(err, msg) {
+        console.info("HandleGetLabels msg:", msg);
+        if (myOnlyKey.lastMessage.sent !== 'OKGETLABELS') {
+            return;
+        }
+
+        if (myOnlyKey.labels === 'GETTING') {
+            myOnlyKey.labels = [];
+            return myOnlyKey.listen(handleGetLabels);
+        }
+
+        if (msg === 'UNLOCKED') {
+            myOnlyKey.listen(handleGetLabels);
+        } else {
+            if (myOnlyKey.labels.length < 12) {
+                myOnlyKey.labels.push(msg);
+                onlyKeyConfigWizard.setLastMessage('received ' + myOnlyKey.labels.length + ' labels');
+                initSlotConfigForm();
+                if (myOnlyKey.labels.length < 12) {
+                    myOnlyKey.listen(handleGetLabels);
+                }
+            }
+        }
+    }
 
     OnlyKey.prototype.sendSetPin = function(callback) {
         this.sendMessage('', 'OKSETPIN', null, null, callback);
@@ -181,7 +212,14 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     OnlyKey.prototype.setSlot = function(slot, field, value, callback) {
         slot = slot || this.getSlotNum();
+        if (typeof slot !== 'number') slot = this.getSlotNum(slot);
         this.sendMessage(value, 'OKSETSLOT', slot, field, callback);
+    };
+
+    OnlyKey.prototype.wipeSlot = function(slot, callback) {
+        slot = slot || this.getSlotNum();
+        if (typeof slot !== 'number') slot = this.getSlotNum(slot);
+        this.sendMessage(null, 'OKWIPESLOT', slot, null, callback);
     };
 
     OnlyKey.prototype.getSlotNum = function(slotId) {
@@ -323,6 +361,8 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         var msg;
         chrome.hid.receive(myOnlyKey.connection, function(reportId, data) {
             if (chrome.runtime.lastError) {
+                myOnlyKey.lastMessage.received = '[error]';
+                onlyKeyConfigWizard.setLastMessage('[error]');
                 return callback(chrome.runtime.lastError);
             } else {
                 msg = readBytes(new Uint8Array(data));
@@ -333,6 +373,9 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             if (myOnlyKey.pollEnabled) {
                 myOnlyKey.poll = setTimeout(pollForInput, 0);
             }
+
+            myOnlyKey.lastMessage.received = msg;
+            onlyKeyConfigWizard.setLastMessage(msg);
 
             return callback(null, msg);
         });
@@ -379,15 +422,10 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
                 myOnlyKey.isLocked = false;
                 myOnlyKey.getLabels(pollForInput);
                 updateUI = true;
-            } else if (myOnlyKey.lastMessage.sent === 'OKGETLABELS') {
-                enablePolling();
             }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
         }
-
-        myOnlyKey.lastMessage.received = msg;
-        onlyKeyConfigWizard.setLastMessage(msg);
 
         if (updateUI) {
             enableIOControls(true);
@@ -413,7 +451,6 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         console.info("OnlyKeyComm init() called");
         initializeWindow();
         myOnlyKey.setConnection(-1);
-        initSlotConfigForm();
     }
 
     function toggleConfigPanel(e) {
@@ -434,7 +471,10 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     function initSlotConfigForm() {
         // TODO: loop through labels returned from OKGETLABELS
         var configBtns = Array.from(ui.slotPanel.getElementsByTagName('input'));
-        configBtns.forEach(function(btn) {
+        configBtns.forEach(function(btn, i) {
+            var labelIndex = myOnlyKey.getSlotNum(btn.value);
+            var labelText = myOnlyKey.labels[labelIndex - 1] || 'empty';
+            onlyKeyConfigWizard.setSlotLabel(i, labelText);
             btn.addEventListener('click', showSlotConfigForm);
         });
         ui.slotConfigDialog.getElementsByClassName('slot-config-close')[0].addEventListener('click', closeSlotConfigForm);
@@ -448,6 +488,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
         document.getElementById('txtSlotLabel').value = slotLabel.toLowerCase() === 'empty' ? '' : slotLabel;
         dialog.open(ui.slotConfigDialog);
+        initSlotConfigForm();
         e && e.preventDefault && e.preventDefault();
     }
 
