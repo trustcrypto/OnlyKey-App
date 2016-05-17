@@ -75,7 +75,7 @@
         self.slotWipe = document.getElementById('slotWipe');
         self.slotWipe.onclick = function (e) {
             document.getElementById('wipeCurrentSlotId').innerText = self.onlyKey.currentSlotId;
-            dialog.open(self.slotWipeConfirmDialog);
+            dialog.open(self.slotWipeConfirmDialog, true);
             e && e.preventDefault && e.preventDefault();
         };
 
@@ -181,7 +181,7 @@
                     }
                     break;
                 case undefined: // radios?
-                    if (form[field].value) {
+                    if (form[field].value !== '') {
                         isChecked = true;
                         formValue = (fieldMap[field].input).value;
                         clearRadios(field);
@@ -202,13 +202,6 @@
         form.reset();
         self.onlyKey.getLabels();
         dialog.close(self.slotConfigDialog);
-    }
-
-    function clearRadios(name) {
-        var btns = document.getElementsByName(name);
-        for (var i = 0; i < btns.length; i++) {
-            if(btns[i].checked) btns[i].checked = false;
-        }
     }
 
     Wizard.prototype.usbInit = function () {
@@ -355,8 +348,8 @@
 
 function dialogMgr() {
     var self = this;
-    self.open = function(el, closeAll) {
-        if (closeAll) {
+    self.open = function(el, keepOthersOpen) {
+        if (!keepOthersOpen) {
             self.closeAll();
         }
         if (!el.open) {
@@ -376,4 +369,11 @@ function dialogMgr() {
             self.close(allDialogs[i]);
         }
     };
+}
+
+function clearRadios(name) {
+    var btns = document.getElementsByName(name);
+    for (var i = 0; i < btns.length; i++) {
+        if(btns[i].checked) btns[i].checked = false;
+    }
 }
