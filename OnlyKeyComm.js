@@ -509,25 +509,3 @@ function strPad(val, places, char) {
     return val;
 }
 
-function dialogMgr() {
-    var self = this;
-    self.open = function(el) {
-        self.closeAll();
-        if (!el.open) {
-            el.showModal();
-        }
-    };
-
-    self.close = function(el) {
-        if (el.open) {
-            el.close();
-        }
-    };
-
-    self.closeAll = function() {
-        var allDialogs = document.getElementsByTagName('dialog');
-        for (var i = 0; i < allDialogs.length; i++) {
-            self.close(allDialogs[i]);
-        }
-    };
-}

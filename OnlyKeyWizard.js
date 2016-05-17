@@ -1,334 +1,376 @@
-var onlyKeyConfigWizard;
+(function () {
+    var onlyKeyConfigWizard;
+    var dialog = new dialogMgr();
 
-var steps = {
-    Step1: {
-        next: 'Step2'
-    },
-    Step2: {
-        prev: 'Step1',
-        next: 'Step3'
-    },
-    Step3: {
-        prev: 'Step2',
-        next: 'Step4'
-    },
-    Step4: {
-        prev: 'Step3',
-        next: 'Step5'
-    },
-    Step5: {
-        prev: 'Step4',
-        next: 'Step6'
-    },
-    Step6: {
-        prev: 'Step5',
-        next: 'Step7'
-    },
-    Step7: {
-        prev: 'Step6',
-        next: 'Step8'
-    },
-    Step8: {
-        prev: 'Step7'
+    var steps = {
+        Step1: {
+            next: 'Step2'
+        },
+        Step2: {
+            prev: 'Step1',
+            next: 'Step3'
+        },
+        Step3: {
+            prev: 'Step2',
+            next: 'Step4'
+        },
+        Step4: {
+            prev: 'Step3',
+            next: 'Step5'
+        },
+        Step5: {
+            prev: 'Step4',
+            next: 'Step6'
+        },
+        Step6: {
+            prev: 'Step5',
+            next: 'Step7'
+        },
+        Step7: {
+            prev: 'Step6',
+            next: 'Step8'
+        },
+        Step8: {
+            prev: 'Step7'
+        }
+    };
+
+    function Wizard() {
+        this.steps = steps;
     }
-};
 
-function Wizard() {
-    this.steps = steps;
-}
+    Wizard.prototype.init = function (myOnlyKey) {
+        this.onlyKey = myOnlyKey;
+        this.currentStep = Object.keys(this.steps)[0];
+        this.uiInit();
+        this.usbInit();
 
-Wizard.prototype.init = function (myOnlyKey) {
-    this.onlyKey = myOnlyKey;
-    this.currentStep = Object.keys(this.steps)[0];
-    this.uiInit();
-    this.usbInit();
+        this.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        this.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        this.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        this.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        this.steps.Step5.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        this.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        this.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        this.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        this.steps.Step7.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        this.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        this.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        this.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+    };
 
-    this.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-    this.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-    this.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-    this.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-    this.steps.Step5.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-    this.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-    this.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-    this.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-    this.steps.Step7.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-    this.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-    this.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-    this.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-};
+    Wizard.prototype.uiInit = function () {
+        var self = this;
+        self.btnNext = document.getElementById('ButtonNext');
+        self.btnPrev = document.getElementById('ButtonPrevious');
+        self.btnFinal = document.getElementById('SubmitFinal');
 
-Wizard.prototype.uiInit = function () {
-    var self = this;
-    self.btnNext = document.getElementById('ButtonNext');
-    self.btnPrev = document.getElementById('ButtonPrevious');
-    self.btnFinal = document.getElementById('SubmitFinal');
+        self.btnNext.onclick = moveStep.bind(this, 'next');
+        self.btnPrev.onclick = moveStep.bind(this, 'prev');
+        self.btnFinal.onclick = Wizard.loadReview;
 
-    self.btnNext.onclick = moveStep.bind(this, 'next');
-    self.btnPrev.onclick = moveStep.bind(this, 'prev');
-    self.btnFinal.onclick = Wizard.loadReview;
+        self.slotConfigForm = document['slot-config-form'];
+        self.slotConfigDialog = document.getElementById('slot-config-dialog');
 
-    self.slotConfigForm = document['slot-config-form'];
+        self.slotWipe = document.getElementById('slotWipe');
+        self.slotWipe.onclick = function (e) {
+            document.getElementById('wipeCurrentSlotId').innerText = self.onlyKey.currentSlotId;
+            dialog.open(self.slotWipeConfirmDialog);
+            e && e.preventDefault && e.preventDefault();
+        };
 
-    self.slotWipe = document.getElementById('slotWipe');
-    self.slotWipe.onclick = function (e) {
-        self.onlyKey.wipeSlot(null, function (err, msg) {
-            self.onlyKey.listen(function (err, msg) {
-                console.info("reply:", err || msg);
+        self.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
+
+        self.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
+        self.slotWipeConfirmBtn.onclick = function (e) {
+            self.onlyKey.wipeSlot(null, function (err, msg) {
+                // self.onlyKey.listen(function (err, msg) {
+                    if (!err) {
+                        self.slotConfigForm.reset();
+                        dialog.closeAll();
+                    }
+                // });
             });
+
+            e && e.preventDefault && e.preventDefault();
+        };
+
+        self.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
+        self.slotWipeCancelBtn.onclick = function (e) {
+            dialog.close(self.slotWipeConfirmDialog);
+            e && e.preventDefault && e.preventDefault();
+        };
+
+        self.slotSubmit = document.getElementById('slotSubmit');
+        self.slotSubmit.onclick = function (e) {
+            setSlot.call(self);
+            e && e.preventDefault && e.preventDefault();
+        };
+
+        document.getElementById('closeFinal').addEventListener('click', function (e) {
+            e.preventDefault();
+            document.getElementById('finalStep').close();
+            return false;
         });
 
-        e && e.preventDefault && e.preventDefault();
+        setActiveStepUI.call(this);
     };
 
-    self.slotSubmit = document.getElementById('slotSubmit');
-    self.slotSubmit.onclick = function (e) {
-        setSlot.call(self);
-        e && e.preventDefault && e.preventDefault();
+    function setSlot() {
+        var self = this; // wizard
+        var form = self.slotConfigForm;
+        var fieldMap = {
+            chkSlotLabel: {
+                input: form.txtSlotLabel,
+                msgId: 'LABEL'
+            },
+            chkUserName: {
+                input: form.txtUserName,
+                msgId: 'USERNAME'
+            },
+            chkDelay1: {
+                input: form.numDelay1,
+                msgId: 'DELAY1'
+            },
+            chkPassword: {
+                input: form.txtPassword,
+                msgId: 'PASSWORD'
+            },
+            chkDelay2: {
+                input: form.numDelay2,
+                msgId: 'DELAY2'
+            },
+            tabReturn1: {
+                input: form.tabReturn1,
+                msgId: 'NEXTKEY1'
+            },
+            tabReturn2: {
+                input: form.tabReturn2,
+                msgId: 'NEXTKEY2'
+            },
+            mode: {
+                input: form.mode,
+                msgId: 'TFATYPE'
+            },
+            txt2FAUserName: {
+                input: form.txt2FAUserName,
+                msgId: 'TFAUSERNAME'
+            }
+        };
+
+        for (var field in fieldMap) {
+            var isChecked = false;
+            var formValue = null;
+            switch(form[field].type) {
+                case 'checkbox':
+                    if (form[field].checked) {
+                        isChecked = true;
+                        formValue = ('' + (fieldMap[field].input).value).trim();
+                        form[field].checked = false;
+                    }
+                    break;
+                case 'hidden':
+                case 'number':
+                case 'text':
+                    var checkVar = ('' + (form[field].value)).trim();
+                    if (checkVar.length) {
+                        isChecked = true;
+                        formValue = ('' + (fieldMap[field].input).value).trim();
+                        form[field].value = '';
+                    }
+                    break;
+                case undefined: // radios?
+                    if (form[field].value) {
+                        isChecked = true;
+                        formValue = (fieldMap[field].input).value;
+                        clearRadios(field);
+                    }
+                default:
+                    break;
+            }
+            if (isChecked) {
+                self.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
+                    if (!err) {
+                        setSlot.call(self);
+                    }
+                });
+                return;
+            }
+        }
+
+        form.reset();
+        dialog.close(self.slotConfigDialog);
+    }
+
+    function clearRadios(name) {
+        var btns = document.getElementsByName(name);
+        for (var i = 0; i < btns.length; i++) {
+            if(btns[i].checked) btns[i].checked = false;
+        }
+    }
+
+    Wizard.prototype.usbInit = function () {
+
     };
 
-    document.getElementById('closeFinal').addEventListener('click', function (e) {
-        e.preventDefault();
-        document.getElementById('finalStep').close();
+    Wizard.prototype.setLabels = function (labels) {
+
+    };
+
+    function moveStep(direction) {
+        // if a next/prev step exists, call current step-related exit function
+        // and set new current step
+        if (this.steps[this.currentStep][direction]) {
+            if (this.steps[this.currentStep].exitFn) {
+                this.steps[this.currentStep].exitFn(function (err, res) {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        console.info(res);
+                        setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);                    
+                    }
+                }.bind(this));
+            } else {
+                setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
+            }
+
+
+        }
+
         return false;
-    });
-
-    setActiveStepUI.call(this);
-};
-
-function setSlot() {
-    var self = this; // wizard
-    var form = self.slotConfigForm;
-    var fieldMap = {
-        chkSlotLabel: {
-            input: form.txtSlotLabel,
-            msgId: 'LABEL'
-        },
-        chkUserName: {
-            input: form.txtUserName,
-            msgId: 'USERNAME'
-        },
-        chkDelay1: {
-            input: form.numDelay1,
-            msgId: 'DELAY1'
-        },
-        chkPassword: {
-            input: form.txtPassword,
-            msgId: 'PASSWORD'
-        },
-        chkDelay2: {
-            input: form.numDelay2,
-            msgId: 'DELAY2'
-        },
-        tabReturn1: {
-            input: form.tabReturn1,
-            msgId: 'NEXTKEY1'
-        },
-        tabReturn2: {
-            input: form.tabReturn2,
-            msgId: 'NEXTKEY2'
-        },
-        mode: {
-            input: form.mode,
-            msgId: 'TFATYPE'
-        },
-        txt2FAUserName: {
-            input: form.txt2FAUserName,
-            msgId: 'TFAUSERNAME'
-        }
-    };
-
-    for (var field in fieldMap) {
-        console.info("CHECKING", field);
-        var isChecked = false;
-        var formValue = null;
-        switch(form[field].type) {
-            case 'checkbox':
-                if (form[field].checked) {
-                    isChecked = true;
-                    formValue = ('' + (fieldMap[field].input).value).trim();
-                    form[field].checked = false;
-                }
-                break;
-            case 'hidden':
-            case 'number':
-            case 'text':
-                var checkVar = ('' + (form[field].value)).trim();
-                if (checkVar.length) {
-                    isChecked = true;
-                    formValue = ('' + (fieldMap[field].input).value).trim();
-                    form[field].value = '';
-                }
-                break;
-            case undefined: // radios?
-                if (form[field].value) {
-                    isChecked = true;
-                    formValue = (fieldMap[field].input).value;
-                    clearRadios(field);
-                }
-            default:
-                break;
-        }
-        if (isChecked) {
-            self.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
-                console.info("reply:", err || msg);
-                if (!err) {
-                    setSlot.call(self);
-                }
-            });
-            return;
-        }
     }
 
-    //form.reset();
+    function setNewCurrentStep(stepId) {
+        this.currentStep = stepId;
+        setActiveStepUI.call(this);
 
-    if (document.getElementById('slot-config-dialog').open) {
-        document.getElementById('slot-config-dialog').close();
-    }
-}
-
-function clearRadios(name) {
-    var btns = document.getElementsByName(name);
-    for (var i = 0; i < btns.length; i++) {
-        if(btns[i].checked) btns[i].checked = false;
-    }
-}
-
-Wizard.prototype.usbInit = function () {
-
-};
-
-Wizard.prototype.setLabels = function (labels) {
-
-};
-
-function moveStep(direction) {
-    // if a next/prev step exists, call current step-related exit function
-    // and set new current step
-    if (this.steps[this.currentStep][direction]) {
-        if (this.steps[this.currentStep].exitFn) {
-            this.steps[this.currentStep].exitFn(function (err, res) {
+        // call new current step-related enter function
+        if (this.steps[stepId].enterFn) {
+            this.steps[stepId].enterFn(function (err, res) {
                 if (err) {
                     console.error(err);
                 } else {
                     console.info(res);
-                    setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);                    
                 }
-            }.bind(this));
-        } else {
-            setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
+            });
         }
-
-
     }
 
-    return false;
-}
 
-function setNewCurrentStep(stepId) {
-    this.currentStep = stepId;
-    setActiveStepUI.call(this);
-
-    // call new current step-related enter function
-    if (this.steps[stepId].enterFn) {
-        this.steps[stepId].enterFn(function (err, res) {
-            if (err) {
-                console.error(err);
-            } else {
-                console.info(res);
-            }
-        });
-    }
-}
-
-
-function setActiveStepUI() {
-    // set display style for all steps
-    for(var stepId in this.steps) {
-        var el = document.getElementById(stepId);
-        if (el) {
-            // el.style.display = (stepId === this.currentStep ? '' : 'none');
-            if (stepId === this.currentStep) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
+    function setActiveStepUI() {
+        // set display style for all steps
+        for(var stepId in this.steps) {
+            var el = document.getElementById(stepId);
+            if (el) {
+                // el.style.display = (stepId === this.currentStep ? '' : 'none');
+                if (stepId === this.currentStep) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
             }
         }
-    }
 
-    var header = document.getElementById('HeaderTable');
-    var tabs = header.getElementsByTagName("td");
+        var header = document.getElementById('HeaderTable');
+        var tabs = header.getElementsByTagName("td");
 
-    for (var i = 0; i < tabs.length; i++) {
-        if(tabs[i].getAttribute("data-step") === this.currentStep) {
-            tabs[i].classList.add('active');
-        } else {
-                tabs[i].classList.remove('active');
+        for (var i = 0; i < tabs.length; i++) {
+            if(tabs[i].getAttribute("data-step") === this.currentStep) {
+                tabs[i].classList.add('active');
+            } else {
+                    tabs[i].classList.remove('active');
+            }
         }
+
+        if (this.steps[this.currentStep].next) {
+            this.btnNext.removeAttribute('disabled');
+            this.btnFinal.setAttribute('disabled', 'disabled');
+        } else {
+            this.btnNext.setAttribute('disabled', 'disabled');
+            this.btnFinal.removeAttribute('disabled');
+        }
+
+        if (this.steps[this.currentStep].prev) {
+            this.btnPrev.removeAttribute('disabled');
+        } else {
+            this.btnPrev.setAttribute('disabled', 'disabled');
+        }
+        return false;
     }
 
-    if (this.steps[this.currentStep].next) {
-        this.btnNext.removeAttribute('disabled');
-        this.btnFinal.setAttribute('disabled', 'disabled');
-    } else {
-        this.btnNext.setAttribute('disabled', 'disabled');
-        this.btnFinal.removeAttribute('disabled');
-    }
+    Wizard.prototype.setLastMessage = function (msg) {
+        var container = document.getElementById('lastMessage');
+        container.getElementsByTagName('span')[0].innerText = msg;
+    };
 
-    if (this.steps[this.currentStep].prev) {
-        this.btnPrev.removeAttribute('disabled');
-    } else {
-        this.btnPrev.setAttribute('disabled', 'disabled');
-    }
-    return false;
+    Wizard.prototype.setSlotLabel = function (slot, label) {
+        var slotLabel;
+        if (typeof slot === 'number') {
+            slot = slot;
+            var slotLabels = Array.from(document.getElementsByClassName('slotLabel'));
+            slotLabel = slotLabels[slot];
+        } else {
+            slot = slot.toLowerCase();
+            slotLabel = document.getElementById('slotLabel' + slot);
+        }
+        slotLabel.innerText = label;
+    };
+
+    // This function handles loading the review table innerHTML for the user to review before final submission
+    Wizard.loadReview = function() {
+        document.getElementById('finalStep').showModal();
+        return;
+
+
+        // Assign values to appropriate cells in review table
+        document.getElementById('ReviewEmail').innerHTML = document.getElementById('TextEmail').value;
+
+        // Indicate Yes or No based on checkboxes
+        document.getElementById('ReviewHtmlGoodies').innerHTML = document.getElementById('CheckboxHtmlGoodies').checked ? 'Yes' : 'No';
+        document.getElementById('ReviewJavaScript').innerHTML = document.getElementById('CheckboxJavaScript').checked ? 'Yes' : 'No';
+        document.getElementById('ReviewWdvl').innerHTML = document.getElementById('CheckboxWdvl').checked ? 'Yes' : 'No';
+
+        // Special case to display password as asterisks
+        var iCounter = 1;
+        var iCharacterCount = document.getElementById('TextPassword').value.length;
+        var passwordMasked = '';
+
+        for (iCounter = 1; iCounter <= iCharacterCount; iCounter++) {
+            passwordMasked = passwordMasked + '*';
+        }
+
+        document.getElementById('ReviewPassword').innerHTML = passwordMasked;
+        return false;
+    };
+
+    document.addEventListener('DOMContentLoaded', function init() {
+        console.info("Creating wizard instance...");
+        onlyKeyConfigWizard = new Wizard();
+        OnlyKeyHID(onlyKeyConfigWizard);
+    }, false);
+})();
+
+function dialogMgr() {
+    var self = this;
+    self.open = function(el, closeAll) {
+        if (closeAll) {
+            self.closeAll();
+        }
+        if (!el.open) {
+            el.showModal();
+        }
+    };
+
+    self.close = function(el) {
+        if (el.open) {
+            el.close();
+        }
+    };
+
+    self.closeAll = function() {
+        var allDialogs = document.getElementsByTagName('dialog');
+        for (var i = 0; i < allDialogs.length; i++) {
+            self.close(allDialogs[i]);
+        }
+    };
 }
-
-Wizard.prototype.setLastMessage = function (msg) {
-    var container = document.getElementById('lastMessage');
-    container.getElementsByTagName('span')[0].innerText = msg;
-};
-
-Wizard.prototype.setSlotLabel = function (slot, label) {
-    var slotLabel;
-    if (typeof slot === 'number') {
-        slot = slot;
-        var slotLabels = Array.from(document.getElementsByClassName('slotLabel'));
-        slotLabel = slotLabels[slot];
-    } else {
-        slot = slot.toLowerCase();
-        slotLabel = document.getElementById('slotLabel' + slot);
-    }
-    slotLabel.innerText = label;
-};
-
-// This function handles loading the review table innerHTML for the user to review before final submission
-Wizard.loadReview = function() {
-    document.getElementById('finalStep').showModal();
-    return;
-
-
-    // Assign values to appropriate cells in review table
-    document.getElementById('ReviewEmail').innerHTML = document.getElementById('TextEmail').value;
-
-    // Indicate Yes or No based on checkboxes
-    document.getElementById('ReviewHtmlGoodies').innerHTML = document.getElementById('CheckboxHtmlGoodies').checked ? 'Yes' : 'No';
-    document.getElementById('ReviewJavaScript').innerHTML = document.getElementById('CheckboxJavaScript').checked ? 'Yes' : 'No';
-    document.getElementById('ReviewWdvl').innerHTML = document.getElementById('CheckboxWdvl').checked ? 'Yes' : 'No';
-
-    // Special case to display password as asterisks
-    var iCounter = 1;
-    var iCharacterCount = document.getElementById('TextPassword').value.length;
-    var passwordMasked = '';
-
-    for (iCounter = 1; iCounter <= iCharacterCount; iCounter++) {
-        passwordMasked = passwordMasked + '*';
-    }
-
-    document.getElementById('ReviewPassword').innerHTML = passwordMasked;
-    return false;
-};
-
-document.addEventListener('DOMContentLoaded', function init() {
-    console.info("Creating wizard instance...");
-    onlyKeyConfigWizard = new Wizard();
-    OnlyKeyHID(onlyKeyConfigWizard);
-}, false);
