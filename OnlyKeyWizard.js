@@ -318,6 +318,7 @@
 
     // This function handles loading the review table innerHTML for the user to review before final submission
     Wizard.loadReview = function() {
+        myOnlyKey.sendSetPDPin.call(myOnlyKey);
         document.getElementById('finalStep').showModal();
         return;
 
