@@ -174,6 +174,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     };
 
     function handleGetLabels(err, msg) {
+        msg = typeof msg === 'string' ? msg.trim() : '';
         console.info("HandleGetLabels msg:", msg);
         if (myOnlyKey.lastMessage.sent !== 'OKGETLABELS') {
             return;
@@ -183,12 +184,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             myOnlyKey.labels = [];
             return myOnlyKey.listen(handleGetLabels);
         }
-
-        if (msg === 'UNLOCKED') {
+// should be able check whether msg.indexOf('|') < 0
+        if (msg === 'UNLOCKED' || msg === 'OK' || msg.trim() === '') {
             myOnlyKey.listen(handleGetLabels);
         } else {
             if (myOnlyKey.labels.length < 12) {
-                myOnlyKey.labels.push(msg);
+                var msgParts = msg.split('|');
+                myOnlyKey.labels.push(msg.indexOf('|') >= 0 ? msgParts[1] : msg);
                 onlyKeyConfigWizard.setLastMessage('received ' + myOnlyKey.labels.length + ' labels');
                 initSlotConfigForm();
                 if (myOnlyKey.labels.length < 12) {
