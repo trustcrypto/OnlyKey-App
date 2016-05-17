@@ -87,6 +87,7 @@
                 // self.onlyKey.listen(function (err, msg) {
                     if (!err) {
                         self.slotConfigForm.reset();
+                        self.onlyKey.getLabels();
                         dialog.closeAll();
                     }
                 // });
@@ -199,6 +200,7 @@
         }
 
         form.reset();
+        self.onlyKey.getLabels();
         dialog.close(self.slotConfigDialog);
     }
 
