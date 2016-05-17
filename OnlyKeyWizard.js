@@ -138,6 +138,7 @@ function setSlot() {
     };
 
     for (var field in fieldMap) {
+        console.info("CHECKING", field);
         var isChecked = false;
         var formValue = null;
         switch(form[field].type) {
@@ -158,7 +159,7 @@ function setSlot() {
                     form[field].value = '';
                 }
                 break;
-            case 'radio':
+            case undefined: // radios?
                 if (form[field].value) {
                     isChecked = true;
                     formValue = (fieldMap[field].input).value;
@@ -176,15 +177,17 @@ function setSlot() {
             });
             return;
         }
+    }
 
-        if (document.getElementById('slot-config-dialog').open) {
-            document.getElementById('slot-config-dialog').close();
-        }
+    //form.reset();
+
+    if (document.getElementById('slot-config-dialog').open) {
+        document.getElementById('slot-config-dialog').close();
     }
 }
 
 function clearRadios(name) {
-    var btns = document.getElementsByName('name');
+    var btns = document.getElementsByName(name);
     for (var i = 0; i < btns.length; i++) {
         if(btns[i].checked) btns[i].checked = false;
     }
