@@ -67,10 +67,12 @@
 
         self.btnNext.onclick = moveStep.bind(this, 'next');
         self.btnPrev.onclick = moveStep.bind(this, 'prev');
-        self.btnFinal.onclick = Wizard.loadReview;
+        self.btnFinal.onclick = self.loadReview.bind(this);
 
         self.slotConfigForm = document['slot-config-form'];
         self.slotConfigDialog = document.getElementById('slot-config-dialog');
+
+        self.finalStepDialog = document.getElementById('finalStep-dialog');
 
         self.slotWipe = document.getElementById('slotWipe');
         self.slotWipe.onclick = function (e) {
@@ -110,7 +112,7 @@
 
         document.getElementById('closeFinal').addEventListener('click', function (e) {
             e.preventDefault();
-            document.getElementById('finalStep').close();
+            dialog.close(self.finalStepDialog);
             return false;
         });
 
@@ -312,9 +314,9 @@
     };
 
     // This function handles loading the review table innerHTML for the user to review before final submission
-    Wizard.loadReview = function() {
-        myOnlyKey.sendSetPDPin.call(myOnlyKey);
-        document.getElementById('finalStep').showModal();
+    Wizard.prototype.loadReview = function() {
+        this.onlyKey.sendSetPDPin.call(this.onlyKey);
+        dialog.open(this.finalStepDialog);
         return;
 
 
