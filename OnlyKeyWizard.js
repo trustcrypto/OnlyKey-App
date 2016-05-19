@@ -123,6 +123,8 @@
     function setSlot() {
         var self = this; // wizard
         var form = self.slotConfigForm;
+        var formErrors = [];
+        var formErrorsContainer = document.getElementById('slotConfigErrors');
         var fieldMap = {
             chkSlotLabel: {
                 input: form.txtSlotLabel,
@@ -162,6 +164,23 @@
             }
         };
 
+        formErrorsContainer.innerHTML = "";
+
+        if (form.txtPassword.value !== form.txtPasswordConfirm.value) {
+            formErrors.push('Password fields do not match');
+        }
+
+        if (formErrors.length) {
+            // early exit
+            var html = "<ul>";
+            for (var i = 0; i < formErrors.length; i++) {
+                html += "<li><blink>" + formErrors[i]; + "</blink></li>";
+            }
+            formErrorsContainer.innerHTML = html + "</ul>";
+            return;
+        }
+
+        // process all form fields
         for (var field in fieldMap) {
             var isChecked = false;
             var formValue = null;

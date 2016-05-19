@@ -70,3 +70,8 @@ dialog::backdrop {
     font-weight: bold;
 }
 
+#slotConfigErrors ul {
+    background-color: white;
+    color: red;
+    font-weight: bold;
+}
