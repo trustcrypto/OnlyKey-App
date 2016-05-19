@@ -223,7 +223,9 @@
                 switch(field) {
                     case 'txt2FAUserName':
                         if (self.currentSlot.mode === 'googleAuthOtp') {
+                            console.info("BASE32 value:", formValue);
                             formValue = base32tohex(formValue.replace(/\s/g, ''));
+                            console.info("was converted to HEX:", formValue);
                         }
                         break;
                 }
