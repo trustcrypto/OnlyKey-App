@@ -238,6 +238,7 @@
         }
 
         form.reset();
+        self.currentSlot = {};
         self.slotSubmit.disabled = false;
         self.slotWipe.disabled = false;
         self.onlyKey.getLabels();
