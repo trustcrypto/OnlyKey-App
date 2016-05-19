@@ -37,6 +37,7 @@
 
     function Wizard() {
         this.steps = steps;
+        this.currentSlot = {};
     }
 
     Wizard.prototype.init = function (myOnlyKey) {
@@ -135,6 +136,10 @@
                 input: form.numDelay1,
                 msgId: 'DELAY1'
             },
+            tabReturn1: {
+                input: form.tabReturn1,
+                msgId: 'NEXTKEY1'
+            },
             chkPassword: {
                 input: form.txtPassword,
                 msgId: 'PASSWORD'
@@ -142,10 +147,6 @@
             chkDelay2: {
                 input: form.numDelay2,
                 msgId: 'DELAY2'
-            },
-            tabReturn1: {
-                input: form.tabReturn1,
-                msgId: 'NEXTKEY1'
             },
             tabReturn2: {
                 input: form.tabReturn2,
@@ -192,6 +193,15 @@
                     break;
             }
             if (isChecked) {
+                self.currentSlot[field] = formValue;
+                switch(field) {
+                    case 'txt2FAUserName':
+                        if (self.currentSlot.mode === 'googleAuthOtp') {
+                            formValue = base32tohex(formValue.replace(/\s/g, ''));
+                        }
+                        break;
+                }
+
                 self.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
                     if (!err) {
                         setSlot.call(self);
@@ -378,4 +388,32 @@ function clearRadios(name) {
     for (var i = 0; i < btns.length; i++) {
         if(btns[i].checked) btns[i].checked = false;
     }
+}
+
+function strPad(str, places, char) {
+    while (str.length < places) {
+        str = "" + (char || 0) + str;
+    }
+
+    return str;
+}
+
+// we owe russ a beer
+// http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
+function base32tohex(base32) {
+    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    var bits = "";
+    var hex = "";
+
+    for (var i = 0; i < base32.length; i++) {
+        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
+        bits += strPad(val.toString(2), 5, '0');
+    }
+
+    for (var i = 0; i+4 <= bits.length; i+=4) {
+        var chunk = bits.substr(i, 4);
+        hex = hex + parseInt(chunk, 2).toString(16) ;
+    }
+    return hex;
+
 }

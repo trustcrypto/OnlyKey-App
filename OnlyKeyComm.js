@@ -503,11 +503,3 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 };
 
 
-function strPad(val, places, char) {
-    while (val.length < places) {
-        val = "" + (char || 0) + val;
-    }
-
-    return val;
-}
-
