@@ -122,6 +122,10 @@
 
     function setSlot() {
         var self = this; // wizard
+
+        self.slotSubmit.disabled = true;
+        self.slotWipe.disabled = true;
+
         var form = self.slotConfigForm;
         var formErrors = [];
         var formErrorsContainer = document.getElementById('slotConfigErrors');
@@ -177,6 +181,9 @@
                 html += "<li><blink>" + formErrors[i]; + "</blink></li>";
             }
             formErrorsContainer.innerHTML = html + "</ul>";
+
+            self.slotSubmit.disabled = false;
+            self.slotWipe.disabled = false;
             return;
         }
 
@@ -231,6 +238,8 @@
         }
 
         form.reset();
+        self.slotSubmit.disabled = false;
+        self.slotWipe.disabled = false;
         self.onlyKey.getLabels();
         dialog.close(self.slotConfigDialog);
     }
