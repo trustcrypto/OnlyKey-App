@@ -41,26 +41,49 @@
     }
 
     Wizard.prototype.init = function (myOnlyKey) {
-        this.onlyKey = myOnlyKey;
-        this.currentStep = Object.keys(this.steps)[0];
-        this.uiInit();
+        var self = this;
+        self.onlyKey = myOnlyKey;
+        self.currentStep = Object.keys(self.steps)[0];
+        self.uiInit();
 
-        this.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        this.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        this.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        this.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        this.steps.Step5.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        this.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        this.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        this.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        this.steps.Step7.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        this.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        this.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        this.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        self.steps.Step3.enterFn = function () {
+            enableDisclaimer.call(self, 'passcode1Disclaimer');
+            myOnlyKey.sendSetPin.call(myOnlyKey);
+        };
+        self.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        self.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        self.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        self.steps.Step5.enterFn = function () {
+            enableDisclaimer.call(self, 'passcode2Disclaimer');
+            myOnlyKey.sendSetSDPin.call(myOnlyKey);
+        };
+        self.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        self.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        self.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        self.steps.Step7.enterFn = function () {
+            enableDisclaimer.call(self, 'passcode3Disclaimer');
+            myOnlyKey.sendSetPDPin.call(myOnlyKey);
+        };
+        self.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        self.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        self.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
     };
+
+    function enableDisclaimer(fieldName) {
+        var self = this;
+        var field = self.initForm[fieldName];
+        field.removeEventListener('change');
+        self.btnNext.disabled = !field.checked;
+        field.addEventListener('change', function (e) {
+            enableDisclaimer.call(self, fieldName);
+        });
+    }
 
     Wizard.prototype.uiInit = function () {
         var self = this;
+
+        self.initForm = document['init-panel'];
+
         self.btnNext = document.getElementById('ButtonNext');
         self.btnPrev = document.getElementById('ButtonPrevious');
         self.btnFinal = document.getElementById('SubmitFinal');
@@ -336,7 +359,7 @@
 
     Wizard.prototype.setLastMessage = function (msg) {
         var container = document.getElementById('lastMessage');
-        container.getElementsByTagName('span')[0].innerText = msg;
+        container.getElementsByTagName('span')[0].innerText = (msg || this.onlyKey.lastMessage.received);
     };
 
     Wizard.prototype.setSlotLabel = function (slot, label) {
