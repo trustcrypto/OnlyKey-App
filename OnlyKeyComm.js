@@ -68,7 +68,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         fieldId = typeof fieldId === 'string' ? fieldId : null;
         contents = contents || '';
 
-        callback = typeof callback === 'function' ? callback : function noop() {};
+        callback = typeof callback === 'function' ? callback : handleMessage;
 
         var reportId = 0;
         var bytes = new Uint8Array(63);
@@ -191,7 +191,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             if (myOnlyKey.labels.length < 12) {
                 var msgParts = msg.split('|');
                 myOnlyKey.labels.push(msg.indexOf('|') >= 0 ? msgParts[1] : msg);
-                onlyKeyConfigWizard.setLastMessage('received ' + myOnlyKey.labels.length + ' labels');
+                onlyKeyConfigWizard.setLastMessage(myOnlyKey.labels.length + ' labels');
                 initSlotConfigForm();
                 if (myOnlyKey.labels.length < 12) {
                     myOnlyKey.listen(handleGetLabels);
@@ -201,15 +201,36 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     }
 
     OnlyKey.prototype.sendSetPin = function(callback) {
-        this.sendMessage('', 'OKSETPIN', null, null, callback);
+        this.settingPin = !this.settingPin;
+        this.sendMessage('', 'OKSETPIN', null, null, function (err, msg) {
+            if (!this.settingPin) {
+                pollForInput(callback);
+            } else {
+                callback(err, msg);
+            }
+        }.bind(this));
     };
 
     OnlyKey.prototype.sendSetSDPin = function(callback) {
-        this.sendMessage('', 'OKSETSDPIN', null, null, callback);
+        this.settingSDPin = !this.settingSDPin;
+        this.sendMessage('', 'OKSETSDPIN', null, null, function (err, msg) {
+            if (!this.settingSDPin) {
+                pollForInput(callback);
+            } else {
+                callback(err, msg);
+            }
+        }.bind(this));
     };
 
     OnlyKey.prototype.sendSetPDPin = function(callback) {
-        this.sendMessage('', 'OKSETPDPIN', null, null, callback);
+        this.settingPDPin = !this.settingPDPin;
+        this.sendMessage('', 'OKSETPDPIN', null, null, function (err, msg) {
+            if (!this.settingPDPin) {
+                pollForInput(callback);
+            } else {
+                callback(err, msg);
+            }
+        }.bind(this));
     };
 
     OnlyKey.prototype.setSlot = function(slot, field, value, callback) {
@@ -350,6 +371,9 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
             console.info("DISCONNECTED CONNECTION", myOnlyKey.connection);
             myOnlyKey.setConnection(-1);
+            myOnlyKey.settingPin = false;
+            myOnlyKey.settingSDPin = false;
+            myOnlyKey.settingPDPin = false;
         });
 
         enableIOControls(false);

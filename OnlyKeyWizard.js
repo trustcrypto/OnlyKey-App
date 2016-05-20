@@ -44,7 +44,6 @@
         this.onlyKey = myOnlyKey;
         this.currentStep = Object.keys(this.steps)[0];
         this.uiInit();
-        this.usbInit();
 
         this.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
         this.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
@@ -114,6 +113,10 @@
         document.getElementById('closeFinal').addEventListener('click', function (e) {
             e.preventDefault();
             dialog.close(self.finalStepDialog);
+
+            document.getElementById('slot-panel').classList.remove('hide');
+            document.getElementById('init-panel').classList.add('hide');
+
             return false;
         });
 
@@ -248,10 +251,6 @@
         dialog.close(self.slotConfigDialog);
     }
 
-    Wizard.prototype.usbInit = function () {
-
-    };
-
     Wizard.prototype.setLabels = function (labels) {
 
     };
@@ -272,8 +271,6 @@
             } else {
                 setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
             }
-
-
         }
 
         return false;
@@ -360,27 +357,6 @@
         this.onlyKey.sendSetPDPin.call(this.onlyKey);
         dialog.open(this.finalStepDialog);
         return;
-
-
-        // Assign values to appropriate cells in review table
-        document.getElementById('ReviewEmail').innerHTML = document.getElementById('TextEmail').value;
-
-        // Indicate Yes or No based on checkboxes
-        document.getElementById('ReviewHtmlGoodies').innerHTML = document.getElementById('CheckboxHtmlGoodies').checked ? 'Yes' : 'No';
-        document.getElementById('ReviewJavaScript').innerHTML = document.getElementById('CheckboxJavaScript').checked ? 'Yes' : 'No';
-        document.getElementById('ReviewWdvl').innerHTML = document.getElementById('CheckboxWdvl').checked ? 'Yes' : 'No';
-
-        // Special case to display password as asterisks
-        var iCounter = 1;
-        var iCharacterCount = document.getElementById('TextPassword').value.length;
-        var passwordMasked = '';
-
-        for (iCounter = 1; iCounter <= iCharacterCount; iCounter++) {
-            passwordMasked = passwordMasked + '*';
-        }
-
-        document.getElementById('ReviewPassword').innerHTML = passwordMasked;
-        return false;
     };
 
     document.addEventListener('DOMContentLoaded', function init() {

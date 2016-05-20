@@ -46,6 +46,10 @@ dialog::backdrop {
     background-color: rgba(0,0,0,.8);
 }
 
+dialog a {
+    color: white;
+}
+
 #slot-config-dialog {
     position: relative;
 }
