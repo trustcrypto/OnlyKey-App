@@ -19,11 +19,6 @@ In order to launch the app you can either go to chrome://extensions and select t
 ## Development ##
 This app is currently in development. The following features have yet to be implemented:
 - U2F Certificate upload - Field to enter certificate text where the certificate is put into packets (max 64 bytes) and sent to the OnlyKey.
-- Plausible Deniability/Self Destruct PIN set - The current PIN set feature should be implemented the same way for the Plausible Deniability/Self Destruct PIN set.
-- Error Display - The Errors received from OnlyKey "starting with Error" Should be displayed to user.
-- Success Display - When an operation succeeds a success message is received from OnlyKey "starting with Sucess" Should be displayed to user.
-- Get Labels - The labels are sent to the chrome app as 12 separate packets each with one label. These should populate the label fields in the configuration page.
-- Set Slot - Data entered into the various fields should be sent to OnlyKey when submit button is pressed.
-- Wipe Slot - A wipe slot messege should be sent when a field is selected and wipe button is pressed.
+- YubiOTP values upload - Field to enter Priv ID, Pub ID, and AES key to be sent to OnlyKey.
 
 
