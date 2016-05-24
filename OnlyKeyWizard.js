@@ -72,7 +72,7 @@
     function enableDisclaimer(fieldName) {
         var self = this;
         var field = self.initForm[fieldName];
-        field.removeEventListener('change');
+        field.removeEventListener('change', enableDisclaimer);
         self.btnNext.disabled = !field.checked;
         field.addEventListener('change', function (e) {
             enableDisclaimer.call(self, fieldName);
