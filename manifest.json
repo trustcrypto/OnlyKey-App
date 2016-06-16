@@ -15,5 +15,10 @@
         { "vendorId": 5824, "productId": 1158 }
       ]
     }
-  ]
+  ],
+  "icons": {
+      "16": "onlykey_logo_16.png",
+      "48": "onlykey_logo_48.png",
+      "128": "onlykey_logo_128.png"
+  }
 }
