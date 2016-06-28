@@ -236,11 +236,34 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         return parseInt(parts[0], 10) + (parts[1].toLowerCase() === 'a' ? 0 : 6);
     };
 
+    OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey) {
+        console.info(publicId,privateId,secretKey);
+        publicId = publicId.replace(/\s/g,'');
+        privateId = privateId.replace(/\s/g,'');
+        secretKey = secretKey.replace(/\s/g,'');
+        this.sendMessage(publicId+privateId+secretKey, 'OKSETYUBI');
+    };
+
+    OnlyKey.prototype.wipeYubiAuth = function () {
+        this.sendMessage(null, 'OKWIPEYUBI');
+    };
+
+    OnlyKey.prototype.setU2fAuth = function (publicId, cert) {
+        publicId = publicId.replace(/\s/g,'');
+        cert = cert.replace(/\s/g,'');
+        this.sendMessage(publicId+cert, 'OKSETU2F');
+    };
+
+    OnlyKey.prototype.wipeU2fAuth = function () {
+        this.sendMessage(null, 'OKWIPEU2F');
+    };
+
     var ui = {
         showSlotPanel: null,
         showInitPanel: null,
         initPanel: null,
         slotPanel: null,
+        slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
         workingDialog: null,
@@ -258,9 +281,14 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             ui[k] = element;
         }
 
+        ui.yubiOtpForm = document['yubiOtpForm'];
+        ui.u2FOtpForm = document['u2fOtpForm'];
+
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
+
         enableIOControls(false);
+        enableOTPForms();
         enumerateDevices();
     };
 
@@ -480,7 +508,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
     function initSlotConfigForm() {
         // TODO: loop through labels returned from OKGETLABELS
-        var configBtns = Array.from(ui.slotPanel.getElementsByTagName('input'));
+        var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName('input'));
         configBtns.forEach(function(btn, i) {
             var labelIndex = myOnlyKey.getSlotNum(btn.value);
             var labelText = myOnlyKey.labels[labelIndex - 1] || 'empty';
@@ -507,7 +535,72 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         e && e.preventDefault && e.preventDefault();
     }
 
+    function enableOTPForms() {
+        var yubiSubmit = document.getElementById('yubiSubmit');
+        var yubiWipe = document.getElementById('yubiWipe');
+        yubiSubmit.addEventListener('click', submitYubiOtpForm);
+        yubiWipe.addEventListener('click', wipeYubiOtpForm);
+
+        var u2fSubmit = document.getElementById('u2fSubmit');
+        var u2fWipe = document.getElementById('u2fWipe');
+        u2fSubmit.addEventListener('click', submitU2fOtpForm);
+        u2fWipe.addEventListener('click', wipeU2fOtpForm);
+    }
+
+    function submitYubiOtpForm(e) {
+// The spaces in the three fields should be removed and all three values put into one packet
+// Packet format to set - “FFFFFFFFE66Avvbhikkuicevf138a824ad07e0f68f664cd4174e43c7f8d2afe9ff3...”
+// Here we are writing to slot 6 and value 10(A) which is Yubikey 
+// Packet format to wipe - “FFFFFFFFE76A...
+        var publicId = ui.yubiOtpForm.yubiPublicId.value;
+        var privateId = ui.yubiOtpForm.yubiPrivateId.value;
+        var secretKey = ui.yubiOtpForm.yubiSecretKey.value;
+        // validation
+        myOnlyKey.setYubiAuth(publicId, privateId, secretKey);
+        ui.yubiOtpForm.reset();
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function wipeYubiOtpForm(e) {
+        myOnlyKey.wipeYubiAuth();
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitU2fOtpForm(e) {
+        var privateId = ui.u2fOtpForm.u2fPrivateId.value;
+        var cert = ui.u2fOtpForm.u2fCert.value;
+        // validation
+        myOnlyKey.setU2fAuth(privateId, cert);
+        ui.u2fOtpForm.reset();
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function wipeU2fOtpForm(e) {
+        myOnlyKey.wipeU2fAuth();
+        e && e.preventDefault && e.preventDefault();
+    }
+
     window.addEventListener('load', init);
 };
 
 
+function hexToModhex(inputStr, reverse) {
+    // 0123 4567 89ab cdef
+    // cbde fghi jkln rtuv
+    // Example: hexadecimal number "4711" translates to "fibb"
+    var hex     = '0123456789abcdef';
+    var modhex  = 'cbdefghijklnrtuv';
+    var newStr  = '';
+    var o = reverse ? modhex : hex;
+    var t = reverse ? hex : modhex;
+    inputStr.split('').forEach(function (c) {
+        var i = o.indexOf(c);
+        if (i < 0) {
+            throw new Error('Invalid character sent for hexToModhex conversion');
+        }
+        newStr += t.charAt(i);
+    });
+
+    console.info(inputStr, 'converted to', newStr);
+    return newStr;
+}

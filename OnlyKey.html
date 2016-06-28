@@ -157,53 +157,98 @@
             <p>
                 <a id="show-init-panel" href="">Setup OnlyKey PIN</a>
             </p>
-            <table id="slot-config-btns">
-                <tr>
-                    <td align="right">
-                        <span class="slotLabel" id="slotLabel1a">empty</span>
-                        <input type="button" id="slot1aConfig" value="1a"/><br/>
-                        <span class="slotLabel" id="slotLabel1b">empty</span>
-                        <input type="button" id="slot1bConfig" value="1b"/>
-                    </td>
-                    <td>
-                        <input type="button" id="slot2aConfig" value="2a"/>
-                        <span class="slotLabel" id="slotLabel2a">empty</span>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <h2>Configure OnlyKey Slots</h2>
+                    <table id="slot-config-btns">
+                        <tr>
+                            <td align="right">
+                                <span class="slotLabel" id="slotLabel1a">empty</span>
+                                <input type="button" id="slot1aConfig" value="1a"/><br/>
+                                <span class="slotLabel" id="slotLabel1b">empty</span>
+                                <input type="button" id="slot1bConfig" value="1b"/>
+                            </td>
+                            <td>
+                                <input type="button" id="slot2aConfig" value="2a"/>
+                                <span class="slotLabel" id="slotLabel2a">empty</span>
+                                <br/>
+                                <input type="button" id="slot2bConfig" value="2b"/>
+                                <span class="slotLabel" id="slotLabel2b">empty</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="right">
+                                <span class="slotLabel" id="slotLabel3a">empty</span>
+                                <input type="button" id="slot3aConfig" value="3a"/><br/>
+                                <span class="slotLabel" id="slotLabel3b">empty</span>
+                                <input type="button" id="slot3bConfig" value="3b"/>
+                            </td>
+                            <td>
+                                <input type="button" id="slot4aConfig" value="4a"/>
+                                <span class="slotLabel" id="slotLabel4a">empty</span>
+                                <br/>
+                                <input type="button" id="slot4bConfig" value="4b"/>
+                                <span class="slotLabel" id="slotLabel4b">empty</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="right">
+                                <span class="slotLabel" id="slotLabel5a">empty</span>
+                                <input type="button" id="slot5aConfig" value="5a"/><br/>
+                                <span class="slotLabel" id="slotLabel5b">empty</span>
+                                <input type="button" id="slot5bConfig" value="5b"/>
+                            </td>
+                            <td>
+                                <input type="button" id="slot6aConfig" value="6a"/>
+                                <span class="slotLabel" id="slotLabel6a">empty</span>
+                                <br/>
+                                <input type="button" id="slot6bConfig" value="6b"/>
+                                <span class="slotLabel" id="slotLabel6b">empty</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="flex-item">
+                    <form id="yubiOtpForm" name="yubiOtpForm" class="otp-form">
+                        <h2>Add Yubikey Security Info</h2>
+                        <label>
+                            Public Identity (6 bytes modhex)
+                            <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" />
+                        </label>
                         <br/>
-                        <input type="button" id="slot2bConfig" value="2b"/>
-                        <span class="slotLabel" id="slotLabel2b">empty</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td align="right">
-                        <span class="slotLabel" id="slotLabel3a">empty</span>
-                        <input type="button" id="slot3aConfig" value="3a"/><br/>
-                        <span class="slotLabel" id="slotLabel3b">empty</span>
-                        <input type="button" id="slot3bConfig" value="3b"/>
-                    </td>
-                    <td>
-                        <input type="button" id="slot4aConfig" value="4a"/>
-                        <span class="slotLabel" id="slotLabel4a">empty</span>
+                        <label>
+                            Private Identity (6 bytes hex)
+                            <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" />
+                        </label>
                         <br/>
-                        <input type="button" id="slot4bConfig" value="4b"/>
-                        <span class="slotLabel" id="slotLabel4b">empty</span>
-                    </td>
-                </tr>
-                <tr>
-                    <td align="right">
-                        <span class="slotLabel" id="slotLabel5a">empty</span>
-                        <input type="button" id="slot5aConfig" value="5a"/><br/>
-                        <span class="slotLabel" id="slotLabel5b">empty</span>
-                        <input type="button" id="slot5bConfig" value="5b"/>
-                    </td>
-                    <td>
-                        <input type="button" id="slot6aConfig" value="6a"/>
-                        <span class="slotLabel" id="slotLabel6a">empty</span>
+                        <label>
+                            Secret Key (16 bytes hex)
+                            <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" />
+                        </label>
                         <br/>
-                        <input type="button" id="slot6bConfig" value="6b"/>
-                        <span class="slotLabel" id="slotLabel6b">empty</span>
-                    </td>
-                </tr>
-            </table>
+                        <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
+                        <div id="yubiError"></div>
+                    </form>
+
+                    <form id="u2fOtpForm" name="u2fOtpForm" class="otp-form">
+                        <h2>Add U2F Security Info</h2>
+                        <label>
+                            Private Identity (32 bytes hex)
+                            <input type="text" id="u2fPrivateId" name="u2fPrivateId" maxlength="47" minlength="32" />
+                        </label>
+                        <br/>
+                        <label>
+                            U2F Certificate (up to 1024 bytes hex)
+                            <input type="text" id="u2fCert" name="u2fCert" maxlength="1535" minlength="2" />
+                        </label>
+                        <br/>
+                        <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
+                        <div id="u2fError"></div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
