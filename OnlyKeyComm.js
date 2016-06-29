@@ -1,4 +1,4 @@
-var OnlyKeyHID = function(onlyKeyConfigWizard) {
+var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var myOnlyKey = new OnlyKey();
     var dialog = new dialogMgr();
 
@@ -33,7 +33,8 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
             NEXTKEY2: 6,
             DELAY2: 7,
             TFATYPE: 8,
-            TFAUSERNAME: 9
+            TFAUSERNAME: 9,
+            YUBIAUTH: 'A'
         };
         this.connection = -1;
         this.isReceivePending = false;
@@ -48,7 +49,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         this.labels = [];
     }
 
-    OnlyKey.prototype.setConnection = function(connectionId) {
+    OnlyKey.prototype.setConnection = function (connectionId) {
         console.info("Setting connectionId to " + connectionId);
         this.connection = connectionId;
         if (connectionId === -1) {
@@ -60,7 +61,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     };
 
-    OnlyKey.prototype.sendMessage = function(contents, msgId, slotId, fieldId, callback) {
+    OnlyKey.prototype.sendMessage = function (contents, msgId, slotId, fieldId, callback) {
         var self = this;
 
         msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
@@ -94,7 +95,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
 
         if (!Array.isArray(contents)) {
-            contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function(match, capture) {
+            contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function (match, capture) {
                 return String.fromCharCode(parseInt(capture, 16));
             });
 
@@ -105,7 +106,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
                 bytes[cursor++] = contents.charCodeAt(i);
             }
         } else {
-            contents.forEach(function(val) {
+            contents.forEach(function (val) {
                 bytes[cursor++] = hexStrToDec(val);
             });
         }
@@ -117,7 +118,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
 
         console.info("SENDING " + msgId + " to connectionId " + self.connection + ":", bytes);
 
-        chrome.hid.send(self.connection, reportId, bytes.buffer, function() {
+        chrome.hid.send(self.connection, reportId, bytes.buffer, function () {
             if (chrome.runtime.lastError) {
                 console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
                 callback('ERROR SENDING PACKETS');
@@ -128,47 +129,18 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         });
     };
 
-    //The next byte is the Message ID defined in the config packet document
-    //If you dont have the doc in front of you here are the message IDs
-    //#define OKSETPIN        (0xE1)  
-    //#define OKSETTIME       (0xE2)  
-    //#define OKGETLABELS     (0xE3)  
-    //#define OKSETSLOT       (0xE4)   
-    //#define OKWIPESLOT      (0xE5)  
-    //#define OKSETU2FPRIV    (0xE6)  
-    //#define OKWIPEU2FPRIV   (0xE7)   
-    //#define OKSETU2FCERT    (0xE8)   
-    //#define OKWIPEU2FCERT   (0xE9)  
-    //#define OKSETYUBI       (0xEA)   
-    //#define OKWIPEYUBI      (0xEB)   Last vendor defined command
-    //bytes[4] = 228; //228 = E4 in decimal this is SETSLOT
-    //The next byte is the slot number we have 12 slots to choose from
-    //bytes[5] = 12; //slot 10 chosen
-    //The next byte is the value number, each slot can store values like username, password, delay, additional characters etc.
-    //bytes[6] = 5; //Value #5 is the password value
-    //The next 32 bytes are the password you want to set, Just enter all 0s in the Report Contents field of the to send your password of 303030... (30 is ASCII for 0)
-
-
-    //The code above is for OKSETSLOT the code below is for OKSETTIME
-    //bytes[4] = 226; //226 = E2 in decimal this is SETTIME
-    //The current time is 57081218 in hex see http://www.epochconverter.com/hex
-    //bytes[5] = 87; //57 hex to decimal = 87
-    //bytes[6] = 08; //08 hex to decimal = 08
-    //bytes[7] = 18; //12 hex to decimal = 18
-    //bytes[8] = 24; //18 hex to decimal = 24
-
-    OnlyKey.prototype.listen = function(callback) {
+    OnlyKey.prototype.listen = function (callback) {
         pollForInput(callback);
     };
 
-    OnlyKey.prototype.setTime = function(callback) {
+    OnlyKey.prototype.setTime = function (callback) {
         var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
         console.info("Setting current epoch time =", currentEpochTime);
         var timeParts = currentEpochTime.match(/.{2}/g);
         this.sendMessage(timeParts, 'OKSETTIME', null, null, callback);
     };
 
-    OnlyKey.prototype.getLabels = function(callback) {
+    OnlyKey.prototype.getLabels = function (callback) {
         this.labels = 'GETTING';
         this.sendMessage('', 'OKGETLABELS', null, null, handleGetLabels);
     };
@@ -200,62 +172,65 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     }
 
-    OnlyKey.prototype.sendSetPin = function(callback) {
+    OnlyKey.prototype.sendSetPin = function (callback) {
         this.sendMessage('', 'OKSETPIN', null, null, function (err, msg) {
             pollForInput(callback);
         }.bind(this));
     };
 
-    OnlyKey.prototype.sendSetSDPin = function(callback) {
+    OnlyKey.prototype.sendSetSDPin = function (callback) {
         this.sendMessage('', 'OKSETSDPIN', null, null, function (err, msg) {
             pollForInput(callback);
         }.bind(this));
     };
 
-    OnlyKey.prototype.sendSetPDPin = function(callback) {
+    OnlyKey.prototype.sendSetPDPin = function (callback) {
         this.sendMessage('', 'OKSETPDPIN', null, null, function (err, msg) {
             pollForInput(callback);
         }.bind(this));
     };
 
-    OnlyKey.prototype.setSlot = function(slot, field, value, callback) {
+    OnlyKey.prototype.setSlot = function (slot, field, value, callback) {
         slot = slot || this.getSlotNum();
         if (typeof slot !== 'number') slot = this.getSlotNum(slot);
         this.sendMessage(value, 'OKSETSLOT', slot, field, callback);
     };
 
-    OnlyKey.prototype.wipeSlot = function(slot, callback) {
+    OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
         slot = slot || this.getSlotNum();
         if (typeof slot !== 'number') slot = this.getSlotNum(slot);
-        this.sendMessage(null, 'OKWIPESLOT', slot, null, callback);
+        this.sendMessage(null, 'OKWIPESLOT', slot, field || null, callback);
     };
 
-    OnlyKey.prototype.getSlotNum = function(slotId) {
+    OnlyKey.prototype.getSlotNum = function (slotId) {
         slotId = slotId || this.currentSlotId;
         var parts = slotId.split('');
         return parseInt(parts[0], 10) + (parts[1].toLowerCase() === 'a' ? 0 : 6);
     };
 
-    OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey) {
-        console.info(publicId,privateId,secretKey);
-        publicId = publicId.replace(/\s/g,'');
-        privateId = privateId.replace(/\s/g,'');
-        secretKey = secretKey.replace(/\s/g,'');
-        this.sendMessage(publicId+privateId+secretKey, 'OKSETYUBI');
+    OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey, callback) {
+        console.info("Setting YUBIKEY auth:",publicId,privateId,secretKey);
+        this.setSlot('XX', this.messageFields['YUBIAUTH'], publicId+privateId+secretKey, callback);
     };
 
-    OnlyKey.prototype.wipeYubiAuth = function () {
-        this.sendMessage(null, 'OKWIPEYUBI');
+    OnlyKey.prototype.wipeYubiAuth = function (callback) {
+        this.wipeSlot('XX', this.messageFields['YUBIAUTH'], callback);
     };
 
-    OnlyKey.prototype.setU2fAuth = function (publicId, cert) {
-        publicId = publicId.replace(/\s/g,'');
-        cert = cert.replace(/\s/g,'');
-        this.sendMessage(publicId+cert, 'OKSETU2F');
+    OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
+        this.sendMessage(privateId, 'OKSETU2FPRIV', null, null, callback);
     };
 
-    OnlyKey.prototype.wipeU2fAuth = function () {
-        this.sendMessage(null, 'OKWIPEU2F');
+    OnlyKey.prototype.wipeU2fPrivateId = function (callback) {
+        this.sendMessage(null, 'OKWIPEU2FPRIV', null, null, callback);
+    };
+
+    OnlyKey.prototype.setU2fCert = function (cert, callback) {
+        this.sendMessage(cert, 'OKSETU2FCERT', null, null, callback);
+    };
+
+    OnlyKey.prototype.wipeU2fCert = function (callback) {
+        this.sendMessage(null, 'OKWIPEU2FCERT', null, null, callback);
     };
 
     var ui = {
@@ -271,7 +246,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         main: null
     };
 
-    var initializeWindow = function() {
+    var initializeWindow = function () {
         for (var k in ui) {
             var id = k.replace(/([A-Z])/g, '-$1').toLowerCase();
             var element = document.getElementById(id);
@@ -282,7 +257,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
 
         ui.yubiOtpForm = document['yubiOtpForm'];
-        ui.u2FOtpForm = document['u2fOtpForm'];
+        ui.u2fOtpForm = document['u2fOtpForm'];
 
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
@@ -292,7 +267,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         enumerateDevices();
     };
 
-    var enableIOControls = function(ioEnabled) {
+    var enableIOControls = function (ioEnabled) {
         closeSlotConfigForm();
 
         if (!ioEnabled) {
@@ -323,13 +298,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     };
 
-    var enumerateDevices = function() {
+    var enumerateDevices = function () {
         chrome.hid.getDevices(myOnlyKey.deviceInfo, onDevicesEnumerated);
         chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
         chrome.hid.onDeviceRemoved.addListener(onDeviceRemoved);
     };
 
-    var onDevicesEnumerated = function(devices) {
+    var onDevicesEnumerated = function (devices) {
         if (chrome.runtime.lastError) {
             console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
             return;
@@ -342,7 +317,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     };
 
-    var onDeviceAdded = function(device) {
+    var onDeviceAdded = function (device) {
         var optionId = 'device-' + device.deviceId;
         // auto connect desired device
         if (device.maxInputReportSize === myOnlyKey.maxInputReportSize &&
@@ -352,13 +327,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     };
 
-    var connectDevice = function(deviceId) {
+    var connectDevice = function (deviceId) {
         console.info('CONNECTING deviceId:', deviceId);
 
         dialog.close(ui.disconnectedDialog);
         dialog.open(ui.workingDialog);
 
-        chrome.hid.connect(deviceId, function(connectInfo) {
+        chrome.hid.connect(deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
                 console.error("ERROR CONNECTING:", chrome.runtime.lastError);
             } else if (!connectInfo) {
@@ -373,11 +348,11 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         });
     };
 
-    var onDeviceRemoved = function() {
+    var onDeviceRemoved = function () {
         console.info("ONDEVICEREMOVED was triggered with connectionId", myOnlyKey.connection);
         if (myOnlyKey.connection === -1) return;
 
-        chrome.hid.disconnect(myOnlyKey.connection, function() {
+        chrome.hid.disconnect(myOnlyKey.connection, function () {
             if (chrome.runtime.lastError) {
                 console.warn('DISCONNECT ERROR:', chrome.runtime.lastError);
             }
@@ -391,13 +366,13 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         enableIOControls(false);
     };
 
-    var pollForInput = function(callback) {
+    var pollForInput = function (callback) {
         console.info("Polling...");
         clearTimeout(myOnlyKey.poll);
         callback = callback || handleMessage;
 
         var msg;
-        chrome.hid.receive(myOnlyKey.connection, function(reportId, data) {
+        chrome.hid.receive(myOnlyKey.connection, function (reportId, data) {
             if (chrome.runtime.lastError) {
                 myOnlyKey.lastMessage.received = '[error]';
                 onlyKeyConfigWizard.setLastMessage('[error]');
@@ -419,7 +394,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         });
     };
 
-    var readBytes = function(bytes) {
+    var readBytes = function (bytes) {
         var msgStr = '';
         var msgBytes = new Uint8Array(bytes.buffer);
 
@@ -431,7 +406,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         return msgStr;
     };
 
-    var handleMessage = function(err, msg) {
+    var handleMessage = function (err, msg) {
         if (err) {
             return console.error("MESSAGE ERROR:", err);
         }
@@ -470,16 +445,16 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
         }
     };
 
-    var enablePolling = function() {
+    var enablePolling = function () {
         myOnlyKey.pollEnabled = true;
         pollForInput();
     };
 
-    var hexStrToDec = function(hexStr) {
+    var hexStrToDec = function (hexStr) {
         return new Number('0x' + hexStr).toString(10);
     };
 
-    var byteToHex = function(value) {
+    var byteToHex = function (value) {
         if (value < 16)
             return '0' + value.toString(16);
         return value.toString(16);
@@ -509,7 +484,7 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     function initSlotConfigForm() {
         // TODO: loop through labels returned from OKGETLABELS
         var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName('input'));
-        configBtns.forEach(function(btn, i) {
+        configBtns.forEach(function (btn, i) {
             var labelIndex = myOnlyKey.getSlotNum(btn.value);
             var labelText = myOnlyKey.labels[labelIndex - 1] || 'empty';
             onlyKeyConfigWizard.setSlotLabel(i, labelText);
@@ -548,16 +523,20 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     }
 
     function submitYubiOtpForm(e) {
-// The spaces in the three fields should be removed and all three values put into one packet
-// Packet format to set - “FFFFFFFFE66Avvbhikkuicevf138a824ad07e0f68f664cd4174e43c7f8d2afe9ff3...”
-// Here we are writing to slot 6 and value 10(A) which is Yubikey 
-// Packet format to wipe - “FFFFFFFFE76A...
-        var publicId = ui.yubiOtpForm.yubiPublicId.value;
-        var privateId = ui.yubiOtpForm.yubiPrivateId.value;
-        var secretKey = ui.yubiOtpForm.yubiSecretKey.value;
-        // validation
-        myOnlyKey.setYubiAuth(publicId, privateId, secretKey);
-        ui.yubiOtpForm.reset();
+        var publicId = ui.yubiOtpForm.yubiPublicId.value || '';
+        var privateId = ui.yubiOtpForm.yubiPrivateId.value || '';
+        var secretKey = ui.yubiOtpForm.yubiSecretKey.value || '';
+
+        publicId = publicId.toString().replace(/\s/g,'');
+        privateId = privateId.toString().replace(/\s/g,'');
+        secretKey = secretKey.toString().replace(/\s/g,'');
+
+        // TODO: validation
+        myOnlyKey.setYubiAuth(publicId, privateId, secretKey, function (err) {
+            // TODO: check for success, then reset
+            ui.yubiOtpForm.reset();
+        });
+
         e && e.preventDefault && e.preventDefault();
     }
 
@@ -567,16 +546,28 @@ var OnlyKeyHID = function(onlyKeyConfigWizard) {
     }
 
     function submitU2fOtpForm(e) {
-        var privateId = ui.u2fOtpForm.u2fPrivateId.value;
-        var cert = ui.u2fOtpForm.u2fCert.value;
-        // validation
-        myOnlyKey.setU2fAuth(privateId, cert);
-        ui.u2fOtpForm.reset();
+        var privateId = ui.u2fOtpForm.u2fPrivateId.value || '';
+        var cert = ui.u2fOtpForm.u2fCert.value || '';
+
+        privateId = privateId.toString().replace(/\s/g,'');
+        cert = cert.toString().replace(/\s/g,'');
+
+        // TODO: validation
+        myOnlyKey.setU2fPrivateId(privateId, function (err) {
+            myOnlyKey.setU2fCert(cert, function (err) {
+                // TODO: check for success, then reset
+                ui.u2fOtpForm.reset();
+            });
+        });
+
         e && e.preventDefault && e.preventDefault();
     }
 
     function wipeU2fOtpForm(e) {
-        myOnlyKey.wipeU2fAuth();
+        myOnlyKey.wipeU2fPrivateId(function (err) {
+            myOnlyKey.wipeU2fCert();
+        });
+
         e && e.preventDefault && e.preventDefault();
     }
 

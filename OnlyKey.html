@@ -207,42 +207,47 @@
                             </td>
                         </tr>
                     </table>
-                </div>
-                <div class="flex-item">
+
                     <form id="yubiOtpForm" name="yubiOtpForm" class="otp-form">
                         <h2>Add Yubikey Security Info</h2>
                         <label>
                             Public Identity (6 bytes modhex)
-                            <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" />
+                            <br/>
+                            <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
                         </label>
                         <br/>
                         <label>
                             Private Identity (6 bytes hex)
-                            <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" />
+                            <br/>
+                            <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
                         </label>
                         <br/>
                         <label>
                             Secret Key (16 bytes hex)
-                            <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" />
+                            <br/>
+                            <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
                         </label>
-                        <br/>
+                        <br/><br/>
                         <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
                         <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
                         <div id="yubiError"></div>
                     </form>
-
+                </div>
+                <div class="flex-item">
                     <form id="u2fOtpForm" name="u2fOtpForm" class="otp-form">
                         <h2>Add U2F Security Info</h2>
                         <label>
                             Private Identity (32 bytes hex)
-                            <input type="text" id="u2fPrivateId" name="u2fPrivateId" maxlength="47" minlength="32" />
+                            <br/>
+                            <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="47" minlength="32" cols="40" rows="10" placeholder="private id" required></textarea>
                         </label>
                         <br/>
                         <label>
                             U2F Certificate (up to 1024 bytes hex)
-                            <input type="text" id="u2fCert" name="u2fCert" maxlength="1535" minlength="2" />
+                            <br/>
+                            <textarea id="u2fCert" name="u2fCert" maxlength="1535" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
                         </label>
-                        <br/>
+                        <br/><br/>
                         <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
                         <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
                         <div id="u2fError"></div>
