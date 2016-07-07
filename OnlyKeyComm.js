@@ -63,6 +63,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     OnlyKey.prototype.sendMessage = function (contents, msgId, slotId, fieldId, callback) {
         var self = this;
+        var bytesPerMessage = 64;
 
         msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
         slotId = typeof slotId === 'number' ? slotId : null;
@@ -72,7 +73,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         callback = typeof callback === 'function' ? callback : handleMessage;
 
         var reportId = 0;
-        var bytes = new Uint8Array(63);
+        var bytes = new Uint8Array(bytesPerMessage);
         var cursor = 0;
 
         for (; cursor < self.messageHeader.length; cursor++) {
@@ -111,8 +112,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             });
         }
 
-        var pad = 0; //+ui.outPad.value
-        for (; cursor < bytes.length;) {
+        var pad = 0;
+        for (;cursor < bytes.length;) {
             bytes[cursor++] = pad;
         }
 
@@ -209,7 +210,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey, callback) {
-        console.info("Setting YUBIKEY auth:",publicId,privateId,secretKey);
         this.setSlot('XX', this.messageFields['YUBIAUTH'], publicId+privateId+secretKey, callback);
     };
 
@@ -218,15 +218,21 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
-        this.sendMessage(privateId, 'OKSETU2FPRIV', null, null, callback);
+        if (privateId.length) {
+            this.sendMessage(privateId, 'OKSETU2FPRIV', null, null, callback);
+        } else {
+            callback();
+        }
     };
 
     OnlyKey.prototype.wipeU2fPrivateId = function (callback) {
         this.sendMessage(null, 'OKWIPEU2FPRIV', null, null, callback);
     };
 
-    OnlyKey.prototype.setU2fCert = function (cert, callback) {
-        this.sendMessage(cert, 'OKSETU2FCERT', null, null, callback);
+    OnlyKey.prototype.setU2fCert = function (cert, packetHeader, callback) {
+        var msg = [ packetHeader ];
+        msg = msg.concat(cert.match(/.{2}/g));
+        this.sendMessage(msg, 'OKSETU2FCERT', null, null, callback);
     };
 
     OnlyKey.prototype.wipeU2fCert = function (callback) {
@@ -256,14 +262,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui[k] = element;
         }
 
-        ui.yubiOtpForm = document['yubiOtpForm'];
-        ui.u2fOtpForm = document['u2fOtpForm'];
+        ui.yubiAuthForm = document['yubiAuthForm'];
+        ui.u2fAuthForm = document['u2fAuthForm'];
 
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
 
         enableIOControls(false);
-        enableOTPForms();
+        enableAuthForms();
         enumerateDevices();
     };
 
@@ -510,22 +516,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         e && e.preventDefault && e.preventDefault();
     }
 
-    function enableOTPForms() {
+    function enableAuthForms() {
         var yubiSubmit = document.getElementById('yubiSubmit');
         var yubiWipe = document.getElementById('yubiWipe');
-        yubiSubmit.addEventListener('click', submitYubiOtpForm);
-        yubiWipe.addEventListener('click', wipeYubiOtpForm);
+        yubiSubmit.addEventListener('click', submitYubiAuthForm);
+        yubiWipe.addEventListener('click', wipeYubiAuthForm);
 
         var u2fSubmit = document.getElementById('u2fSubmit');
         var u2fWipe = document.getElementById('u2fWipe');
-        u2fSubmit.addEventListener('click', submitU2fOtpForm);
-        u2fWipe.addEventListener('click', wipeU2fOtpForm);
+        u2fSubmit.addEventListener('click', submitU2fAuthForm);
+        u2fWipe.addEventListener('click', wipeU2fAuthForm);
     }
 
-    function submitYubiOtpForm(e) {
-        var publicId = ui.yubiOtpForm.yubiPublicId.value || '';
-        var privateId = ui.yubiOtpForm.yubiPrivateId.value || '';
-        var secretKey = ui.yubiOtpForm.yubiSecretKey.value || '';
+    function submitYubiAuthForm(e) {
+        var publicId = ui.yubiAuthForm.yubiPublicId.value || '';
+        var privateId = ui.yubiAuthForm.yubiPrivateId.value || '';
+        var secretKey = ui.yubiAuthForm.yubiSecretKey.value || '';
 
         publicId = publicId.toString().replace(/\s/g,'');
         privateId = privateId.toString().replace(/\s/g,'');
@@ -534,36 +540,52 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // TODO: validation
         myOnlyKey.setYubiAuth(publicId, privateId, secretKey, function (err) {
             // TODO: check for success, then reset
-            ui.yubiOtpForm.reset();
+            ui.yubiAuthForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
     }
 
-    function wipeYubiOtpForm(e) {
+    function wipeYubiAuthForm(e) {
         myOnlyKey.wipeYubiAuth();
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitU2fOtpForm(e) {
-        var privateId = ui.u2fOtpForm.u2fPrivateId.value || '';
-        var cert = ui.u2fOtpForm.u2fCert.value || '';
+    function submitU2fAuthForm(e) {
+        var privateId = ui.u2fAuthForm.u2fPrivateId.value || '';
+        var cert = ui.u2fAuthForm.u2fCert.value || '';
 
         privateId = privateId.toString().replace(/\s/g,'');
         cert = cert.toString().replace(/\s/g,'');
 
         // TODO: validation
         myOnlyKey.setU2fPrivateId(privateId, function (err) {
-            myOnlyKey.setU2fCert(cert, function (err) {
+            submitU2fCert(cert, function (err) {
                 // TODO: check for success, then reset
-                ui.u2fOtpForm.reset();
+                ui.u2fAuthForm.reset();
             });
         });
 
         e && e.preventDefault && e.preventDefault();
     }
 
-    function wipeU2fOtpForm(e) {
+    function submitU2fCert(certStr, callback) {
+        // this function should recursively call itself until all bytes are sent
+        // in chunks of 58
+        if (!certStr.length) {
+            return callback();
+        }
+        var maxPacketSize = 116; // 58 bytes
+        var finalPacket = certStr.length - maxPacketSize <= 0;
+
+        var cb = finalPacket ? callback : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
+        // packetHeader is hex number of bytes in certStr chunk
+        // what if certStr.length is odd?
+        var packetHeader = finalPacket ? (certStr.length / 2).toString(16) : "FF";
+        myOnlyKey.setU2fCert(certStr.slice(0, maxPacketSize), packetHeader, cb);
+    }
+
+    function wipeU2fAuthForm(e) {
         myOnlyKey.wipeU2fPrivateId(function (err) {
             myOnlyKey.wipeU2fCert();
         });
