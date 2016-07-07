@@ -558,6 +558,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         privateId = privateId.toString().replace(/\s/g,'');
         cert = cert.toString().replace(/\s/g,'');
 
+        // going to be mean and only send the max chars allowed
+        var maxPrivateIdLength = 64; // 32 bytes
+        var maxCertLength = 2048; // 1024 bytes
+        privateId = privateId.slice(0, maxPrivateIdLength);
+        cert = cert.slice(0, maxCertLength);
+
         // TODO: validation
         myOnlyKey.setU2fPrivateId(privateId, function (err) {
             submitU2fCert(cert, function (err) {
