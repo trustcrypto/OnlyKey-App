@@ -34,7 +34,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             DELAY2: 7,
             TFATYPE: 8,
             TFAUSERNAME: 9,
-            YUBIAUTH: 'A'
+            YUBIAUTH: 10
         };
         this.connection = -1;
         this.isReceivePending = false;
@@ -210,11 +210,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey, callback) {
-        this.setSlot('XX', this.messageFields['YUBIAUTH'], publicId+privateId+secretKey, callback);
+        this.setSlot('XX', 'YUBIAUTH', (publicId+privateId+secretKey).match(/.{2}/g), callback);
     };
 
     OnlyKey.prototype.wipeYubiAuth = function (callback) {
-        this.wipeSlot('XX', this.messageFields['YUBIAUTH'], callback);
+        this.wipeSlot('XX', 'YUBIAUTH', callback);
     };
 
     OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
@@ -536,6 +536,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         publicId = publicId.toString().replace(/\s/g,'');
         privateId = privateId.toString().replace(/\s/g,'');
         secretKey = secretKey.toString().replace(/\s/g,'');
+
+        // going to be mean and only send the max chars allowed
+        var maxPublicIdLength = 12; // 6 bytes
+        var maxPrivateIdLength = 12; // 6 bytes
+        var maxSecretKeyLength = 32; // 64 bytes
+        publicId = hexToModhex(publicId.slice(0, maxPublicIdLength), true);
+        privateId = privateId.slice(0, maxPrivateIdLength);
+        secretKey = secretKey.slice(0, maxSecretKeyLength);
 
         // TODO: validation
         myOnlyKey.setYubiAuth(publicId, privateId, secretKey, function (err) {
