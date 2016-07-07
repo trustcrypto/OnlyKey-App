@@ -74,8 +74,28 @@ dialog a {
     font-weight: bold;
 }
 
+#slot-config-btns td {
+    padding: .5em;
+}
+
 #slotConfigErrors ul {
     background-color: white;
     color: red;
     font-weight: bold;
+}
+
+.auth-form label {
+    line-height: 1.8;
+}
+
+.flex-container {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-flow: row wrap;
+    flex-flow: row wrap;
+}
+
+.flex-item {
+    -webkit-flex: 1 auto;
+    flex: 1 auto;
 }

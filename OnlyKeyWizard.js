@@ -108,7 +108,7 @@
 
         self.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
         self.slotWipeConfirmBtn.onclick = function (e) {
-            self.onlyKey.wipeSlot(null, function (err, msg) {
+            self.onlyKey.wipeSlot(null, null, function (err, msg) {
                 // self.onlyKey.listen(function (err, msg) {
                     if (!err) {
                         self.slotConfigForm.reset();
@@ -376,7 +376,7 @@
     };
 
     // This function handles loading the review table innerHTML for the user to review before final submission
-    Wizard.prototype.loadReview = function() {
+    Wizard.prototype.loadReview = function () {
         this.onlyKey.sendSetPDPin.call(this.onlyKey);
         dialog.open(this.finalStepDialog);
         return;
@@ -391,7 +391,7 @@
 
 function dialogMgr() {
     var self = this;
-    self.open = function(el, keepOthersOpen) {
+    self.open = function (el, keepOthersOpen) {
         if (!keepOthersOpen) {
             self.closeAll();
         }
@@ -400,13 +400,13 @@ function dialogMgr() {
         }
     };
 
-    self.close = function(el) {
+    self.close = function (el) {
         if (el.open) {
             el.close();
         }
     };
 
-    self.closeAll = function() {
+    self.closeAll = function () {
         var allDialogs = document.getElementsByTagName('dialog');
         for (var i = 0; i < allDialogs.length; i++) {
             self.close(allDialogs[i]);
