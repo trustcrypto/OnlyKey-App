@@ -219,6 +219,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
         if (privateId.length) {
+            privateId = privateId.match(/.{2}/g);
             this.sendMessage(privateId, 'OKSETU2FPRIV', null, null, callback);
         } else {
             callback();
