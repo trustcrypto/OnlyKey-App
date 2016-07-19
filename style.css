@@ -74,6 +74,14 @@ dialog a {
     font-weight: bold;
 }
 
+#lastMessage li {
+    color: rgba(255,0,0,.5);
+}
+
+#lastMessage li + li {
+    color: rgba(255,0,0,.3);
+}
+
 #slot-config-btns td {
     padding: .5em;
 }

@@ -357,9 +357,13 @@
         return false;
     }
 
-    Wizard.prototype.setLastMessage = function (msg) {
+    Wizard.prototype.setLastMessages = function (messages) {
         var container = document.getElementById('lastMessage');
-        container.getElementsByTagName('span')[0].innerText = (msg || this.onlyKey.lastMessage.received);
+        var messageListItems = container.getElementsByTagName('li');
+
+        container.getElementsByTagName('span')[0].innerText = messages[0].text;
+        if (messages[1]) messageListItems[0].innerText = messages[1].text;
+        if (messages[2]) messageListItems[1].innerText = messages[2].text;
     };
 
     Wizard.prototype.setSlotLabel = function (slot, label) {

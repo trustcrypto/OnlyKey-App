@@ -41,9 +41,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.pollEnabled = false;
         this.isInitialized = false;
         this.isLocked = true;
-        this.lastMessage = {
-            sent: '',
-            received: ''
+        this.lastMessages = {
+            sent: [],
+            received: []
         };
         this.currentSlotId = null;
         this.labels = [];
@@ -124,10 +124,31 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
                 callback('ERROR SENDING PACKETS');
             } else {
-                myOnlyKey.lastMessage.sent = msgId;
+                myOnlyKey.setLastMessage('sent', msgId);
                 callback(null, 'OK');
             }
         });
+    };
+
+    OnlyKey.prototype.setLastMessage = function (type, msgStr) {
+        if (msgStr) {
+            var newMessage = { text: msgStr, timestamp: new Date().getTime() };
+            var messages = this.lastMessages[type] || [];
+            var numberToKeep = 3;
+            if (messages.length === numberToKeep) {
+                messages.slice(numberToKeep - 1);
+            }
+            messages = [newMessage].concat(messages);
+            this.lastMessages[type] = messages;
+            if (type === 'received' && onlyKeyConfigWizard) {
+                onlyKeyConfigWizard.setLastMessages(messages);
+            }
+        }
+    };
+
+    OnlyKey.prototype.getLastMessage = function (type) {
+        return this.lastMessages[type] && this.lastMessages[type][0] && this.lastMessages[type][0].hasOwnProperty('text') ? this.lastMessages[type][0].text : '';
+
     };
 
     OnlyKey.prototype.listen = function (callback) {
@@ -149,7 +170,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     function handleGetLabels(err, msg) {
         msg = typeof msg === 'string' ? msg.trim() : '';
         console.info("HandleGetLabels msg:", msg);
-        if (myOnlyKey.lastMessage.sent !== 'OKGETLABELS') {
+        if (myOnlyKey.getLastMessage('sent') !== 'OKGETLABELS') {
             return;
         }
 
@@ -164,7 +185,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             if (myOnlyKey.labels.length < 12) {
                 var msgParts = msg.split('|');
                 myOnlyKey.labels.push(msg.indexOf('|') >= 0 ? msgParts[1] : msg);
-                onlyKeyConfigWizard.setLastMessage(myOnlyKey.labels.length + ' labels');
+                myOnlyKey.setLastMessage('received', myOnlyKey.labels.length + ' labels');
                 initSlotConfigForm();
                 if (myOnlyKey.labels.length < 12) {
                     myOnlyKey.listen(handleGetLabels);
@@ -366,7 +387,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
             console.info("DISCONNECTED CONNECTION", myOnlyKey.connection);
             myOnlyKey.setConnection(-1);
-            onlyKeyConfigWizard.setLastMessage('Disconnected');
+            myOnlyKey.setLastMessage('received', 'Disconnected');
             onlyKeyConfigWizard.initForm.reset();
         });
 
@@ -381,8 +402,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var msg;
         chrome.hid.receive(myOnlyKey.connection, function (reportId, data) {
             if (chrome.runtime.lastError) {
-                myOnlyKey.lastMessage.received = '[error]';
-                onlyKeyConfigWizard.setLastMessage('[error]');
+                myOnlyKey.setLastMessage('received', '[error]');
                 return callback(chrome.runtime.lastError);
             } else {
                 msg = readBytes(new Uint8Array(data));
@@ -394,8 +414,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 myOnlyKey.poll = setTimeout(pollForInput, 0);
             }
 
-            myOnlyKey.lastMessage.received = msg;
-            onlyKeyConfigWizard.setLastMessage(msg);
+            if (msg.length > 1 && msg !== 'OK') {
+                myOnlyKey.setLastMessage('received', msg);
+            }
 
             return callback(null, msg);
         });
