@@ -418,6 +418,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 myOnlyKey.setLastMessage('received', msg);
             }
 
+            // if message begins with Error, call callback with msg as err
+            // and the last sent message as 2nd arg
+            if (msg.indexOf("Error") === 0) {
+                return callback(msg, myOnlyKey.getLastMessage('sent'));
+            }
+
+            // else call callback with null err and msg as 2nd arg
             return callback(null, msg);
         });
     };

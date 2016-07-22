@@ -31,7 +31,11 @@
             next: 'Step8'
         },
         Step8: {
-            prev: 'Step7'
+            prev: 'Step7',
+            next: 'Step9'
+        },
+        Step9: {
+            prev: 'Step8'
         }
     };
 
@@ -67,6 +71,8 @@
         self.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        self.steps.Step9.enterFn = dialog.open.bind(null, self.finalStepDialog);
+
     };
 
     function enableDisclaimer(fieldName) {
@@ -86,11 +92,9 @@
 
         self.btnNext = document.getElementById('ButtonNext');
         self.btnPrev = document.getElementById('ButtonPrevious');
-        self.btnFinal = document.getElementById('SubmitFinal');
 
         self.btnNext.onclick = moveStep.bind(this, 'next');
         self.btnPrev.onclick = moveStep.bind(this, 'prev');
-        self.btnFinal.onclick = self.loadReview.bind(this);
 
         self.slotConfigForm = document['slot-config-form'];
         self.slotConfigDialog = document.getElementById('slot-config-dialog');
@@ -132,16 +136,6 @@
             setSlot.call(self);
             e && e.preventDefault && e.preventDefault();
         };
-
-        document.getElementById('closeFinal').addEventListener('click', function (e) {
-            e.preventDefault();
-            dialog.close(self.finalStepDialog);
-
-            document.getElementById('slot-panel').classList.remove('hide');
-            document.getElementById('init-panel').classList.add('hide');
-
-            return false;
-        });
 
         setActiveStepUI.call(this);
     };
@@ -286,6 +280,7 @@
                 this.steps[this.currentStep].exitFn(function (err, res) {
                     if (err) {
                         console.error(err);
+                        goBackOnError(err, res);
                     } else {
                         console.info(res);
                         setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);                    
@@ -297,6 +292,23 @@
         }
 
         return false;
+    }
+
+    function goBackOnError(err, lastMessageSent) {
+        console.info(err, lastMessageSent);
+        if (err) {
+            switch (lastMessageSent) {
+                case 'OKSETPIN':
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step3');
+                    break;
+                case 'OKSETSDPIN':
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
+                    break;
+                case 'OKSETPDPIN':
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
+                    break;
+            }
+        }
     }
 
     function setNewCurrentStep(stepId) {
@@ -314,7 +326,6 @@
             });
         }
     }
-
 
     function setActiveStepUI() {
         // set display style for all steps
@@ -343,10 +354,8 @@
 
         if (this.steps[this.currentStep].next) {
             this.btnNext.removeAttribute('disabled');
-            this.btnFinal.setAttribute('disabled', 'disabled');
         } else {
             this.btnNext.setAttribute('disabled', 'disabled');
-            this.btnFinal.removeAttribute('disabled');
         }
 
         if (this.steps[this.currentStep].prev) {
@@ -377,13 +386,6 @@
             slotLabel = document.getElementById('slotLabel' + slot);
         }
         slotLabel.innerText = label;
-    };
-
-    // This function handles loading the review table innerHTML for the user to review before final submission
-    Wizard.prototype.loadReview = function () {
-        this.onlyKey.sendSetPDPin.call(this.onlyKey);
-        dialog.open(this.finalStepDialog);
-        return;
     };
 
     document.addEventListener('DOMContentLoaded', function init() {
