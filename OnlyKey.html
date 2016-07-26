@@ -37,7 +37,7 @@
             <div id="stepContent">
                 <div class="step" id="Step1">
                     <h3>Welcome to the OnlyKey Initial Setup Wizard!</h3>
-                    This wizard initializes the OnlyKey. Each step is highlighted in the header. 
+                    This wizard initializes the OnlyKey. Your current step is always highlighted in the header. 
                     <br/><br />
                     Click [Next] to get started.
                 </div>
@@ -47,16 +47,14 @@
                     <b>Modes:</b>
                     <br/>
                     <label>
-                        <input type=radio name=ConfigMode value="Unencrypted" />
-                        Unencrypted Password Manager (International Version)
-                    </label>
-                    <br/>
-
-                    <label>
-                        <input type=radio checked name=ConfigMode value="TwoFactor" />
+                        <input type="radio" checked name="ConfigMode" value="TwoFactor" />
                         Two-Factor Authentication and Password Manager (U.S. Version - default)
                     </label>
-     
+                    <br/>
+                    <label>
+                        <input type="radio" name="ConfigMode" value="Unencrypted" />
+                        Unencrypted Password Manager (International Version)
+                    </label>
                     <br/><br/>
                 </div>
 
@@ -111,13 +109,21 @@
                 <div class="step" id="Step7">
                     <h3>Step 7: Enter Plausible Deniability PIN on OnlyKey keypad</h3>
                     <p>
+<<<<<<< HEAD
+                        If you are using Two-Factor Authentication and Password Manager (U.S. Version - default) mode you may proceed to enter plausible deniability passcode.
+=======
                         If you are using Unencrypted Password Manager (International Version) mode or Two-Factor Authentication and Password Manager (U.S. Version - default) mode you may exit now by selecting "Show Configuration" in the left corner of the window. If you have loaded the Plausible Deniability Mode firmware on your OnlyKey proceed to enter plausible deniability PIN.
+>>>>>>> master
                     </p>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
                     </p>
                     <p>
+<<<<<<< HEAD
+                        DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to load a second profile and appear as if I am using the Unencrypted Password Manager (International Version) firmware. This may be helpful if I am forced to give up my passcode in some situations; however, I understand that there is no level of safety guaranteed or implied and I am using this feature at my own risk.
+=======
                         DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to  perform a factory default which wipes all sensitive information.
+>>>>>>> master
                     </p>
                     <label>
                         <input type="checkbox" name="passcode3Disclaimer" />
