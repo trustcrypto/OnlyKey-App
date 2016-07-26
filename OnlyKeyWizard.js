@@ -50,6 +50,16 @@
         self.currentStep = Object.keys(self.steps)[0];
         self.uiInit();
 
+        self.steps.Step2.exitFn = function (cb) {
+            var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step7"],[data-step="Step8"]'));
+            var classListMethod = self.getMode() === 'TwoFactor' ? 'remove' : 'add';
+
+            dynamicSteps.forEach(function (el) {
+                el.classList[classListMethod]('hide');
+            });
+
+            return cb();
+        };
         self.steps.Step3.enterFn = function () {
             enableDisclaimer.call(self, 'passcode1Disclaimer');
             myOnlyKey.sendSetPin.call(myOnlyKey);
@@ -63,7 +73,16 @@
         };
         self.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
         self.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        self.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        self.steps.Step6.exitFn = function (cb) {
+            myOnlyKey.sendSetSDPin.call(myOnlyKey, function (err, res) {
+                if (err || self.getMode() === 'TwoFactor') {
+                    return cb(err, res);
+                }
+
+                dialog.open.call(null, self.finalStepDialog);
+                return cb(null, 'STOP');
+            });
+        };                
         self.steps.Step7.enterFn = function () {
             enableDisclaimer.call(self, 'passcode3Disclaimer');
             myOnlyKey.sendSetPDPin.call(myOnlyKey);
@@ -268,8 +287,8 @@
         dialog.close(self.slotConfigDialog);
     }
 
-    Wizard.prototype.setLabels = function (labels) {
-
+    Wizard.prototype.getMode = function () {
+        return this.initForm['ConfigMode'].value;
     };
 
     function moveStep(direction) {
@@ -281,8 +300,7 @@
                     if (err) {
                         console.error(err);
                         goBackOnError(err, res);
-                    } else {
-                        console.info(res);
+                    } else if (res !== 'STOP') {
                         setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);                    
                     }
                 }.bind(this));
