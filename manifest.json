@@ -2,7 +2,7 @@
   "name": "OnlyKey Configuration",
   "manifest_version": 2,
   "version": "1.1.0.0",
-  "version_name": "0.2-alpha.0",
+  "version_name": "0.2-alpha.2",
   "minimum_chrome_version": "45.0.2439.3",
   "app": {
     "background": {
