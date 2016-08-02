@@ -485,16 +485,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         pollForInput();
     };
 
-    var hexStrToDec = function (hexStr) {
-        return new Number('0x' + hexStr).toString(10);
-    };
-
-    var byteToHex = function (value) {
-        if (value < 16)
-            return '0' + value.toString(16);
-        return value.toString(16);
-    };
-
     function init() {
         console.info("OnlyKeyComm init() called");
         initializeWindow();
@@ -659,4 +649,42 @@ function hexToModhex(inputStr, reverse) {
 
     console.info(inputStr, 'converted to', newStr);
     return newStr;
+}
+
+function strPad(str, places, char) {
+    while (str.length < places) {
+        str = "" + (char || 0) + str;
+    }
+
+    return str;
+}
+
+// we owe russ a beer
+// http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
+function base32tohex(base32) {
+    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    var bits = "";
+    var hex = "";
+
+    for (var i = 0; i < base32.length; i++) {
+        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
+        bits += strPad(val.toString(2), 5, '0');
+    }
+
+    for (var i = 0; i+4 <= bits.length; i+=4) {
+        var chunk = bits.substr(i, 4);
+        hex = hex + parseInt(chunk, 2).toString(16) ;
+    }
+    return hex;
+
+}
+
+function hexStrToDec(hexStr) {
+    return new Number('0x' + hexStr).toString(10);
+}
+
+function byteToHex(value) {
+    if (value < 16)
+        return '0' + value.toString(16);
+    return value.toString(16);
 }
