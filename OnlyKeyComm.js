@@ -178,8 +178,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             myOnlyKey.labels = [];
             return myOnlyKey.listen(handleGetLabels);
         }
-// should be able check whether msg.indexOf('|') < 0
-        if (msg === 'UNLOCKED' || msg === 'OK' || msg.trim() === '' || msg.length > 15) {
+
+        if (msg.indexOf('|') < 0) {
             myOnlyKey.listen(handleGetLabels);
         } else {
             if (myOnlyKey.labels.length < 12) {
