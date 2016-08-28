@@ -149,9 +149,7 @@
         </form>
 
         <div id="slot-panel" class="hide">
-            <p>
-                <a id="show-init-panel" href="">Setup OnlyKey PIN</a>
-            </p>
+            <a id="show-init-panel" href="">Setup OnlyKey PIN</a>
             <div class="flex-container">
                 <div class="flex-item">
                     <h2>Configure OnlyKey Slots</h2>
@@ -226,6 +224,14 @@
                         <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
                         <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
                         <div id="yubiError"></div>
+                    </form>
+                    <form id="lockoutForm" name="lockoutForm">
+                        <h2>OnlyKey Inactivity Lockout Period</h2>
+                        Lockout time in minutes:
+                        <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1-255" />
+                        <input type="button" id="lockoutSubmit" value="Set Lockout" />
+                        <br/>
+                        (1 &ndash; 255; default=15)
                     </form>
                 </div>
                 <div class="flex-item">
