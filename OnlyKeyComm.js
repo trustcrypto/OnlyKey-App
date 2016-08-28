@@ -34,7 +34,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             DELAY2: 7,
             TFATYPE: 8,
             TFAUSERNAME: 9,
-            YUBIAUTH: 10
+            YUBIAUTH: 10,
+            LOCKOUT: 11
         };
         this.connection = -1;
         this.isReceivePending = false;
@@ -261,6 +262,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(null, 'OKWIPEU2FCERT', null, null, callback);
     };
 
+    OnlyKey.prototype.setLockout = function (lockout, callback) {
+        this.setSlot('XX', 'LOCKOUT', lockout, callback);
+    };
+
     var ui = {
         showSlotPanel: null,
         showInitPanel: null,
@@ -286,6 +291,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
+        ui.lockoutForm = document['lockoutForm'];
 
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
@@ -545,6 +551,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var u2fWipe = document.getElementById('u2fWipe');
         u2fSubmit.addEventListener('click', submitU2fAuthForm);
         u2fWipe.addEventListener('click', wipeU2fAuthForm);
+
+        var lockoutSubmit = document.getElementById('lockoutSubmit');
+        lockoutSubmit.addEventListener('click', submitLockoutForm);
     }
 
     function submitYubiAuthForm(e) {
@@ -621,6 +630,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     function wipeU2fAuthForm(e) {
         myOnlyKey.wipeU2fPrivateId(function (err) {
             myOnlyKey.wipeU2fCert();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitLockoutForm(e) {
+        var lockout = ui.lockoutForm.okLockout.value || 15;
+
+        if (!lockout || typeof lockout !== 'number' || lockout < 0) {
+            lockout = 15;
+        }
+        if (lockout > 255) {
+            lockout = 255;
+        }
+
+        myOnlyKey.setLockout(lockout.toString(), function (err) {
+            ui.lockoutForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
