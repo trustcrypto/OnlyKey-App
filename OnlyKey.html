@@ -340,7 +340,7 @@
                     <td>
                         <label>
                             <input type="checkbox" id="chkPassword" name="chkPassword" value="true"/>
-                            Password
+                            Password (up to 32 chars)
                         </label>
                     </td>
                     <td>
@@ -366,7 +366,7 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>Options below only work for 2FA Mode</td>
+                    <td><br/>Options below are for two-factor authentication:</td>
                 </tr>
                 <tr>
                     <td>
@@ -380,15 +380,21 @@
                     </td>
                 </tr>
                 <tr>
-                    <td>Please select one:</td>
-                </tr>
-                <tr>
                     <td>
                         <label>
                             <input type="radio" name="mode" value="googleAuthOtp"/>
                             Google Auth OTP
                         </label>
-                        <br/>
+                    </td>
+                    <td>
+                        <input type="text" id="txt2FAUserName" name="txt2FAUserName" value=""/>
+                    </td>
+                </tr>
+                <tr>
+                    <td><br/>Options below only work with U.S. version of OnlyKey:</td>
+                </tr>
+                <tr>
+                    <td>
                         <label>
                             <input type="radio" name="mode" value="yubikeyOtp"/>
                             Yubikey OTP
@@ -398,9 +404,7 @@
                             <input type="radio" name="mode" value="u2f"/>
                             U2F (Experimental)
                         </label>
-                    </td>
-                    <td>
-                        <input type="text" id="txt2FAUserName" name="txt2FAUserName" value=""/>
+                        <br/>
                     </td>
                 </tr>
                 <tr>
