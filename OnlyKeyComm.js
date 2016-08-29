@@ -69,7 +69,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
         slotId = typeof slotId === 'number' ? slotId : null;
         fieldId = typeof fieldId === 'string' ? fieldId : null;
-        contents = typeof contents === 'string' || typeof contents === 'number' ? contents : '';
+        contents = typeof contents === 'number' || (contents && contents.length) ? contents : '';
 
         callback = typeof callback === 'function' ? callback : handleMessage;
 
@@ -197,7 +197,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             myOnlyKey.listen(handleGetLabels);
         } else {
             myOnlyKey.labels[slotNum - 1] = msgParts[1];
-            myOnlyKey.setLastMessage('received', myOnlyKey.labels.length + ' labels');
             initSlotConfigForm();
             if (slotNum < 12) {
                 myOnlyKey.listen(handleGetLabels);
