@@ -69,7 +69,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
         slotId = typeof slotId === 'number' ? slotId : null;
         fieldId = typeof fieldId === 'string' ? fieldId : null;
-        contents = contents || '';
+        contents = typeof contents === 'string' || typeof contents === 'number' ? contents : '';
 
         callback = typeof callback === 'function' ? callback : handleMessage;
 
@@ -97,15 +97,25 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (!Array.isArray(contents)) {
-            contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function (match, capture) {
-                return String.fromCharCode(parseInt(capture, 16));
-            });
+            switch(typeof contents) {
+                case 'string':
+                    contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function (match, capture) {
+                        return String.fromCharCode(parseInt(capture, 16));
+                    });
 
-            for (var i = 0; i < contents.length && cursor < bytes.length; i++) {
-                if (contents.charCodeAt(i) > 255) {
-                    throw "I am not smart enough to decode non-ASCII data.";
-                }
-                bytes[cursor++] = contents.charCodeAt(i);
+                    for (var i = 0; i < contents.length && cursor < bytes.length; i++) {
+                        if (contents.charCodeAt(i) > 255) {
+                            throw "I am not smart enough to decode non-ASCII data.";
+                        }
+                        bytes[cursor++] = contents.charCodeAt(i);
+                    }
+                    break;
+                case 'number':
+                    if (contents < 0 || contents > 255) {
+                        throw "Byte value out of bounds.";
+                    }
+                    bytes[cursor++] = contents;
+                    break;
             }
         } else {
             contents.forEach(function (val) {
@@ -180,17 +190,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return myOnlyKey.listen(handleGetLabels);
         }
 
-        if (msg.indexOf('|') < 0) {
+        // if second char of response is a pipe, theses are labels
+        var msgParts = msg.split('|');
+        var slotNum = parseInt(msgParts[0], 10);
+        if (msg.indexOf('|') !== 2 || typeof slotNum !== 'number' || slotNum < 1 || slotNum > 12) {
             myOnlyKey.listen(handleGetLabels);
         } else {
-            if (myOnlyKey.labels.length < 12) {
-                var msgParts = msg.split('|');
-                myOnlyKey.labels.push(msg.indexOf('|') >= 0 ? msgParts[1] : msg);
-                myOnlyKey.setLastMessage('received', myOnlyKey.labels.length + ' labels');
-                initSlotConfigForm();
-                if (myOnlyKey.labels.length < 12) {
-                    myOnlyKey.listen(handleGetLabels);
-                }
+            myOnlyKey.labels[slotNum - 1] = msgParts[1];
+            myOnlyKey.setLastMessage('received', myOnlyKey.labels.length + ' labels');
+            initSlotConfigForm();
+            if (slotNum < 12) {
+                myOnlyKey.listen(handleGetLabels);
             }
         }
     }
@@ -442,6 +452,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         for (var i = 0; i < msgBytes.length; i++) {
             if (msgBytes[i] > 31 && msgBytes[i] < 127)
                 msgStr += String.fromCharCode(msgBytes[i]);
+            else if (i === 0)
+                // if first byte is a hex, this is probably a slot number
+                msgStr += byteToHex(msgBytes[i]);
         }
 
         return msgStr;
@@ -636,16 +649,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitLockoutForm(e) {
-        var lockout = ui.lockoutForm.okLockout.value || 15;
+        var lockout = parseInt(ui.lockoutForm.okLockout.value || 15, 10);
 
-        if (!lockout || typeof lockout !== 'number' || lockout < 0) {
+        if (!lockout || lockout < 0) {
             lockout = 15;
         }
         if (lockout > 255) {
             lockout = 255;
         }
 
-        myOnlyKey.setLockout(lockout.toString(), function (err) {
+        myOnlyKey.setLockout(lockout, function (err) {
             ui.lockoutForm.reset();
         });
 
