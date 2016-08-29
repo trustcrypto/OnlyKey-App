@@ -649,26 +649,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitLockoutForm(e) {
-<<<<<<< HEAD
-        var lockout = parseInt(ui.lockoutForm.okLockout.value || 15, 10);
-
-        if (!lockout || lockout < 0) {
-=======
-        var lockout = ui.lockoutForm.okLockout.value || 15;
-
-        if (!lockout || typeof lockout !== 'number' || lockout < 0) {
->>>>>>> master
-            lockout = 15;
+        var lockout = parseInt(ui.lockoutForm.okLockout.value, 10);
+        if (typeof lockout !== 'number' || lockout < 0) {
+            lockout = 30;
         }
+
         if (lockout > 255) {
             lockout = 255;
         }
 
-<<<<<<< HEAD
         myOnlyKey.setLockout(lockout, function (err) {
-=======
-        myOnlyKey.setLockout(lockout.toString(), function (err) {
->>>>>>> master
             ui.lockoutForm.reset();
         });
 
