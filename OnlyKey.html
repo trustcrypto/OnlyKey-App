@@ -14,11 +14,18 @@
         </ul>
     </div>
     <div id="main" class="hide">
-        <form id="init-panel" name="init-panel" class="hide">
-            <p>
-                <a id="show-slot-panel" href="">Setup OnlyKey Slots</a>
-            </p>
+		<div>
+			<h1>OnlyKey Setup</h1>
+		</div>
 
+		<nav>
+            <a id="show-init-panel" href="">PINs</a>
+			<a id="show-slot-panel" href="" class="hide">Slots</a>
+            <a id="show-pref-panel" href="" class="hide">Preferences</a>
+		</nav>
+
+        <form id="init-panel" name="init-panel" class="hide panel">
+			<br/>
             <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
                 <tr>
                     <td data-step="Step1">Step 1: Getting Started</td>
@@ -148,8 +155,7 @@
             </table>
         </form>
 
-        <div id="slot-panel" class="hide">
-            <a id="show-init-panel" href="">Setup OnlyKey PIN</a>
+        <div id="slot-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
                     <h2>Configure OnlyKey Slots</h2>
@@ -225,14 +231,6 @@
                         <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
                         <div id="yubiError"></div>
                     </form>
-                    <form id="lockoutForm" name="lockoutForm">
-                        <h2>OnlyKey Inactivity Lockout Period</h2>
-                        Lockout time in minutes:
-                        <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1-255" />
-                        <input type="button" id="lockoutSubmit" value="Set Lockout" />
-                        <br/>
-                        (1 &ndash; 255 minutes; default=30; 0 to disable)
-                    </form>
                 </div>
                 <div class="flex-item">
                     <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
@@ -256,7 +254,88 @@
                 </div>
             </div>
         </div>
-    </div>
+
+        <div id="pref-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+					<form id="lockoutForm" name="lockoutForm">
+						<h2>Inactivity Lockout Period</h2>
+						Lockout time in minutes:
+						<input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1-255" />
+						<input type="button" id="lockoutSubmit" value="Set Lockout" />
+						<br/>
+						(1 &ndash; 255 minutes; default = 30; 0 to disable)
+					</form>
+					<br/>
+					<form id="wipeModeForm" name="wipeModeForm">
+						<h2>Wipe Mode</h2>
+						<h3>Configure how the OnlyKey responds to a factory reset.</h3>
+						<label>
+							<input type="radio" checked name="WipeMode" value="sensitive" />
+							<u>Sensitive Data Only</u> (default)
+							<br/>All sensitive data is wiped.
+						</label>
+						<br/><br/>
+						<label>
+							<input type="radio" name="WipeMode" value="full" />
+							<u>Full Wipe</u> (recommended for plausible deniability users)
+							<br/>Entire device is wiped. Firmware must be reloaded. 
+							<br/>
+						</label>
+						<br/>
+						<span style="font-size: small; color: red;"><b>WARNING - Setting to Full Wipe mode cannot be changed.</b></span>
+						<br/><br/>
+						<input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
+					</form>
+				</div>
+
+				<div class="flex-item">
+					<form id="typeSpeedForm" name="typeSpeedForm">
+						<h2>Keyboard Type Speed</h2>
+						Choose a setting:
+						<input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1-10" />
+						<input type="button" id="typeSpeedSubmit" value="Set Type Speed" />
+						<br/>
+						(1 = slowest; 10 = fastest [default])
+					</form>
+					<br/>
+					<form id="keyboardLayoutForm" name="keyboardLayoutForm">
+						<h2>Keyboard Layout</h2>
+						Choose a keyboard layout:
+						<select id="okKeyboardLayout" name="okKeyboardLayout">
+							<option value="0x01">US_ENGLISH (default)</option>
+							<option value="0x02">CANADIAN_FRENCH</option>
+							<option value="0x03">CANADIAN_MULTILINGUAL</option>
+							<option value="0x04">DANISH</option>
+							<option value="0x05">FINNISH</option>
+							<option value="0x06">FRENCH</option>
+							<option value="0x07">FRENCH_BELGIAN</option>
+							<option value="0x08">FRENCH_SWISS</option>
+							<option value="0x09">GERMAN</option>
+							<option value="0x0A">GERMAN_MAC</option>
+							<option value="0x0B">GERMAN_SWISS</option>
+							<option value="0x0C">ICELANDIC</option>
+							<option value="0x0D">IRISH</option>
+							<option value="0x0E">ITALIAN</option>
+							<option value="0x0F">NORWEGIAN</option>
+							<option value="0x10">PORTUGUESE</option>
+							<option value="0x11">PORTUGUESE_BRAZILIAN</option>
+							<option value="0x12">SPANISH</option>
+							<option value="0x13">SPANISH_LATIN_AMERICA</option>
+							<option value="0x14">SWEDISH</option>
+							<option value="0x15">TURKISH</option>
+							<option value="0x16">UNITED_KINGDOM</option>
+							<option value="0x17">US_INTERNATIONAL</option>
+							<option value="0x18">CZECH</option>
+							<option value="0x19">SERBIAN_LATIN_ONLY</option">
+						</select>
+						<br/>
+						<input type="button" id="keyboardLayoutSubmit" value="Set Keyboard Layout" />
+					</form>
+				</div>
+			</div>
+        </div>
+	</div>
 
     <dialog id="finalStep-dialog">
         <h2>Your OnlyKey has been successfully configured.</h2>

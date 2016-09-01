@@ -276,10 +276,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     var ui = {
-        showSlotPanel: null,
-        showInitPanel: null,
+		showInitPanel: null,
+		showSlotPanel: null,
+		showPrefPanel: null,
         initPanel: null,
         slotPanel: null,
+		prefPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -302,8 +304,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.u2fAuthForm = document['u2fAuthForm'];
         ui.lockoutForm = document['lockoutForm'];
 
-        ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
+        ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
+        ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
 
         enableIOControls(false);
         enableAuthForms();
@@ -325,18 +328,26 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 dialog.open(ui.lockedDialog);
             } else {
                 ui.main.classList.remove('hide');
-                ui.slotPanel.classList.remove('hide');
                 ui.initPanel.classList.add('hide');
-                ui.showInitPanel.classList.remove('hide');
+                ui.showInitPanel.classList.remove('hide', 'active');
+                ui.slotPanel.classList.remove('hide');
                 ui.showSlotPanel.classList.remove('hide');
+                ui.showSlotPanel.classList.add('active');
+                ui.prefPanel.classList.add('hide');
+                ui.showPrefPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
             ui.main.classList.remove('hide');
             ui.slotPanel.classList.add('hide');
+			ui.slotPanel.classList.remove('active');
+			ui.prefPanel.classList.add('hide');
+			ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
-            ui.showInitPanel.classList.add('hide');
+            ui.showInitPanel.classList.remove('hide');
+            ui.showInitPanel.classList.add('active');
             ui.showSlotPanel.classList.add('hide');
+            ui.showPrefPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -510,17 +521,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function toggleConfigPanel(e) {
-        // "this" = element clicked
-        if (this.id === "show-init-panel") {
-            ui.initPanel.classList.remove('hide');
-            ui.slotPanel.classList.add('hide');
-        }
-
-        if (this.id === 'show-slot-panel') {
-            ui.slotPanel.classList.remove('hide');
-            ui.initPanel.classList.add('hide');
-        }
-
+		var clicked = this;
+		var panels = {
+			init: "Init",
+			slot: "Slot",
+			pref: "Pref"
+		};
+		var hiddenClass = 'hide';
+		var activeClass = 'active';
+		for (var panel in panels) {
+			if (clicked.id.indexOf(panel) >= 0) {
+				ui[panel + "Panel"].classList.remove(hiddenClass);
+				ui["show" + panels[panel] + "Panel"].classList.add(activeClass);
+			} else {
+				ui[panel + "Panel"].classList.add(hiddenClass);
+				ui["show" + panels[panel] + "Panel"].classList.remove(activeClass);
+			}
+		}
         e && e.preventDefault && e.preventDefault();
     }
 
@@ -649,7 +666,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     function submitLockoutForm(e) {
         var lockout = parseInt(ui.lockoutForm.okLockout.value, 10);
-        if (typeof lockout !== 'number' || lockout < 0) {
+		if (isNaN(lockout)) {
+			lockout = 0;
+		}
+
+		if (typeof lockout !== 'number' || lockout < 0) {
             lockout = 30;
         }
 
@@ -658,6 +679,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         myOnlyKey.setLockout(lockout, function (err) {
+			myOnlyKey.setLastMessage('received', 'Set lockout to ' + lockout + ' seconds' + (lockout === 0 ? ' (disabled)' : ''));
             ui.lockoutForm.reset();
         });
 
