@@ -35,7 +35,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             TFATYPE: 8,
             TFAUSERNAME: 9,
             YUBIAUTH: 10,
-            LOCKOUT: 11
+            LOCKOUT: 11,
+            WIPEMODE: 12,
+            TYPESPEED: 13,
+            KBDLAYOUT: 14
         };
         this.connection = -1;
         this.isReceivePending = false;
@@ -275,11 +278,25 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setSlot('XX', 'LOCKOUT', lockout, callback);
     };
 
+    OnlyKey.prototype.setWipeMode = function (wipeMode, callback) {
+        this.setSlot('XX', 'WIPEMODE', wipeMode, callback);
+    };
+
+    OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
+        this.setSlot('XX', 'TYPESPEED', typeSpeed, callback);
+    };
+
+    OnlyKey.prototype.setKBDLayout= function (kbdLayout, callback) {
+        this.setSlot('XX', 'KBDLAYOUT', kbdLayout, callback);
+    };
+
     var ui = {
-        showSlotPanel: null,
-        showInitPanel: null,
+		showInitPanel: null,
+		showSlotPanel: null,
+		showPrefPanel: null,
         initPanel: null,
         slotPanel: null,
+		prefPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -298,12 +315,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui[k] = element;
         }
 
+        ui.showInitPanel.addEventListener('click', toggleConfigPanel);
+        ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
+        ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
+
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
         ui.lockoutForm = document['lockoutForm'];
-
-        ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
-        ui.showInitPanel.addEventListener('click', toggleConfigPanel);
+        ui.wipeModeForm = document['wipeModeForm'];
+        ui.typeSpeedForm = document['typeSpeedForm'];
+        ui.keyboardLayoutForm = document['keyboardLayoutForm'];
 
         enableIOControls(false);
         enableAuthForms();
@@ -325,18 +346,26 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 dialog.open(ui.lockedDialog);
             } else {
                 ui.main.classList.remove('hide');
-                ui.slotPanel.classList.remove('hide');
                 ui.initPanel.classList.add('hide');
-                ui.showInitPanel.classList.remove('hide');
+                ui.showInitPanel.classList.remove('hide', 'active');
+                ui.slotPanel.classList.remove('hide');
                 ui.showSlotPanel.classList.remove('hide');
+                ui.showSlotPanel.classList.add('active');
+                ui.prefPanel.classList.add('hide');
+                ui.showPrefPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
             ui.main.classList.remove('hide');
             ui.slotPanel.classList.add('hide');
+			ui.slotPanel.classList.remove('active');
+			ui.prefPanel.classList.add('hide');
+			ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
-            ui.showInitPanel.classList.add('hide');
+            ui.showInitPanel.classList.remove('hide');
+            ui.showInitPanel.classList.add('active');
             ui.showSlotPanel.classList.add('hide');
+            ui.showPrefPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -510,17 +539,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function toggleConfigPanel(e) {
-        // "this" = element clicked
-        if (this.id === "show-init-panel") {
-            ui.initPanel.classList.remove('hide');
-            ui.slotPanel.classList.add('hide');
-        }
-
-        if (this.id === 'show-slot-panel') {
-            ui.slotPanel.classList.remove('hide');
-            ui.initPanel.classList.add('hide');
-        }
-
+		var clicked = this;
+		var panels = {
+			init: "Init",
+			slot: "Slot",
+			pref: "Pref"
+		};
+		var hiddenClass = 'hide';
+		var activeClass = 'active';
+		for (var panel in panels) {
+			if (clicked.id.indexOf(panel) >= 0) {
+				ui[panel + "Panel"].classList.remove(hiddenClass);
+				ui["show" + panels[panel] + "Panel"].classList.add(activeClass);
+			} else {
+				ui[panel + "Panel"].classList.add(hiddenClass);
+				ui["show" + panels[panel] + "Panel"].classList.remove(activeClass);
+			}
+		}
         e && e.preventDefault && e.preventDefault();
     }
 
@@ -566,6 +601,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         var lockoutSubmit = document.getElementById('lockoutSubmit');
         lockoutSubmit.addEventListener('click', submitLockoutForm);
+
+        var wipeModeSubmit = document.getElementById('wipeModeSubmit');
+        wipeModeSubmit.addEventListener('click', submitWipeModeForm);
+
+        var typeSpeedSubmit = document.getElementById('typeSpeedSubmit');
+        typeSpeedSubmit.addEventListener('click', submitTypeSpeedForm);
+
+        var kbdLayoutSubmit = document.getElementById('kbdLayoutSubmit');
+        kbdLayoutSubmit.addEventListener('click', submitKBDLayoutForm);
     }
 
     function submitYubiAuthForm(e) {
@@ -649,16 +693,64 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     function submitLockoutForm(e) {
         var lockout = parseInt(ui.lockoutForm.okLockout.value, 10);
-        if (typeof lockout !== 'number' || lockout < 0) {
+		if (isNaN(lockout)) {
+			lockout = 0;
+		}
+
+		if (typeof lockout !== 'number' || lockout < 0) {
             lockout = 30;
         }
 
-        if (lockout > 255) {
-            lockout = 255;
-        }
+        lockout = Math.min(lockout, 255);
 
         myOnlyKey.setLockout(lockout, function (err) {
+			myOnlyKey.setLastMessage('received', 'Lockout set to ' + lockout + ' minutes' + (lockout === 0 ? ' (disabled)' : ''));
             ui.lockoutForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitWipeModeForm(e) {
+        var wipeMode = parseInt(ui.wipeModeForm.okWipeMode.value, 10);
+
+        myOnlyKey.setWipeMode(wipeMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'Wipe Mode set successfully');
+            ui.wipeModeForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitTypeSpeedForm(e) {
+        var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
+
+        if (typeof typeSpeed !== 'number' || typeSpeed < 1) {
+            typeSpeed = 1;
+        }
+
+        typeSpeed = Math.min(typeSpeed, 10);
+
+         myOnlyKey.setTypeSpeed(typeSpeed, function (err) {
+            myOnlyKey.setLastMessage('received', 'Type Speed mode set successfully');
+            ui.typeSpeedForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitKBDLayoutForm(e) {
+        var kbdLayout = parseInt(ui.keyboardLayoutForm.okKeyboardLayout.value, 10);
+
+        if (typeof kbdLayout !== 'number' || kbdLayout < 1) {
+            kbdLayout = 1;
+        }
+
+        kbdLayout = Math.min(kbdLayout, 25);
+
+        myOnlyKey.setKBDLayout(kbdLayout, function (err) {
+            myOnlyKey.setLastMessage('received', 'Keyboard Layout set successfully');
+            ui.keyboardLayoutForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();

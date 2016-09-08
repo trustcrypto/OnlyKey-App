@@ -5,13 +5,26 @@ body {
     flex-flow: row wrap;
 }
 
-div {
-    padding: 8px;
+body > div {
+    padding: 16px;
+}
+
+div, form {
     flex: 1 100%;
 }
 
+.panel {
+	border: 2px maroon solid;
+    padding: 15px;
+	position: relative;
+	z-index: 1;
+	transition: all 0.5s ease;
+}
+
 .hide {
-    display: none;
+    opacity: 0;
+	position: absolute;
+	z-index: 0;
 }
 
 #output-panel, #input-panel {
@@ -106,4 +119,23 @@ dialog a {
 .flex-item {
     -webkit-flex: 1 auto;
     flex: 1 auto;
+}
+
+nav > a {
+    padding: 4px 4px 2px 4px;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 0;
+	border: 2px solid transparent;
+	text-decoration: none;
+	font-size: 1.5em;
+	color: darkgrey;
+}
+
+nav > a.active {
+    position: relative;
+    z-index: 2;
+	border-color: maroon;
+    border-bottom: 0;
+    background-color: white;
+	color: maroon;
 }
