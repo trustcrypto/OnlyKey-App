@@ -271,13 +271,13 @@
 						<h2>Wipe Mode</h2>
 						<h3>Configure how the OnlyKey responds to a factory reset.</h3>
 						<label>
-							<input type="radio" checked name="WipeMode" value="sensitive" />
+							<input type="radio" checked name="okWipeMode" value=1 />
 							<u>Sensitive Data Only</u> (default)
 							<br/>All sensitive data is wiped.
 						</label>
 						<br/><br/>
 						<label>
-							<input type="radio" name="WipeMode" value="full" />
+							<input type="radio" name="okWipeMode" value=2 />
 							<u>Full Wipe</u> (recommended for plausible deniability users)
 							<br/>Entire device is wiped. Firmware must be reloaded. 
 							<br/>
@@ -303,34 +303,34 @@
 						<h2>Keyboard Layout</h2>
 						Choose a keyboard layout:
 						<select id="okKeyboardLayout" name="okKeyboardLayout">
-							<option value="0x01">US_ENGLISH (default)</option>
-							<option value="0x02">CANADIAN_FRENCH</option>
-							<option value="0x03">CANADIAN_MULTILINGUAL</option>
-							<option value="0x04">DANISH</option>
-							<option value="0x05">FINNISH</option>
-							<option value="0x06">FRENCH</option>
-							<option value="0x07">FRENCH_BELGIAN</option>
-							<option value="0x08">FRENCH_SWISS</option>
-							<option value="0x09">GERMAN</option>
-							<option value="0x0A">GERMAN_MAC</option>
-							<option value="0x0B">GERMAN_SWISS</option>
-							<option value="0x0C">ICELANDIC</option>
-							<option value="0x0D">IRISH</option>
-							<option value="0x0E">ITALIAN</option>
-							<option value="0x0F">NORWEGIAN</option>
-							<option value="0x10">PORTUGUESE</option>
-							<option value="0x11">PORTUGUESE_BRAZILIAN</option>
-							<option value="0x12">SPANISH</option>
-							<option value="0x13">SPANISH_LATIN_AMERICA</option>
-							<option value="0x14">SWEDISH</option>
-							<option value="0x15">TURKISH</option>
-							<option value="0x16">UNITED_KINGDOM</option>
-							<option value="0x17">US_INTERNATIONAL</option>
-							<option value="0x18">CZECH</option>
-							<option value="0x19">SERBIAN_LATIN_ONLY</option">
+							<option value=1>US_ENGLISH (default)</option>
+							<option value=2>CANADIAN_FRENCH</option>
+							<option value=3>CANADIAN_MULTILINGUAL</option>
+							<option value=4>DANISH</option>
+							<option value=5>FINNISH</option>
+							<option value=6>FRENCH</option>
+							<option value=7>FRENCH_BELGIAN</option>
+							<option value=8>FRENCH_SWISS</option>
+							<option value=9>GERMAN</option>
+							<option value=10>GERMAN_MAC</option>
+							<option value=11>GERMAN_SWISS</option>
+							<option value=12>ICELANDIC</option>
+							<option value=13>IRISH</option>
+							<option value=14>ITALIAN</option>
+							<option value=15>NORWEGIAN</option>
+							<option value=16>PORTUGUESE</option>
+							<option value=17>PORTUGUESE_BRAZILIAN</option>
+							<option value=18>SPANISH</option>
+							<option value=19>SPANISH_LATIN_AMERICA</option>
+							<option value=20>SWEDISH</option>
+							<option value=21>TURKISH</option>
+							<option value=22>UNITED_KINGDOM</option>
+							<option value=23>US_INTERNATIONAL</option>
+							<option value=24>CZECH</option>
+							<option value=25>SERBIAN_LATIN_ONLY</option>
 						</select>
 						<br/>
-						<input type="button" id="keyboardLayoutSubmit" value="Set Keyboard Layout" />
+						<input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
 					</form>
 				</div>
 			</div>
