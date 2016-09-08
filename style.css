@@ -95,9 +95,19 @@ dialog a {
     color: rgba(255,0,0,.3);
 }
 
-#slot-config-btns td {
-    padding: .5em;
+/* configure onlykey photo background */
+td.ok-photo-cell {
+    background: transparent url(onlykey-photo.png) no-repeat 50% 0%;
+    background-size: contain;
+    padding-top: 65px;
+    width: 80px;
+    height: 155px;
 }
+
+#slot-config-btns td {
+    vertical-align: bottom;
+}
+/* end photo background styles */
 
 #slotConfigErrors ul {
     background-color: white;
