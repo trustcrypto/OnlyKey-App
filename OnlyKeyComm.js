@@ -51,6 +51,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         };
         this.currentSlotId = null;
         this.labels = [];
+		this.version = "";
     }
 
     OnlyKey.prototype.setConnection = function (connectionId) {
@@ -286,9 +287,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setSlot('XX', 'TYPESPEED', typeSpeed, callback);
     };
 
-    OnlyKey.prototype.setKBDLayout= function (kbdLayout, callback) {
+    OnlyKey.prototype.setKBDLayout = function (kbdLayout, callback) {
         this.setSlot('XX', 'KBDLAYOUT', kbdLayout, callback);
     };
+
+	OnlyKey.prototype.setVersion = function (version) {
+		this.version = version;
+	};
+
+	OnlyKey.prototype.getVersion = function () {
+		return this.version;
+	};
 
     var ui = {
 		showInitPanel: null,
@@ -513,6 +522,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         if (msg.indexOf("UNLOCKED") >= 0) {
             myOnlyKey.isInitialized = true;
+			myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
+			setOkVersionStr();
             if (myOnlyKey.isLocked) {
                 myOnlyKey.isLocked = false;
                 myOnlyKey.getLabels(pollForInput);
@@ -755,6 +766,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         e && e.preventDefault && e.preventDefault();
     }
+
+	function setOkVersionStr() {
+		var version = myOnlyKey.getVersion();
+		if (version) {
+			document.getElementById("okVersionStr").innerText = "OnlyKey firmware " + version;
+		}
+	}
 
     window.addEventListener('load', init);
 };
