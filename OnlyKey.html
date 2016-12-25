@@ -390,16 +390,16 @@
                 <tr>
                     <td>
                         <label>
-                            <input type="checkbox" id="chkUserName" name="chkUserName" value="true"/>
-                            UserName
+                            <input type="checkbox" id="chkSlotUrl" name="chkSlotUrl" value="true"/>
+                            URL
                         </label>
                     </td>
                     <td>
-                        <input type="text" id="txtUserName" name="txtUserName" value="" maxlength="32" />
+                        <input type="text" id="txtSlotUrl" name="txtSlotUrl" value="" maxlength="100" />
                     </td>
                 </tr>
                 <tr>
-                     <td>
+                    <td>
                         <label>
                             <input type="radio" name="tabReturn1" value=1/>
                             Tab
@@ -418,7 +418,41 @@
                         </label>
                     </td>
                     <td>
-                        <input type="text" name="numDelay1" value="" maxlength="1" />
+                        <input type="text" name="numDelay1" value="" maxlength="1" style="width:1em;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="chkUserName" name="chkUserName" value="true"/>
+                            UserName
+                        </label>
+                    </td>
+                    <td>
+                        <input type="text" id="txtUserName" name="txtUserName" value="" maxlength="32" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
+                            <input type="radio" name="tabReturn2" value=1/>
+                            Tab
+                        </label>
+                        <label>
+                            <input type="radio" name="tabReturn2" value=2/>
+                            Return
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="chkDelay2" name="chkDelay2" value="true"/>
+                            Delay (0-9 seconds)
+                        </label>
+                    </td>
+                    <td>
+                        <input type="text" name="numDelay2" value="" maxlength="1" style="width:1em;" />
                     </td>
                 </tr>
                 <tr>
@@ -441,12 +475,12 @@
                 <tr>
                     <td>
                         <label>
-                            <input type="checkbox" id="chkDelay2" name="chkDelay2" value="true"/>
+                            <input type="checkbox" id="chkDelay3" name="chkDelay3" value="true"/>
                             Delay (0-9 seconds)
                         </label>
                     </td>
                     <td>
-                        <input type="text" name="numDelay2" value="" maxlength="1" />
+                        <input type="text" name="numDelay3" value="" maxlength="1" style="width:1em;" />
                     </td>
                 </tr>
                 <tr>
@@ -455,11 +489,11 @@
                 <tr>
                     <td>
                         <label>
-                            <input type="radio" name="tabReturn2" value=1/>
+                            <input type="radio" name="tabReturn3" value=1/>
                             Tab
                         </label>
                         <label>
-                            <input type="radio" name="tabReturn2" value=2/>
+                            <input type="radio" name="tabReturn3" value=2/>
                             Return
                         </label>
                     </td>
