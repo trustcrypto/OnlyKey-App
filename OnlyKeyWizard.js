@@ -173,7 +173,7 @@
                 input: form.txtSlotLabel,
                 msgId: 'LABEL'
             },
-            chkSlotLabel: {
+            chkSlotUrl: {
                 input: form.txtSlotUrl,
                 msgId: 'URL'
             },
