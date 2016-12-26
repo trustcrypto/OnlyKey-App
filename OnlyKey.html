@@ -380,26 +380,26 @@
                     <td>
                         <label>
                             <input type="checkbox" id="chkSlotLabel" name="chkSlotLabel" value="true"/>
-                            Label
+                            Label (up to 16 chars)
                         </label>
                     </td>
                     <td>
-                        <input type="text" id="txtSlotLabel" name="txtSlotLabel" value="" maxlength="10" />
+                        <input type="text" id="txtSlotLabel" name="txtSlotLabel" value="" maxlength="16" />
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label>
-                            <input type="checkbox" id="chkUserName" name="chkUserName" value="true"/>
-                            UserName
+                            <input type="checkbox" id="chkSlotUrl" name="chkSlotUrl" value="true"/>
+                            URL (up to 56 chars)
                         </label>
                     </td>
                     <td>
-                        <input type="text" id="txtUserName" name="txtUserName" value="" maxlength="32" />
+                        <input type="text" id="txtSlotUrl" name="txtSlotUrl" value="" maxlength="56" />
                     </td>
                 </tr>
                 <tr>
-                     <td>
+                    <td>
                         <label>
                             <input type="radio" name="tabReturn1" value=1/>
                             Tab
@@ -418,24 +418,30 @@
                         </label>
                     </td>
                     <td>
-                        <input type="text" name="numDelay1" value="" maxlength="1" />
+                        <input type="text" name="numDelay1" value="" maxlength="1" style="width:1em;" />
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <label>
-                            <input type="checkbox" id="chkPassword" name="chkPassword" value="true"/>
-                            Password (up to 32 chars)
+                            <input type="checkbox" id="chkUserName" name="chkUserName" value="true"/>
+                            UserName (up to 56 chars)
                         </label>
                     </td>
                     <td>
-                        <input type="password" id="txtPassword" name="txtPassword" value="" maxlength="32" />
+                        <input type="text" id="txtUserName" name="txtUserName" value="" maxlength="56" />
                     </td>
                 </tr>
                 <tr>
-                    <td>Re-enter Password</td>
                     <td>
-                        <input type="password" id="txtPasswordConfirm" name="txtPasswordConfirm" value="" maxlength="32" />
+                        <label>
+                            <input type="radio" name="tabReturn2" value=1/>
+                            Tab
+                        </label>
+                        <label>
+                            <input type="radio" name="tabReturn2" value=2/>
+                            Return
+                        </label>
                     </td>
                 </tr>
                 <tr>
@@ -446,7 +452,35 @@
                         </label>
                     </td>
                     <td>
-                        <input type="text" name="numDelay2" value="" maxlength="1" />
+                        <input type="text" name="numDelay2" value="" maxlength="1" style="width:1em;" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="chkPassword" name="chkPassword" value="true"/>
+                            Password (up to 56 chars)
+                        </label>
+                    </td>
+                    <td>
+                        <input type="password" id="txtPassword" name="txtPassword" value="" maxlength="56" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>Re-enter Password</td>
+                    <td>
+                        <input type="password" id="txtPasswordConfirm" name="txtPasswordConfirm" value="" maxlength="56" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="chkDelay3" name="chkDelay3" value="true"/>
+                            Delay (0-9 seconds)
+                        </label>
+                    </td>
+                    <td>
+                        <input type="text" name="numDelay3" value="" maxlength="1" style="width:1em;" />
                     </td>
                 </tr>
                 <tr>
@@ -455,11 +489,11 @@
                 <tr>
                     <td>
                         <label>
-                            <input type="radio" name="tabReturn2" value=1/>
+                            <input type="radio" name="tabReturn3" value=1/>
                             Tab
                         </label>
                         <label>
-                            <input type="radio" name="tabReturn2" value=2/>
+                            <input type="radio" name="tabReturn3" value=2/>
                             Return
                         </label>
                     </td>

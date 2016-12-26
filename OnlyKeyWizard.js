@@ -173,29 +173,41 @@
                 input: form.txtSlotLabel,
                 msgId: 'LABEL'
             },
-            chkUserName: {
-                input: form.txtUserName,
-                msgId: 'USERNAME'
-            },
-            chkDelay1: {
-                input: form.numDelay1,
-                msgId: 'DELAY1'
+            chkSlotUrl: {
+                input: form.txtSlotUrl,
+                msgId: 'URL'
             },
             tabReturn1: {
                 input: form.tabReturn1,
                 msgId: 'NEXTKEY1'
             },
-            chkPassword: {
-                input: form.txtPassword,
-                msgId: 'PASSWORD'
+            chkDelay1: {
+                input: form.numDelay1,
+                msgId: 'DELAY1'
+            },
+            chkUserName: {
+                input: form.txtUserName,
+                msgId: 'USERNAME'
+            },
+            tabReturn2: {
+                input: form.tabReturn2,
+                msgId: 'NEXTKEY2'
             },
             chkDelay2: {
                 input: form.numDelay2,
                 msgId: 'DELAY2'
             },
-            tabReturn2: {
-                input: form.tabReturn2,
-                msgId: 'NEXTKEY2'
+            chkPassword: {
+                input: form.txtPassword,
+                msgId: 'PASSWORD'
+            },
+            tabReturn3: {
+                input: form.tabReturn3,
+                msgId: 'NEXTKEY3'
+            },
+            chkDelay3: {
+                input: form.numDelay3,
+                msgId: 'DELAY3'
             },
             mode: {
                 input: form.mode,

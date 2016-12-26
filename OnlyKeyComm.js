@@ -23,18 +23,30 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKWIPEU2FPRIV: 233, //0xE9
             OKSETU2FCERT: 234, //0xEA
             OKWIPEU2FCERT: 235, //0xEB
+            OKGETECCPUBKEY: 236,
+            OKSIGNECCCHALLENGE: 237,
+            OKWIPEECCPRIV: 238,
+            OKSETECCPRIV: 239,
+            OKGETRSAPUBKEY: 240,
+            OKSIGNRSACHALLENGE: 241,
+            OKWIPERSAPRIV: 242,
+            OKSETRSAPRIV: 243
         };
         this.messageFields = {
             LABEL: 1,
+            URL: 15,
+            NEXTKEY1: 16,
+            DELAY1: 17,
             USERNAME: 2,
-            NEXTKEY1: 3,
-            DELAY1: 4,
+            NEXTKEY2: 3,
+            DELAY2: 4,
             PASSWORD: 5,
-            NEXTKEY2: 6,
-            DELAY2: 7,
+            NEXTKEY3: 6,
+            DELAY3: 7,
             TFATYPE: 8,
             TFAUSERNAME: 9,
             YUBIAUTH: 10,
+            NEXTKEY4: 18,
             LOCKOUT: 11,
             WIPEMODE: 12,
             TYPESPEED: 13,
