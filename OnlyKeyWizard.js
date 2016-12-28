@@ -201,8 +201,12 @@
                 input: form.txtPassword,
                 msgId: 'PASSWORD'
             },
-            tabReturn3: {
-                input: form.tabReturn3,
+            tabReturnGoogle: {
+                input: form.tabReturnGoogle,
+                msgId: 'NEXTKEY3'
+            },
+            tabReturnYubikey: {
+                input: form.tabReturnYubikey,
                 msgId: 'NEXTKEY3'
             },
             chkDelay3: {
