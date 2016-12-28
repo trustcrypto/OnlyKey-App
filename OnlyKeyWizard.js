@@ -82,7 +82,7 @@
                 dialog.open.call(null, self.finalStepDialog);
                 return cb(null, 'STOP');
             });
-        };                
+        };
         self.steps.Step7.enterFn = function () {
             enableDisclaimer.call(self, 'passcode3Disclaimer');
             myOnlyKey.sendSetPDPin.call(myOnlyKey);
@@ -201,12 +201,8 @@
                 input: form.txtPassword,
                 msgId: 'PASSWORD'
             },
-            tabReturnGoogle: {
-                input: form.tabReturnGoogle,
-                msgId: 'NEXTKEY3'
-            },
-            tabReturnYubikey: {
-                input: form.tabReturnYubikey,
+            tabReturn3: {
+                input: form.tabReturn3,
                 msgId: 'NEXTKEY3'
             },
             chkDelay3: {
@@ -317,7 +313,7 @@
                         console.error(err);
                         goBackOnError(err, res);
                     } else if (res !== 'STOP') {
-                        setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);                    
+                        setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
                     }
                 }.bind(this));
             } else {
