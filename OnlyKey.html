@@ -43,7 +43,7 @@
             <div id="stepContent">
                 <div class="step" id="Step1">
                     <h3>Welcome to the OnlyKey Initial Setup Wizard!</h3>
-                    This wizard initializes the OnlyKey. Your current step is always highlighted in the header. 
+                    This wizard initializes the OnlyKey. Your current step is always highlighted in the header.
                     <br/><br />
                     Click [Next] to get started.
                 </div>
@@ -139,8 +139,8 @@
                     </p>
                 </div>
             </div>
-            
-            <br />    
+
+            <br />
 
             <table border="0" cellpadding="5" cellspacing="0">
                 <tr>
@@ -242,7 +242,7 @@
                         </label>
                         <br/>
                         <label>
-                            U2F Certificate (up to 1024 bytes hex)
+                            U2F Certificate (up to 768 bytes hex)
                             <br/>
                             <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
                         </label>
@@ -279,7 +279,7 @@
 						<label>
 							<input type="radio" name="okWipeMode" value=2 />
 							<u>Full Wipe</u> (recommended for plausible deniability users)
-							<br/>Entire device is wiped. Firmware must be reloaded. 
+							<br/>Entire device is wiped. Firmware must be reloaded.
 							<br/>
 						</label>
 						<br/>
@@ -372,7 +372,7 @@
                     <td>Load Defaults From Template</td>
                     <td>
                         <select id="templates" name="templates">
-                            <option value="test">test</option>  
+                            <option value="test">test</option>
                         </select>
                     </td>
                 </tr> -->
@@ -473,6 +473,9 @@
                     </td>
                 </tr>
                 <tr>
+                    <td><br/>Options below are for two-factor authentication:</td>
+                </tr>
+                <tr>
                     <td>
                         <label>
                             <input type="checkbox" id="chkDelay3" name="chkDelay3" value="true"/>
@@ -482,9 +485,6 @@
                     <td>
                         <input type="text" name="numDelay3" value="" maxlength="1" style="width:1em;" />
                     </td>
-                </tr>
-                <tr>
-                    <td><br/>Options below are for two-factor authentication:</td>
                 </tr>
                 <tr>
                     <td>
