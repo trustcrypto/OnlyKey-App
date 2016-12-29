@@ -23,14 +23,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKWIPEU2FPRIV: 233, //0xE9
             OKSETU2FCERT: 234, //0xEA
             OKWIPEU2FCERT: 235, //0xEB
-            OKGETECCPUBKEY: 236,
-            OKSIGNECCCHALLENGE: 237,
-            OKWIPEECCPRIV: 238,
-            OKSETECCPRIV: 239,
-            OKGETRSAPUBKEY: 240,
-            OKSIGNRSACHALLENGE: 241,
-            OKWIPERSAPRIV: 242,
-            OKSETRSAPRIV: 243
+            OKGETPUBKEY: 236,
+            OKSIGN: 237,
+            OKDECRYPT: 238,
+            OKWIPEPRIV: 239,
+            OKSETPRIV: 240
         };
         this.messageFields = {
             LABEL: 1,
@@ -46,7 +43,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             TFATYPE: 8,
             TFAUSERNAME: 9,
             YUBIAUTH: 10,
-            NEXTKEY4: 18,
             LOCKOUT: 11,
             WIPEMODE: 12,
             TYPESPEED: 13,
@@ -474,7 +470,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
 
             console.info("RECEIVED:", msg);
-    
+
             if (myOnlyKey.pollEnabled) {
                 myOnlyKey.poll = setTimeout(pollForInput, 0);
             }
