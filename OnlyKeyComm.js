@@ -27,7 +27,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKSIGN: 237,
             OKDECRYPT: 238,
             OKWIPEPRIV: 239,
-            OKSETPRIV: 240
+            OKSETPRIV: 240,
+            OKRESTORE: 241
         };
         this.messageFields = {
             LABEL: 1,
