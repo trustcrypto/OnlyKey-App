@@ -25,9 +25,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKWIPEU2FCERT: 235, //0xEB
             OKGETPUBKEY: 236,
             OKSIGN: 237,
-            OKDECRYPT: 238,
-            OKWIPEPRIV: 239,
-            OKSETPRIV: 240,
+            OKWIPEPRIV: 238,
+            OKSETPRIV: 239,
+            OKDECRYPT: 240,
             OKRESTORE: 241
         };
         this.messageFields = {
