@@ -311,10 +311,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var ui = {
 		showInitPanel: null,
 		showSlotPanel: null,
-		showPrefPanel: null,
+        showPrefPanel: null,
+        showKeysPanel: null,
         initPanel: null,
         slotPanel: null,
-		prefPanel: null,
+        prefPanel: null,
+        keysPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -336,6 +338,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
+        ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -371,6 +374,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showSlotPanel.classList.add('active');
                 ui.prefPanel.classList.add('hide');
                 ui.showPrefPanel.classList.remove('hide', 'active');
+                ui.keysPanel.classList.add('hide');
+                ui.showKeysPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -563,7 +568,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		var panels = {
 			init: "Init",
 			slot: "Slot",
-			pref: "Pref"
+            pref: "Pref",
+            keys: "Keys"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
@@ -704,6 +710,57 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function wipeU2fAuthForm(e) {
+        myOnlyKey.wipeU2fPrivateId(function (err) {
+            myOnlyKey.wipeU2fCert();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitEccAuthForm(e) {
+        var privateId = ui.eccAuthForm.u2fPrivateId.value || '';
+        var key = ui.eccAuthForm.eccKey.value || '';
+
+        privateId = privateId.toString().replace(/\s/g,'');
+        key = key.toString().replace(/\s/g,'');
+
+        // going to be mean and only send the max chars allowed
+        var maxPrivateIdLength = 64; // 32 bytes
+
+        // TODO: check ecc type first
+        var maxKeyLength = 2048; // 1024 bytes
+
+        privateId = privateId.slice(0, maxPrivateIdLength);
+        key = key.slice(0, maxKeyLength);
+
+        // TODO: validation
+        myOnlyKey.setEccPrivateId(privateId, function (err) {
+            submitEccKey(key, function (err) {
+                // TODO: check for success, then reset
+                ui.eccAuthForm.reset();
+            });
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitEccKey(keyStr, callback) {
+        // this function should recursively call itself until all bytes are sent
+        // in chunks of 58
+        if (!keyStr.length) {
+            return callback();
+        }
+        var maxPacketSize = 116; // 58 bytes
+        var finalPacket = keyStr.length - maxPacketSize <= 0;
+
+        var cb = finalPacket ? callback : submitEccKey.bind(null, keyStr.slice(maxPacketSize), callback);
+        // packetHeader is hex number of bytes in keyStr chunk
+        // what if keyStr.length is odd?
+        var packetHeader = finalPacket ? (keyStr.length / 2).toString(16) : "FF";
+        myOnlyKey.setEccKey(keyStr.slice(0, maxPacketSize), packetHeader, cb);
+    }
+
+    function wipeEccAuthForm(e) {
         myOnlyKey.wipeU2fPrivateId(function (err) {
             myOnlyKey.wipeU2fCert();
         });
