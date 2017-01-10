@@ -20,8 +20,8 @@
 		<nav>
             <a id="show-init-panel" href="">PINs</a>
 			<a id="show-slot-panel" href="" class="hide">Slots</a>
+            <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
-            <a id="show-keys-panel" href="" class="hide">Private Keys</a>
 		</nav>
 
         <form id="init-panel" name="init-panel" class="hide panel">
@@ -230,7 +230,7 @@
                         <br/><br/>
                         <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
                         <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
-                        <div id="yubiError"></div>
+                        <div id="yubiError" class="form-error"></div>
                     </form>
                 </div>
                 <div class="flex-item">
@@ -250,7 +250,7 @@
                         <br/><br/>
                         <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
                         <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-                        <div id="u2fError"></div>
+                        <div id="u2fError" class="form-error"></div>
                     </form>
                 </div>
             </div>
@@ -360,38 +360,38 @@
                         <label>
                             Slot:
                             <select id="eccSlot" name="eccSlot">
-                                <option>1</option>
-                                <option>2</option>
-                                <option>3</option>
-                                <option>4</option>
-                                <option>5</option>
-                                <option>6</option>
-                                <option>7</option>
-                                <option>8</option>
-                                <option>9</option>
-                                <option>10</option>
-                                <option>11</option>
-                                <option>12</option>
-                                <option>13</option>
-                                <option>14</option>
-                                <option>15</option>
-                                <option>16</option>
-                                <option>17</option>
-                                <option>18</option>
-                                <option>19</option>
-                                <option>20</option>
-                                <option>21</option>
-                                <option>22</option>
-                                <option>23</option>
-                                <option>24</option>
-                                <option>25</option>
-                                <option>26</option>
-                                <option>27</option>
-                                <option>28</option>
-                                <option>29</option>
-                                <option>30</option>
-                                <option>31</option>
-                                <option>32</option>
+                                <option value=101>1</option>
+                                <option value=102>2</option>
+                                <option value=103>3</option>
+                                <option value=104>4</option>
+                                <option value=105>5</option>
+                                <option value=106>6</option>
+                                <option value=107>7</option>
+                                <option value=108>8</option>
+                                <option value=109>9</option>
+                                <option value=110>10</option>
+                                <option value=111>11</option>
+                                <option value=112>12</option>
+                                <option value=113>13</option>
+                                <option value=114>14</option>
+                                <option value=115>15</option>
+                                <option value=116>16</option>
+                                <option value=117>17</option>
+                                <option value=118>18</option>
+                                <option value=119>19</option>
+                                <option value=120>20</option>
+                                <option value=121>21</option>
+                                <option value=122>22</option>
+                                <option value=123>23</option>
+                                <option value=124>24</option>
+                                <option value=125>25</option>
+                                <option value=126>26</option>
+                                <option value=127>27</option>
+                                <option value=128>28</option>
+                                <option value=129>29</option>
+                                <option value=130>30</option>
+                                <option value=131>31</option>
+                                <option value=132>32</option>
                             </select>
                         </label>
 
@@ -417,7 +417,7 @@
 
                         <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
                         <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
-                        <div id="eccError"></div>
+                        <div id="eccFormError" class="form-error"></div>
                     </form>
                 </div>
 
@@ -439,10 +439,10 @@
                         <label>
                             Slot:
                             <select id="rsaSlot" name="rsaSlot">
-                                <option>1</option>
-                                <option>2</option>
-                                <option>3</option>
-                                <option>4</option>
+                                <option value=1>1</option>
+                                <option value=2>2</option>
+                                <option value=3>3</option>
+                                <option value=4>4</option>
                             </select>
                         </label>
 
@@ -452,7 +452,7 @@
                         <label>
                             Key:
                             <br/>
-                            <textarea id="rsaKey" name="rsaKey" maxlength="4096" minlength="2048" cols="40" rows="10" placeholder="RSA Key (1024 or 2048 bytes hex)" required></textarea>
+                            <textarea id="rsaKey" name="rsaKey" maxlength="4096" minlength="2" cols="40" rows="10" placeholder="RSA Key (up to 2048 bytes hex)" required></textarea>
                         </label>
 
                         <br/>
@@ -468,7 +468,7 @@
 
                         <input type="button" id="rsaSubmit" name="rsaSubmit" value="Save to OnlyKey" />
                         <input type="button" id="rsaWipe" name="rsaWipe" value="Wipe from OnlyKey" />
-                        <div id="rsaError"></div>
+                        <div id="rsaFormError" class="form-error"></div>
                     </form>
                 </div>
             </div>

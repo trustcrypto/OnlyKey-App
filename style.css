@@ -160,3 +160,8 @@ nav > a.active {
 	margin-top: 0;
 	padding-top: 0;
 }
+
+.form-error {
+    color: red;
+    margin-top: 1em;
+}
