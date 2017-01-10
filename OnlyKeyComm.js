@@ -63,9 +63,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		this.version = "";
 
         this.keyTypeModifiers = {
-            Backup: 4096,      // 0x100
-            Signature: 128,    // 0x80
-            Decryption: 64,    // 0x40
+            Backup: 128,      // 0x80
+            Signature: 64,    // 0x40
+            Decryption: 32,    // 0x20
             Authentication: 16 // 0x10
         };
     }
