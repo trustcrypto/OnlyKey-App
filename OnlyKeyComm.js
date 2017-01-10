@@ -61,6 +61,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.currentSlotId = null;
         this.labels = [];
 		this.version = "";
+
+        this.keyTypeModifiers = {
+            Backup: 4096,      // 0x100
+            Signature: 128,    // 0x80
+            Decryption: 64,    // 0x40
+            Authentication: 16 // 0x10
+        };
     }
 
     OnlyKey.prototype.setConnection = function (connectionId) {
@@ -108,7 +115,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             if (self.messageFields[fieldId]) {
                 bytes[cursor] = strPad(self.messageFields[fieldId], 2, 0);
             } else {
-                bytes[cursor] = strPad(fieldId, 2, 0);
+                bytes[cursor] = fieldId;
             }
 
             cursor++;
@@ -759,7 +766,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var type = parseInt(ui.eccForm.eccType.value || '', 10);
         var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
         var key = ui.eccForm.eccKey.value || '';
-        var setAsBackupModifier = ui.eccForm.eccSetAsBackup.checked ? 128 : 0;
+
         var maxKeyLength = 64; // 32 bytes
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
@@ -772,8 +779,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return ui.eccForm.setError('Key must be 32 bytes (64 hex characters).');
         }
 
-        // if set as backup is checked, add modifier to type
-        type = type ? type + setAsBackupModifier : type;
+        // set all type modifiers
+        var typeModifier = 0;
+
+        Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
+            if (ui.eccForm['eccSetAs' + modifier].checked) {
+                typeModifier += myOnlyKey.keyTypeModifiers[modifier];
+            }
+        });
+
+        type += typeModifier;
 
         // TODO: validation
         myOnlyKey.setPrivateKey(slot, type, key, function (err) {
@@ -800,7 +815,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var type = parseInt(ui.rsaForm.rsaType.value || '', 10);
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
-        var setAsBackupModifier = ui.rsaForm.rsaSetAsBackup.checked ? 128 : 0;
+
         var maxKeyLength = 4096; // 2048 bytes
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
@@ -809,8 +824,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return ui.rsaForm.setError('Key cannot be empty. Use [Wipe] to clear a key.');
         }
 
-        // if set as backup is checked, add modifier to type
-        type = type ? type + setAsBackupModifier : type;
+        // set all type modifiers
+        var typeModifier = 0;
+
+        Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
+            if (ui.rsaForm['rsaSetAs' + modifier].checked) {
+                typeModifier += myOnlyKey.keyTypeModifiers[modifier];
+            }
+        });
+
+        type += typeModifier;
 
         // TODO: validation
         submitRsaKey(slot, type, key, function (err) {
@@ -833,9 +856,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var finalPacket = keyStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
-        // packetHeader is hex number of bytes in keyStr chunk
-        // var packetHeader = finalPacket ? (keyStr.length / 2).toString(16) : "FF";
-        // myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), packetHeader, cb);
 
         myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), cb);
     }
