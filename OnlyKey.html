@@ -20,6 +20,7 @@
 		<nav>
             <a id="show-init-panel" href="">PINs</a>
 			<a id="show-slot-panel" href="" class="hide">Slots</a>
+            <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
 		</nav>
 
@@ -229,7 +230,7 @@
                         <br/><br/>
                         <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
                         <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
-                        <div id="yubiError"></div>
+                        <div id="yubiError" class="form-error"></div>
                     </form>
                 </div>
                 <div class="flex-item">
@@ -249,7 +250,7 @@
                         <br/><br/>
                         <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
                         <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-                        <div id="u2fError"></div>
+                        <div id="u2fError" class="form-error"></div>
                     </form>
                 </div>
             </div>
@@ -335,7 +336,144 @@
 				</div>
 			</div>
         </div>
-	</div>
+
+        <div id="keys-panel" class="hide panel">
+            Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. The light will turn off on your OnlyKey and you must re-enter your PIN to unlock device into config mode.
+
+            <div class="flex-container">
+                <div class="flex-item">
+                    <form id="eccForm" name="eccForm" class="auth-form">
+                        <h2>ECC Key (32 bytes hex)</h2>
+
+                        <label>
+                            Type:
+                            <select id="eccType" name="eccType">
+                                <option value=1>ed25519</option>
+                                <option value=2>NIST P256</option>
+                                <option value=3>secp256k1</option>
+                            </select>
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <label>
+                            Slot:
+                            <select id="eccSlot" name="eccSlot">
+                                <option value=101>1</option>
+                                <option value=102>2</option>
+                                <option value=103>3</option>
+                                <option value=104>4</option>
+                                <option value=105>5</option>
+                                <option value=106>6</option>
+                                <option value=107>7</option>
+                                <option value=108>8</option>
+                                <option value=109>9</option>
+                                <option value=110>10</option>
+                                <option value=111>11</option>
+                                <option value=112>12</option>
+                                <option value=113>13</option>
+                                <option value=114>14</option>
+                                <option value=115>15</option>
+                                <option value=116>16</option>
+                                <option value=117>17</option>
+                                <option value=118>18</option>
+                                <option value=119>19</option>
+                                <option value=120>20</option>
+                                <option value=121>21</option>
+                                <option value=122>22</option>
+                                <option value=123>23</option>
+                                <option value=124>24</option>
+                                <option value=125>25</option>
+                                <option value=126>26</option>
+                                <option value=127>27</option>
+                                <option value=128>28</option>
+                                <option value=129>29</option>
+                                <option value=130>30</option>
+                                <option value=131>31</option>
+                                <option value=132>32</option>
+                            </select>
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <label>
+                            Key:
+                            <br/>
+                            <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="10" placeholder="ECC Key (32 bytes hex)" required></textarea>
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <label>
+                            <input type="checkbox" id="eccSetAsBackup" name="eccSetAsBackup" value="true"/>
+                            Set as backup key (only one key may be set)
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
+                        <div id="eccFormError" class="form-error"></div>
+                    </form>
+                </div>
+
+                <div class="flex-item">
+                    <form id="rsaForm" name="rsaForm" class="auth-form">
+                        <h2>RSA Key (up to 2048 bytes hex)</h2>
+
+                        <label>
+                            Type:
+                            <select id="rsaType" name="rsaType">
+                                <option value=1>1024-bit</option>
+                                <option value=2>2048-bit</option>
+                            </select>
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <label>
+                            Slot:
+                            <select id="rsaSlot" name="rsaSlot">
+                                <option value=1>1</option>
+                                <option value=2>2</option>
+                                <option value=3>3</option>
+                                <option value=4>4</option>
+                            </select>
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <label>
+                            Key:
+                            <br/>
+                            <textarea id="rsaKey" name="rsaKey" maxlength="4096" minlength="2" cols="40" rows="10" placeholder="RSA Key (up to 2048 bytes hex)" required></textarea>
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <label>
+                            <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true"/>
+                            Set as backup key (only one key may be set)
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <input type="button" id="rsaSubmit" name="rsaSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="rsaWipe" name="rsaWipe" value="Wipe from OnlyKey" />
+                        <div id="rsaFormError" class="form-error"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <dialog id="finalStep-dialog">
         <h2>Your OnlyKey has been successfully configured.</h2>

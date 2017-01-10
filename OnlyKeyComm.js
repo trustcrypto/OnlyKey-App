@@ -80,8 +80,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var bytesPerMessage = 64;
 
         msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
-        slotId = typeof slotId === 'number' ? slotId : null;
-        fieldId = typeof fieldId === 'string' ? fieldId : null;
+        slotId = typeof slotId === 'number' || typeof slotId === 'string' ? slotId : null;
+        fieldId = typeof fieldId === 'string' || typeof fieldId === 'number' ? fieldId : null;
         contents = typeof contents === 'number' || (contents && contents.length) ? contents : '';
 
         callback = typeof callback === 'function' ? callback : handleMessage;
@@ -104,8 +104,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             cursor++;
         }
 
-        if (fieldId && self.messageFields[fieldId]) {
-            bytes[cursor] = strPad(self.messageFields[fieldId], 2, 0);
+        if (fieldId !== null) {
+            if (self.messageFields[fieldId]) {
+                bytes[cursor] = strPad(self.messageFields[fieldId], 2, 0);
+            } else {
+                bytes[cursor] = strPad(fieldId, 2, 0);
+            }
+
             cursor++;
         }
 
@@ -284,6 +289,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(null, 'OKWIPEU2FCERT', null, null, callback);
     };
 
+    OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
+        var msg = key.match(/.{2}/g);
+        this.sendMessage(msg, 'OKSETPRIV', slot, type, callback);
+    };
+
+    OnlyKey.prototype.wipePrivateKey = function (slot, callback) {
+        this.sendMessage(null, 'OKWIPEPRIV', slot, null, callback);
+    };
+
     OnlyKey.prototype.setLockout = function (lockout, callback) {
         this.setSlot('XX', 'LOCKOUT', lockout, callback);
     };
@@ -311,10 +325,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var ui = {
 		showInitPanel: null,
 		showSlotPanel: null,
-		showPrefPanel: null,
+        showPrefPanel: null,
+        showKeysPanel: null,
         initPanel: null,
         slotPanel: null,
-		prefPanel: null,
+        prefPanel: null,
+        keysPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -336,6 +352,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showInitPanel.addEventListener('click', toggleConfigPanel);
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
+        ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -343,6 +360,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.wipeModeForm = document['wipeModeForm'];
         ui.typeSpeedForm = document['typeSpeedForm'];
         ui.keyboardLayoutForm = document['keyboardLayoutForm'];
+        ui.eccForm = document['eccForm'];
+        ui.rsaForm = document['rsaForm'];
 
         enableIOControls(false);
         enableAuthForms();
@@ -371,6 +390,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showSlotPanel.classList.add('active');
                 ui.prefPanel.classList.add('hide');
                 ui.showPrefPanel.classList.remove('hide', 'active');
+                ui.keysPanel.classList.add('hide');
+                ui.showKeysPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -563,7 +584,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		var panels = {
 			init: "Init",
 			slot: "Slot",
-			pref: "Pref"
+            pref: "Pref",
+            keys: "Keys"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
@@ -630,6 +652,24 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         var kbdLayoutSubmit = document.getElementById('kbdLayoutSubmit');
         kbdLayoutSubmit.addEventListener('click', submitKBDLayoutForm);
+
+        var eccSubmit = document.getElementById('eccSubmit');
+        eccSubmit.addEventListener('click', submitEccForm);
+        ui.eccForm.setError = function(errString) {
+            document.getElementById('eccFormError').innerText = errString;
+        };
+
+        var eccWipe = document.getElementById('eccWipe');
+        eccWipe.addEventListener('click', wipeEccKeyForm);
+
+        var rsaSubmit = document.getElementById('rsaSubmit');
+        rsaSubmit.addEventListener('click', submitRsaForm);
+        ui.rsaForm.setError = function (errString) {
+            document.getElementById('rsaFormError').innerText = errString;
+        };
+
+        var rsaWipe = document.getElementById('rsaWipe');
+        rsaWipe.addEventListener('click', wipeRsaKeyForm);
     }
 
     function submitYubiAuthForm(e) {
@@ -693,13 +733,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         if (!certStr.length) {
             return callback();
         }
+
         var maxPacketSize = 116; // 58 bytes
         var finalPacket = certStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
+
         // packetHeader is hex number of bytes in certStr chunk
-        // what if certStr.length is odd?
         var packetHeader = finalPacket ? (certStr.length / 2).toString(16) : "FF";
+
         myOnlyKey.setU2fCert(certStr.slice(0, maxPacketSize), packetHeader, cb);
     }
 
@@ -707,6 +749,102 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         myOnlyKey.wipeU2fPrivateId(function (err) {
             myOnlyKey.wipeU2fCert();
         });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitEccForm(e) {
+        ui.eccForm.setError('');
+
+        var type = parseInt(ui.eccForm.eccType.value || '', 10);
+        var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
+        var key = ui.eccForm.eccKey.value || '';
+        var setAsBackupModifier = ui.eccForm.eccSetAsBackup.checked ? 128 : 0;
+        var maxKeyLength = 64; // 32 bytes
+
+        key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
+
+        if (!key) {
+            return ui.eccForm.setError('Key cannot be empty. Use [Wipe] to clear a key.');
+        }
+
+        if (key.length < maxKeyLength) {
+            return ui.eccForm.setError('Key must be 32 bytes (64 hex characters).');
+        }
+
+        // if set as backup is checked, add modifier to type
+        type = type ? type + setAsBackupModifier : type;
+
+        // TODO: validation
+        myOnlyKey.setPrivateKey(slot, type, key, function (err) {
+            // TODO: check for success, then reset
+            myOnlyKey.setLastMessage('received', 'Successfully sent ECC key.');
+            ui.eccForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function wipeEccKeyForm(e) {
+        ui.eccForm.setError('');
+
+        var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
+        myOnlyKey.wipePrivateKey(slot);
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitRsaForm(e) {
+        ui.rsaForm.setError('');
+
+        var type = parseInt(ui.rsaForm.rsaType.value || '', 10);
+        var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
+        var key = ui.rsaForm.rsaKey.value || '';
+        var setAsBackupModifier = ui.rsaForm.rsaSetAsBackup.checked ? 128 : 0;
+        var maxKeyLength = 4096; // 2048 bytes
+
+        key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
+
+        if (!key) {
+            return ui.rsaForm.setError('Key cannot be empty. Use [Wipe] to clear a key.');
+        }
+
+        // if set as backup is checked, add modifier to type
+        type = type ? type + setAsBackupModifier : type;
+
+        // TODO: validation
+        submitRsaKey(slot, type, key, function (err) {
+            // TODO: check for success, then reset
+            myOnlyKey.setLastMessage('received', 'Successfully sent RSA key.');
+            ui.rsaForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitRsaKey(slot, type, keyStr, callback) {
+        // this function should recursively call itself until all bytes are sent
+        // in chunks of 57
+        if (!keyStr.length) {
+            return callback();
+        }
+
+        var maxPacketSize = 114; // 57 bytes
+        var finalPacket = keyStr.length - maxPacketSize <= 0;
+
+        var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
+        // packetHeader is hex number of bytes in keyStr chunk
+        // var packetHeader = finalPacket ? (keyStr.length / 2).toString(16) : "FF";
+        // myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), packetHeader, cb);
+
+        myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), cb);
+    }
+
+    function wipeRsaKeyForm(e) {
+        ui.rsaForm.setError('');
+
+        var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
+        myOnlyKey.wipePrivateKey(slot);
 
         e && e.preventDefault && e.preventDefault();
     }
