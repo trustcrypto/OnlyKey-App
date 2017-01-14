@@ -772,11 +772,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
 
         if (!key) {
-            return ui.eccForm.setError('Key cannot be empty. Use [Wipe] to clear a key.');
+            return ui.eccForm.setError('ECC Key cannot be empty. Use [Wipe] to clear a key.');
         }
 
-        if (key.length < maxKeyLength) {
-            return ui.eccForm.setError('Key must be 32 bytes (64 hex characters).');
+        if (key.length !== maxKeyLength) {
+            return ui.eccForm.setError('ECC Key must be 32 bytes (64 hex characters).');
         }
 
         // set all type modifiers
@@ -816,12 +816,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
 
-        var maxKeyLength = 4096; // 2048 bytes
+        var maxKeyLength = 256 * type; // type should 1 or 2
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
 
         if (!key) {
-            return ui.rsaForm.setError('Key cannot be empty. Use [Wipe] to clear a key.');
+            return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
+        }
+
+        if (key.length !== maxKeyLength) {
+            return ui.rsaForm.setError('RSA Key must be ' + (maxKeyLength / 2) + ' bytes (' + maxKeyLength + ' hex characters).');
         }
 
         // set all type modifiers
