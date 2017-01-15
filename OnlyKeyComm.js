@@ -297,8 +297,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
-        var msg = key.match(/.{2}/g);
-        this.sendMessage(msg, 'OKSETPRIV', slot, type, callback);
+        this.sendMessage(key, 'OKSETPRIV', slot, type, callback);
     };
 
     OnlyKey.prototype.wipePrivateKey = function (slot, callback) {
@@ -767,7 +766,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
         var key = ui.eccForm.eccKey.value || '';
 
-        var maxKeyLength = 64; // 32 bytes
+        var maxKeyLength = 32;
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
 
@@ -776,7 +775,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (key.length !== maxKeyLength) {
-            return ui.eccForm.setError('ECC Key must be 32 bytes (64 hex characters).');
+            return ui.eccForm.setError('ECC Key must be ' + maxKeyLength + ' bytes.');
         }
 
         // set all type modifiers
@@ -816,7 +815,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
 
-        var maxKeyLength = 256 * type; // type should 1 or 2
+        var maxKeyLength = 128 * type; // type should 1 or 2
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
 
@@ -825,7 +824,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (key.length !== maxKeyLength) {
-            return ui.rsaForm.setError('RSA Key must be ' + (maxKeyLength / 2) + ' bytes (' + maxKeyLength + ' hex characters).');
+            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' bytes.');
         }
 
         // set all type modifiers
@@ -856,7 +855,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return callback();
         }
 
-        var maxPacketSize = 114; // 57 bytes
+        var maxPacketSize = 57;
         var finalPacket = keyStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
