@@ -297,7 +297,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
-        this.sendMessage(key, 'OKSETPRIV', slot, type, callback);
+        var msg = key.match(/.{2}/g);
+        this.sendMessage(msg, 'OKSETPRIV', slot, type, callback);
     };
 
     OnlyKey.prototype.wipePrivateKey = function (slot, callback) {
@@ -815,7 +816,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
 
-        var maxKeyLength = 128 * type; // type should 1 or 2
+        var maxKeyLength = 256 * type; // type should 1 or 2
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
 
@@ -824,7 +825,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (key.length !== maxKeyLength) {
-            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' bytes.');
+            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' hex bytes.');
         }
 
         // set all type modifiers
@@ -855,7 +856,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return callback();
         }
 
-        var maxPacketSize = 57;
+        var maxPacketSize = 114;
         var finalPacket = keyStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);

@@ -449,8 +449,8 @@
                         <label>
                             Type:
                             <select id="rsaType" name="rsaType">
-                                <option value=1>1024-bit (128 bytes)</option>
-                                <option value=2>2048-bit (256 bytes)</option>
+                                <option value=1>1024-bit (128 hex bytes)</option>
+                                <option value=2>2048-bit (256 hex bytes)</option>
                             </select>
                         </label>
 
@@ -473,7 +473,7 @@
                         <label>
                             Key:
                             <br/>
-                            <textarea id="rsaKey" name="rsaKey" maxlength="256" minlength="128" cols="40" rows="10" placeholder="RSA Key (128 or 256 bytes hex)" required></textarea>
+                            <textarea id="rsaKey" name="rsaKey" maxlength="512" minlength="256" cols="40" rows="10" placeholder="RSA Key (128 or 256 bytes hex)" required></textarea>
                         </label>
 
                         <br/>
