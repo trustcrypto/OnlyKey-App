@@ -767,7 +767,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
         var key = ui.eccForm.eccKey.value || '';
 
-        var maxKeyLength = 32;
+        var maxKeyLength = 64; // 32 hex pairs
 
         key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
 
@@ -776,7 +776,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (key.length !== maxKeyLength) {
-            return ui.eccForm.setError('ECC Key must be ' + maxKeyLength + ' bytes.');
+            return ui.eccForm.setError('ECC Key must be ' + maxKeyLength + ' characters.');
         }
 
         // set all type modifiers
@@ -825,7 +825,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (key.length !== maxKeyLength) {
-            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' hex bytes.');
+            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' characters.');
         }
 
         // set all type modifiers
