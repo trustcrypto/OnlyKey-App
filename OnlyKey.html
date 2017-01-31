@@ -21,6 +21,7 @@
             <a id="show-init-panel" href="">PINs</a>
 			<a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
+            <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
 		</nav>
 
@@ -511,6 +512,64 @@
                         <input type="button" id="rsaSubmit" name="rsaSubmit" value="Save to OnlyKey" />
                         <input type="button" id="rsaWipe" name="rsaWipe" value="Wipe from OnlyKey" />
                         <div id="rsaFormError" class="form-error"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="backup-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+                    <form id="backupForm" name="backupForm" class="auth-form">
+                        <h2>Backup</h2>
+
+                        <fieldset>
+                            <p>
+                                <u>Step 1</u>. To begin backup ensure that you have a backup key set (in the keys tab) and that you have an offline copy of this backup key. The same key that you use to backup your OnlyKey will be required to restore your OnlyKey.
+                            </p>
+                            <p>
+                                <u>Step 2</u>. Click inside the box with your mouse and then hold the #1 button down on your OnlyKey for 5 seconds or more and then release. This will type out a backup of your OnlyKey slots and keys into the box.
+                            </p>
+                            <p>
+                                <u>Step 3</u>. Once you see "-----END ONLYKEY KEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select "Save file as" to save your encrypted backup to a secure location.
+                            </p>
+                        </fieldset>
+
+                        <br/>
+
+                        <label>
+                            Key:
+                            <br/>
+                            <textarea id="rsaKey" name="rsaKey" maxlength="512" minlength="256" cols="40" rows="10" placeholder="RSA Key (128 or 256 bytes hex)" required></textarea>
+                        </label>
+
+                        <br/><br/>
+
+                        <input type="button" id="backupSave" name="backupSave" value="Save file as" />
+                        <div id="backupFormError" class="form-error"></div>
+                    </form>
+                </div>
+
+                <div class="flex-item">
+                    <form id="restoreForm" name="restoreForm" class="auth-form">
+                        <h2>Restore</h2>
+
+                        <fieldset>
+                            <p>
+                                <u>Step 1</u>. In order to restore a backup file to your OnlyKey ensure you have loaded the same key you used to create the backup and set the key as backup the key. Also make sure your OnlyKey is unlocked and plugged in.
+                            </p>
+                            <p>
+                                <u>Step 2</u>. Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. The light will turn off on your OnlyKey and you must re-enter your PIN to unlock device into config mode. Open your backup file and select "Restore to OnlyKey".
+                            </p>
+                            <p>
+                                <u>Step 3</u>. When you see the messages "Successfully loaded backup file" and "Remove and Reinsert OnlyKey to complete restore" the restore is complete. Remove and reinsert OnlyKey to complete restore.
+                            </p>
+                        </fieldset>
+
+                        <br/><br/>
+
+                        <input type="file" id="restoreSelectFile" name="restoreSelectFile" value="Select File" />
+                        <div id="restoreSelectError" class="form-error"></div>
                     </form>
                 </div>
             </div>

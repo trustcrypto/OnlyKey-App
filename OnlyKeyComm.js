@@ -334,10 +334,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
+        showBackupPanel: null,
         initPanel: null,
         slotPanel: null,
         prefPanel: null,
         keysPanel: null,
+        backupPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -360,6 +362,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
         ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
+        ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -369,6 +372,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.keyboardLayoutForm = document['keyboardLayoutForm'];
         ui.eccForm = document['eccForm'];
         ui.rsaForm = document['rsaForm'];
+        ui.backupForm = document['backupForm'];
+        ui.restoreForm = document['restoreForm'];
 
         enableIOControls(false);
         enableAuthForms();
@@ -399,6 +404,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showPrefPanel.classList.remove('hide', 'active');
                 ui.keysPanel.classList.add('hide');
                 ui.showKeysPanel.classList.remove('hide', 'active');
+                ui.showBackupPanel.classList.add('hide');
+                ui.showBackupPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -412,6 +419,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showInitPanel.classList.add('active');
             ui.showSlotPanel.classList.add('hide');
             ui.showPrefPanel.classList.add('hide');
+            ui.showBackupPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -592,7 +600,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 			init: "Init",
 			slot: "Slot",
             pref: "Pref",
-            keys: "Keys"
+            keys: "Keys",
+            backup: "Backup"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
