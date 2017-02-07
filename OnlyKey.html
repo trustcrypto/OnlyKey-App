@@ -3,6 +3,7 @@
 <head>
     <title>OnlyKey Configuration Wizard</title>
     <link rel="stylesheet" href="style.css">
+    <script src="FileSaver.js"></script>
 </head>
 
 <body>
@@ -531,21 +532,22 @@
                                 <u>Step 2</u>. Click inside the box with your mouse and then hold the #1 button down on your OnlyKey for 5 seconds or more and then release. This will type out a backup of your OnlyKey slots and keys into the box.
                             </p>
                             <p>
-                                <u>Step 3</u>. Once you see "-----END ONLYKEY KEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select "Save file as" to save your encrypted backup to a secure location.
+                                <u>Step 3</u>. Once you see "-----END ONLYKEY KEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select "Save file" to save your encrypted backup to a secure location.
                             </p>
                         </fieldset>
 
                         <br/>
 
                         <label>
-                            Key:
+                            Backup data:
                             <br/>
-                            <textarea id="rsaKey" name="rsaKey" maxlength="512" minlength="256" cols="40" rows="10" placeholder="RSA Key (128 or 256 bytes hex)" required></textarea>
+                            <textarea id="backupData" name="backupData" cols="40" rows="10" placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."></textarea>
                         </label>
 
                         <br/><br/>
 
-                        <input type="button" id="backupSave" name="backupSave" value="Save file as" />
+                        <input type="button" id="backupSave" name="backupSave" value="Save file" />
+                        <span id="lastBackupFilename">onlykey-backup-[timestamp].txt</span>
                         <div id="backupFormError" class="form-error"></div>
                     </form>
                 </div>
@@ -569,7 +571,10 @@
                         <br/><br/>
 
                         <input type="file" id="restoreSelectFile" name="restoreSelectFile" value="Select File" />
-                        <div id="restoreSelectError" class="form-error"></div>
+                        <br/>
+                        <br/>
+                        <input type="button" id="doRestore" name="doRestore" value="Restore to OnlyKey" />
+                        <div id="restoreFormError" class="form-error"></div>
                     </form>
                 </div>
             </div>

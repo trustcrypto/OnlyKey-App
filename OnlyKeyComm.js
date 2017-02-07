@@ -305,6 +305,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(null, 'OKWIPEPRIV', slot, null, callback);
     };
 
+    OnlyKey.prototype.restore = function (restoreData, packetHeader, callback) {
+        var msg = [ packetHeader ];
+        msg = msg.concat(restoreData.match(/.{2}/g));
+        this.sendMessage(msg, 'OKRESTORE', null, null, callback);
+    };
+
     OnlyKey.prototype.setLockout = function (lockout, callback) {
         this.setSlot('XX', 'LOCKOUT', lockout, callback);
     };
@@ -686,6 +692,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         var rsaWipe = document.getElementById('rsaWipe');
         rsaWipe.addEventListener('click', wipeRsaKeyForm);
+
+        var backupSave = document.getElementById('backupSave');
+        backupSave.addEventListener('click', saveBackupFile);
+        ui.backupForm.setError = function (errString) {
+            document.getElementById('backupFormError').innerText = errString;
+        }
+
+        var restoreFromBackup = document.getElementById('doRestore');
+        restoreFromBackup.addEventListener('click', submitRestoreForm);
+        ui.restoreForm.setError = function (errString) {
+            document.getElementById('restoreFormError').innerText = errString;
+        }
     }
 
     function submitYubiAuthForm(e) {
@@ -871,6 +889,73 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
 
         myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), cb);
+    }
+
+    function saveBackupFile(e) {
+        e && e.preventDefault && e.preventDefault();
+        ui.backupForm.setError('');
+
+        var backupData = ui.backupForm.backupData.value.trim();
+        if (backupData) {
+            var filename = "onlykey-backup-" + (new Date().getTime()) + ".txt";
+            var blob = new Blob([backupData], {type: "text/plain;charset=utf-8"});
+            saveAs(blob, filename); // REQUIRES FileSaver.js polyfill
+
+            document.getElementById('lastBackupFilename').innerText = filename;
+        } else {
+            ui.backupForm.setError('Backup data cannot be empty space.');
+        }
+    }
+
+    function submitRestoreForm(e) {
+        e && e.preventDefault && e.preventDefault();
+        ui.restoreForm.setError('');
+
+        var fileSelector = ui.restoreForm.restoreSelectFile;
+        if (fileSelector.files && fileSelector.files.length) {
+            var file = fileSelector.files[0];
+            var reader = new FileReader();
+
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    //console.info("RESULT:", e.target.result);
+                    var contents = e.target && e.target.result && e.target.result.trim();
+                    if (contents) {
+                        ui.restoreForm.setError('Working...');
+                        submitRestoreData(contents, function (err) {
+                            // TODO: check for success, then reset
+                            ui.restoreForm.reset();
+                            ui.restoreForm.setError('Done!');
+                        });
+                    } else {
+                        ui.restoreForm.setError('Selected file is empty.');
+                    }
+                };
+            })(file);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(file);
+        } else {
+            ui.restoreForm.setError('Please select a file first.');
+        }
+    }
+
+    function submitRestoreData(restoreData, callback) {
+        // this function should recursively call itself until all bytes are sent
+        // in chunks of 58
+        if (!restoreData.length) {
+            return callback();
+        }
+
+        var maxPacketSize = 116; // 58 bytes
+        var finalPacket = restoreData.length - maxPacketSize <= 0;
+
+        var cb = finalPacket ? callback : submitRestoreData.bind(null, restoreData.slice(maxPacketSize), callback);
+
+        // packetHeader is hex number of bytes in certStr chunk
+        var packetHeader = finalPacket ? (restoreData.length / 2).toString(16) : "FF";
+
+        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);        
     }
 
     function wipeRsaKeyForm(e) {
