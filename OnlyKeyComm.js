@@ -762,13 +762,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitU2fCert(certStr, callback) {
-        // this function should recursively call itself until all bytes are sent
-        // in chunks of 58
+        // this function should recursively call itself until all bytes are sent in chunks
         if (!certStr.length) {
             return callback();
         }
 
-        var maxPacketSize = 116; // 58 bytes
+        var maxPacketSize = 116; // 58 byte pairs
         var finalPacket = certStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
@@ -877,13 +876,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitRsaKey(slot, type, keyStr, callback) {
-        // this function should recursively call itself until all bytes are sent
-        // in chunks of 57
+        // this function should recursively call itself until all bytes are sent in chunks
         if (!keyStr.length) {
             return callback();
         }
 
-        var maxPacketSize = 114;
+        var maxPacketSize = 114; // 57 byte pairs
         var finalPacket = keyStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
@@ -920,6 +918,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 return function (e) {
                     //console.info("RESULT:", e.target.result);
                     var contents = e.target && e.target.result && e.target.result.trim();
+                    try {
+                        contents = parseBackupData(contents);
+                    } catch(parseError) {
+                        return ui.restoreForm.setError('Could not parse backup file.\n\n' + parseError);
+                    }
+
                     if (contents) {
                         ui.restoreForm.setError('Working...');
                         submitRestoreData(contents, function (err) {
@@ -928,7 +932,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                             ui.restoreForm.setError('Done!');
                         });
                     } else {
-                        ui.restoreForm.setError('Selected file is empty.');
+                        return ui.restoreForm.setError('Incorrect backup data format.');
                     }
                 };
             })(file);
@@ -941,13 +945,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitRestoreData(restoreData, callback) {
-        // this function should recursively call itself until all bytes are sent
-        // in chunks of 58
+        // this function should recursively call itself until all bytes are sent in chunks
         if (!restoreData.length) {
             return callback();
         }
 
-        var maxPacketSize = 116; // 58 bytes
+        var maxPacketSize = 114; // 57 byte pairs
         var finalPacket = restoreData.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRestoreData.bind(null, restoreData.slice(maxPacketSize), callback);
@@ -1060,7 +1063,6 @@ function hexToModhex(inputStr, reverse) {
         newStr += t.charAt(i);
     });
 
-    console.info(inputStr, 'converted to', newStr);
     return newStr;
 }
 
@@ -1089,7 +1091,35 @@ function base32tohex(base32) {
         hex = hex + parseInt(chunk, 2).toString(16) ;
     }
     return hex;
+}
 
+// http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript
+function base64tohex(base64) {
+    var raw = atob(base64);
+    var HEX = '';
+    var _hex;
+
+    for (i = 0; i < raw.length; i++) {
+        _hex = raw.charCodeAt(i).toString(16);
+        HEX += (_hex.length == 2 ? _hex : '0' + _hex);
+    }
+    return HEX.toUpperCase();
+}
+
+function parseBackupData(contents) {
+    var newContents = [];
+    // split by newline
+    contents.split('\n').forEach(function (line) {
+        console.info(line);
+        if (line.indexOf('--') !== 0) {
+            newContents.push(base64tohex(line));
+        }
+    });
+    console.info("NEWCONTENTS:", newContents);
+
+    // join back to unified base64 string
+    newContents = newContents.join('');
+    return newContents;
 }
 
 function hexStrToDec(hexStr) {
@@ -1097,7 +1127,6 @@ function hexStrToDec(hexStr) {
 }
 
 function byteToHex(value) {
-    if (value < 16)
-        return '0' + value.toString(16);
+    if (value < 16) return '0' + value.toString(16);
     return value.toString(16);
 }
