@@ -305,6 +305,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(null, 'OKWIPEPRIV', slot, null, callback);
     };
 
+    OnlyKey.prototype.restore = function (restoreData, packetHeader, callback) {
+        var msg = [ packetHeader ];
+        msg = msg.concat(restoreData.match(/.{2}/g));
+        this.sendMessage(msg, 'OKRESTORE', null, null, callback);
+    };
+
     OnlyKey.prototype.setLockout = function (lockout, callback) {
         this.setSlot('XX', 'LOCKOUT', lockout, callback);
     };
@@ -334,10 +340,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
+        showBackupPanel: null,
         initPanel: null,
         slotPanel: null,
         prefPanel: null,
         keysPanel: null,
+        backupPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -360,6 +368,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
         ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
+        ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -369,6 +378,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.keyboardLayoutForm = document['keyboardLayoutForm'];
         ui.eccForm = document['eccForm'];
         ui.rsaForm = document['rsaForm'];
+        ui.backupForm = document['backupForm'];
+        ui.restoreForm = document['restoreForm'];
 
         enableIOControls(false);
         enableAuthForms();
@@ -399,6 +410,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showPrefPanel.classList.remove('hide', 'active');
                 ui.keysPanel.classList.add('hide');
                 ui.showKeysPanel.classList.remove('hide', 'active');
+                ui.showBackupPanel.classList.add('hide');
+                ui.showBackupPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -412,6 +425,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showInitPanel.classList.add('active');
             ui.showSlotPanel.classList.add('hide');
             ui.showPrefPanel.classList.add('hide');
+            ui.showBackupPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -592,7 +606,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 			init: "Init",
 			slot: "Slot",
             pref: "Pref",
-            keys: "Keys"
+            keys: "Keys",
+            backup: "Backup"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
@@ -677,6 +692,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         var rsaWipe = document.getElementById('rsaWipe');
         rsaWipe.addEventListener('click', wipeRsaKeyForm);
+
+        var backupSave = document.getElementById('backupSave');
+        backupSave.addEventListener('click', saveBackupFile);
+        ui.backupForm.setError = function (errString) {
+            document.getElementById('backupFormError').innerText = errString;
+        }
+
+        var restoreFromBackup = document.getElementById('doRestore');
+        restoreFromBackup.addEventListener('click', submitRestoreForm);
+        ui.restoreForm.setError = function (errString) {
+            document.getElementById('restoreFormError').innerText = errString;
+        }
     }
 
     function submitYubiAuthForm(e) {
@@ -735,13 +762,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitU2fCert(certStr, callback) {
-        // this function should recursively call itself until all bytes are sent
-        // in chunks of 58
+        // this function should recursively call itself until all bytes are sent in chunks
         if (!certStr.length) {
             return callback();
         }
 
-        var maxPacketSize = 116; // 58 bytes
+        var maxPacketSize = 116; // 58 byte pairs
         var finalPacket = certStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
@@ -850,18 +876,89 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitRsaKey(slot, type, keyStr, callback) {
-        // this function should recursively call itself until all bytes are sent
-        // in chunks of 57
+        // this function should recursively call itself until all bytes are sent in chunks
         if (!keyStr.length) {
             return callback();
         }
 
-        var maxPacketSize = 114;
+        var maxPacketSize = 114; // 57 byte pairs
         var finalPacket = keyStr.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
 
         myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), cb);
+    }
+
+    function saveBackupFile(e) {
+        e && e.preventDefault && e.preventDefault();
+        ui.backupForm.setError('');
+
+        var backupData = ui.backupForm.backupData.value.trim();
+        if (backupData) {
+            var filename = "onlykey-backup-" + (new Date().getTime()) + ".txt";
+            var blob = new Blob([backupData], {type: "text/plain;charset=utf-8"});
+            saveAs(blob, filename); // REQUIRES FileSaver.js polyfill
+
+            document.getElementById('lastBackupFilename').innerText = filename;
+        } else {
+            ui.backupForm.setError('Backup data cannot be empty space.');
+        }
+    }
+
+    function submitRestoreForm(e) {
+        e && e.preventDefault && e.preventDefault();
+        ui.restoreForm.setError('');
+
+        var fileSelector = ui.restoreForm.restoreSelectFile;
+        if (fileSelector.files && fileSelector.files.length) {
+            var file = fileSelector.files[0];
+            var reader = new FileReader();
+
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    //console.info("RESULT:", e.target.result);
+                    var contents = e.target && e.target.result && e.target.result.trim();
+                    try {
+                        contents = parseBackupData(contents);
+                    } catch(parseError) {
+                        return ui.restoreForm.setError('Could not parse backup file.\n\n' + parseError);
+                    }
+
+                    if (contents) {
+                        ui.restoreForm.setError('Working...');
+                        submitRestoreData(contents, function (err) {
+                            // TODO: check for success, then reset
+                            ui.restoreForm.reset();
+                            ui.restoreForm.setError('Done!');
+                        });
+                    } else {
+                        return ui.restoreForm.setError('Incorrect backup data format.');
+                    }
+                };
+            })(file);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(file);
+        } else {
+            ui.restoreForm.setError('Please select a file first.');
+        }
+    }
+
+    function submitRestoreData(restoreData, callback) {
+        // this function should recursively call itself until all bytes are sent in chunks
+        if (!restoreData.length) {
+            return callback();
+        }
+
+        var maxPacketSize = 114; // 57 byte pairs
+        var finalPacket = restoreData.length - maxPacketSize <= 0;
+
+        var cb = finalPacket ? callback : submitRestoreData.bind(null, restoreData.slice(maxPacketSize), callback);
+
+        // packetHeader is hex number of bytes in certStr chunk
+        var packetHeader = finalPacket ? (restoreData.length / 2).toString(16) : "FF";
+
+        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);        
     }
 
     function wipeRsaKeyForm(e) {
@@ -966,7 +1063,6 @@ function hexToModhex(inputStr, reverse) {
         newStr += t.charAt(i);
     });
 
-    console.info(inputStr, 'converted to', newStr);
     return newStr;
 }
 
@@ -995,7 +1091,33 @@ function base32tohex(base32) {
         hex = hex + parseInt(chunk, 2).toString(16) ;
     }
     return hex;
+}
 
+// http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript
+function base64tohex(base64) {
+    var raw = atob(base64);
+    var HEX = '';
+    var _hex;
+
+    for (i = 0; i < raw.length; i++) {
+        _hex = raw.charCodeAt(i).toString(16);
+        HEX += (_hex.length == 2 ? _hex : '0' + _hex);
+    }
+    return HEX.toUpperCase();
+}
+
+function parseBackupData(contents) {
+    var newContents = [];
+    // split by newline
+    contents.split('\n').forEach(function (line) {
+        if (line.indexOf('--') !== 0) {
+            newContents.push(base64tohex(line));
+        }
+    });
+
+    // join back to unified base64 string
+    newContents = newContents.join('');
+    return newContents;
 }
 
 function hexStrToDec(hexStr) {
@@ -1003,7 +1125,6 @@ function hexStrToDec(hexStr) {
 }
 
 function byteToHex(value) {
-    if (value < 16)
-        return '0' + value.toString(16);
+    if (value < 16) return '0' + value.toString(16);
     return value.toString(16);
 }

@@ -1,16 +1,10 @@
 body {
     font-family: monospace;
     font-size: 10pt;
-    display: flex;
-    flex-flow: row wrap;
 }
 
 body > div {
     padding: 16px;
-}
-
-div, form {
-    flex: 1 100%;
 }
 
 .panel {
@@ -134,7 +128,7 @@ td.ok-photo-cell {
 
 .flex-item {
     -webkit-flex: 1 auto;
-    flex: 1 auto;
+    flex: 1 45%;
 }
 
 nav > a {
@@ -165,3 +159,5 @@ nav > a.active {
     color: red;
     margin-top: 1em;
 }
+
+#backup-panel h2 { margin-top: 0; }
