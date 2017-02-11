@@ -1110,12 +1110,10 @@ function parseBackupData(contents) {
     var newContents = [];
     // split by newline
     contents.split('\n').forEach(function (line) {
-        console.info(line);
         if (line.indexOf('--') !== 0) {
             newContents.push(base64tohex(line));
         }
     });
-    console.info("NEWCONTENTS:", newContents);
 
     // join back to unified base64 string
     newContents = newContents.join('');
