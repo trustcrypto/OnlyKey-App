@@ -841,17 +841,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var type = parseInt(ui.rsaForm.rsaType.value || '', 10);
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
+        var passcode = ui.rsaForm.rsaPasscode.value || '';
 
-        var maxKeyLength = 256 * type; // type should 1 or 2
-
-        key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
+        //key = key.toString().replace(/\s/g,'');
 
         if (!key) {
             return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
         }
 
-        if (key.length !== maxKeyLength) {
-            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' characters.');
+        if (!passcode) {
+            return ui.rsaForm.setError('Passcode cannot be empty.');
         }
 
         // set all type modifiers
@@ -864,6 +863,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
 
         type += typeModifier;
+
+        console.info("openpgp:", openpgp);
+
+        var decryptedKeyHex, rsa;
+        var privKeys, privKey, success;
+        try {
+            privKeys = openpgp.key.readArmored(key);
+            privKey = privKeys.keys[0];
+            success = privKey.decrypt(passcode);
+            console.info("privKeys:", privKeys);
+            console.info("privKey:", privKey);
+            console.info("success:", success);
+        } catch (e) {
+            return ui.rsaForm.setError('Error parsing RSA key: ' + e);
+        }
+
+        return;
 
         // TODO: validation
         submitRsaKey(slot, type, key, function (err) {
