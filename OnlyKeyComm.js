@@ -873,8 +873,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             var success = privKey.decrypt(passcode);
             console.info("key decrypt success:", success);
 
-            retKey.p = privKey.primaryKey.mpi[3].data.toByteArray();
-            retKey.q = privKey.primaryKey.mpi[4].data.toByteArray();
+            if (!success) {
+                throw new Error("Private Key decryption failed. Did you forget your passcode?");
+            }
+
+            if (privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6) {
+                retKey.p = privKey.primaryKey.mpi[3].data.toByteArray();
+                retKey.q = privKey.primaryKey.mpi[4].data.toByteArray();
+            } else {
+                throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
+            }
         } catch (e) {
             return ui.rsaForm.setError('Error parsing RSA key: ' + e);
         }
