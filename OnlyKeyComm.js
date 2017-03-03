@@ -864,21 +864,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         type += typeModifier;
 
-        console.info("openpgp:", openpgp);
+        var privKey, retKey = {};
 
-        var decryptedKeyHex, rsa;
-        var privKeys, privKey, success;
         try {
-            privKeys = openpgp.key.readArmored(key);
+            var privKeys = openpgp.key.readArmored(key);
             privKey = privKeys.keys[0];
-            success = privKey.decrypt(passcode);
-            console.info("privKeys:", privKeys);
-            console.info("privKey:", privKey);
-            console.info("success:", success);
+
+            var success = privKey.decrypt(passcode);
+            console.info("key decrypt success:", success);
+
+            retKey.p = privKey.primaryKey.mpi[3].data.toByteArray();
+            retKey.q = privKey.primaryKey.mpi[4].data.toByteArray();
         } catch (e) {
             return ui.rsaForm.setError('Error parsing RSA key: ' + e);
         }
 
+        console.info("full decrypted privKey:", privKey);
+        console.info("retKey:", retKey);
         return;
 
         // TODO: validation
