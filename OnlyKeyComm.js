@@ -335,6 +335,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             contents: msg,
             msgId: 'OKSETPRIV',
             slotId: slot,
+            fieldId: type,
             contentType: contentType
         };
         this.sendMessage(options, callback);
@@ -957,7 +958,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         if (!Array.isArray(key)) {
             return callback('Invalid key format.');
         }
-        var maxPacketSize = 58;
+        var maxPacketSize = 57;
         var finalPacket = key.length - maxPacketSize <= 0;
 
         var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, key.slice(maxPacketSize), callback);
