@@ -82,14 +82,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     };
 
-    OnlyKey.prototype.sendMessage = function (contents, msgId, slotId, fieldId, callback) {
+    OnlyKey.prototype.sendMessage = function (options, callback) {
         var self = this;
         var bytesPerMessage = 64;
 
-        msgId = typeof msgId === 'string' ? msgId.toUpperCase() : null;
-        slotId = typeof slotId === 'number' || typeof slotId === 'string' ? slotId : null;
-        fieldId = typeof fieldId === 'string' || typeof fieldId === 'number' ? fieldId : null;
-        contents = typeof contents === 'number' || (contents && contents.length) ? contents : '';
+        var msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
+        var slotId = typeof options.slotId === 'number' || typeof options.slotId === 'string' ? options.slotId : null;
+        var fieldId = typeof options.fieldId === 'string' || typeof options.fieldId === 'number' ? options.fieldId : null;
+        var contents = typeof options.contents === 'number' || (options.contents && options.contents.length) ? options.contents : '';
+        var contentType = (options.contentType && options.contentType.toUpperCase()) || 'HEX';
 
         callback = typeof callback === 'function' ? callback : handleMessage;
 
@@ -144,7 +145,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
         } else {
             contents.forEach(function (val) {
-                bytes[cursor++] = hexStrToDec(val);
+                bytes[cursor++] = contentType === 'HEX' ? hexStrToDec(val) : val;
             });
         }
 
@@ -195,12 +196,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
         console.info("Setting current epoch time =", currentEpochTime);
         var timeParts = currentEpochTime.match(/.{2}/g);
-        this.sendMessage(timeParts, 'OKSETTIME', null, null, callback);
+        var options = {
+            contents: timeParts,
+            msgId: 'OKSETTIME'
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.getLabels = function (callback) {
         this.labels = 'GETTING';
-        this.sendMessage('', 'OKGETLABELS', null, null, handleGetLabels);
+        this.sendMessage({ msgId: 'OKGETLABELS' }, handleGetLabels);
     };
 
     function handleGetLabels(err, msg) {
@@ -230,19 +235,19 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     OnlyKey.prototype.sendSetPin = function (callback) {
-        this.sendMessage('', 'OKSETPIN', null, null, function (err, msg) {
+        this.sendMessage({ msgId: 'OKSETPIN' }, function (err, msg) {
             pollForInput(callback);
         }.bind(this));
     };
 
     OnlyKey.prototype.sendSetSDPin = function (callback) {
-        this.sendMessage('', 'OKSETSDPIN', null, null, function (err, msg) {
+        this.sendMessage({ msgId: 'OKSETSDPIN' }, function (err, msg) {
             pollForInput(callback);
         }.bind(this));
     };
 
     OnlyKey.prototype.sendSetPDPin = function (callback) {
-        this.sendMessage('', 'OKSETPDPIN', null, null, function (err, msg) {
+        this.sendMessage({ msgId: 'OKSETPDPIN' }, function (err, msg) {
             pollForInput(callback);
         }.bind(this));
     };
@@ -250,13 +255,24 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     OnlyKey.prototype.setSlot = function (slot, field, value, callback) {
         slot = slot || this.getSlotNum();
         if (typeof slot !== 'number') slot = this.getSlotNum(slot);
-        this.sendMessage(value, 'OKSETSLOT', slot, field, callback);
+        var options = {
+            contents: value,
+            msgId: 'OKSETSLOT',
+            slotId: slot,
+            fieldId: field
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
         slot = slot || this.getSlotNum();
         if (typeof slot !== 'number') slot = this.getSlotNum(slot);
-        this.sendMessage(null, 'OKWIPESLOT', slot, field || null, callback);
+        var options = {
+            msgId: 'OKWIPESLOT',
+            slotId: slot,
+            fieldId: field || null
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.getSlotNum = function (slotId) {
@@ -276,39 +292,71 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
         if (privateId.length) {
             privateId = privateId.match(/.{2}/g);
-            this.sendMessage(privateId, 'OKSETU2FPRIV', null, null, callback);
+            var options = {
+                content: privateId,
+                msgId: 'OKSETU2FPRIV'
+            };
+            this.sendMessage(options, callback);
         } else {
             callback();
         }
     };
 
     OnlyKey.prototype.wipeU2fPrivateId = function (callback) {
-        this.sendMessage(null, 'OKWIPEU2FPRIV', null, null, callback);
+        this.sendMessage({ msgId: 'OKWIPEU2FPRIV' }, callback);
     };
 
     OnlyKey.prototype.setU2fCert = function (cert, packetHeader, callback) {
         var msg = [ packetHeader ];
         msg = msg.concat(cert.match(/.{2}/g));
-        this.sendMessage(msg, 'OKSETU2FCERT', null, null, callback);
+        var options = {
+            contents: msg,
+            msgId: 'OKSETU2FCERT'
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.wipeU2fCert = function (callback) {
-        this.sendMessage(null, 'OKWIPEU2FCERT', null, null, callback);
+        this.sendMessage({ msgId: 'OKWIPEU2FCERT' }, callback);
     };
 
     OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
-        var msg = key.match(/.{2}/g);
-        this.sendMessage(msg, 'OKSETPRIV', slot, type, callback);
+        var msg, contentType;
+        if (Array.isArray(key)) {
+            // RSA private key is an array of DEC bytes
+            contentType = 'DEC';
+            msg = key;
+        } else {
+            // private key strings should be pairs of HEX bytes
+            msg = key.match(/.{2}/g);
+        }
+
+        var options = {
+            contents: msg,
+            msgId: 'OKSETPRIV',
+            slotId: slot,
+            fieldId: type,
+            contentType: contentType
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.wipePrivateKey = function (slot, callback) {
-        this.sendMessage(null, 'OKWIPEPRIV', slot, null, callback);
+        var options = {
+            msgId: 'OKWIPEPRIV',
+            slotId: slot
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.restore = function (restoreData, packetHeader, callback) {
         var msg = [ packetHeader ];
         msg = msg.concat(restoreData.match(/.{2}/g));
-        this.sendMessage(msg, 'OKRESTORE', null, null, callback);
+        var options = {
+            contents: msg,
+            msgId: 'OKRESTORE'
+        };
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.setLockout = function (lockout, callback) {
@@ -841,17 +889,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var type = parseInt(ui.rsaForm.rsaType.value || '', 10);
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
+        var passcode = ui.rsaForm.rsaPasscode.value || '';
 
-        var maxKeyLength = 256 * type; // type should 1 or 2
-
-        key = key.toString().replace(/\s/g,'').slice(0, maxKeyLength);
+        //key = key.toString().replace(/\s/g,'');
 
         if (!key) {
             return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
         }
 
-        if (key.length !== maxKeyLength) {
-            return ui.rsaForm.setError('RSA Key must be ' + maxKeyLength + ' characters.');
+        if (!passcode) {
+            return ui.rsaForm.setError('Passcode cannot be empty.');
         }
 
         // set all type modifiers
@@ -865,8 +912,39 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         type += typeModifier;
 
+        var privKey, keyObj = {}, retKey;
+
+        try {
+            var privKeys = openpgp.key.readArmored(key);
+            privKey = privKeys.keys[0];
+
+            var success = privKey.decrypt(passcode);
+
+            if (!success) {
+                throw new Error("Private Key decryption failed. Did you forget your passcode?");
+            }
+
+            if (privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6) {
+                keyObj.p = privKey.primaryKey.mpi[3].data.toByteArray();
+                keyObj.q = privKey.primaryKey.mpi[4].data.toByteArray();
+            } else {
+                throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
+            }
+        } catch (e) {
+            return ui.rsaForm.setError('Error parsing RSA key: ' + e);
+        }
+
+        if ( !(keyObj.p && keyObj.p.length && keyObj.q && keyObj.q.length) ) {
+            return callback('');
+        }
+
+        console.info("full decrypted privKey:", privKey);
+        console.info("keyObj:", keyObj);
+
+        retKey = keyObj.p.concat(keyObj.q);
+
         // TODO: validation
-        submitRsaKey(slot, type, key, function (err) {
+        submitRsaKey(slot, type, retKey, function (err) {
             // TODO: check for success, then reset
             myOnlyKey.setLastMessage('received', 'Successfully sent RSA key.');
             ui.rsaForm.reset();
@@ -875,18 +953,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitRsaKey(slot, type, keyStr, callback) {
+    function submitRsaKey(slot, type, key, callback) {
         // this function should recursively call itself until all bytes are sent in chunks
-        if (!keyStr.length) {
-            return callback();
+        if (!Array.isArray(key)) {
+            return callback('Invalid key format.');
         }
+        var maxPacketSize = 57;
+        var finalPacket = key.length - maxPacketSize <= 0;
 
-        var maxPacketSize = 114; // 57 byte pairs
-        var finalPacket = keyStr.length - maxPacketSize <= 0;
+        var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, key.slice(maxPacketSize), callback);
 
-        var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, keyStr.slice(maxPacketSize), callback);
-
-        myOnlyKey.setPrivateKey(slot, type, keyStr.slice(0, maxPacketSize), cb);
+        myOnlyKey.setPrivateKey(slot, type, key.slice(0, maxPacketSize), cb);
     }
 
     function saveBackupFile(e) {
