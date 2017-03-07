@@ -458,14 +458,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showPrefPanel.classList.remove('hide', 'active');
                 ui.keysPanel.classList.add('hide');
                 ui.showKeysPanel.classList.remove('hide', 'active');
-                ui.showBackupPanel.classList.add('hide');
+                ui.backupPanel.classList.add('hide');
+                ui.backupPanel.classList.remove('active');
                 ui.showBackupPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
             ui.main.classList.remove('hide');
             ui.slotPanel.classList.add('hide');
-			ui.slotPanel.classList.remove('active');
+            ui.slotPanel.classList.remove('active');
+            ui.backupPanel.classList.add('hide');
+            ui.backupPanel.classList.remove('active');
 			ui.prefPanel.classList.add('hide');
 			ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
@@ -530,21 +533,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     var onDeviceRemoved = function () {
         console.info("ONDEVICEREMOVED was triggered with connectionId", myOnlyKey.connection);
-        if (myOnlyKey.connection === -1) return;
+        if (myOnlyKey.connection === -1) return handleDisconnect();
 
         chrome.hid.disconnect(myOnlyKey.connection, function () {
             if (chrome.runtime.lastError) {
                 console.warn('DISCONNECT ERROR:', chrome.runtime.lastError);
             }
-
             console.info("DISCONNECTED CONNECTION", myOnlyKey.connection);
-            myOnlyKey.setConnection(-1);
-            myOnlyKey.setLastMessage('received', 'Disconnected');
-            onlyKeyConfigWizard.initForm.reset();
+            handleDisconnect();
         });
-
-        enableIOControls(false);
     };
+
+    function handleDisconnect() {
+        myOnlyKey.setConnection(-1);
+        myOnlyKey.setLastMessage('received', 'Disconnected');
+        onlyKeyConfigWizard.initForm.reset();
+        enableIOControls(false);
+    }
 
     var pollForInput = function (callback) {
         console.info("Polling...");
