@@ -460,6 +460,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showKeysPanel.classList.remove('hide', 'active');
                 ui.backupPanel.classList.add('hide');
                 ui.backupPanel.classList.remove('active');
+                ui.keysPanel.classList.add('hide');
+                ui.keysPanel.classList.remove('active');
                 ui.showBackupPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
@@ -469,6 +471,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.slotPanel.classList.remove('active');
             ui.backupPanel.classList.add('hide');
             ui.backupPanel.classList.remove('active');
+            ui.keysPanel.classList.add('hide');
+            ui.keysPanel.classList.remove('active');
 			ui.prefPanel.classList.add('hide');
 			ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
@@ -476,6 +480,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showInitPanel.classList.add('active');
             ui.showSlotPanel.classList.add('hide');
             ui.showPrefPanel.classList.add('hide');
+            ui.showKeysPanel.classList.add('hide');
             ui.showBackupPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
@@ -943,8 +948,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return callback('');
         }
 
-        console.info("full decrypted privKey:", privKey);
-        console.info("keyObj:", keyObj);
+        // console.info("full decrypted privKey:", privKey);
+        // console.info("keyObj:", keyObj);
 
         retKey = keyObj.p.concat(keyObj.q);
 
