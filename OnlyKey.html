@@ -346,12 +346,12 @@
             <div class="flex-container">
                 <div class="flex-item">
                     <form id="eccForm" name="eccForm" class="auth-form">
-                        <h2>ECC Key (32 bytes hex)</h2>
+                        <h2>ECC Private Key (32 bytes hex)</h2>
 
                         <label>
                             Type:
                             <select id="eccType" name="eccType">
-                                <option value=1>ed25519</option>
+                                <option value=1>Curve25519/Ed25519</option>
                                 <option value=2>NIST P256</option>
                                 <option value=3>secp256k1</option>
                             </select>
@@ -447,7 +447,7 @@
 
                 <div class="flex-item">
                     <form id="rsaForm" name="rsaForm" class="auth-form">
-                        <h2>RSA Key</h2>
+                        <h2>RSA Private Key (PEM Format)</h2>
 
                         <label>
                             Type:
@@ -484,7 +484,7 @@
                         <br/>
 
                         <label>
-                            Passcode:
+                            Passphrase:
                             <input type="password" id="rsaPasscode" name="rsaPasscode" />
                         </label>
                         <br/>
@@ -541,7 +541,7 @@
                                 <u>Step 2</u>. Click inside the box with your mouse and then hold the #1 button down on your OnlyKey for 5 seconds or more and then release. This will type out a backup of your OnlyKey slots and keys into the box.
                             </p>
                             <p>
-                                <u>Step 3</u>. Once you see "-----END ONLYKEY KEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select "Save file" to save your encrypted backup to a secure location.
+                                <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select "Save file" to save your encrypted backup to a secure location.
                             </p>
                         </fieldset>
 

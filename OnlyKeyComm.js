@@ -762,6 +762,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.restoreForm.setError = function (errString) {
             document.getElementById('restoreFormError').innerText = errString;
         }
+
+        ui.backupForm.setError('');
+        ui.backupForm.reset();
+        ui.restoreForm.setError('');
+        ui.restoreForm.reset();
     }
 
     function submitYubiAuthForm(e) {
@@ -987,6 +992,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             saveAs(blob, filename); // REQUIRES FileSaver.js polyfill
 
             document.getElementById('lastBackupFilename').innerText = filename;
+            ui.backupForm.reset();
         } else {
             ui.backupForm.setError('Backup data cannot be empty space.');
         }
