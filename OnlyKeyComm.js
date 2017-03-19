@@ -893,7 +893,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.eccForm.setError('');
 
         var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
-        myOnlyKey.wipePrivateKey(slot);
+        myOnlyKey.wipePrivateKey(slot, function (err) {
+            myOnlyKey.listen(handleMessage);
+        });
 
         e && e.preventDefault && e.preventDefault();
     }
@@ -1061,7 +1063,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.rsaForm.setError('');
 
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
-        myOnlyKey.wipePrivateKey(slot);
+        myOnlyKey.wipePrivateKey(slot, function (err) {
+            myOnlyKey.listen(handleMessage);
+        });
 
         e && e.preventDefault && e.preventDefault();
     }
