@@ -128,7 +128,6 @@
         };
 
         self.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
-
         self.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
         self.slotWipeConfirmBtn.onclick = function (e) {
             self.onlyKey.wipeSlot(null, null, function (err, msg) {
@@ -156,7 +155,62 @@
             e && e.preventDefault && e.preventDefault();
         };
 
+        // BEGIN PRIVATE KEY SELECTOR
+        self.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
+        self.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
+        self.selectPrivateKeyConfirmBtn.onclick = function (e) {
+            e && e.preventDefault && e.preventDefault();
+            var selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
+            self.onlyKey.confirmRsaKeySelect(self.onlyKey.tempRsaKeys[selectedKey]);
+            self.onlyKey.tempRsaKeys = null;
+            dialog.closeAll();
+            return;
+        };
+
+        self.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
+        self.selectPrivateKeyCancelBtn.onclick = function (e) {
+            dialog.close(self.selectPrivateKeyDialog);
+            e && e.preventDefault && e.preventDefault();
+        };
+        // END PRIVATE KEY SELECTOR
+
         setActiveStepUI.call(this);
+    };
+
+    Wizard.prototype.initKeySelect = function (rawKey, cb) {
+        var self = this;
+
+        if (! rawKey.primaryKey || ! rawKey.subKeys) {
+            return cb('Cannot initialize key select form due to invalid keys object.');
+        }
+
+        var keys = [{
+            name: 'Primary Key',
+            p: rawKey.primaryKey.mpi[3].data.toByteArray(),
+            q: rawKey.primaryKey.mpi[4].data.toByteArray()
+        }];
+
+        rawKey.subKeys.forEach(function (subKey, i) {
+            keys.push({
+                name: 'Subkey ' + (i + 1),
+                p: subKey.subKey.mpi[3].data.toByteArray(),
+                q: subKey.subKey.mpi[4].data.toByteArray()
+            });
+        });
+
+        self.onlyKey.tempRsaKeys = keys;
+
+        var pkDiv = document.getElementById('private-key-options');
+        pkDiv.innerHTML = "";
+
+        keys.forEach(function (key, i) {
+            pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
+            pkDiv.appendChild(document.createElement("br"))
+        });
+
+        pkDiv.appendChild(document.createElement("br"))
+
+        dialog.open(self.selectPrivateKeyDialog, true);
     };
 
     function setSlot() {
@@ -455,4 +509,16 @@ function clearRadios(name) {
     for (var i = 0; i < btns.length; i++) {
         if(btns[i].checked) btns[i].checked = false;
     }
+}
+
+function makeRadioButton(name, value, text) {
+    var label = document.createElement("label");
+    var radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = name;
+    radio.value = value;
+
+    label.appendChild(radio);
+    label.appendChild(document.createTextNode(text));
+    return label;
 }

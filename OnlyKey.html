@@ -611,9 +611,21 @@
 
     <dialog id="slot-wipe-confirm">
         <h2>WIPE OnlyKey Slot <span id="wipeCurrentSlotId">1a</span>??</h2>
-<!--         <h3>Label: <span class="wipeCurrentSlotLabel">empty</span></h3>
- -->        <input type="button" id="slotWipeConfirm" name="slotWipeConfirm" value="Wipe"/>
+        <input type="button" id="slotWipeConfirm" name="slotWipeConfirm" value="Wipe"/>
         <input type="button" id="slotWipeCancel" name="slotWipeCancel" value="Cancel"/>
+    </dialog>
+
+    <dialog id="select-private-key-dialog">
+        <h2>Please choose a key</h2>
+
+        <p>Multiple keys were extracted. Please choose which one to save.</p>
+
+        <div id="private-key-options">
+        </div>
+
+        <input type="button" id="selectPrivateKeyConfirm" name="selectPrivateKeyConfirm" value="Save"/>
+        <input type="button" id="selectPrivateKeyCancel" name="selectPrivateKeyCancel" value="Cancel"/>
+        <div id="selectPrivateKeyError" class="form-error"></div>
     </dialog>
 
     <dialog id="slot-config-dialog">
