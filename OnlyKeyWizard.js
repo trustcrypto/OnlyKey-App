@@ -164,13 +164,13 @@
             self.onlyKey.confirmRsaKeySelect(self.onlyKey.tempRsaKeys[selectedKey]);
             self.onlyKey.tempRsaKeys = null;
             dialog.closeAll();
-            return;
         };
 
         self.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
         self.selectPrivateKeyCancelBtn.onclick = function (e) {
-            dialog.close(self.selectPrivateKeyDialog);
             e && e.preventDefault && e.preventDefault();
+            self.onlyKey.tempRsaKeys = null;
+            dialog.closeAll();
         };
         // END PRIVATE KEY SELECTOR
 
