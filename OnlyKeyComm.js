@@ -630,13 +630,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (msg.indexOf("UNLOCKED") >= 0) {
-            myOnlyKey.isInitialized = true;
-			myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
-			setOkVersionStr();
-            if (myOnlyKey.isLocked) {
-                myOnlyKey.isLocked = false;
-                myOnlyKey.getLabels(pollForInput);
-                updateUI = true;
+            if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
+                pollForInput();
+            } else {
+                myOnlyKey.isInitialized = true;
+                myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
+                setOkVersionStr();
+                if (myOnlyKey.isLocked) {
+                    myOnlyKey.isLocked = false;
+                    myOnlyKey.getLabels(pollForInput);
+                    updateUI = true;
+                }
             }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
@@ -882,7 +886,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // TODO: validation
         myOnlyKey.setPrivateKey(slot, type, key, function (err) {
             // TODO: check for success, then reset
-            myOnlyKey.setLastMessage('received', 'Successfully sent ECC key.');
+            myOnlyKey.listen(handleMessage);
             ui.eccForm.reset();
         });
 
@@ -893,16 +897,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.eccForm.setError('');
 
         var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
-        myOnlyKey.wipePrivateKey(slot);
+        myOnlyKey.wipePrivateKey(slot, function (err) {
+            myOnlyKey.listen(handleMessage);
+        });
 
         e && e.preventDefault && e.preventDefault();
     }
 
     function submitRsaForm(e) {
+        e && e.preventDefault && e.preventDefault();
         ui.rsaForm.setError('');
 
-        var type = parseInt(ui.rsaForm.rsaType.value || '', 10);
-        var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
         var key = ui.rsaForm.rsaKey.value || '';
         var passcode = ui.rsaForm.rsaPasscode.value || '';
 
@@ -916,17 +921,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return ui.rsaForm.setError('Passcode cannot be empty.');
         }
 
-        // set all type modifiers
-        var typeModifier = 0;
-
-        Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
-            if (ui.rsaForm['rsaSetAs' + modifier].checked) {
-                typeModifier += myOnlyKey.keyTypeModifiers[modifier];
-            }
-        });
-
-        type += typeModifier;
-
         var privKey, keyObj = {}, retKey;
 
         try {
@@ -939,34 +933,53 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw new Error("Private Key decryption failed. Did you forget your passcode?");
             }
 
-            if (privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6) {
-                keyObj.p = privKey.primaryKey.mpi[3].data.toByteArray();
-                keyObj.q = privKey.primaryKey.mpi[4].data.toByteArray();
-            } else {
+            if (!(privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6)) {
                 throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
             }
         } catch (e) {
             return ui.rsaForm.setError('Error parsing RSA key: ' + e);
         }
 
-        if ( !(keyObj.p && keyObj.p.length && keyObj.q && keyObj.q.length) ) {
-            return callback('');
+        var allKeys = {
+            primaryKey: privKey.primaryKey,
+            subKeys: privKey.subKeys
+        };
+
+        onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
+            ui.rsaForm.setError(err);
+        });
+    }
+
+    OnlyKey.prototype.confirmRsaKeySelect = function (keyObj) {
+        var type = parseInt(keyObj.p.length / 64, 10);
+
+        if ([1,2,3,4].indexOf(type) < 0) {
+            return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
         }
 
-        // console.info("full decrypted privKey:", privKey);
-        // console.info("keyObj:", keyObj);
+        var retKey = keyObj.p.concat(keyObj.q);
+        var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
 
-        retKey = keyObj.p.concat(keyObj.q);
+        // set all type modifiers
+        var typeModifier = 0;
 
-        // TODO: validation
+        Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
+            if (ui.rsaForm['rsaSetAs' + modifier].checked) {
+                typeModifier += myOnlyKey.keyTypeModifiers[modifier];
+            }
+        });
+
+        type += typeModifier;
+
+        // console.info("retKey:", retKey);
+
         submitRsaKey(slot, type, retKey, function (err) {
             // TODO: check for success, then reset
-            myOnlyKey.setLastMessage('received', 'Successfully sent RSA key.');
+            myOnlyKey.listen(handleMessage);
             ui.rsaForm.reset();
         });
 
-        e && e.preventDefault && e.preventDefault();
-    }
+    };
 
     function submitRsaKey(slot, type, key, callback) {
         // this function should recursively call itself until all bytes are sent in chunks
@@ -1058,7 +1071,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.rsaForm.setError('');
 
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
-        myOnlyKey.wipePrivateKey(slot);
+        myOnlyKey.wipePrivateKey(slot, function (err) {
+            myOnlyKey.listen(handleMessage);
+        });
 
         e && e.preventDefault && e.preventDefault();
     }
