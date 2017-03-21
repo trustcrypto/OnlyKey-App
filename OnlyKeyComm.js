@@ -918,7 +918,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (!passcode) {
-            return ui.rsaForm.setError('Passcode cannot be empty.');
+            //return ui.rsaForm.setError('Passcode cannot be empty.');
         }
 
         var privKey, keyObj = {}, retKey;
@@ -1064,7 +1064,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // packetHeader is hex number of bytes in certStr chunk
         var packetHeader = finalPacket ? (restoreData.length / 2).toString(16) : "FF";
 
-        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);        
+        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
     function wipeRsaKeyForm(e) {
