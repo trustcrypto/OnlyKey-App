@@ -630,13 +630,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         if (msg.indexOf("UNLOCKED") >= 0) {
-            myOnlyKey.isInitialized = true;
-			myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
-			setOkVersionStr();
-            if (myOnlyKey.isLocked) {
-                myOnlyKey.isLocked = false;
-                myOnlyKey.getLabels(pollForInput);
-                updateUI = true;
+            if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
+                pollForInput();
+            } else {
+                myOnlyKey.isInitialized = true;
+                myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
+                setOkVersionStr();
+                if (myOnlyKey.isLocked) {
+                    myOnlyKey.isLocked = false;
+                    myOnlyKey.getLabels(pollForInput);
+                    updateUI = true;
+                }
             }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
@@ -882,7 +886,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // TODO: validation
         myOnlyKey.setPrivateKey(slot, type, key, function (err) {
             // TODO: check for success, then reset
-            myOnlyKey.setLastMessage('received', 'Successfully sent ECC key.');
+            myOnlyKey.listen(handleMessage);
             ui.eccForm.reset();
         });
 
@@ -947,8 +951,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     OnlyKey.prototype.confirmRsaKeySelect = function (keyObj) {
+        var type = parseInt(keyObj.p.length / 64, 10);
+
+        if ([1,2,3,4].indexOf(type) < 0) {
+            return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
+        }
+
         var retKey = keyObj.p.concat(keyObj.q);
-        var type = parseInt(ui.rsaForm.rsaType.value || '', 10);
         var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
 
         // set all type modifiers
@@ -966,7 +975,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         submitRsaKey(slot, type, retKey, function (err) {
             // TODO: check for success, then reset
-            myOnlyKey.setLastMessage('received', 'Successfully sent RSA key.');
             myOnlyKey.listen(handleMessage);
             ui.rsaForm.reset();
         });
