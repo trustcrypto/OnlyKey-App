@@ -293,7 +293,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         if (privateId.length) {
             privateId = privateId.match(/.{2}/g);
             var options = {
-                content: privateId,
+                contents: privateId,
                 msgId: 'OKSETU2FPRIV'
             };
             this.sendMessage(options, callback);
