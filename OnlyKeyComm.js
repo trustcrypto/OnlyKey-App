@@ -620,6 +620,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             case "INITIALIZED":
                 myOnlyKey.isInitialized = (msg === "INITIALIZED");
                 updateUI = true;
+
+                // special handling if last message sent was PIN-related
+                switch (myOnlyKey.getLastMessage('sent')) {
+                    case 'OKSETPIN':
+                    case 'OKSETPDPIN':
+                    case 'OKSETSDPIN':
+                        return pollForInput();
+                }
+
                 break;
             default:
                 break;
@@ -686,7 +695,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function initSlotConfigForm() {
-        // TODO: loop through labels returned from OKGETLABELS
         var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName('input'));
         configBtns.forEach(function (btn, i) {
             var labelIndex = myOnlyKey.getSlotNum(btn.value);
