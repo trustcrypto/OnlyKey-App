@@ -2,7 +2,7 @@
 
 The OnlyKey Chrome App is a configuration utility for the OnlyKey. For general information on OnlyKey check out [the OnlyKey Product Page](https://crp.to/p/) or [the OnlyKey Kickstarter Page](https://www.kickstarter.com/projects/1048259057/openkey-the-two-factor-authentication-and-password/description).
 
-OnlyKeys can be ordered from [the OnlyKey Product Page](https://crp.to/p/) and [Amazon](https://www.amazon.com/gp/product/B01KUJ2ASA).
+OnlyKeys can be ordered from [the OnlyKey Product Page](https://crp.to/p/)).
 
 ## Introduction ##
 **OnlyKey Chrome App** is an app to be used along with an OnlyKey device. The Chrome app can be used for initial setup of your OnlyKey as well as configuration of usernames, passwords, and two-factor authentication.
