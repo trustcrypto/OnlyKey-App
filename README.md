@@ -14,4 +14,4 @@ To use the **OnlyKey Chrome App** :
 - Select "Apps" icon in the bookmarks bar and select **OnlyKey Configuration**.
 
 ## Start the App ##
-To launch the app you can go to chrome://extensions and select the "Launch" button located under the OnlyKey Configuration app.  Alternatively, you can install [Apps Launcher] (https://chrome.google.com/webstore/detail/apps-launcher/ijmgkhchjindcjamnckoiahagecjnkdc) from the Google Chrome Web store.
+To launch the app you can go to chrome://extensions and select the "Launch" button located under the OnlyKey Configuration app.  Alternatively, you can install [Apps Launcher](https://chrome.google.com/webstore/detail/apps-launcher/ijmgkhchjindcjamnckoiahagecjnkdc) from the Google Chrome Web store.
