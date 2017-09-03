@@ -232,7 +232,7 @@
                 msgId: 'URL'
             },
             tabReturn1: {
-                input: form.tabReturn1,
+                input: (form.tabReturn1_1 + form.tabReturn1_2),
                 msgId: 'NEXTKEY1'
             },
             chkDelay1: {
@@ -244,7 +244,7 @@
                 msgId: 'USERNAME'
             },
             tabReturn2: {
-                input: form.tabReturn2,
+                input: (form.tabReturn2_1 + form.tabReturn2_1),
                 msgId: 'NEXTKEY2'
             },
             chkDelay2: {
