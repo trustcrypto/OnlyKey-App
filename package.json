@@ -6,12 +6,14 @@
   "dependencies": {},
   "devDependencies": {
     "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
     "mocha": "^3.5.0",
     "nw": "^0.24.4",
     "selenium-webdriver": "^3.5.0"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "start": "nw"
   },
   "repository": {
     "type": "git",
