@@ -6,7 +6,7 @@
   "minimum_chrome_version": "45.0.2439.3",
   "app": {
     "background": {
-      "scripts": [ "main.js" ],
+      "scripts": [ "app.js" ],
       "persistent": false
     }
   },
@@ -19,8 +19,8 @@
     }
   ],
   "icons": {
-      "16": "onlykey_logo_16.png",
-      "48": "onlykey_logo_48.png",
-      "128": "onlykey_logo_128.png"
+      "16": "resources/onlykey_logo_16.png",
+      "48": "resources/onlykey_logo_48.png",
+      "128": "resources/onlykey_logo_128.png"
   }
 }

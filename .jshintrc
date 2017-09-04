@@ -1,0 +1,21 @@
+{
+    // Adapted from the JSHint Default Configuration File (as on JSHint website)
+    // See http://jshint.com/docs/ for more details
+
+    // Enforcing
+    "quotmark"      : true,     // Quotation mark consistency:
+                                //   false    : do nothing (default)
+                                //   true     : ensure whatever is used is consistent
+                                //   "single" : require single quotes
+                                //   "double" : require double quotes
+    "varstmt"       : true,     // true: Disallow any var statements. Only `let` and `const` are allowed.
+
+    // Relaxing
+    "esversion"     : 6,         // {int} Specify the ECMAScript version to which the code must adhere.
+
+    // Environments
+    "node"          : true,     // Node.js
+
+    // Custom Globals
+    "globals"       : {}        // additional predefined global variables
+}

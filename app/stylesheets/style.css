@@ -97,7 +97,7 @@ dialog a {
 
 /* configure onlykey photo background */
 td.ok-photo-cell {
-    background: transparent url(onlykey-photo.png) no-repeat 50% 0%;
+    background: transparent url(/images/onlykey-photo.png) no-repeat 50% 0%;
     background-size: contain;
     padding-top: 65px;
     width: 80px;
