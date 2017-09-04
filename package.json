@@ -1,0 +1,33 @@
+{
+  "name": "onlykey-chrome-app",
+  "version": "4.0.1",
+  "description": "OnlyKey Configuration",
+  "main": "main.js",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^3.5.0",
+    "nw": "^0.24.4",
+    "selenium-webdriver": "^3.5.0"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/trustcrypto/OnlyKey-Chrome-App.git"
+  },
+  "keywords": [
+    "OnlyKey",
+    "crypto",
+    "two-factor-authentication",
+    "password"
+  ],
+  "author": "CryptoTrust",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/trustcrypto/OnlyKey-Chrome-App/issues"
+  },
+  "homepage": "https://github.com/trustcrypto/OnlyKey-Chrome-App#readme"
+}
