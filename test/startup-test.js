@@ -1,14 +1,17 @@
 var webdriver = require('selenium-webdriver'),
+    By = webdriver.By,
+    until = webdriver.until,
     chrome = require('selenium-webdriver/chrome'),
     nw = require('nw'),
     path = require('path'),
-    By = webdriver.By,
-    until = webdriver.until,
     chai = require('chai'),
     chaiAsPromised = require("chai-as-promised"),
     expect = chai.expect;
 
 chai.use(chaiAsPromised);
+
+// A first integration test. Mostly a proof of concept to show that Selenium,
+// Mocha, and nwjs can work together.
 
 describe('OnlyKey Configuration', function() {
 

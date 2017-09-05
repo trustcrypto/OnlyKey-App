@@ -1,3 +1,73 @@
+// A proxy for the Chrome HID service. Stored in a global variable so it is
+// accessible for integration tests. We use this to simulate an OnlyKey being
+// plugged into the computer.
+var chromeHid = {
+    // chrome.hid.connect(integer deviceId, function callback)
+    connect: function(deviceId, callback) {
+        if (deviceId === 'mockDevice') {
+            return callback({connectionId: 'mockConnection'});
+        } else {
+            return chrome.hid.connect(deviceId, callback);
+        }
+    },
+
+    // chrome.hid.disconnect(integer connectionId, function callback)
+    disconnect: chrome.hid.disconnect,
+
+    // chrome.hid.getDevices(object options, function callback)
+    getDevices: chrome.hid.getDevices,
+
+    // chrome.hid.receive(integer connectionId, function callback)
+    receive: function(connectionId, callback) {
+        console.log('>>> receive called with', arguments);
+        return chrome.hid.receive(connectionId, callback);
+    },
+
+    // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
+    send: chrome.hid.send,
+
+    // Event: chrome.hid.onDeviceAdded
+    onDeviceAdded: {
+        addListener: function(callback) {
+            this._callbacks.push(callback);
+            return chrome.hid.onDeviceAdded.addListener(callback);
+        },
+
+        _callbacks: [],
+
+        mockDeviceAdded: function() {
+            this._callbacks.forEach(function(callback) {
+                callback.call(null, {
+                    "collections": [
+                        {
+                            "reportIds": [],
+                            "usage": 1,
+                            "usagePage": 61904
+                        }
+                    ],
+                    "deviceId": "mockDevice",
+                    "maxFeatureReportSize": 0,
+                    "maxInputReportSize": 64,
+                    "maxOutputReportSize": 64,
+                    "productId": 1158,
+                    "productName": "Keyboard/RawHID",
+                    "reportDescriptor": {},
+                    "serialNumber": "4294967295",
+                    "vendorId": 5824
+                });
+            });
+        },
+    },
+
+    // Event: chrome.hid.onDeviceRemoved
+    onDeviceRemoved: {
+        addListener: function(callback) {
+            return chrome.hid.onDeviceRemoved.addListener(callback);
+        },
+    },
+
+};
+
 var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var myOnlyKey = new OnlyKey();
     var dialog = new dialogMgr();
@@ -156,7 +226,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         console.info("SENDING " + msgId + " to connectionId " + self.connection + ":", bytes);
 
-        chrome.hid.send(self.connection, reportId, bytes.buffer, function () {
+        chromeHid.send(self.connection, reportId, bytes.buffer, function () {
             if (chrome.runtime.lastError) {
                 console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
                 callback('ERROR SENDING PACKETS');
@@ -487,9 +557,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     var enumerateDevices = function () {
-        chrome.hid.getDevices(myOnlyKey.deviceInfo, onDevicesEnumerated);
-        chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
-        chrome.hid.onDeviceRemoved.addListener(onDeviceRemoved);
+        chromeHid.getDevices(myOnlyKey.deviceInfo, onDevicesEnumerated);
+        chromeHid.onDeviceAdded.addListener(onDeviceAdded);
+        chromeHid.onDeviceRemoved.addListener(onDeviceRemoved);
     };
 
     var onDevicesEnumerated = function (devices) {
@@ -520,7 +590,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         dialog.close(ui.disconnectedDialog);
         dialog.open(ui.workingDialog);
 
-        chrome.hid.connect(deviceId, function (connectInfo) {
+        chromeHid.connect(deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
                 console.error("ERROR CONNECTING:", chrome.runtime.lastError);
             } else if (!connectInfo) {
@@ -539,7 +609,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         console.info("ONDEVICEREMOVED was triggered with connectionId", myOnlyKey.connection);
         if (myOnlyKey.connection === -1) return handleDisconnect();
 
-        chrome.hid.disconnect(myOnlyKey.connection, function () {
+        chromeHid.disconnect(myOnlyKey.connection, function () {
             if (chrome.runtime.lastError) {
                 console.warn('DISCONNECT ERROR:', chrome.runtime.lastError);
             }
@@ -561,7 +631,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         callback = callback || handleMessage;
 
         var msg;
-        chrome.hid.receive(myOnlyKey.connection, function (reportId, data) {
+        chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
             if (chrome.runtime.lastError) {
                 myOnlyKey.setLastMessage('received', '[error]');
                 return callback(chrome.runtime.lastError);
