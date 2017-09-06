@@ -20,11 +20,36 @@ var chromeHid = {
     // chrome.hid.receive(integer connectionId, function callback)
     receive: function(connectionId, callback) {
         console.log('>>> receive called with', arguments);
-        return chrome.hid.receive(connectionId, callback);
+        if (connectionId === 'mockConnection') {
+            var response = this._responses.shift();
+            if (response) {
+                return callback.apply(chrome.hid, response);
+            } else {
+                chrome.runtime.lastError = 'No responses ready for MockConnection';
+                return callback.call(chrome.hid, null, null);
+            }
+        } else {
+            return chrome.hid.receive(connectionId, callback);
+        }
     },
 
+    _responses: [],
+
     // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
-    send: chrome.hid.send,
+    send: function(connectionId, reportId, data, callback) {
+        console.log('>>> send called with', arguments);
+        if (connectionId === 'mockConnection') {
+            this._sent.push(arguments);
+
+            // Simulate a successful send operation by calling the callback
+            // without setting chrome.runtime.lastError.
+            callback();
+        } else {
+            chrome.hid.send(connectionId, reportId, data, callback);
+        }
+    },
+
+    _sent: [],
 
     // Event: chrome.hid.onDeviceAdded
     onDeviceAdded: {

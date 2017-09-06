@@ -33,24 +33,23 @@ describe('Configuring a slot on the OnlyKey', function() {
         driver.quit();
     });
 
-    // A helper to wait for a dialog to be open
-    function waitForDialog(id) {
-        return driver.wait(function() {
-            var dialog = driver.findElement(By.id('disconnected-dialog'));
-            var openPromise = dialog.getAttribute('open');
-            var open = driver.wait(openPromise);
-            return open === 'true';
-        });
-    }
-
-    function isDialogOpen(id) {
+    function expectDialogOpen(id) {
         var dialog = driver.findElement(By.id(id));
         return expect(dialog.getAttribute('open')).to.eventually.equal('true');
     }
 
+    function expectDialogClosed(id) {
+        var dialog = driver.findElement(By.id(id));
+        return expect(dialog.getAttribute('open')).to.eventually.equal(null);
+    }
+
     it('should start disconnected', function() {
         driver.wait(until.titleIs('OnlyKey Configuration Wizard'));
-        return isDialogOpen('disconnected-dialog');
+        return expectDialogOpen('disconnected-dialog');
+    });
+
+    it('should not show "working..." on startup', function() {
+        return expectDialogClosed('working-dialog');
     });
 
     it('should show "working..." once a device is connected', function() {
@@ -58,11 +57,11 @@ describe('Configuring a slot on the OnlyKey', function() {
             console.log('Hello from executeScript');
             chromeHid.onDeviceAdded.mockDeviceAdded();
         });
-        return waitForDialog('working-dialog');
+        return expectDialogOpen('working-dialog');
     });
 
-    it('should show slot config dialog after clicking button 1a', function() {
-        driver.findElement(By.id('slot1aConfig')).click();
-        return waitForDialog('slot-config-dialog');
-    });
+//    it('should show slot config dialog after clicking button 1a', function() {
+//        driver.findElement(By.id('slot1aConfig')).click();
+//        return expectDialogOpen('slot-config-dialog');
+//    });
 });
