@@ -33,7 +33,7 @@ describe('OnlyKey Configuration', function() {
     });
 
     after(function() {
-        driver.quit();
+        return driver.quit();
     });
 
     it('should start disconnected', function() {

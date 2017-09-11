@@ -1,3 +1,5 @@
+/* jshint esnext:true */
+
 // A proxy for the Chrome HID service. Stored in a global variable so it is
 // accessible for integration tests. We use this to simulate an OnlyKey being
 // plugged into the computer.
@@ -21,19 +23,31 @@ var chromeHid = {
     receive: function(connectionId, callback) {
         console.log('>>> receive called with', arguments);
         if (connectionId === 'mockConnection') {
-            var response = this._responses.shift();
-            if (response) {
-                return callback.apply(chrome.hid, response);
-            } else {
-                chrome.runtime.lastError = 'No responses ready for MockConnection';
-                return callback.call(chrome.hid, null, null);
+            if (this._pendingReceive) {
+                throw "There must not be multiple pending receives.";
             }
+            this._pendingReceive = callback;
         } else {
             return chrome.hid.receive(connectionId, callback);
         }
     },
 
-    _responses: [],
+    mockResponse: function(response) {
+        // Response is [reportId, data]. Note that WebDriver.executeScript will
+        // convert the ArrayBuffer data to an object, so we have to convert it
+        // back.
+        var [reportId, data] = response;
+        response = [reportId, new Uint8Array(Object.values(data)).buffer];
+
+        if (!this._pendingReceive) {
+            throw "Expected a pending receive, found none.";
+        }
+        var callback = this._pendingReceive;
+        this._pendingReceive = null;
+        callback.apply(chrome.hid, response);
+    },
+
+    _pendingReceive: null,
 
     // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
     send: function(connectionId, reportId, data, callback) {
