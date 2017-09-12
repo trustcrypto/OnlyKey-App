@@ -1,4 +1,4 @@
-var onlyKey = new OnlyKey();
+/*jshint esnext: true */
 
 chrome.app.runtime.onLaunched.addListener(function() {
   chrome.app.window.create(
@@ -7,10 +7,19 @@ chrome.app.runtime.onLaunched.addListener(function() {
       });
 });
 
-chrome.hid.getDevices(onlyKey.deviceInfo, onDevicesEnumerated);
-chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+// Use a "lite" version of the OnlyKey code to send OKSETTIME messages whenever
+// the key is plugged in. This is run by Chrome in the background, and ensures
+// that the key knows the correct time for TOTP.
+//
+// Do not run this when using nwjs.
+if (typeof nw == 'undefined') {
+    var onlyKeyLite = new OnlyKeyLite();
 
-function OnlyKey() {
+    chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
+    chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+}
+
+function OnlyKeyLite() {
     this.deviceInfo = {
         vendorId: 5824,
         productId: 1158
@@ -35,9 +44,9 @@ function onDevicesEnumerated(devices) {
 }
 
 function onDeviceAdded(device) {
-    if (device.maxInputReportSize === onlyKey.maxInputReportSize &&
-        device.maxOutputReportSize === onlyKey.maxOutputReportSize &&
-        device.maxFeatureReportSize === onlyKey.maxFeatureReportSize) {
+    if (device.maxInputReportSize === onlyKeyLite.maxInputReportSize &&
+        device.maxOutputReportSize === onlyKeyLite.maxOutputReportSize &&
+        device.maxFeatureReportSize === onlyKeyLite.maxFeatureReportSize) {
 
         chrome.hid.connect(device.deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
@@ -86,11 +95,11 @@ function setTime(connectionId) {
             console.error("ERROR SENDING OKSETTIME:", chrome.runtime.lastError, { connectionId: connectionId });
             callback('ERROR SENDING OKSETTIME PACKETS');
         } else {
-        	console.info("OKSETTIME complete");
+            console.info("OKSETTIME complete");
         }
     });
 }
 
 function hexStrToDec(hexStr) {
-    return new Number('0x' + hexStr).toString(10);
+    return parseInt(hexStr, 16).toString(10);
 }

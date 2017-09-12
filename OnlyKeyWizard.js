@@ -205,10 +205,10 @@
 
         keys.forEach(function (key, i) {
             pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
-            pkDiv.appendChild(document.createElement("br"))
+            pkDiv.appendChild(document.createElement("br"));
         });
 
-        pkDiv.appendChild(document.createElement("br"))
+        pkDiv.appendChild(document.createElement("br"));
 
         dialog.open(self.selectPrivateKeyDialog, true);
     };
@@ -320,6 +320,7 @@
                         formValue = (fieldMap[field].input).value;
                         clearRadios(field);
                     }
+                    break;
                 default:
                     break;
             }

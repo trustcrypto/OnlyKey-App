@@ -506,7 +506,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     var onDeviceAdded = function (device) {
-        var optionId = 'device-' + device.deviceId;
         // auto connect desired device
         if (device.maxInputReportSize === myOnlyKey.maxInputReportSize &&
             device.maxOutputReportSize === myOnlyKey.maxOutputReportSize &&
@@ -611,7 +610,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return console.error("MESSAGE ERROR:", err);
         }
 
-        var msg = msg.trim();
+        msg = msg.trim();
         var updateUI = false;
         dialog.close(ui.workingDialog);
 
@@ -767,13 +766,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         backupSave.addEventListener('click', saveBackupFile);
         ui.backupForm.setError = function (errString) {
             document.getElementById('backupFormError').innerText = errString;
-        }
+        };
 
         var restoreFromBackup = document.getElementById('doRestore');
         restoreFromBackup.addEventListener('click', submitRestoreForm);
         ui.restoreForm.setError = function (errString) {
             document.getElementById('restoreFormError').innerText = errString;
-        }
+        };
 
         ui.backupForm.setError('');
         ui.backupForm.reset();
