@@ -28,7 +28,9 @@
     "release": "./node_modules/.bin/gulp release --env=production",
     "start": "node ./tasks/start",
     "pretest": "npm run-script build",
-    "test": "mocha"
+    "test": "mocha",
+    "prechrome": "./node_modules/.bin/gulp build --env=chrome",
+    "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
   },
   "repository": {
     "type": "git",

@@ -16,13 +16,21 @@ var paths = {
         'app/scripts/**/*.js',
         'app/*.js',
     ],
-    copyFromAppDir: [
-        './images/**/*',
-        './stylesheets/**/*',
-        './vendor/**/*',
-        './*.html',
+    filesToCopyFromAppDir: [
+        'images/**/*',
+        'stylesheets/**/*',
+        'vendor/**/*',
+        '*.html',
     ],
+    filesToCopyFromRootDir: [],
 };
+
+if (utils.getEnvName() === 'chrome') {
+    paths.filesToCopyFromRootDir.push(
+        'manifest.json',
+        'resources/onlykey_logo_*.png'
+    );
+}
 
 // -------------------------------------
 // Tasks
@@ -36,10 +44,17 @@ gulp.task('clean', function(callback) {
 var copyTask = function () {
     projectDir.copy('resources/onlykey_logo_128.png', destDir.path('icon.png'), { overwrite: true });
 
-    return projectDir.copyAsync('app', destDir.path(), {
+    var result = jetpack.copyAsync(projectDir.path('app'), destDir.path(), {
         overwrite: true,
-        matching: paths.copyFromAppDir
+        matching: paths.filesToCopyFromAppDir
     });
+    result = result.then(() => {
+        return jetpack.copyAsync(projectDir.path(), destDir.path(), {
+            overwrite: true,
+            matching: paths.filesToCopyFromRootDir
+        });
+    });
+    return result;
 };
 gulp.task('copy', ['clean'], copyTask);
 gulp.task('copy-watch', copyTask);
@@ -84,7 +99,8 @@ gulp.task('finalize', ['clean'], function () {
 
 gulp.task('watch', function () {
     gulp.watch(paths.jsCodeToTranspile, ['transpile-watch']);
-    gulp.watch(paths.copyFromAppDir, { cwd: 'app' }, ['copy-watch']);
+    gulp.watch(paths.filesToCopyFromRootDir, ['copy-watch']);
+    gulp.watch(paths.filesToCopyFromAppDir, { cwd: 'app' }, ['copy-watch']);
 });
 
 
