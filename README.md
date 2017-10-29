@@ -53,6 +53,16 @@ in your shell's `%PATH%`. That is, add `C:/Program Files (x86)/NSIS` or similar
 to your `%PATH%` in the operating system settings. On Mac OS, you need to
 install an optional NPM dependecy: `npm install appdmg`.
 
+To run tests:
+
+    $ npm test
+
+Running tests requires the SDK version of NWJS, which comes with a
+`chromedriver` that handles automated Selenium tests. To install that version,
+run `npm install nw --nwjs_build_type=sdk`. Note that to create releases, you
+should install the non-sdk variant again; otherwise the installer will be
+unnecessarily large.
+
 
 [kickstarter]: https://www.kickstarter.com/projects/1048259057/openkey-the-two-factor-authentication-and-password/description
 [nsis]: http://nsis.sourceforge.net/Main_Page

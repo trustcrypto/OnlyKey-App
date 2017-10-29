@@ -18,14 +18,14 @@ describe('OnlyKey Configuration', function() {
         driver.navigate().refresh();
         driver.wait(until.titleIs('OnlyKey Configuration Wizard'));
 
-        let disconnected = driver.findElement(By.id('disconnected-dialog'));
+        const disconnected = driver.findElement(By.id('disconnected-dialog'));
         return expect(disconnected.getAttribute('open')).to.eventually.equal('true');
     });
 
     it('should not show "working..." dialog', function() {
         driver.wait(until.titleIs('OnlyKey Configuration Wizard'));
 
-        let working = driver.findElement(By.id('working-dialog'));
+        const working = driver.findElement(By.id('working-dialog'));
         return expect(working.getAttribute('open')).to.eventually.equal(null);
     });
 });

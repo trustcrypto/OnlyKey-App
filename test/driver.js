@@ -7,11 +7,11 @@ const path = require('path');
 
 function createDriver() {
     // Use chromedriver that comes with nwjs
-    let service = new chrome.ServiceBuilder(path.join(path.dirname(require.resolve('nw')), 'nwjs', 'chromedriver')).build();
+    const service = new chrome.ServiceBuilder(path.join(path.dirname(require.resolve('nw')), 'nwjs', 'chromedriver')).build();
     chrome.setDefaultService(service);
 
     // Point chromedriver to the nwjs app
-    let options = new chrome.Options()
+    const options = new chrome.Options()
         .addArguments('nwapp=' + path.join(path.dirname(__dirname), 'build'));
 
     return new webdriver.Builder()
@@ -21,7 +21,7 @@ function createDriver() {
 }
 
 after(function() {
-    let driver = module.exports;
+    const driver = module.exports;
     return driver.quit();
 });
 

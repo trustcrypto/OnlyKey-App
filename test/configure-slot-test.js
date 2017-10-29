@@ -12,12 +12,12 @@ chai.use(chaiAsPromised);
 describe('Configuring a slot on the OnlyKey', function() {
 
     function expectDialogOpen(id) {
-        let dialog = driver.findElement(By.id(id));
+        const dialog = driver.findElement(By.id(id));
         return expect(dialog.getAttribute('open')).to.eventually.equal('true');
     }
 
     function expectDialogClosed(id) {
-        let dialog = driver.findElement(By.id(id));
+        const dialog = driver.findElement(By.id(id));
         return expect(dialog.getAttribute('open')).to.eventually.equal(null);
     }
 
@@ -66,7 +66,7 @@ describe('Configuring a slot on the OnlyKey', function() {
     });
 
     it('should show the correct label in the slot config dialog', function() {
-        let label = driver.findElement(By.id('txtSlotLabel'));
+        const label = driver.findElement(By.id('txtSlotLabel'));
         return expect(label.getAttribute('value')).to.eventually.equal('FooLabel');
     });
 
@@ -84,7 +84,7 @@ describe('Configuring a slot on the OnlyKey', function() {
 
         // We're expecting a password message containing [255, 255, 255, 255,
         // SETSLOT=230, slotnumber=1, field=5 (PASSWORD), "FooPassword"]
-        let passwordMessage = driver.executeScript(function() {
+        const passwordMessage = driver.executeScript(function() {
             return new Uint8Array(chromeHid._sent[chromeHid._sent.length - 3][2]);
         });
         return expect(passwordMessage).to.eventually.deep.equal(
@@ -96,7 +96,7 @@ describe('Configuring a slot on the OnlyKey', function() {
         // FIXME is this a bug in the form? Should this be unchecked?
         // Anyway, expecting [255, 255, 255, 255,
         // SETSLOT=230, slotnumber=1, field=6 (NEXTKEY3), "2"]
-        let nextKey3Message = driver.executeScript(function() {
+        const nextKey3Message = driver.executeScript(function() {
             return new Uint8Array(chromeHid._sent[chromeHid._sent.length - 2][2]);
         });
         return expect(nextKey3Message).to.eventually.deep.equal(
