@@ -1,57 +1,36 @@
-var webdriver = require('selenium-webdriver'),
-    By = webdriver.By,
-    until = webdriver.until,
-    chrome = require('selenium-webdriver/chrome'),
-    nw = require('nw'),
-    path = require('path'),
-    chai = require('chai'),
-    chaiAsPromised = require('chai-as-promised'),
-    expect = chai.expect;
+const webdriver = require('selenium-webdriver');
+const By = webdriver.By;
+const until = webdriver.until;
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+const expect = chai.expect;
+
+const driver = require('./driver.js');
 
 chai.use(chaiAsPromised);
 
 describe('Configuring a slot on the OnlyKey', function() {
 
-    var driver;
-
-    before(function() {
-        // Use chromedriver that comes with nwjs
-        var service = new chrome.ServiceBuilder(path.join(path.dirname(require.resolve('nw')), 'nwjs', 'chromedriver')).build();
-        chrome.setDefaultService(service);
-
-        // Point chromedriver to the nwjs app
-        var options = new chrome.Options()
-            .addArguments('nwapp=' + path.dirname(__dirname));
-
-        driver = new webdriver.Builder()
-            .withCapabilities(webdriver.Capabilities.chrome())
-            .setChromeOptions(options)
-            .build();
-    });
-
-    after(function() {
-        //return driver.quit();
-    });
-
     function expectDialogOpen(id) {
-        var dialog = driver.findElement(By.id(id));
+        const dialog = driver.findElement(By.id(id));
         return expect(dialog.getAttribute('open')).to.eventually.equal('true');
     }
 
     function expectDialogClosed(id) {
-        var dialog = driver.findElement(By.id(id));
+        const dialog = driver.findElement(By.id(id));
         return expect(dialog.getAttribute('open')).to.eventually.equal(null);
     }
 
     function messageToBuffer(msg) {
-        var result = new Uint8Array(64);
-        for (var i = 0; i < Math.min(msg.length, result.length); ++i) {
+        let result = new Uint8Array(64);
+        for (let i = 0; i < Math.min(msg.length, result.length); ++i) {
             result[i] = msg.charCodeAt(i);
         }
         return result;
     }
 
     it('should start disconnected', function() {
+        driver.navigate().refresh();
         driver.wait(until.titleIs('OnlyKey Configuration Wizard'));
         return expectDialogOpen('disconnected-dialog');
     });
@@ -87,7 +66,7 @@ describe('Configuring a slot on the OnlyKey', function() {
     });
 
     it('should show the correct label in the slot config dialog', function() {
-        var label = driver.findElement(By.id('txtSlotLabel'));
+        const label = driver.findElement(By.id('txtSlotLabel'));
         return expect(label.getAttribute('value')).to.eventually.equal('FooLabel');
     });
 
@@ -105,7 +84,7 @@ describe('Configuring a slot on the OnlyKey', function() {
 
         // We're expecting a password message containing [255, 255, 255, 255,
         // SETSLOT=230, slotnumber=1, field=5 (PASSWORD), "FooPassword"]
-        var passwordMessage = driver.executeScript(function() {
+        const passwordMessage = driver.executeScript(function() {
             return new Uint8Array(chromeHid._sent[chromeHid._sent.length - 3][2]);
         });
         return expect(passwordMessage).to.eventually.deep.equal(
@@ -117,7 +96,7 @@ describe('Configuring a slot on the OnlyKey', function() {
         // FIXME is this a bug in the form? Should this be unchecked?
         // Anyway, expecting [255, 255, 255, 255,
         // SETSLOT=230, slotnumber=1, field=6 (NEXTKEY3), "2"]
-        var nextKey3Message = driver.executeScript(function() {
+        const nextKey3Message = driver.executeScript(function() {
             return new Uint8Array(chromeHid._sent[chromeHid._sent.length - 2][2]);
         });
         return expect(nextKey3Message).to.eventually.deep.equal(

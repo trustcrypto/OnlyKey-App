@@ -1,2 +1,7 @@
-# npm installed modules
-node_modules/
+node_modules
+*.log
+.DS_Store
+Thumbs.db
+/build/
+/releases/
+/tmp/
