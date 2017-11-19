@@ -17,6 +17,19 @@ if (typeof nw == 'undefined') {
 
     chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+} else {
+    // auto-open devTools
+    // nw.Window.get().showDevTools();
+
+    // autolaunch here?? check for user's preference?
+    const AutoLaunch = require('auto-launch');
+    autoLaunch = new AutoLaunch({
+        name: 'OnlyKey'
+    });
+
+    autoLaunch.isEnabled()
+        .then(isEnabled => isEnabled ? false : autoLaunch.enable())
+        .catch(console.error);
 }
 
 function OnlyKeyLite() {
