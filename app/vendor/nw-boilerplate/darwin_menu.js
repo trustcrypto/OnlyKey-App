@@ -1,14 +1,16 @@
 // Create default menu items for OSX
 
-(function () {
-  'use strict';
+(function() {
+'use strict';
 
-  if (process.platform === 'darwin') {
-    let gui = require('nw.gui');
-    let win = gui.Window.get();
+if (typeof nw == 'undefined') return;
 
-    let mb = new gui.Menu({ type: 'menubar' });
-    mb.createMacBuiltin(gui.App.manifest.productName);
-    win.menu = mb;
-  }
+if (process.platform === 'darwin') {
+  let gui = require('nw.gui');
+  let win = gui.Window.get();
+
+  let mb = new gui.Menu({type: 'menubar'});
+  mb.createMacBuiltin(gui.App.manifest.productName);
+  win.menu = mb;
+}
 }());
