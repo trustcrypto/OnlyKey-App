@@ -2,8 +2,7 @@
 (function () {
     'use strict';
 
-    var gui = require('nw.gui');
-    var win = gui.Window.get();
+    var win = nw.Window.get();
     var state;
     var currMode = 'normal';
     var maximized = null;

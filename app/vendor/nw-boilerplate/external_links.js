@@ -14,8 +14,6 @@
 // </p>
 
 (function () {
-    var gui = require('nw.gui');
-    
     var supportExternalLinks = function (e) {
         var href;
         var isExternal = false;
@@ -28,7 +26,7 @@
                 isExternal = true;
             }
             if (href && isExternal) {
-                gui.Shell.openExternal(href);
+                nw.Shell.openExternal(href);
                 e.preventDefault();
             } else if (element.parentElement) {
                 checkDomElement(element.parentElement);

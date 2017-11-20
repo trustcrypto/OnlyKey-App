@@ -3,31 +3,29 @@
 
 (function () {
     'use strict';
-    
-    var gui = require('nw.gui');
-    
-    var cut = new gui.MenuItem({
+        
+    var cut = new nw.MenuItem({
         label: "Cut",
         click: function () {
             document.execCommand("cut");
         }
     });
     
-    var copy = new gui.MenuItem({
+    var copy = new nw.MenuItem({
         label: "Copy",
         click: function () {
             document.execCommand("copy");
         }
     })
     
-    var paste = new gui.MenuItem({
+    var paste = new nw.MenuItem({
         label: "Paste",
         click: function () {
             document.execCommand("paste");
         }
     });
     
-    var textMenu = new gui.Menu();
+    var textMenu = new nw.Menu();
     textMenu.append(cut);
     textMenu.append(copy);
     textMenu.append(paste);
