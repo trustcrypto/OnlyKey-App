@@ -155,6 +155,11 @@ nav > a.active {
 	padding-top: 0;
 }
 
+#appUpdater {
+    font-size: 10pt;
+    font-weight: normal;
+}
+
 .form-error {
     color: red;
     margin-top: 1em;

@@ -15,7 +15,7 @@
     <script src="/vendor/openpgp.min.js"></script>
 </head>
 
-<body>
+<body style="overflow: hidden;">
     <i id="okVersionStr"></i>
 	<div id="lastMessage">
 		Last message received: <span></span>
@@ -25,8 +25,12 @@
         </ul>
     </div>
     <div id="main" class="hide">
-		<h1>OnlyKey Setup</h1>
-
+		<h1>
+            OnlyKey Setup
+            <i id="appVersion"></i>
+            <i id="appUpdater"></i>
+        </h1>
+        
 		<nav>
             <a id="show-init-panel" href="">PINs</a>
 			<a id="show-slot-panel" href="" class="hide">Slots</a>
@@ -829,5 +833,6 @@
 
     <script src="/scripts/onlyKey/OnlyKeyWizard.js"></script>
     <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
+    <script src="/scripts/updater.js"></script>
 </body>
 </html>
