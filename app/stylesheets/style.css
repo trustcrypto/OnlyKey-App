@@ -155,7 +155,7 @@ nav > a.active {
 	padding-top: 0;
 }
 
-#appUpdater {
+#main > h1 > i {
     font-size: 10pt;
     font-weight: normal;
 }

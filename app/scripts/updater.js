@@ -1,4 +1,4 @@
-const AutoUpdater = require('nw-autoupdater');
+const AutoUpdater = require('nw-autoupdater'),
       updater = new AutoUpdater(require('../manifest.json')),
       appUpdaterUi = document.querySelector('#appUpdater'),
       appVersionUi = document.querySelector('#appVersion');
@@ -28,12 +28,12 @@ async function main() {
 
         // Subscribe for progress events
         updater.on("download", (downloadSize, totalSize) => {
-            appUpdaterUi.innerHTML = `Downloading...`;
-            console.log("download progress", Math.floor(downloadSize / totalSize * 100), "%");
+            const progress = Math.floor(downloadSize / totalSize * 100) + "%";
+            appUpdaterUi.innerHTML = `Downloading...${progress}`;
         });
         updater.on("install", (installFiles, totalFiles) => {
-            appUpdaterUi.innerHTML = `Installing...\n`;
-            console.log("install progress", Math.floor(installFiles / totalFiles * 100), "%");
+            const progress = Math.floor(installFiles / totalFiles * 100) + "%";
+            appUpdaterUi.innerHTML = `Installing...${progress}`;
         });
 
         const updateFile = await updater.download(rManifest);
@@ -45,6 +45,6 @@ async function main() {
     }
 }
 
-appUpdaterUi.innerHTML = `v${nw.App.manifest.version}\n`;
+appVersionUi.innerHTML = `v${nw.App.manifest.version}\n`;
 
 main();
