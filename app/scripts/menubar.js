@@ -23,12 +23,24 @@
             localStorage.autoLaunch = localStorage.autoLaunch === 'true' ? 'false' : 'true';
             console.info(`Toggled autoLaunch to ${localStorage.autoLaunch}`);
 
-            if (localStorage.autoLaunch !== 'false') {
-                // how to disable autoLaunch in OS?
-            }
+            const AutoLaunch = require('auto-launch');
+            const autoLaunch = new AutoLaunch({
+                name: 'OnlyKey'
+            });
+
+            const enableAutoLaunch = localStorage.autoLaunch === 'true';
+            autoLaunch.isEnabled()
+                .then(isEnabled => {
+                    if (isEnabled && !enableAutoLaunch) {
+                        autoLaunch.disable();
+                    } else if(!isEnabled && enableAutoLaunch) {
+                        autoLaunch.enable();
+                    }
+                })
+                .catch(console.error);
         },
         type: 'checkbox',
-        checked: localStorage.autoLaunch !== 'false'
+        checked: localStorage.autoLaunch === 'true'
     }));
 
     settingsMenu.append(new nw.MenuItem({
@@ -38,7 +50,7 @@
             console.info(`Toggled autoUpdate to ${localStorage.autoUpdate}`);
         },
         type: 'checkbox',
-        checked: localStorage.autoUpdate !== 'false'
+        checked: localStorage.autoUpdate === 'true'
     }));
 
     menubar.append(new nw.MenuItem({

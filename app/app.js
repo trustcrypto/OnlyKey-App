@@ -1,5 +1,4 @@
 /*jshint esnext: true */
-
 chrome.app.runtime.onLaunched.addListener(function() {
   chrome.app.window.create(
       "app.html", {
@@ -18,17 +17,21 @@ if (typeof nw == 'undefined') {
     chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
 } else {
-    if (localStorage.autoLaunch !== 'false') {
-        const AutoLaunch = require('auto-launch');
-        autoLaunch = new AutoLaunch({
-            name: 'OnlyKey'
-        });
+    const AutoLaunch = require('auto-launch');
+    const autoLaunch = new AutoLaunch({
+        name: 'OnlyKey'
+    });
 
-        autoLaunch.isEnabled()
-            .then(isEnabled => isEnabled ? false : autoLaunch.enable())
-            .catch(console.error);
-    }
-
+    const enableAutoLaunch = localStorage.autoLaunch === 'true';
+    autoLaunch.isEnabled()
+        .then(isEnabled => {
+            if (isEnabled && !enableAutoLaunch) {
+                autoLaunch.disable();
+            } else if(!isEnabled && enableAutoLaunch) {
+                autoLaunch.enable();
+            }
+        })
+        .catch(console.error);
 }
 
 function OnlyKeyLite() {
