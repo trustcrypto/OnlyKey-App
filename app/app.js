@@ -18,18 +18,17 @@ if (typeof nw == 'undefined') {
     chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
 } else {
-    // auto-open devTools
-    // nw.Window.get().showDevTools();
+    if (localStorage.autoLaunch !== 'false') {
+        const AutoLaunch = require('auto-launch');
+        autoLaunch = new AutoLaunch({
+            name: 'OnlyKey'
+        });
 
-    // autolaunch here?? check for user's preference?
-    const AutoLaunch = require('auto-launch');
-    autoLaunch = new AutoLaunch({
-        name: 'OnlyKey'
-    });
+        autoLaunch.isEnabled()
+            .then(isEnabled => isEnabled ? false : autoLaunch.enable())
+            .catch(console.error);
+    }
 
-    autoLaunch.isEnabled()
-        .then(isEnabled => isEnabled ? false : autoLaunch.enable())
-        .catch(console.error);
 }
 
 function OnlyKeyLite() {
