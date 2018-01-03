@@ -1151,7 +1151,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                         submitRestoreData(contents, function (err) {
                             // TODO: check for success, then reset
                             ui.restoreForm.reset();
-                            ui.restoreForm.setError('Done!');
+                            ui.restoreForm.setError('Backup file sent to OnlyKey');
                         });
                     } else {
                         return ui.restoreForm.setError('Incorrect backup data format.');
@@ -1180,7 +1180,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // packetHeader is hex number of bytes in certStr chunk
         var packetHeader = finalPacket ? (restoreData.length / 2).toString(16) : "FF";
 
-        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);        
+        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
     function wipeRsaKeyForm(e) {
