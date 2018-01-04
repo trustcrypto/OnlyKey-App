@@ -1,7 +1,8 @@
 (function() {
     'use strict';
 
-    if (localStorage.autoUpdate === 'false') return;
+    const userPreferences = require('./scripts/userPreferences.js');
+    if (!userPreferences.autoUpdate) return;
 
     let manifest;
 

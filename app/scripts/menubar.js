@@ -3,7 +3,8 @@
 
     if (typeof nw == 'undefined') return;
 
-    let win = nw.Window.get();
+    const userPreferences = require('./scripts/userPreferences.js');
+    const win = nw.Window.get();
 
     if (process.platform === 'darwin') {
         let mb = new nw.Menu({type: 'menubar'});
@@ -11,7 +12,7 @@
         win.menu = mb;
     }
 
-    const menubar = win.menu || new nw.Menu({
+    const menubar = win.menu && win.menu.type && win.menu.type === 'MenuBar' ? win.menu : new nw.Menu({
         type: 'menubar'
     });
 
@@ -20,37 +21,37 @@
     settingsMenu.append(new nw.MenuItem({
         label: 'Auto-launch app on system login',
         click: function() {
-            localStorage.autoLaunch = localStorage.autoLaunch === 'true' ? 'false' : 'true';
-            console.info(`Toggled autoLaunch to ${localStorage.autoLaunch}`);
+            userPreferences.autoLaunch = !userPreferences.autoLaunch;
+            console.info(`Toggled autoLaunch to ${userPreferences.autoLaunch}`);
 
             const AutoLaunch = require('auto-launch');
             const autoLaunch = new AutoLaunch({
-                name: 'OnlyKey'
+                name: 'OnlyKey',
+                isHidden: true
             });
 
-            const enableAutoLaunch = localStorage.autoLaunch === 'true';
             autoLaunch.isEnabled()
                 .then(isEnabled => {
-                    if (isEnabled && !enableAutoLaunch) {
+                    if (isEnabled && !userPreferences.autoLaunch) {
                         autoLaunch.disable();
-                    } else if(!isEnabled && enableAutoLaunch) {
+                    } else if(!isEnabled && userPreferences.autoLaunch) {
                         autoLaunch.enable();
                     }
                 })
                 .catch(console.error);
         },
         type: 'checkbox',
-        checked: localStorage.autoLaunch === 'true'
+        checked: userPreferences.autoLaunch
     }));
 
     settingsMenu.append(new nw.MenuItem({
         label: 'Check for updates on app start',
         click: function() {
-            localStorage.autoUpdate = localStorage.autoUpdate === 'true' ? 'false' : 'true';
-            console.info(`Toggled autoUpdate to ${localStorage.autoUpdate}`);
+            userPreferences.autoUpdate = !userPreferences.autoUpdate;
+            console.info(`Toggled autoUpdate to ${userPreferences.autoUpdate}`);
         },
         type: 'checkbox',
-        checked: localStorage.autoUpdate === 'true'
+        checked: userPreferences.autoUpdate
     }));
 
     menubar.append(new nw.MenuItem({
