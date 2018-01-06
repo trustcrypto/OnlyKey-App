@@ -5,16 +5,16 @@
 
     const userPreferences = require('./scripts/userPreferences.js');
     const win = nw.Window.get();
+    let menubar;
 
     if (process.platform === 'darwin') {
-        let mb = new nw.Menu({type: 'menubar'});
-        mb.createMacBuiltin(nw.App.manifest.productName);
-        win.menu = mb;
+        menubar = new nw.Menu({type: 'menubar'});
+        menubar.createMacBuiltin(nw.App.manifest.productName);
     }
 
-    const menubar = win.menu && win.menu.type && win.menu.type === 'MenuBar' ? win.menu : new nw.Menu({
-        type: 'menubar'
-    });
+    if (!menubar) {
+        menubar = win.menu && win.menu.type && win.menu.type === 'MenuBar' ? win.menu : new nw.Menu({type: 'menubar'});
+    }
 
     const settingsMenu = new nw.Menu();
 
