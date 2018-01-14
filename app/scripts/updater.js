@@ -36,7 +36,7 @@
                 setTimeout(() => appUpdaterUi.innerHTML = '', 5000);
                 return;
             }
-            if (!confirm(`Version ${rManifest.version} is available. Do you want to downloand the update?`)) {
+            if (!confirm(`Version ${rManifest.version} is available. Do you want to download the update?`)) {
                 return;
             }
 
