@@ -36,7 +36,7 @@
                 setTimeout(() => appUpdaterUi.innerHTML = '', 5000);
                 return;
             }
-            if (!confirm(`Version ${rManifest.version} is available. Do you want to upgrade?`)) {
+            if (!confirm(`Version ${rManifest.version} is available. Do you want to downloand the update?`)) {
                 return;
             }
 
@@ -45,15 +45,19 @@
                 const progress = Math.floor(downloadSize / totalSize * 100) + "%";
                 appUpdaterUi.innerHTML = `Downloading...${progress}`;
             });
+
             updater.on("install", (installFiles, totalFiles) => {
                 const progress = Math.floor(installFiles / totalFiles * 100) + "%";
                 appUpdaterUi.innerHTML = `Installing...${progress}`;
             });
 
             const updateFile = await updater.download(rManifest);
-            await updater.unpack(updateFile);
-            alert(`The application will automatically restart to finish installing the update`);
-            await updater.restartToSwap();
+            // await updater.unpack(updateFile);
+            // alert(`The application will automatically restart to finish installing the update`);
+            // await updater.restartToSwap();
+
+            // just open an OS file explorer/finder window until installer bugs are fixed
+            nw.Shell.showItemInFolder(updateFile);
         } catch (e) {
             console.error(e);
         }

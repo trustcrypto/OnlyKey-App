@@ -23,5 +23,5 @@
       "48": "resources/onlykey_logo_48.png",
       "128": "resources/onlykey_logo_128.png"
   },
-  "manifestUrl": "https://s3.amazonaws.com/com.golpenet/package.json"
+  "manifestUrl": "https://s3.amazonaws.com/onlykey/apps/desktop/releases/manifest.json"
 }
