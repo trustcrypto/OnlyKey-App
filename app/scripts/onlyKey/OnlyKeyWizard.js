@@ -1,3 +1,11 @@
+// Remove all saved vault passwords in this app and prevent future saving
+chrome.passwordsPrivate.getSavedPasswordList(passwords => {
+    passwords.forEach((p, i) => chrome.passwordsPrivate.removeSavedPassword(i));
+});
+
+chrome.privacy.services.passwordSavingEnabled.set({ value: false });
+
+// Wizard
 (function () {
     var onlyKeyConfigWizard;
     var dialog = new dialogMgr();
