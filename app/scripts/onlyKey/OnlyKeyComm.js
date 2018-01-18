@@ -142,13 +142,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.messageFields = {
             LABEL: 1,
             URL: 15,
-            NEXTKEY1: 16,
+            NEXTKEY4: 18, //Before Username
+            NEXTKEY1: 16, //After Username
             DELAY1: 17,
             USERNAME: 2,
-            NEXTKEY2: 3,
+            NEXTKEY5: 19, //Before OTP
+            NEXTKEY2: 3, //After Password
             DELAY2: 4,
             PASSWORD: 5,
-            NEXTKEY3: 6,
+            NEXTKEY3: 6, //After OTP
             DELAY3: 7,
             TFATYPE: 8,
             TFAUSERNAME: 9,
@@ -175,7 +177,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             Backup: 128,      // 0x80
             Signature: 64,    // 0x40
             Decryption: 32,    // 0x20
-            Authentication: 16 // 0x10
         };
     }
 
