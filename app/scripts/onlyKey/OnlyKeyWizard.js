@@ -53,6 +53,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     }
 
     Wizard.prototype.init = function (myOnlyKey) {
+        // reset all forms
+        document.querySelectorAll('form').forEach(form => form.reset());
+
         var self = this;
         self.onlyKey = myOnlyKey;
         self.currentStep = Object.keys(self.steps)[0];
@@ -99,7 +102,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         self.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step9.enterFn = dialog.open.bind(null, self.finalStepDialog);
-
     };
 
     function enableDisclaimer(fieldName) {
