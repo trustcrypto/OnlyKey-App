@@ -4,8 +4,13 @@
 }
 
 body {
-    font-family: AppFont, monospace, Sans-serif;
+    font-family: monospace;
     font-size: 10pt;
+}
+
+h1,h2,h3,h4,h5,h6,a {
+    font-family: AppFont, monospace;
+    font-weight: bolder;
 }
 
 body > div {
@@ -102,9 +107,9 @@ dialog a {
 
 /* configure onlykey photo background */
 td.ok-photo-cell {
-    background: transparent url(/images/onlykey-photo.png) no-repeat 50% 0%;
+    background: transparent url(/images/onlykey-photo.jpg) no-repeat 50% 0%;
     background-size: contain;
-    padding-top: 65px;
+    padding-top: 55px;
     width: 80px;
     height: 155px;
 }
