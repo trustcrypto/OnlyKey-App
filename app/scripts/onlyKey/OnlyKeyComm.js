@@ -494,16 +494,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 	};
 
     var ui = {
-		showInitPanel: null,
-		showSlotPanel: null,
+    		showInitPanel: null,
+    		showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
         showBackupPanel: null,
+        showAdvancedPanel: null,
         initPanel: null,
         slotPanel: null,
         prefPanel: null,
         keysPanel: null,
         backupPanel: null,
+        advancedPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -527,6 +529,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
         ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
         ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
+        ui.showAdvancedPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -570,9 +573,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showKeysPanel.classList.remove('hide', 'active');
                 ui.backupPanel.classList.add('hide');
                 ui.backupPanel.classList.remove('active');
+                ui.advancedPanel.classList.add('hide');
+                ui.advancedPanel.classList.remove('active');
                 ui.keysPanel.classList.add('hide');
                 ui.keysPanel.classList.remove('active');
                 ui.showBackupPanel.classList.remove('hide', 'active');
+                ui.showAdvancedPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -581,10 +587,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.slotPanel.classList.remove('active');
             ui.backupPanel.classList.add('hide');
             ui.backupPanel.classList.remove('active');
+            ui.advancedPanel.classList.add('hide');
+            ui.advancedPanel.classList.remove('active');
             ui.keysPanel.classList.add('hide');
             ui.keysPanel.classList.remove('active');
-			ui.prefPanel.classList.add('hide');
-			ui.prefPanel.classList.remove('active');
+      			ui.prefPanel.classList.add('hide');
+      			ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
             ui.showInitPanel.classList.remove('hide');
             ui.showInitPanel.classList.add('active');
@@ -592,6 +600,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showPrefPanel.classList.add('hide');
             ui.showKeysPanel.classList.add('hide');
             ui.showBackupPanel.classList.add('hide');
+            ui.showAdvancedPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -785,9 +794,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		var panels = {
 			init: "Init",
 			slot: "Slot",
-            pref: "Pref",
-            keys: "Keys",
-            backup: "Backup"
+      pref: "Pref",
+      keys: "Keys",
+      backup: "Backup"
+      advanced: "Advanced"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';

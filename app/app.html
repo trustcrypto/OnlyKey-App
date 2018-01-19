@@ -32,10 +32,11 @@
 
 		<nav>
             <a id="show-init-panel" href="">PINs</a>
-			<a id="show-slot-panel" href="" class="hide">Slots</a>
+			      <a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
+            <a id="show-advanced-panel" href="" class="hide">Advanced</a>
 		</nav>
 
         <form id="init-panel" name="init-panel" class="hide panel">
@@ -172,7 +173,7 @@
         <div id="slot-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
-                    <h2>Configure OnlyKey Slots</h2>
+                    <h2>Configure Slots</h2>
                     <table id="slot-config-btns">
                         <tr>
                             <td align="right">
@@ -221,53 +222,8 @@
                             </td>
                         </tr>
                     </table>
-
-                    <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
-                        <h2>Add Yubikey Security Info</h2>
-                        <label>
-                            Public Identity (6 bytes modhex)
-                            <br/>
-                            <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
-                        </label>
-                        <br/>
-                        <label>
-                            Private Identity (6 bytes hex)
-                            <br/>
-                            <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
-                        </label>
-                        <br/>
-                        <label>
-                            Secret Key (16 bytes hex)
-                            <br/>
-                            <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
-                        </label>
-                        <br/><br/>
-                        <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
-                        <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
-                        <div id="yubiError" class="form-error"></div>
-                    </form>
-                </div>
-                <div class="flex-item">
-                    <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
-                        <h2>Add U2F Security Info</h2>
-                        <label>
-                            Private Identity (32 bytes hex)
-                            <br/>
-                            <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="95" minlength="64" cols="40" rows="10" placeholder="private id" required></textarea>
-                        </label>
-                        <br/>
-                        <label>
-                            U2F Certificate (up to 768 bytes hex)
-                            <br/>
-                            <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
-                        </label>
-                        <br/><br/>
-                        <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
-                        <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-                        <div id="u2fError" class="form-error"></div>
-                    </form>
-                </div>
             </div>
+          </div>
         </div>
 
         <div id="pref-panel" class="hide panel">
@@ -570,6 +526,56 @@
                 </div>
             </div>
         </div>
+
+        <div id="advanced-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+                  <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
+                      <h2>Add Yubikey Security Info</h2>
+                      <label>
+                          Public Identity (6 bytes modhex)
+                          <br/>
+                          <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
+                      </label>
+                      <br/>
+                      <label>
+                          Private Identity (6 bytes hex)
+                          <br/>
+                          <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
+                      </label>
+                      <br/>
+                      <label>
+                          Secret Key (16 bytes hex)
+                          <br/>
+                          <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
+                      </label>
+                      <br/><br/>
+                      <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
+                      <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
+                      <div id="yubiError" class="form-error"></div>
+                  </form>
+              </div>
+              <div class="flex-item">
+                  <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
+                      <h2>Add U2F Security Info</h2>
+                      <label>
+                          Private Identity (32 bytes hex)
+                          <br/>
+                          <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="95" minlength="64" cols="40" rows="10" placeholder="private id" required></textarea>
+                      </label>
+                      <br/>
+                      <label>
+                          U2F Certificate (up to 768 bytes hex)
+                          <br/>
+                          <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
+                      </label>
+                      <br/><br/>
+                      <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
+                      <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
+                      <div id="u2fError" class="form-error"></div>
+                  </form>
+              </div>
+            </div>
     </div>
 
     <dialog id="finalStep-dialog">
