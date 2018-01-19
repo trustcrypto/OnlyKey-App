@@ -1,3 +1,11 @@
+// Remove all saved vault passwords in this app and prevent future saving
+chrome.passwordsPrivate.getSavedPasswordList(passwords => {
+    passwords.forEach((p, i) => chrome.passwordsPrivate.removeSavedPassword(i));
+});
+
+chrome.privacy.services.passwordSavingEnabled.set({ value: false });
+
+// Wizard
 (function () {
     var onlyKeyConfigWizard;
     var dialog = new dialogMgr();
@@ -231,6 +239,10 @@
                 input: form.txtSlotUrl,
                 msgId: 'URL'
             },
+            tabReturn4: {
+                input: form.tabReturn4,
+                msgId: 'NEXTKEY4'
+            },
             tabReturn1: {
                 input: form.tabReturn1,
                 msgId: 'NEXTKEY1'
@@ -254,6 +266,10 @@
             chkPassword: {
                 input: form.txtPassword,
                 msgId: 'PASSWORD'
+            },
+            tabReturn5: {
+                input: form.tabReturn5,
+                msgId: 'NEXTKEY5'
             },
             tabReturn3: {
                 input: form.tabReturn3,
