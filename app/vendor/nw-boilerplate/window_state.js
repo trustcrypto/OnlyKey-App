@@ -2,6 +2,10 @@
 (function() {
 'use strict';
 
+// 2018-01-18 disabling until bugfix
+// each time app is launched, frame is smaller than last time
+return;
+
 if (typeof nw == 'undefined') return;
 
 const win = nw.Window.get();
