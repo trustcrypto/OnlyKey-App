@@ -22,7 +22,7 @@ body > div {
     padding: 15px;
 	position: relative;
 	z-index: 1;
-	transition: all 0.5s ease;
+	transition: all 0.25s ease;
 }
 
 .hide {
@@ -176,3 +176,12 @@ nav > a.active {
 }
 
 #advanced-panel h2 { margin-top: 0; }
+
+.slotLabel {
+    font-weight: bold;
+}
+
+.empty {
+    font-style: italic;
+    font-weight: normal;
+}

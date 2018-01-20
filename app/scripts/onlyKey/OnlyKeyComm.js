@@ -794,10 +794,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		var panels = {
 			init: "Init",
 			slot: "Slot",
-      pref: "Pref",
-      keys: "Keys",
-      backup: "Backup"
-      advanced: "Advanced"
+            pref: "Pref",
+            keys: "Keys",
+            backup: "Backup",
+            advanced: "Advanced"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';

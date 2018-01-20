@@ -435,7 +435,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         for(var stepId in this.steps) {
             var el = document.getElementById(stepId);
             if (el) {
-                // el.style.display = (stepId === this.currentStep ? '' : 'none');
                 if (stepId === this.currentStep) {
                     el.classList.add('active');
                 } else {
@@ -489,6 +488,11 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             slotLabel = document.getElementById('slotLabel' + slot);
         }
         slotLabel.innerText = label;
+        if (label === 'empty') {
+            slotLabel.classList.add('empty');
+        } else {
+            slotLabel.classList.remove('empty');
+        }
     };
 
     document.addEventListener('DOMContentLoaded', function init() {
