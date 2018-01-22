@@ -1,20 +1,38 @@
 # OnlyKey App
 
-The OnlyKey App is a configuration utility for the OnlyKey. For general
-information on OnlyKey check out [the OnlyKey Product Page](https://crp.to/p/)
-or [the OnlyKey Kickstarter Page][kickstarter].
+This is the official app for **OnlyKey**
 
-OnlyKeys can be ordered from [the OnlyKey Product Page](https://crp.to/p/).
+OnlyKey can be purchased here: [OnlyKey order](http://www.crp.to/p/)
 
-## Introduction
+## Geting Started
 
-**OnlyKey App** is an app to be used along with an OnlyKey device. The app can
-be used for initial setup of your OnlyKey as well as configuration of usernames,
-passwords, and two-factor authentication.
+Just getting started with OnlyKey?
+
+[Start here](http://www.crp.to/okstart)
+
+## About
+
+**OnlyKey App** is an app to be used along with an OnlyKey device. The app is used for things like:
+
+- Initial setup of OnlyKey (PINs)
+- Configuration of accounts (Slots)
+- Loading keys for PGP, SSH, and secure backup (Keys)
+- Backup and restore of OnlyKey (Backup/Restore)
+- Setting OnlyKey preferences (Preferences)
+- Setting advanced options such as Yubikey and U2F security info (Advanced)
+
+*The app is required on all systems where Google Authenticator (TOTP) is used*
+
+For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html)
 
 ## Installation
 
-To use the **OnlyKey Chrome App:**
+To use the **standalone app:**
+
+- Obtain an installer from https://github.com/trustcrypto/OnlyKey-Chrome-App/releases/latest
+- Install and launch the app.
+
+To use the **OnlyKey Chrome App:** (Chromebook Users)
 
 - Go to https://chrome.google.com/webstore/detail/onlykey-configuration/adafilbceehejjehoccladhbkgbjmica,
   click the **ADD TO CHROME** button.
@@ -22,10 +40,11 @@ To use the **OnlyKey Chrome App:**
   going to Bookmarks -> Show Bookmarks bar.
 - Select "Apps" icon in the bookmarks bar and select **OnlyKey Configuration**.
 
-To use the **standalone app:**
+## Support ##
 
-- Obtain an installer from https://github.com/trustcrypto/OnlyKey-Chrome-App/releases/latest
-- Install and launch the app.
+Check out the [OnlyKey Support Forum](https://groups.google.com/forum/#!forum/onlykey)
+
+Check out the [OnlyKey Documentation](https://docs.crp.to)
 
 ## Developer Notes
 
@@ -44,25 +63,31 @@ To create releases:
 
     $ npm run release
 
-This will create an installer in the `releases/` subfolder. The installer is
-created for the current OS; this means you will need to run the `release`
-command on Windows, Linux, and Mac OS to generate all the installers.
+This will create an installer in the `releases/` subfolder. The installer is created for the current OS; this means you will need to run the `release` command on Windows, Linux, and Mac OS to generate all the installers.
 
-On Windows, you need to install [NSIS][nsis] first, and ensure that it's present
-in your shell's `%PATH%`. That is, add `C:/Program Files (x86)/NSIS` or similar
-to your `%PATH%` in the operating system settings. On Mac OS, you need to
-install an optional NPM dependecy: `npm install appdmg`.
+On Windows, you need to install [NSIS][nsis] first, and ensure that it's present in your shell's `%PATH%`. That is, add `C:/Program Files (x86)/NSIS` or similar to your `%PATH%` in the operating system settings. On Mac OS, you need to install an optional NPM dependecy: `npm install appdmg`.
 
 To run tests:
 
     $ npm test
 
-Running tests requires the SDK version of NWJS, which comes with a
-`chromedriver` that handles automated Selenium tests. To install that version,
-run `npm install nw --nwjs_build_type=sdk`. Note that to create releases, you
-should install the non-sdk variant again; otherwise the installer will be
-unnecessarily large.
+Running tests requires the SDK version of NWJS, which comes with a `chromedriver` that handles automated Selenium tests. To install that version, run `npm install nw --nwjs_build_type=sdk`. Note that to create releases, you should install the non-sdk variant again; otherwise the installer will be unnecessarily large.
 
+## Cryptography Notice
 
-[kickstarter]: https://www.kickstarter.com/projects/1048259057/openkey-the-two-factor-authentication-and-password/description
-[nsis]: http://nsis.sourceforge.net/Main_Page
+This distribution includes cryptographic software. The country in which you currently reside may have restrictions on the import, possession, use, and/or re-export to another country, of encryption software.
+BEFORE using any encryption software, please check your country's laws, regulations and policies concerning the import, possession, or use, and re-export of encryption software, to see if this is permitted.
+See <http://www.wassenaar.org/> for more information.
+
+The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS), has classified this software as Export Commodity Control Number (ECCN) 5D002.C.1, which includes information security software using or performing cryptographic functions with asymmetric algorithms.
+The form and manner of this distribution makes it eligible for export under the License Exception ENC Technology Software Unrestricted (TSU) exception (see the BIS Export Administration Regulations, Section 740.13) for both object code and source code.
+
+The following cryptographic software is included in this distribution:
+
+   "OpenPGP.js - OpenPGP JavaScript Implementation." - https://openpgpjs.org/
+
+For more information on export restrictions see: http://www.apache.org/licenses/exports/
+
+## Source
+
+[OnlyKey App on Github](https://github.com/trustcrypto/OnlyKey-Chrome-App)
