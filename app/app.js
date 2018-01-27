@@ -22,7 +22,9 @@ if (typeof nw == 'undefined') {
         name: 'OnlyKey'
     });
 
-    const enableAutoLaunch = localStorage.autoLaunch === 'true';
+    // read localStorage setting or default to true if first time running app
+    const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
+    
     autoLaunch.isEnabled()
         .then(isEnabled => {
             if (isEnabled && !enableAutoLaunch) {
