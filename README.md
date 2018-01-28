@@ -27,6 +27,15 @@ To use the **standalone app:**
 - Obtain an installer from https://github.com/trustcrypto/OnlyKey-Chrome-App/releases/latest
 - Install and launch the app.
 
+### GNU/Linux users: 
+
+Your system may by default only allow read access to USB devices including the OnlyKey. You'll need to insert a udev rule in order to allow read/write access if the app hangs and you see "Working... please wait". Here are instructions for inserting a udev rule:
+
+1. Get the rules: `wget https://www.pjrc.com/teensy/49-teensy.rules`
+2. Copy the rules to /etc/udev/rules.d/: `sudo cp 49-teensy.rules /etc/udev/rules.d/`
+3. Refresh udev: `sudo udevadm control --reload`
+
+
 ## Developer Notes
 
 This repository contains shared code that can be used to build multiple types of
