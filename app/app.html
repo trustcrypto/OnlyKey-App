@@ -15,20 +15,24 @@
 </head>
 
 <body style="overflow: hidden;">
-    <i id="okVersionStr"></i>
-	<div id="lastMessage">
+    <div id="versions">
+        <i id="appUpdater"></i>
+        <br/>
+        App <i id="appVersion">v?.?.?</i>
+        <br/>
+        Firmware <i id="fwVersion">v?.?.?</i>
+    </div>
+
+    <div id="lastMessage">
 		Last message received: <span></span>
         <ul>
             <li></li>
             <li></li>
         </ul>
     </div>
+
     <div id="main" class="hide">
-    <img src="/images/ok-logo.jpg" height="36" width="223">
-		<h1>
-            <i id="appVersion"></i>
-            <i id="appUpdater"></i>
-    </h1>
+        <img src="/images/ok-logo.jpg" height="36" width="223">
 
 		<nav>
             <a id="show-init-panel" href="">PINs</a>

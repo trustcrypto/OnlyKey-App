@@ -83,7 +83,11 @@ dialog a {
     left: 0;
     padding: .5em 1em;
     background-color: white;
-    color: red;
+    color: maroon;
+}
+
+#lastMessage ul {
+    margin-bottom: 0;
 }
 
 #lastMessage > span {
@@ -91,14 +95,14 @@ dialog a {
 }
 
 #lastMessage li {
-    color: rgba(255,0,0,.5);
+    opacity: .7;
 }
 
 #lastMessage li + li {
-    color: rgba(255,0,0,.3);
+    opacity: .4;
 }
 
-#okVersionStr {
+#versions {
 	position: absolute;
 	bottom: 0;
 	right: 0;
@@ -141,6 +145,10 @@ td.ok-photo-cell {
     flex: 1 45%;
 }
 
+nav {
+    margin-top: 1em;
+}
+
 nav > a {
     padding: 4px 4px 2px 4px;
     border-radius: 6px 6px 0 0;
@@ -160,14 +168,9 @@ nav > a.active {
 	color: maroon;
 }
 
-#main, #main > h1 {
+#main {
 	margin-top: 0;
 	padding-top: 0;
-}
-
-#main > h1 > i {
-    font-size: 10pt;
-    font-weight: normal;
 }
 
 .form-error {

@@ -1273,7 +1273,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 	function setOkVersionStr() {
 		var version = myOnlyKey.getVersion();
 		if (version) {
-			document.getElementById("okVersionStr").innerText = "OnlyKey firmware " + version;
+			document.getElementById("fwVersion").innerText = version;
 		}
 	}
 

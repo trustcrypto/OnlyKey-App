@@ -1,6 +1,9 @@
 (function() {
     'use strict';
 
+    const appVersionUi = document.querySelector('#appVersion');
+    appVersionUi.innerHTML = `v${nw.App.manifest.version_name}\n`;
+
     const userPreferences = require('./scripts/userPreferences.js');
     if (!userPreferences.autoUpdate) return;
 
@@ -14,8 +17,7 @@
 
     const AutoUpdater = require('nw-autoupdater'),
           updater = new AutoUpdater(manifest),
-          appUpdaterUi = document.querySelector('#appUpdater'),
-          appVersionUi = document.querySelector('#appVersion');
+          appUpdaterUi = document.querySelector('#appUpdater');
 
     async function main() {
         try {
@@ -62,8 +64,6 @@
             console.error(e);
         }
     }
-
-    appVersionUi.innerHTML = `v${nw.App.manifest.version}\n`;
 
     main();
 })();
