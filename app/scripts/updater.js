@@ -1,8 +1,10 @@
 (function() {
     'use strict';
 
+    if (typeof nw == 'undefined') return;
+
     const appVersionUi = document.querySelector('#appVersion');
-    appVersionUi.innerHTML = `v${nw.App.manifest.version_name}\n`;
+    appVersionUi.innerHTML = `App v${nw.App.manifest.version_name}\n`;
 
     const userPreferences = require('./scripts/userPreferences.js');
     if (!userPreferences.autoUpdate) return;

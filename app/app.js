@@ -19,12 +19,13 @@ if (typeof nw == 'undefined') {
 } else {
     const AutoLaunch = require('auto-launch');
     const autoLaunch = new AutoLaunch({
-        name: 'OnlyKey'
+        name: 'OnlyKey',
+        isHidden: true
     });
 
     // read localStorage setting or default to true if first time running app
     const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
-    
+
     autoLaunch.isEnabled()
         .then(isEnabled => {
             if (isEnabled && !enableAutoLaunch) {
