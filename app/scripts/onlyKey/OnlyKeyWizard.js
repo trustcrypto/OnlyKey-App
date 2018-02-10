@@ -1,3 +1,13 @@
+if (chrome.passwordsPrivate) {
+    // Remove all saved vault passwords in this app and prevent future saving
+    chrome.passwordsPrivate.getSavedPasswordList(passwords => {
+        passwords.forEach((p, i) => chrome.passwordsPrivate.removeSavedPassword(i));
+    });
+
+    chrome.privacy.services.passwordSavingEnabled.set({ value: false });
+}
+
+// Wizard
 (function () {
     var onlyKeyConfigWizard;
     var dialog = new dialogMgr();
@@ -45,6 +55,9 @@
     }
 
     Wizard.prototype.init = function (myOnlyKey) {
+        // reset all forms
+        document.querySelectorAll('form').forEach(form => form.reset());
+
         var self = this;
         self.onlyKey = myOnlyKey;
         self.currentStep = Object.keys(self.steps)[0];
@@ -91,7 +104,6 @@
         self.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step9.enterFn = dialog.open.bind(null, self.finalStepDialog);
-
     };
 
     function enableDisclaimer(fieldName) {
@@ -231,6 +243,10 @@
                 input: form.txtSlotUrl,
                 msgId: 'URL'
             },
+            tabReturn4: {
+                input: form.tabReturn4,
+                msgId: 'NEXTKEY4'
+            },
             tabReturn1: {
                 input: form.tabReturn1,
                 msgId: 'NEXTKEY1'
@@ -254,6 +270,10 @@
             chkPassword: {
                 input: form.txtPassword,
                 msgId: 'PASSWORD'
+            },
+            tabReturn5: {
+                input: form.tabReturn5,
+                msgId: 'NEXTKEY5'
             },
             tabReturn3: {
                 input: form.tabReturn3,
@@ -417,7 +437,6 @@
         for(var stepId in this.steps) {
             var el = document.getElementById(stepId);
             if (el) {
-                // el.style.display = (stepId === this.currentStep ? '' : 'none');
                 if (stepId === this.currentStep) {
                     el.classList.add('active');
                 } else {
@@ -471,6 +490,11 @@
             slotLabel = document.getElementById('slotLabel' + slot);
         }
         slotLabel.innerText = label;
+        if (label === 'empty') {
+            slotLabel.classList.add('empty');
+        } else {
+            slotLabel.classList.remove('empty');
+        }
     };
 
     document.addEventListener('DOMContentLoaded', function init() {

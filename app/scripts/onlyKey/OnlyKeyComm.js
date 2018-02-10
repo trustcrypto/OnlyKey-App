@@ -142,13 +142,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.messageFields = {
             LABEL: 1,
             URL: 15,
-            NEXTKEY1: 16,
+            NEXTKEY4: 18, //Before Username
+            NEXTKEY1: 16, //After Username
             DELAY1: 17,
             USERNAME: 2,
-            NEXTKEY2: 3,
+            NEXTKEY5: 19, //Before OTP
+            NEXTKEY2: 3, //After Password
             DELAY2: 4,
             PASSWORD: 5,
-            NEXTKEY3: 6,
+            NEXTKEY3: 6, //After OTP
             DELAY3: 7,
             TFATYPE: 8,
             TFAUSERNAME: 9,
@@ -175,7 +177,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             Backup: 128,      // 0x80
             Signature: 64,    // 0x40
             Decryption: 32,    // 0x20
-            Authentication: 16 // 0x10
         };
     }
 
@@ -493,16 +494,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 	};
 
     var ui = {
-		showInitPanel: null,
-		showSlotPanel: null,
+    		showInitPanel: null,
+    		showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
         showBackupPanel: null,
+        showAdvancedPanel: null,
         initPanel: null,
         slotPanel: null,
         prefPanel: null,
         keysPanel: null,
         backupPanel: null,
+        advancedPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
         slotConfigDialog: null,
@@ -526,6 +529,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
         ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
         ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
+        ui.showAdvancedPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -569,9 +573,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showKeysPanel.classList.remove('hide', 'active');
                 ui.backupPanel.classList.add('hide');
                 ui.backupPanel.classList.remove('active');
+                ui.advancedPanel.classList.add('hide');
+                ui.advancedPanel.classList.remove('active');
                 ui.keysPanel.classList.add('hide');
                 ui.keysPanel.classList.remove('active');
                 ui.showBackupPanel.classList.remove('hide', 'active');
+                ui.showAdvancedPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
         } else {
@@ -580,10 +587,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.slotPanel.classList.remove('active');
             ui.backupPanel.classList.add('hide');
             ui.backupPanel.classList.remove('active');
+            ui.advancedPanel.classList.add('hide');
+            ui.advancedPanel.classList.remove('active');
             ui.keysPanel.classList.add('hide');
             ui.keysPanel.classList.remove('active');
-			ui.prefPanel.classList.add('hide');
-			ui.prefPanel.classList.remove('active');
+      			ui.prefPanel.classList.add('hide');
+      			ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
             ui.showInitPanel.classList.remove('hide');
             ui.showInitPanel.classList.add('active');
@@ -591,6 +600,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showPrefPanel.classList.add('hide');
             ui.showKeysPanel.classList.add('hide');
             ui.showBackupPanel.classList.add('hide');
+            ui.showAdvancedPanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -786,7 +796,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 			slot: "Slot",
             pref: "Pref",
             keys: "Keys",
-            backup: "Backup"
+            backup: "Backup",
+            advanced: "Advanced"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
@@ -1151,7 +1162,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                         submitRestoreData(contents, function (err) {
                             // TODO: check for success, then reset
                             ui.restoreForm.reset();
-                            ui.restoreForm.setError('Done!');
+                            ui.restoreForm.setError('Backup file sent to OnlyKey');
                         });
                     } else {
                         return ui.restoreForm.setError('Incorrect backup data format.');
@@ -1180,7 +1191,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // packetHeader is hex number of bytes in certStr chunk
         var packetHeader = finalPacket ? (restoreData.length / 2).toString(16) : "FF";
 
-        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);        
+        myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
     function wipeRsaKeyForm(e) {
@@ -1262,7 +1273,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 	function setOkVersionStr() {
 		var version = myOnlyKey.getVersion();
 		if (version) {
-			document.getElementById("okVersionStr").innerText = "OnlyKey firmware " + version;
+			document.getElementById("fwVersion").innerText = `Firmware ${version}`;
 		}
 	}
 

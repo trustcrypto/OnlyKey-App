@@ -1,5 +1,4 @@
 /*jshint esnext: true */
-
 chrome.app.runtime.onLaunched.addListener(function() {
   chrome.app.window.create(
       "app.html", {
@@ -17,6 +16,25 @@ if (typeof nw == 'undefined') {
 
     chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+} else {
+    const AutoLaunch = require('auto-launch');
+    const autoLaunch = new AutoLaunch({
+        name: 'OnlyKey',
+        isHidden: true
+    });
+
+    // read localStorage setting or default to true if first time running app
+    const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
+
+    autoLaunch.isEnabled()
+        .then(isEnabled => {
+            if (isEnabled && !enableAutoLaunch) {
+                autoLaunch.disable();
+            } else if(!isEnabled && enableAutoLaunch) {
+                autoLaunch.enable();
+            }
+        })
+        .catch(console.error);
 }
 
 function OnlyKeyLite() {

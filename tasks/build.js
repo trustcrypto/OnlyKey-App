@@ -22,12 +22,13 @@ var paths = {
         'vendor/**/*',
         '*.html',
     ],
-    filesToCopyFromRootDir: [],
+    filesToCopyFromRootDir: [
+        'manifest.json'
+    ],
 };
 
 if (utils.getEnvName() === 'chrome') {
     paths.filesToCopyFromRootDir.push(
-        'manifest.json',
         'resources/onlykey_logo_*.png'
     );
 }
@@ -43,6 +44,13 @@ gulp.task('clean', function(callback) {
 
 var copyTask = function () {
     projectDir.copy('resources/onlykey_logo_128.png', destDir.path('icon.png'), { overwrite: true });
+
+    if (utils.getEnvName() === 'production') {
+        projectDir.copy('node_modules', destDir.path('node_modules'), {
+            matching: [ '!nw/**/*' ],
+            overwrite: true
+        });
+    }
 
     var result = jetpack.copyAsync(projectDir.path('app'), destDir.path(), {
         overwrite: true,

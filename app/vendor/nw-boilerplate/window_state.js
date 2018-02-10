@@ -2,10 +2,13 @@
 (function() {
 'use strict';
 
+// 2018-01-18 disabling until bugfix
+// each time app is launched, frame is smaller than last time
+return;
+
 if (typeof nw == 'undefined') return;
 
-const gui = require('nw.gui');
-const win = gui.Window.get();
+const win = nw.Window.get();
 let state;
 let currMode = 'normal';
 let maximized = null;

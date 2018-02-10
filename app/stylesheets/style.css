@@ -1,6 +1,16 @@
+@font-face {
+  font-family: 'AppFont';
+  src: url('ShareTechMono-Regular.ttf') format('truetype');
+}
+
 body {
     font-family: monospace;
     font-size: 10pt;
+}
+
+h1,h2,h3,h4,h5,h6,a {
+    font-family: AppFont, monospace;
+    font-weight: bolder;
 }
 
 body > div {
@@ -12,7 +22,7 @@ body > div {
     padding: 15px;
 	position: relative;
 	z-index: 1;
-	transition: all 0.5s ease;
+	transition: all 0.25s ease;
 }
 
 .hide {
@@ -73,7 +83,11 @@ dialog a {
     left: 0;
     padding: .5em 1em;
     background-color: white;
-    color: red;
+    color: maroon;
+}
+
+#lastMessage ul {
+    margin-bottom: 0;
 }
 
 #lastMessage > span {
@@ -81,14 +95,14 @@ dialog a {
 }
 
 #lastMessage li {
-    color: rgba(255,0,0,.5);
+    opacity: .7;
 }
 
 #lastMessage li + li {
-    color: rgba(255,0,0,.3);
+    opacity: .4;
 }
 
-#okVersionStr {
+#versions {
 	position: absolute;
 	bottom: 0;
 	right: 0;
@@ -97,9 +111,9 @@ dialog a {
 
 /* configure onlykey photo background */
 td.ok-photo-cell {
-    background: transparent url(/images/onlykey-photo.png) no-repeat 50% 0%;
+    background: transparent url(/images/onlykey-photo.jpg) no-repeat 50% 0%;
     background-size: contain;
-    padding-top: 65px;
+    padding-top: 55px;
     width: 80px;
     height: 155px;
 }
@@ -131,6 +145,10 @@ td.ok-photo-cell {
     flex: 1 45%;
 }
 
+nav {
+    margin-top: 1em;
+}
+
 nav > a {
     padding: 4px 4px 2px 4px;
     border-radius: 6px 6px 0 0;
@@ -150,7 +168,7 @@ nav > a.active {
 	color: maroon;
 }
 
-#main, #main > h1 {
+#main {
 	margin-top: 0;
 	padding-top: 0;
 }
@@ -160,4 +178,13 @@ nav > a.active {
     margin-top: 1em;
 }
 
-#backup-panel h2 { margin-top: 0; }
+#advanced-panel h2 { margin-top: 0; }
+
+.slotLabel {
+    font-weight: bold;
+}
+
+.empty {
+    font-style: italic;
+    font-weight: normal;
+}

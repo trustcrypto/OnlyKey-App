@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OnlyKey Configuration Wizard</title>
+    <title>OnlyKey App</title>
     <link rel="stylesheet" href="/stylesheets/style.css">
 
     <!-- Scripts giving you few extra things in NW.js -->
-    <script src="/vendor/nw-boilerplate/darwin_menu.js"></script>
     <script src="/vendor/nw-boilerplate/env_config.js"></script>
     <script src="/vendor/nw-boilerplate/external_links.js"></script>
     <script src="/vendor/nw-boilerplate/window_state.js"></script>
@@ -15,24 +14,33 @@
     <script src="/vendor/openpgp.min.js"></script>
 </head>
 
-<body>
-    <i id="okVersionStr"></i>
-	<div id="lastMessage">
+<body style="overflow: hidden;">
+    <div id="versions">
+        <i id="appUpdater"></i>
+        <br/>
+        <i id="appVersion"></i>
+        <br/>
+        <i id="fwVersion"></i>
+    </div>
+
+    <div id="lastMessage">
 		Last message received: <span></span>
         <ul>
             <li></li>
             <li></li>
         </ul>
     </div>
+
     <div id="main" class="hide">
-		<h1>OnlyKey Setup</h1>
+        <img src="/images/ok-logo.jpg" height="36" width="223">
 
 		<nav>
             <a id="show-init-panel" href="">PINs</a>
-			<a id="show-slot-panel" href="" class="hide">Slots</a>
+			      <a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
+            <a id="show-advanced-panel" href="" class="hide">Advanced</a>
 		</nav>
 
         <form id="init-panel" name="init-panel" class="hide panel">
@@ -169,7 +177,7 @@
         <div id="slot-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
-                    <h2>Configure OnlyKey Slots</h2>
+                    <h2>Configure Slots</h2>
                     <table id="slot-config-btns">
                         <tr>
                             <td align="right">
@@ -218,53 +226,8 @@
                             </td>
                         </tr>
                     </table>
-
-                    <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
-                        <h2>Add Yubikey Security Info</h2>
-                        <label>
-                            Public Identity (6 bytes modhex)
-                            <br/>
-                            <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
-                        </label>
-                        <br/>
-                        <label>
-                            Private Identity (6 bytes hex)
-                            <br/>
-                            <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
-                        </label>
-                        <br/>
-                        <label>
-                            Secret Key (16 bytes hex)
-                            <br/>
-                            <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
-                        </label>
-                        <br/><br/>
-                        <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
-                        <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
-                        <div id="yubiError" class="form-error"></div>
-                    </form>
-                </div>
-                <div class="flex-item">
-                    <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
-                        <h2>Add U2F Security Info</h2>
-                        <label>
-                            Private Identity (32 bytes hex)
-                            <br/>
-                            <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="95" minlength="64" cols="40" rows="10" placeholder="private id" required></textarea>
-                        </label>
-                        <br/>
-                        <label>
-                            U2F Certificate (up to 768 bytes hex)
-                            <br/>
-                            <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
-                        </label>
-                        <br/><br/>
-                        <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
-                        <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-                        <div id="u2fError" class="form-error"></div>
-                    </form>
-                </div>
             </div>
+          </div>
         </div>
 
         <div id="pref-panel" class="hide panel">
@@ -401,8 +364,6 @@
                                 <option value=128>28</option>
                                 <option value=129>29</option>
                                 <option value=130>30</option>
-                                <option value=131>31</option>
-                                <option value=132>32</option>
                             </select>
                         </label>
 
@@ -435,13 +396,6 @@
                         <label>
                             <input type="checkbox" id="eccSetAsDecryption" name="eccSetAsDecryption" value="true"/>
                             Set as decryption key
-                        </label>
-
-                        <br/>
-
-                        <label>
-                            <input type="checkbox" id="eccSetAsAuthentication" name="eccSetAsAuthentication" value="true"/>
-                            Set as authentication key
                         </label>
 
                         <br/>
@@ -505,13 +459,6 @@
                         </label>
 
                         <br/>
-
-                        <label>
-                            <input type="checkbox" id="rsaSetAsAuthentication" name="rsaSetAsAuthentication" value="true"/>
-                            Set as authentication key
-                        </label>
-
-                        <br/>
                         <br/>
 
                         <input type="button" id="rsaSubmit" name="rsaSubmit" value="Save to OnlyKey" />
@@ -533,10 +480,10 @@
                                 <u>Step 1</u>. To begin backup ensure that you have a backup key set (in the keys tab) and that you have an offline copy of this backup key. The same key that you use to backup your OnlyKey will be required to restore your OnlyKey.
                             </p>
                             <p>
-                                <u>Step 2</u>. Click inside the box with your mouse and then hold the #1 button down on your OnlyKey for 5 seconds or more and then release. This will type out a backup of your OnlyKey slots and keys into the box.
+                                <u>Step 2</u>. Click inside the text area below with your mouse. Hold the #1 button down on your OnlyKey for 5+ seconds and release. This will type out an encrypted backup of your OnlyKey into the box.
                             </p>
                             <p>
-                                <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select "Save file" to save your encrypted backup to a secure location.
+                                <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----" the backup of the OnlyKey slots and keys is complete. Select [Save file] to save your encrypted backup.
                             </p>
                         </fieldset>
 
@@ -545,7 +492,7 @@
                         <label>
                             Backup data:
                             <br/>
-                            <textarea id="backupData" name="backupData" cols="40" rows="10" placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."></textarea>
+                            <textarea id="backupData" name="backupData" cols="40" rows="6" placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."></textarea>
                         </label>
 
                         <br/><br/>
@@ -565,10 +512,10 @@
                                 <u>Step 1</u>. To restore a backup file to your OnlyKey, ensure you have loaded the same key you used to create the backup and set the key as your backup key. Also make sure your OnlyKey is connected and unlocked.
                             </p>
                             <p>
-                                <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5 seconds or more and then release. The OnlyKey light will turn off and you must re-enter your PIN to unlock the device into config mode. Open your backup file and select "Restore to OnlyKey".
+                                <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your backup file, then click [Restore to OnlyKey].
                             </p>
                             <p>
-                                <u>Step 3</u>. When you see the messages "Successfully loaded backup file" and "Remove and Reinsert OnlyKey to complete restore" the restore is complete. Remove and reinsert OnlyKey to complete restore.
+                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then green when restoring is complete. Remove and reinsert OnlyKey to complete the restore process.
                             </p>
                         </fieldset>
 
@@ -583,6 +530,56 @@
                 </div>
             </div>
         </div>
+
+        <div id="advanced-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+                  <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
+                      <h2>Add Yubikey Security Info</h2>
+                      <label>
+                          Public Identity (6 bytes modhex)
+                          <br/>
+                          <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
+                      </label>
+                      <br/>
+                      <label>
+                          Private Identity (6 bytes hex)
+                          <br/>
+                          <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
+                      </label>
+                      <br/>
+                      <label>
+                          Secret Key (16 bytes hex)
+                          <br/>
+                          <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
+                      </label>
+                      <br/><br/>
+                      <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
+                      <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
+                      <div id="yubiError" class="form-error"></div>
+                  </form>
+              </div>
+              <div class="flex-item">
+                  <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
+                      <h2>Add U2F Security Info</h2>
+                      <label>
+                          Private Identity (32 bytes hex)
+                          <br/>
+                          <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="95" minlength="64" cols="40" rows="10" placeholder="private id" required></textarea>
+                      </label>
+                      <br/>
+                      <label>
+                          U2F Certificate (up to 768 bytes hex)
+                          <br/>
+                          <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
+                      </label>
+                      <br/><br/>
+                      <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
+                      <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
+                      <div id="u2fError" class="form-error"></div>
+                  </form>
+              </div>
+            </div>
     </div>
 
     <dialog id="finalStep-dialog">
@@ -672,6 +669,18 @@
                 <tr>
                     <td>
                         <label>
+                            <input type="radio" name="tabReturn4" value=1/>
+                            Tab before UserName
+                        </label>
+                        <label>
+                            <input type="radio" name="tabReturn4" value=0/>
+                            None
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
                             <input type="checkbox" id="chkUserName" name="chkUserName" value="true"/>
                             UserName (up to 56 chars)
                         </label>
@@ -684,11 +693,11 @@
                     <td>
                         <label>
                             <input type="radio" name="tabReturn1" value=1/>
-                            Tab
+                            Tab after UserName
                         </label>
                         <label>
                             <input type="radio" name="tabReturn1" value=2/>
-                            Return
+                            Return after UserName
                         </label>
                         <label>
                             <input type="radio" name="tabReturn1" value=0/>
@@ -728,7 +737,7 @@
                     <td>
                         <label>
                             <input type="radio" name="tabReturn2" value=2/>
-                            Return
+                            Return after Password
                         </label>
                         <label>
                             <input type="radio" name="tabReturn2" value=0/>
@@ -744,7 +753,7 @@
                     <td>
                         <label>
                             <input type="radio" name="tabReturn2" value=1/>
-                            Tab
+                            Tab after Password
                         </label>
                     </td>
                 </tr>
@@ -762,8 +771,20 @@
                 <tr>
                     <td>
                         <label>
+                            <input type="radio" name="tabReturn5" value=1/>
+                            Tab before OTP
+                        </label>
+                        <label>
+                            <input type="radio" name="tabReturn5" value=0/>
+                            None
+                        </label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>
                             <input type="radio" name="mode" value="googleAuthOtp"/>
-                            Google Auth OTP
+                            Google Authenticator OTP (TOTP)
                         </label>
                     </td>
                     <td>
@@ -774,7 +795,7 @@
                     <td>
                         <label>
                             <input type="radio" name="tabReturn3" value=2 checked/>
-                            Return
+                            Return after OTP
                         </label>
                         <label>
                             <input type="radio" name="tabReturn3" value=0/>
@@ -783,7 +804,6 @@
                     </td>
                 </tr>
                 <tr>
-                    <td><br/>Options below only work with Standard Edition OnlyKey:</td>
                 </tr>
                 <tr>
                     <td>
@@ -803,7 +823,7 @@
                     <td>
                         <label>
                             <input type="radio" name="tabReturn3" value=2/>
-                            Return
+                            Return after OTP
                         </label>
                         <label>
                             <input type="radio" name="tabReturn3" value=0/>
@@ -829,5 +849,7 @@
 
     <script src="/scripts/onlyKey/OnlyKeyWizard.js"></script>
     <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
+    <script src="/scripts/updater.js"></script>
+    <script src="/scripts/menubar.js"></script>
 </body>
 </html>

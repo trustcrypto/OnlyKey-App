@@ -18,8 +18,6 @@
 
 if (typeof nw == 'undefined') return;
 
-const gui = require('nw.gui');
-
 const supportExternalLinks = function(e) {
   let href;
   let isExternal = false;
@@ -32,7 +30,7 @@ const supportExternalLinks = function(e) {
       isExternal = true;
     }
     if (href && isExternal) {
-      gui.Shell.openExternal(href);
+      nw.Shell.openExternal(href);
       e.preventDefault();
     } else if (element.parentElement) {
       checkDomElement(element.parentElement);
