@@ -43,7 +43,11 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             next: 'Step9'
         },
         Step9: {
-            prev: 'Step8'
+            prev: 'Step8',
+            next: 'Step10'
+        },
+        Step10: {
+            prev: 'Step10'
         }
     };
 
@@ -61,8 +65,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         self.currentStep = Object.keys(self.steps)[0];
         self.uiInit();
 
-        self.steps.Step2.exitFn = function (cb) {
-            var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step7"],[data-step="Step8"]'));
+        self.steps.Step5.exitFn = function (cb) {
+            var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step8"],[data-step="Step9"]'));
             var classListMethod = self.getMode() === 'TwoFactor' ? 'remove' : 'add';
 
             dynamicSteps.forEach(function (el) {
@@ -71,20 +75,20 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
             return cb();
         };
-        self.steps.Step3.enterFn = function () {
+        self.steps.Step2.enterFn = function () {
             enableDisclaimer.call(self, 'passcode1Disclaimer');
             myOnlyKey.sendSetPin.call(myOnlyKey);
         };
+        self.steps.Step2.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
+        self.steps.Step3.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
         self.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        self.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        self.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        self.steps.Step5.enterFn = function () {
+        self.steps.Step6.enterFn = function () {
             enableDisclaimer.call(self, 'passcode2Disclaimer');
             myOnlyKey.sendSetSDPin.call(myOnlyKey);
         };
-        self.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        self.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        self.steps.Step6.exitFn = function (cb) {
+        self.steps.Step6.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        self.steps.Step7.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
+        self.steps.Step7.exitFn = function (cb) {
             myOnlyKey.sendSetSDPin.call(myOnlyKey, function (err, res) {
                 if (err || self.getMode() === 'TwoFactor') {
                     return cb(err, res);
@@ -94,13 +98,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 return cb(null, 'STOP');
             });
         };
-        self.steps.Step7.enterFn = function () {
+        self.steps.Step8.enterFn = function () {
             enableDisclaimer.call(self, 'passcode3Disclaimer');
             myOnlyKey.sendSetPDPin.call(myOnlyKey);
         };
-        self.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        self.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        self.steps.Step9.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
+        self.steps.Step9.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
         self.steps.Step9.enterFn = dialog.open.bind(null, self.finalStepDialog);
     };
 
@@ -119,11 +123,33 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         self.initForm = document['init-panel'];
 
+        self.setPIN = document.getElementById('SetPIN');
+        self.setBackup = document.getElementById('SetBackup');
+        self.setSDPIN = document.getElementById('SetSDPIN');
+        self.setPDPIN = document.getElementById('SetPDPIN');
         self.btnNext = document.getElementById('ButtonNext');
         self.btnPrev = document.getElementById('ButtonPrevious');
+        self.btnExit = document.getElementById('ButtonExit');
 
         self.btnNext.onclick = moveStep.bind(this, 'next');
         self.btnPrev.onclick = moveStep.bind(this, 'prev');
+
+        self.btnExit.onclick = function () {
+          setNewCurrentStep.call(onlyKeyConfigWizard, 'Step1');
+        };
+        self.setPIN.onclick = function () {
+          setNewCurrentStep.call(onlyKeyConfigWizard, 'Step2');
+          //self.onlyKey.sendSetPin.call(self.onlyKey);
+        };
+        self.setBackup.onclick = function () {
+          setNewCurrentStep.call(onlyKeyConfigWizard, 'Step4');
+        };
+        self.setSDPIN.onclick = function () {
+          setNewCurrentStep.call(onlyKeyConfigWizard, 'Step6');
+        };
+        self.setPDPIN.onclick = function () {
+          setNewCurrentStep.call(onlyKeyConfigWizard, 'Step8');
+        };
 
         self.slotConfigForm = document['slot-config-form'];
         self.slotConfigDialog = document.getElementById('slot-config-dialog');
@@ -162,6 +188,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         self.slotSubmit = document.getElementById('slotSubmit');
         self.slotSubmit.onclick = function (e) {
             setSlot.call(self);
+            e && e.preventDefault && e.preventDefault();
+        };
+
+        self.backupKeySubmit = document.getElementById('backupKeySubmit');
+        self.backupKeySubmit.onclick = function (e) {
+            submitBackupKey.call(self);
             e && e.preventDefault && e.preventDefault();
         };
 
@@ -222,6 +254,71 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         dialog.open(self.selectPrivateKeyDialog, true);
     };
+
+    function submitBackupKey(e) {
+        var self = this; // wizard
+
+        self.backupKeySubmit.disabled = true;
+
+        var form = self.initForm;
+        var type = 128;
+        var slot = 31;
+        var key1 = document.getElementById('backupPassphrase');
+        var key2 = document.getElementById('backupPassphrasec');
+        var formErrors = [];
+        var formErrorsContainer = document.getElementById('initConfigErrors');
+
+        formErrorsContainer.innerHTML = "";
+
+        if (!key1) {
+            formErrors.push('Passphrase cannot be empty.');
+        }
+
+        if (key1 !== key2) {
+            formErrors.push('Passphrase fields do not match');
+            formErrors.push(key1);
+            formErrors.push(key2);
+        }
+
+        if (key1.length < 25) {
+            formErrors.push('Passphrase must be at least 25 characters');
+        }
+
+        if (formErrors.length) {
+            // early exit
+            var html = "<ul>";
+            for (var i = 0; i < formErrors.length; i++) {
+                html += "<li><blink>" + formErrors[i]; + "</blink></li>";
+            }
+            formErrorsContainer.innerHTML = html + "</ul>";
+
+            self.backupKeySubmit.disabled = false;
+            return;
+        }
+
+        key1 = openpgp.crypto.digest(8, key1); //32 byte backup key is Sha256 hash of passphrase
+
+        key1 = key1.toString().replace(/\s/g,'').slice(0, 64);
+
+        if (formErrors.length) {
+            // early exit
+            var html = "<ul>";
+            for (var i = 0; i < formErrors.length; i++) {
+                html += "<li><blink>" + formErrors[i]; + "</blink></li>";
+            }
+            formErrorsContainer.innerHTML = html + "</ul>";
+
+            self.backupKeySubmit.disabled = false;
+            return;
+        }
+
+        myOnlyKey.setPrivateKey(slot, type, key, function (err) {
+            // TODO: check for success, then reset
+            myOnlyKey.listen(handleMessage);
+            ui.backupKeyForm.reset();
+        });
+
+    }
 
     function setSlot() {
         var self = this; // wizard
@@ -402,13 +499,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         if (err) {
             switch (lastMessageSent) {
                 case 'OKSETPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step3');
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step2');
                     break;
                 case 'OKSETSDPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step6');
                     break;
                 case 'OKSETPDPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step8');
                     break;
             }
         }

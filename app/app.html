@@ -31,7 +31,7 @@
     </h1>
 
 		<nav>
-            <a id="show-init-panel" href="">PINs</a>
+            <a id="show-init-panel" href="">Setup</a>
 			      <a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
@@ -44,13 +44,10 @@
             <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
                 <tr>
                     <td data-step="Step1">Step 1: Getting Started</td>
-                    <td data-step="Step2">Step 2: Select OnlyKey Edition</td>
-                    <td data-step="Step3">Step 3: Set Your PIN</td>
-                    <td data-step="Step4">Step 4: Confirm PIN</td>
-                    <td data-step="Step5">Step 5: Set Self-Destruct PIN</td>
-                    <td data-step="Step6">Step 6: Confirm Self-Destruct PIN</td>
-                    <td data-step="Step7">Step 7: Set Plausible Deniability PIN</td>
-                    <td data-step="Step8">Step 8: Confirm Plausible Deniability PIN</td>
+                    <td data-step="Step2">Step 2: Set Your PIN</td>
+                    <td data-step="Step3">Step 3: Confirm PIN</td>
+                    <td data-step="Step4">Step 4: Set Your Backup Passphrase</td>
+                    <td data-step="Step5">Steps 5-9: (Optional) Set Self-Destruct and Plausible Deniability PINs</td>
                 </tr>
             </table>
 
@@ -58,30 +55,46 @@
 
             <div id="stepContent">
                 <div class="step" id="Step1">
-                    <h3>Welcome to the OnlyKey Initial Setup Wizard!</h3>
-                    This wizard initializes the OnlyKey. Your current step is always highlighted in the header.
+                    <h3>Welcome to the OnlyKey  Setup Wizard!</h3>
+                    Use this wizard to setup your OnlyKey.
                     <br/><br />
-                    Click [Next] to get started.
+                    Click [Next] to get started with setup wizard. Or select from setup options below.<br><br>
+                  <table>
+                    <tr>
+                        <td>
+                            <button id="SetPIN" type="button">Set PIN</button>
+                        </td>
+                        <td>
+                            <button id="SetBackup" type="button">Set Backup Passphrase</button>
+                        </td>
+                        <td>
+                            <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
+                        </td>
+                        <td>
+                            <button id="SetPDPIN" type="button">Set Plausible Deniability PIN</button>
+                        </td>
+                    </tr>
+                  </table>
                 </div>
 
-                <div class="step" id="Step2">
-                    <h3>Step 2: Select OnlyKey Edition</h3>
+                <div class="step" id="Step5">
+                    <h3>Step 5: Select OnlyKey Edition</h3>
                     <b>Modes:</b>
                     <br/>
                     <label>
                         <input type="radio" checked name="ConfigMode" value="TwoFactor" />
-                        Standard Edition (default for US customers)
+                        Standard Edition (default)
                     </label>
                     <br/>
                     <label>
                         <input type="radio" name="ConfigMode" value="Unencrypted" />
-                        International Travel Edition (default for international customers)
+                        International Travel Edition
                     </label>
                     <br/><br/>
                 </div>
 
-                <div class="step" id="Step3">
-                    <h3>Step 3: Enter PIN on OnlyKey keypad</h3>
+                <div class="step" id="Step2">
+                    <h3>Step 2: Enter PIN on OnlyKey keypad</h3>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is also good to have a secure backup of your PIN somewhere just in case you forget.
                     </p>
@@ -97,15 +110,36 @@
                     </p>
                 </div>
 
-                <div class="step" id="Step4">
-                    <h3>Step 4: Re-enter PIN on OnlyKey Keypad</h3>
+                <div class="step" id="Step3">
+                    <h3>Step 3: Re-enter PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click [Next] below.
                     </p>
                 </div>
 
-                <div class="step" id="Step5">
-                    <h3>Step 5. Enter self-destruct PIN on OnlyKey keypad</h3>
+                <div class="step" id="Step4">
+                    <h3>Step 4: Enter a Backup Passphrase </h3>
+                    <p>
+                        Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p>
+                    <p>
+                        Example of a good passphrase &mdash; "this passphrase is not complex but it is long and it is not a common phrase"
+                    </p>
+                    <p>
+                        Example of a bad passphrase &mdash; "the only thing we have to fear is fear itself"
+                    </p>
+                    <label>
+                        Enter Passphrase:
+                        <input type="password" id="backupPassphrase" name="backupPassphrase" />
+                        <br>Passphrase must be at least 25 characters
+                        <br>
+                        Re-Enter Passphrase:
+                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" />
+                    </label>
+                        <input type="button" id="backupKeySubmit" name="backupKeySubmit" value="Submit"/>
+                </div>
+
+                <div class="step" id="Step6">
+                    <h3>Step 6. Enter self-destruct PIN on OnlyKey keypad</h3>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. Also this PIN should not be similar to your regular PIN as this could result in unintentionally wiping your OnlyKey. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
                     </p>
@@ -121,15 +155,15 @@
                     </p>
                 </div>
 
-                <div class="step" id="Step6">
-                    <h3>Step 6: Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
+                <div class="step" id="Step7">
+                    <h3>Step 7: Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click confirm below.
                     </p>
                 </div>
 
-                <div class="step" id="Step7">
-                    <h3>Step 7: Enter Plausible Deniability PIN on OnlyKey keypad</h3>
+                <div class="step" id="Step8">
+                    <h3>Step 8: Enter Plausible Deniability PIN on OnlyKey keypad</h3>
                     <p>
                         If you are using the Standard Edition (default for US customers) you may proceed to enter plausible deniability passcode.
                     </p>
@@ -148,8 +182,8 @@
                     </p>
                 </div>
 
-                <div class="step" id="Step8">
-                    <h3>Step 8: Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
+                <div class="step" id="Step9">
+                    <h3>Step 9: Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
                     <p>
                        Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click confirm below.
                     </p>
@@ -159,12 +193,21 @@
             <br />
 
             <table border="0" cellpadding="5" cellspacing="0">
+              <tr>
+                  <td colspan="2" id="initConfigErrors">
+                  </td>
+              </tr>
                 <tr>
                     <td>
                         <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
                     </td>
                     <td>
                         <button id="ButtonNext" type="button">Next</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button id="ButtonExit" type="button">Exit</button>
                     </td>
                 </tr>
             </table>
@@ -308,101 +351,10 @@
         </div>
 
         <div id="keys-panel" class="hide panel">
+            Use the Keys tab to load an OpenPGP key onto your OnlyKey. OpenPGP keys can be used to encrypt OnlyKey backups and for <a href="https://apps.crp.to/">secure messaging</a>.<br>
+            Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys">here</a> for generating an OpenPGP key with Keybase.<br>
+            To get started loading your OpenPGP key put your OnlyKey in config mode:<br>
             Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. Your OnlyKey light will turn off and you must re-enter your PIN to unlock the device into config mode.
-
-            <div class="flex-container">
-                <div class="flex-item">
-                    <form id="eccForm" name="eccForm" class="auth-form">
-                        <h2>ECC Private Key (32 bytes hex)</h2>
-
-                        <label>
-                            Type:
-                            <select id="eccType" name="eccType">
-                                <option value=1>Curve25519/Ed25519</option>
-                                <option value=2>NIST P256</option>
-                                <option value=3>secp256k1</option>
-                            </select>
-                        </label>
-
-                        <br/>
-                        <br/>
-
-                        <label>
-                            Slot:
-                            <select id="eccSlot" name="eccSlot">
-                                <option value=101>1</option>
-                                <option value=102>2</option>
-                                <option value=103>3</option>
-                                <option value=104>4</option>
-                                <option value=105>5</option>
-                                <option value=106>6</option>
-                                <option value=107>7</option>
-                                <option value=108>8</option>
-                                <option value=109>9</option>
-                                <option value=110>10</option>
-                                <option value=111>11</option>
-                                <option value=112>12</option>
-                                <option value=113>13</option>
-                                <option value=114>14</option>
-                                <option value=115>15</option>
-                                <option value=116>16</option>
-                                <option value=117>17</option>
-                                <option value=118>18</option>
-                                <option value=119>19</option>
-                                <option value=120>20</option>
-                                <option value=121>21</option>
-                                <option value=122>22</option>
-                                <option value=123>23</option>
-                                <option value=124>24</option>
-                                <option value=125>25</option>
-                                <option value=126>26</option>
-                                <option value=127>27</option>
-                                <option value=128>28</option>
-                                <option value=129>29</option>
-                                <option value=130>30</option>
-                            </select>
-                        </label>
-
-                        <br/>
-                        <br/>
-
-                        <label>
-                            Key:
-                            <br/>
-                            <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="10" placeholder="ECC Key (32 bytes hex)" required></textarea>
-                        </label>
-
-                        <br/>
-                        <br/>
-
-                        <label>
-                            <input type="checkbox" id="eccSetAsBackup" name="eccSetAsBackup" value="true"/>
-                            Set as backup key (only one backup may be set)
-                        </label>
-
-                        <br/>
-
-                        <label>
-                            <input type="checkbox" id="eccSetAsSignature" name="eccSetAsSignature" value="true"/>
-                            Set as signature key
-                        </label>
-
-                        <br/>
-
-                        <label>
-                            <input type="checkbox" id="eccSetAsDecryption" name="eccSetAsDecryption" value="true"/>
-                            Set as decryption key
-                        </label>
-
-                        <br/>
-                        <br/>
-
-                        <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
-                        <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
-                        <div id="eccFormError" class="form-error"></div>
-                    </form>
-                </div>
-
                 <div class="flex-item">
                     <form id="rsaForm" name="rsaForm" class="auth-form">
                         <h2>RSA Private Key (PEM Format)</h2>
@@ -555,27 +507,118 @@
                       <div id="yubiError" class="form-error"></div>
                   </form>
               </div>
-              <div class="flex-item">
-                  <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
-                      <h2>Add U2F Security Info</h2>
-                      <label>
-                          Private Identity (32 bytes hex)
-                          <br/>
-                          <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="95" minlength="64" cols="40" rows="10" placeholder="private id" required></textarea>
-                      </label>
-                      <br/>
-                      <label>
-                          U2F Certificate (up to 768 bytes hex)
-                          <br/>
-                          <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="10" placeholder="certificate" required></textarea>
-                      </label>
-                      <br/><br/>
-                      <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
-                      <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-                      <div id="u2fError" class="form-error"></div>
-                  </form>
-              </div>
+            <div class="flex-item">
+                <form id="eccForm" name="eccForm" class="auth-form">
+                    <h2>Add ECC Private Key</h2>
+
+                    <label>
+                        Type:
+                        <select id="eccType" name="eccType">
+                            <option value=1>Curve25519/Ed25519</option>
+                            <option value=2>NIST P256</option>
+                            <option value=3>secp256k1</option>
+                        </select>
+                    </label>
+
+                    <br/>
+                    <br/>
+
+                    <label>
+                        Slot:
+                        <select id="eccSlot" name="eccSlot">
+                            <option value=101>1</option>
+                            <option value=102>2</option>
+                            <option value=103>3</option>
+                            <option value=104>4</option>
+                            <option value=105>5</option>
+                            <option value=106>6</option>
+                            <option value=107>7</option>
+                            <option value=108>8</option>
+                            <option value=109>9</option>
+                            <option value=110>10</option>
+                            <option value=111>11</option>
+                            <option value=112>12</option>
+                            <option value=113>13</option>
+                            <option value=114>14</option>
+                            <option value=115>15</option>
+                            <option value=116>16</option>
+                            <option value=117>17</option>
+                            <option value=118>18</option>
+                            <option value=119>19</option>
+                            <option value=120>20</option>
+                            <option value=121>21</option>
+                            <option value=122>22</option>
+                            <option value=123>23</option>
+                            <option value=124>24</option>
+                            <option value=125>25</option>
+                            <option value=126>26</option>
+                            <option value=127>27</option>
+                            <option value=128>28</option>
+                            <option value=129>29</option>
+                            <option value=130>30</option>
+                        </select>
+                    </label>
+
+                    <br/>
+                    <br/>
+
+                    <label>
+                        Key:
+                        <br/>
+                        <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="2" placeholder="ECC Key (32 bytes hex)" required></textarea>
+                    </label>
+
+                    <br/>
+                    <br/>
+
+                    <label>
+                        <input type="checkbox" id="eccSetAsBackup" name="eccSetAsBackup" value="true"/>
+                        Set as backup key (only one backup may be set)
+                    </label>
+
+                    <br/>
+
+                    <label>
+                        <input type="checkbox" id="eccSetAsSignature" name="eccSetAsSignature" value="true"/>
+                        Set as signature key
+                    </label>
+
+                    <br/>
+
+                    <label>
+                        <input type="checkbox" id="eccSetAsDecryption" name="eccSetAsDecryption" value="true"/>
+                        Set as decryption key
+                    </label>
+
+                    <br/>
+                    <br/>
+
+                    <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
+                    <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
+                    <div id="eccFormError" class="form-error"></div>
+                </form>
             </div>
+            <div class="flex-item">
+                <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
+                    <h2>Add U2F Security Info</h2>
+                    <label>
+                        Private Identity (32 bytes hex)
+                        <br/>
+                        <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="64" minlength="64" cols="40" rows="2" placeholder="ECC Private Key" required></textarea>
+                    </label>
+                    <br/>
+                    <label>
+                        U2F Certificate (up to 768 bytes hex)
+                        <br/>
+                        <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="4" placeholder="certificate" required></textarea>
+                    </label>
+                    <br/><br/>
+                    <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
+                    <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
+                    <div id="u2fError" class="form-error"></div>
+                </form>
+            </div>
+          </div>
     </div>
 
     <dialog id="finalStep-dialog">

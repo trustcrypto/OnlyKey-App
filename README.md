@@ -14,7 +14,7 @@ Just getting started with OnlyKey?
 
 **OnlyKey App** is an app to be used along with an OnlyKey device. The app is used for things like:
 
-- Initial setup of OnlyKey (PINs)
+- Initial setup of OnlyKey (Setup)
 - Configuration of accounts (Slots)
 - Loading keys for PGP, SSH, and secure backup (Keys)
 - Backup and restore of OnlyKey (Backup/Restore)
