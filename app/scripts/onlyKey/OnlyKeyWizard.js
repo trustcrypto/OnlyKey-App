@@ -270,14 +270,14 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         formErrorsContainer.innerHTML = "";
 
-        if (!key1) {
+        if (!key1.value) {
             formErrors.push('Passphrase cannot be empty.');
         }
 
-        if (key1 !== key2) {
+        if (key1.value !== key2.value) {
             formErrors.push('Passphrase fields do not match');
-            formErrors.push(key1);
-            formErrors.push(key2);
+            formErrors.push(key1.value.toString().replace(/\s/g,'').slice(0, 64));
+            formErrors.push(key2.value.toString().replace(/\s/g,'').slice(0, 64));
         }
 
         if (key1.length < 25) {
@@ -296,9 +296,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             return;
         }
 
-        key1 = openpgp.crypto.digest(8, key1); //32 byte backup key is Sha256 hash of passphrase
-
-        key1 = key1.toString().replace(/\s/g,'').slice(0, 64);
+        formErrors.push(key1.value);
+        key1 = openpgp.crypto.hash.digest(8, key1.value); //32 byte backup key is Sha256 hash of passphrase
+        formErrors.push(key1);
 
         if (formErrors.length) {
             // early exit
@@ -312,9 +312,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             return;
         }
 
-        myOnlyKey.setPrivateKey(slot, type, key, function (err) {
-            // TODO: check for success, then reset
-            myOnlyKey.listen(handleMessage);
+        self.onlyKey.setPrivateKey(slot, type, key1, function (err) {
+            self.onlyKey.listen(handleMessage);
             ui.backupKeyForm.reset();
         });
 

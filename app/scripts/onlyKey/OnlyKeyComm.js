@@ -1363,3 +1363,10 @@ function byteToHex(value) {
     if (value < 16) return '0' + value.toString(16);
     return value.toString(16);
 }
+
+//nw.Window.get().on('new-win-policy', function(frame, url, policy) {
+//  // do not open the window
+//  policy.ignore();
+//  // and open it in external browser
+//  nw.Shell.openExternal(url);
+//});
