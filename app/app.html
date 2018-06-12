@@ -24,11 +24,11 @@
         </ul>
     </div>
     <div id="main" class="hide">
-    <img src="/images/ok-logo.jpg" height="36" width="223">
+        <img src="/images/ok-logo.jpg" height="36" width="223">
 		<h1>
             <i id="appVersion"></i>
             <i id="appUpdater"></i>
-    </h1>
+        </h1>
 
 		<nav>
             <a id="show-init-panel" href="">Setup</a>
@@ -122,20 +122,22 @@
                     <p>
                         Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p>
                     <p>
-                        Example of a good passphrase &mdash; "this passphrase is not complex but it is long and it is not a common phrase"
+                        Example of a <em>good</em> passphrase: "this passphrase is not complex but it is long and it is not a common phrase"
                     </p>
                     <p>
-                        Example of a bad passphrase &mdash; "the only thing we have to fear is fear itself"
+                        Example of a <em>bad</em> passphrase: "the only thing we have to fear is fear itself"
                     </p>
                     <label>
-                        Enter Passphrase:
-                        <input type="password" id="backupPassphrase" name="backupPassphrase" />
+                        <b>Enter Passphrase:</b>
+                        <input type="password" id="backupPassphrase" name="backupPassphrase" size=30 />
                         <br>Passphrase must be at least 25 characters
-                        <br>
-                        Re-Enter Passphrase:
-                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" />
                     </label>
-                        <input type="button" id="backupKeySubmit" name="backupKeySubmit" value="Submit"/>
+                    <br/><br/>
+                    <label>
+                        <b>Re-Enter Passphrase:</b>
+                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" size=30 />
+                    </label>
+                    <input type="button" id="backupKeySubmit" name="backupKeySubmit" value="Submit"/>
                 </div>
 
                 <div class="step" id="Step6">
@@ -217,9 +219,9 @@
             <div class="flex-container">
                 <div class="flex-item">
                     <h2>Configure Slots</h2>
+                    <p>Slots are where you store login information. There are 12 slots in your profile, and each slot can store a login URL, Username, Password, and two-factor. More information on slots available <a href="https://docs.crp.to/usersguide.html#all-about-slots" class="external">here</a>.</p>
+                    <hr/>
                     <table id="slot-config-btns">
-                      Slots are where you store login information. There are 12 slots in your profile and in each slot you can store a login URL, Username, Password, and two-factor. More information on slots available <a href="https://docs.crp.to/usersguide.html#all-about-slots" target="_blank">here</a>.<br>
-                        <br>
                         <tr>
                             <td align="right">
                                 <span class="slotLabel" id="slotLabel1a">empty</span>
@@ -353,10 +355,16 @@
         </div>
 
         <div id="keys-panel" class="hide panel">
-            Use the keys tab to load OpenPGP keys onto your OnlyKey. OpenPGP keys can be used to encrypt OnlyKey backups and are used for <a href="https://docs.crp.to/webcrypt.html">secure messaging</a>.<br>
-            <br>Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys">here</a> for generating an OpenPGP key with Keybase.<br>
-            <br>To get started loading your OpenPGP key put your OnlyKey in config mode:<br>
-            Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. Your OnlyKey light will turn off and you must re-enter your PIN to unlock the device into config mode.
+            <p>
+                Use the [Keys] tab to load OpenPGP keys onto your OnlyKey. OpenPGP keys can be used to encrypt OnlyKey backups and are used for <a href="https://docs.crp.to/webcrypt.html" class="external">secure messaging</a>.
+            </p>
+            <hr/>
+            <div class="flex-container">
+                <div class="flex-item">
+                    <p>Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys" class="external">here</a> for generating an OpenPGP key with Keybase.</p>
+                    <p>To get started loading your OpenPGP key put your OnlyKey in config mode:</p>
+                    <p>Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. Your OnlyKey light will turn off and you must re-enter your PIN to unlock the device into config mode.</p>
+                </div>
                 <div class="flex-item">
                     <form id="rsaForm" name="rsaForm" class="auth-form">
                         <h2>RSA Private Key (PEM Format)</h2>
@@ -418,7 +426,6 @@
                 </div>
             </div>
         </div>
-
         <div id="backup-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
@@ -459,13 +466,13 @@
 
                         <fieldset>
                             <p>
-                                <u>Step 1</u>. To restore a backup file to your OnlyKey, ensure you have loaded the same key you used to create the backup and set the key as your backup key. Also make sure your OnlyKey is connected and unlocked.
+                                <u>Step 1</u>. To restore a backup file to your OnlyKey, ensure you have loaded the same key you used to create the backup and set the key as your backup key. Also make sure your OnlyKey is unlocked.
                             </p>
                             <p>
                                 <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your backup file, then click [Restore to OnlyKey].
                             </p>
                             <p>
-                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then green when restoring is complete. Remove and reinsert OnlyKey to complete the restore process.
+                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then green when restoring is complete. Remove and reinsert OnlyKey to complete the process.
                             </p>
                         </fieldset>
 
@@ -484,143 +491,143 @@
         <div id="advanced-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
-                  <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
-                      <h2>Add Yubikey Security Info</h2>
-                      <label>
-                          Public Identity (6 bytes modhex)
-                          <br/>
-                          <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
-                      </label>
-                      <br/>
-                      <label>
-                          Private Identity (6 bytes hex)
-                          <br/>
-                          <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
-                      </label>
-                      <br/>
-                      <label>
-                          Secret Key (16 bytes hex)
-                          <br/>
-                          <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
-                      </label>
-                      <br/><br/>
-                      <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
-                      <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
-                      <div id="yubiError" class="form-error"></div>
-                  </form>
-              </div>
-            <div class="flex-item">
-                <form id="eccForm" name="eccForm" class="auth-form">
-                    <h2>Add ECC Private Key</h2>
-
-                    <label>
-                        Type:
-                        <select id="eccType" name="eccType">
-                            <option value=1>Curve25519/Ed25519</option>
-                            <option value=2>NIST P256</option>
-                            <option value=3>secp256k1</option>
-                        </select>
-                    </label>
-
-                    <br/>
-                    <br/>
-
-                    <label>
-                        Slot:
-                        <select id="eccSlot" name="eccSlot">
-                            <option value=101>1</option>
-                            <option value=102>2</option>
-                            <option value=103>3</option>
-                            <option value=104>4</option>
-                            <option value=105>5</option>
-                            <option value=106>6</option>
-                            <option value=107>7</option>
-                            <option value=108>8</option>
-                            <option value=109>9</option>
-                            <option value=110>10</option>
-                            <option value=111>11</option>
-                            <option value=112>12</option>
-                            <option value=113>13</option>
-                            <option value=114>14</option>
-                            <option value=115>15</option>
-                            <option value=116>16</option>
-                            <option value=117>17</option>
-                            <option value=118>18</option>
-                            <option value=119>19</option>
-                            <option value=120>20</option>
-                            <option value=121>21</option>
-                            <option value=122>22</option>
-                            <option value=123>23</option>
-                            <option value=124>24</option>
-                            <option value=125>25</option>
-                            <option value=126>26</option>
-                            <option value=127>27</option>
-                            <option value=128>28</option>
-                            <option value=129>29</option>
-                            <option value=130>30</option>
-                        </select>
-                    </label>
-
-                    <br/>
-                    <br/>
-
-                    <label>
-                        Key:
+                    <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
+                        <h2>Add Yubikey Security Info</h2>
+                        <label>
+                            Public Identity (6 bytes modhex)
+                            <br/>
+                            <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12" placeholder="public id" required/>
+                        </label>
                         <br/>
-                        <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="2" placeholder="ECC Key (32 bytes hex)" required></textarea>
-                    </label>
+                        <label>
+                            Private Identity (6 bytes hex)
+                            <br/>
+                            <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12" placeholder="private id" required/>
+                        </label>
+                        <br/>
+                        <label>
+                            Secret Key (16 bytes hex)
+                            <br/>
+                            <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32" placeholder="secret aes key" required/>
+                        </label>
+                        <br/><br/>
+                        <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
+                        <div id="yubiError" class="form-error"></div>
+                    </form>
+                    <hr/>
+                    <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
+                        <h2>Add U2F Security Info</h2>
+                        <label>
+                            Private Identity (32 bytes hex)
+                            <br/>
+                            <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="64" minlength="64" cols="40" rows="2" placeholder="ECC Private Key" required></textarea>
+                        </label>
+                        <br/>
+                        <label>
+                            U2F Certificate (up to 768 bytes hex)
+                            <br/>
+                            <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="4" placeholder="certificate" required></textarea>
+                        </label>
+                        <br/><br/>
+                        <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
+                        <div id="u2fError" class="form-error"></div>
+                    </form>
+                </div>
+                <div class="flex-item">
+                    <form id="eccForm" name="eccForm" class="auth-form">
+                        <h2>Add ECC Private Key</h2>
 
-                    <br/>
-                    <br/>
+                        <label>
+                            Type:
+                            <select id="eccType" name="eccType">
+                                <option value=1>Curve25519/Ed25519</option>
+                                <option value=2>NIST P256</option>
+                                <option value=3>secp256k1</option>
+                            </select>
+                        </label>
 
-                    <label>
-                        <input type="checkbox" id="eccSetAsBackup" name="eccSetAsBackup" value="true"/>
-                        Set as backup key (only one backup may be set)
-                    </label>
+                        <br/>
+                        <br/>
 
-                    <br/>
+                        <label>
+                            Slot:
+                            <select id="eccSlot" name="eccSlot">
+                                <option value=101>1</option>
+                                <option value=102>2</option>
+                                <option value=103>3</option>
+                                <option value=104>4</option>
+                                <option value=105>5</option>
+                                <option value=106>6</option>
+                                <option value=107>7</option>
+                                <option value=108>8</option>
+                                <option value=109>9</option>
+                                <option value=110>10</option>
+                                <option value=111>11</option>
+                                <option value=112>12</option>
+                                <option value=113>13</option>
+                                <option value=114>14</option>
+                                <option value=115>15</option>
+                                <option value=116>16</option>
+                                <option value=117>17</option>
+                                <option value=118>18</option>
+                                <option value=119>19</option>
+                                <option value=120>20</option>
+                                <option value=121>21</option>
+                                <option value=122>22</option>
+                                <option value=123>23</option>
+                                <option value=124>24</option>
+                                <option value=125>25</option>
+                                <option value=126>26</option>
+                                <option value=127>27</option>
+                                <option value=128>28</option>
+                                <option value=129>29</option>
+                                <option value=130>30</option>
+                            </select>
+                        </label>
 
-                    <label>
-                        <input type="checkbox" id="eccSetAsSignature" name="eccSetAsSignature" value="true"/>
-                        Set as signature key
-                    </label>
+                        <br/>
+                        <br/>
 
-                    <br/>
+                        <label>
+                            Key:
+                            <br/>
+                            <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="2" placeholder="ECC Key (32 bytes hex)" required></textarea>
+                        </label>
 
-                    <label>
-                        <input type="checkbox" id="eccSetAsDecryption" name="eccSetAsDecryption" value="true"/>
-                        Set as decryption key
-                    </label>
+                        <br/>
+                        <br/>
 
-                    <br/>
-                    <br/>
+                        <label>
+                            <input type="checkbox" id="eccSetAsBackup" name="eccSetAsBackup" value="true"/>
+                            Set as backup key (only one backup may be set)
+                        </label>
 
-                    <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
-                    <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
-                    <div id="eccFormError" class="form-error"></div>
-                </form>
+                        <br/>
+
+                        <label>
+                            <input type="checkbox" id="eccSetAsSignature" name="eccSetAsSignature" value="true"/>
+                            Set as signature key
+                        </label>
+
+                        <br/>
+
+                        <label>
+                            <input type="checkbox" id="eccSetAsDecryption" name="eccSetAsDecryption" value="true"/>
+                            Set as decryption key
+                        </label>
+
+                        <br/>
+                        <br/>
+
+                        <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
+                        <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
+                        <div id="eccFormError" class="form-error"></div>
+                    </form>
+                </div>
             </div>
-            <div class="flex-item">
-                <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
-                    <h2>Add U2F Security Info</h2>
-                    <label>
-                        Private Identity (32 bytes hex)
-                        <br/>
-                        <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="64" minlength="64" cols="40" rows="2" placeholder="ECC Private Key" required></textarea>
-                    </label>
-                    <br/>
-                    <label>
-                        U2F Certificate (up to 768 bytes hex)
-                        <br/>
-                        <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="4" placeholder="certificate" required></textarea>
-                    </label>
-                    <br/><br/>
-                    <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
-                    <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-                    <div id="u2fError" class="form-error"></div>
-                </form>
-            </div>
-          </div>
+        </div>
     </div>
 
     <dialog id="finalStep-dialog">
@@ -892,5 +899,15 @@
     <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
     <script src="/scripts/updater.js"></script>
     <script src="/scripts/menubar.js"></script>
+    <script>
+        document.querySelector('#main').addEventListener('click', evt => {
+            if ((evt.target !== evt.currentTarget) && (!!evt.target.href && evt.target.className.includes('external'))) {
+                // nw.Window.open(evt.target.href);
+                nw.Shell.openExternal(evt.target.href);
+                evt.preventDefault();
+                evt.stopPropagation();
+            }
+        });
+    </script>
 </body>
 </html>

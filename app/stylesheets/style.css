@@ -141,6 +141,19 @@ td.ok-photo-cell {
     flex: 1 45%;
 }
 
+.flex-item > p,
+.flex-item > form,
+.flex-item > div {
+    margin-right: 1em;
+}
+
+.flex-item + .flex-item > p,
+.flex-item + .flex-item > form,
+.flex-item + .flex-item > div {
+    margin-right: 0;
+    margin-left: 1em;
+}
+
 nav > a {
     padding: 4px 4px 2px 4px;
     border-radius: 6px 6px 0 0;
