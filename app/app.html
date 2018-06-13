@@ -32,7 +32,7 @@
 
 		<nav>
             <a id="show-init-panel" href="">Setup</a>
-			      <a id="show-slot-panel" href="" class="hide">Slots</a>
+            <a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
@@ -40,45 +40,33 @@
 		</nav>
 
         <form id="init-panel" name="init-panel" class="hide panel">
-			<br/>
-            <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
-                <tr>
-                    <td data-step="Step1">Getting Started</td>
-                    <td data-step="Step2">Step 1: Set Your PIN</td>
-                    <td data-step="Step3">Step 2: Confirm PIN</td>
-                    <td data-step="Step4">Step 3: Set Your Backup Passphrase</td>
-                    <td data-step="Step5">Setup Complete. Continue to Optionally Set Self-Destruct and Plausible Deniability PINs</td>
-                </tr>
-            </table>
-
-            <br />
-
             <div id="stepContent">
                 <div class="step" id="Step1">
-                    <h3>Welcome to the OnlyKey  Setup Wizard!</h3>
-                    Use this wizard to setup your OnlyKey.
-                    <br/><br />
-                    Click [Next] to get started with setup wizard. Or select from setup options below.<br><br>
-                  <table>
-                    <tr>
-                        <td>
-                            <button id="SetPIN" type="button">Set PIN</button>
-                        </td>
-                        <td>
-                            <button id="SetBackup" type="button">Set Backup Passphrase</button>
-                        </td>
-                        <td>
-                            <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
-                        </td>
-                        <td>
-                            <button id="SetPDPIN" type="button">Set Plausible Deniability PIN</button>
-                        </td>
-                    </tr>
-                  </table>
+                    <h3>Initial Setup</h3>
+                    <p>
+                        Step through the Guided Setup wizard, or jump directly to specific steps.
+                    </p>
+
+                    <table>
+                        <tr>
+                            <td>
+                                <button id="SetPIN" type="button">Set PIN</button>
+                            </td>
+                            <td>
+                                <button id="SetBackup" type="button">Set Backup Passphrase</button>
+                            </td>
+                            <td>
+                                <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
+                            </td>
+                            <td>
+                                <button id="SetPDPIN" type="button">Set Plausible Deniability PIN</button>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
 
                 <div class="step" id="Step5">
-                    <h3>Step 5: Select OnlyKey Edition</h3>
+                    <h3>Select OnlyKey Edition</h3>
                     <b>Modes:</b>
                     <br/>
                     <label>
@@ -94,7 +82,7 @@
                 </div>
 
                 <div class="step" id="Step2">
-                    <h3>Step 1: Enter PIN on OnlyKey keypad</h3>
+                    <h3>Enter PIN on OnlyKey keypad</h3>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is also good to have a secure backup of your PIN somewhere just in case you forget.
                     </p>
@@ -111,14 +99,14 @@
                 </div>
 
                 <div class="step" id="Step3">
-                    <h3>Step 2: Re-enter PIN on OnlyKey Keypad</h3>
+                    <h3>Re-enter PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click [Next] below.
                     </p>
                 </div>
 
                 <div class="step" id="Step4">
-                    <h3>Step 3: Enter a Backup Passphrase </h3>
+                    <h3>Enter a Backup Passphrase </h3>
                     <p>
                         Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p>
                     <p>
@@ -158,14 +146,14 @@
                 </div>
 
                 <div class="step" id="Step7">
-                    <h3>Step 7: Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
+                    <h3>Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click confirm below.
                     </p>
                 </div>
 
                 <div class="step" id="Step8">
-                    <h3>Step 8: Enter Plausible Deniability PIN on OnlyKey keypad</h3>
+                    <h3>Enter Plausible Deniability PIN on OnlyKey keypad</h3>
                     <p>
                         If you are using the Standard Edition (default for US customers) you may proceed to enter plausible deniability passcode.
                     </p>
@@ -185,20 +173,26 @@
                 </div>
 
                 <div class="step" id="Step9">
-                    <h3>Step 9: Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
+                    <h3>Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
                     <p>
                        Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click confirm below.
                     </p>
                 </div>
             </div>
 
-            <br />
+            <br/>
+            <hr/>
 
             <table border="0" cellpadding="5" cellspacing="0">
-              <tr>
-                  <td colspan="2" id="initConfigErrors">
-                  </td>
-              </tr>
+                <tr>
+                    <td colspan="3">
+                        <b>Guided Setup</b>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" id="initConfigErrors">
+                    </td>
+                </tr>
                 <tr>
                     <td>
                         <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
@@ -206,10 +200,8 @@
                     <td>
                         <button id="ButtonNext" type="button">Next</button>
                     </td>
-                </tr>
-                <tr>
                     <td>
-                        <button id="ButtonExit" type="button">Exit</button>
+                        <button id="ButtonExit" type="button" class="hide">Exit</button>
                     </td>
                 </tr>
             </table>

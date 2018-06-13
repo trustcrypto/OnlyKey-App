@@ -12,42 +12,43 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
     var steps = {
         Step1: {
-            next: 'Step2'
+            next: 'Step2',
+            noExit: true,
         },
         Step2: {
             prev: 'Step1',
-            next: 'Step3'
+            next: 'Step3',
         },
         Step3: {
             prev: 'Step2',
-            next: 'Step4'
+            next: 'Step4',
         },
         Step4: {
             prev: 'Step3',
-            next: 'Step5'
+            next: 'Step5',
         },
         Step5: {
             prev: 'Step4',
-            next: 'Step6'
+            next: 'Step6',
         },
         Step6: {
             prev: 'Step5',
-            next: 'Step7'
+            next: 'Step7',
         },
         Step7: {
             prev: 'Step6',
-            next: 'Step8'
+            next: 'Step8',
         },
         Step8: {
             prev: 'Step7',
-            next: 'Step9'
+            next: 'Step9',
         },
         Step9: {
             prev: 'Step8',
-            next: 'Step10'
+            next: 'Step10',
         },
         Step10: {
-            prev: 'Step10'
+            prev: 'Step10',
         }
     };
 
@@ -539,17 +540,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
         }
 
-        var header = document.getElementById('HeaderTable');
-        var tabs = header.getElementsByTagName("td");
-
-        for (var i = 0; i < tabs.length; i++) {
-            if(tabs[i].getAttribute("data-step") === this.currentStep) {
-                tabs[i].classList.add('active');
-            } else {
-                    tabs[i].classList.remove('active');
-            }
-        }
-
         if (this.steps[this.currentStep].next) {
             this.btnNext.removeAttribute('disabled');
         } else {
@@ -561,6 +551,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         } else {
             this.btnPrev.setAttribute('disabled', 'disabled');
         }
+
+        if (this.steps[this.currentStep].noExit) {
+            this.btnExit.classList.add('hide');
+        } else {
+            this.btnExit.classList.remove('hide');
+        }
+
         return false;
     }
 
