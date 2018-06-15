@@ -109,7 +109,7 @@ var chromeHid = {
 
 var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var myOnlyKey = new OnlyKey();
-    var dialog = new dialogMgr();
+    var dialog = new DialogMgr();
 
     function OnlyKey() {
         this.deviceInfo = {
@@ -192,7 +192,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     };
 
-    OnlyKey.prototype.sendMessage = function (options, callback) {
+    OnlyKey.prototype.sendMessage = function (options = {}, callback) {
         var self = this;
         var bytesPerMessage = 64;
 
@@ -271,7 +271,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
                 callback('ERROR SENDING PACKETS');
             } else {
-                myOnlyKey.setLastMessage('sent', msgId);
+                if (!options.flushMessage) {
+                    myOnlyKey.setLastMessage('sent', msgId);
+                }
+
                 callback(null, 'OK');
             }
         });
@@ -299,7 +302,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.listen = function (callback) {
-        pollForInput(callback);
+        pollForInput({}, callback);
     };
 
     OnlyKey.prototype.setTime = function (callback) {
@@ -316,6 +319,19 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     OnlyKey.prototype.getLabels = function (callback) {
         this.labels = 'GETTING';
         this.sendMessage({ msgId: 'OKGETLABELS' }, handleGetLabels);
+    };
+
+    OnlyKey.prototype.flushMessage = function (callback) {
+        this.pollEnabled = false;
+        pollForInput({ flush: true }, (err, msg) => {
+            if (msg) {
+                console.info("FLUSHED MESSAGE");
+                console.dir({ "************* msg": msg });
+                return this.flushMessage(callback);
+            } else {
+                return callback();
+            }
+        });
     };
 
     function handleGetLabels(err, msg) {
@@ -346,19 +362,19 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     OnlyKey.prototype.sendSetPin = function (callback) {
         this.sendMessage({ msgId: 'OKSETPIN' }, function (err, msg) {
-            pollForInput(callback);
+            pollForInput({}, callback);
         }.bind(this));
     };
 
     OnlyKey.prototype.sendSetSDPin = function (callback) {
         this.sendMessage({ msgId: 'OKSETSDPIN' }, function (err, msg) {
-            pollForInput(callback);
+            pollForInput({}, callback);
         }.bind(this));
     };
 
     OnlyKey.prototype.sendSetPDPin = function (callback) {
         this.sendMessage({ msgId: 'OKSETPDPIN' }, function (err, msg) {
-            pollForInput(callback);
+            pollForInput({}, callback);
         }.bind(this));
     };
 
@@ -494,8 +510,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 	};
 
     var ui = {
-    		showInitPanel: null,
-    		showSlotPanel: null,
+        showInitPanel: null,
+        showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
         showBackupPanel: null,
@@ -674,13 +690,19 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         enableIOControls(false);
     }
 
-    var pollForInput = function (callback) {
+    var pollForInput = function (options, callback) {
+        options = options || {};
+
         console.info("Polling...");
         clearTimeout(myOnlyKey.poll);
         callback = callback || handleMessage;
+        console.dir({
+            "**************** options": options,
+            "******************* callback": callback,
+        });
 
         var msg;
-        chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
+        chromeHid.receive(myOnlyKey.connection, (reportId, data) => {
             if (chrome.runtime.lastError) {
                 myOnlyKey.setLastMessage('received', '[error]');
                 return callback(chrome.runtime.lastError);
@@ -695,7 +717,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
 
             if (msg.length > 1 && msg !== 'OK') {
-                myOnlyKey.setLastMessage('received', msg);
+                if (options.flush) {
+                    console.log('Flushed the message.');
+                } else {
+                    myOnlyKey.setLastMessage('received', msg);
+                }
             }
 
             // if message begins with Error, call callback with msg as err
