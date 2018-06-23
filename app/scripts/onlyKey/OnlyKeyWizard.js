@@ -40,14 +40,14 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 next: 'Step3',
                 enterFn: () => {
                     this.enableDisclaimer('passcode1Disclaimer');
-                    this.onlyKey.flushMessage(this.onlyKey.sendSetPin.call(this.onlyKey));
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey));
                 },
                 exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
             },
             Step3: {
                 prev: 'Step2',
                 next: 'Step4',
-                enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+                enterFn: this.onlyKey.flushMessage.bind(this.onlyKey, this.onlyKey.sendSetPin.bind(this.onlyKey)),
                 exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
             },
             Step4: {
@@ -73,7 +73,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 next: 'Step7',
                 enterFn: () => {
                     this.enableDisclaimer('passcode2Disclaimer');
-                    this.onlyKey.sendSetSDPin.call(this.onlyKey);
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
                 },
                 exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
             },
@@ -82,7 +82,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 next: 'Step8',
                 enterFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
                 exitFn: (cb) => {
-                    this.onlyKey.sendSetSDPi((err, res) => {
+                    this.onlyKey.sendSetSDPin((err, res) => {
                         if (err || this.getMode() === 'TwoFactor') {
                             return cb(err, res);
                         }
@@ -97,7 +97,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 next: 'Step9',
                 enterFn: () => {
                     this.enableDisclaimer('passcode3Disclaimer');
-                    this.onlyKey.sendSetPDPin.call(this.onlyKey);
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
             },
             Step9: {
@@ -105,7 +105,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 next: 'Step10',
                 enterFn: () => this.onlyKey.sendSetPDPin.bind(this.onlyKey),
                 exitFn: () => {
-                    this.onlyKey.sendSetPDPin.bind(this.onlyKey);
+                    this.onlyKey.sendSetPDPin.call(this.onlyKey);
                     this.dialog.open(this.finalStepDialog);
                 },
             },
@@ -135,25 +135,14 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         this.btnPrev = document.getElementById('ButtonPrevious');
         this.btnExit = document.getElementById('ButtonExit');
 
+        this.setPIN.onclick = this.setNewCurrentStep.bind(this, 'Step2');
+        this.setBackup.onclick = this.setNewCurrentStep.bind(this, 'Step4');
+        this.setSDPIN.onclick = this.setNewCurrentStep.bind(this, 'Step6');
+        this.setPDPIN.onclick = this.setNewCurrentStep.bind(this, 'Step8');
+
         this.btnNext.onclick = this.moveStep.bind(this, 'next');
         this.btnPrev.onclick = this.moveStep.bind(this, 'prev');
-
-        this.btnExit.onclick = () => {
-            this.setNewCurrentStep('Step1');
-        };
-        this.setPIN.onclick = () => {
-            this.setNewCurrentStep('Step2');
-            //this.onlyKey.sendSetPin();
-        };
-        this.setBackup.onclick = () => {
-            this.setNewCurrentStep('Step4');
-        };
-        this.setSDPIN.onclick = () => {
-            this.setNewCurrentStep('Step6');
-        };
-        this.setPDPIN.onclick = () => {
-            this.setNewCurrentStep('Step8');
-        };
+        this.btnExit.onclick = this.onlyKey.flushMessage.bind(this.onlyKey, this.setNewCurrentStep.bind(this, 'Step1'));
 
         this.slotConfigForm = document['slot-config-form'];
         this.slotConfigDialog = document.getElementById('slot-config-dialog');

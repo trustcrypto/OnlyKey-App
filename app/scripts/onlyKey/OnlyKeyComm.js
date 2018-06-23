@@ -21,7 +21,7 @@ var chromeHid = {
 
     // chrome.hid.receive(integer connectionId, function callback)
     receive: function(connectionId, callback) {
-        console.log('>>> receive called with', arguments);
+        // console.log('>>> receive called with', arguments);
         if (connectionId === 'mockConnection') {
             if (this._pendingReceive) {
                 throw "There must not be multiple pending receives.";
@@ -51,7 +51,7 @@ var chromeHid = {
 
     // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
     send: function(connectionId, reportId, data, callback) {
-        console.log('>>> send called with', arguments);
+        // console.log('>>> send called with', arguments);
         if (connectionId === 'mockConnection') {
             this._sent.push(arguments);
 
@@ -138,6 +138,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKSETPRIV: 239,
             OKDECRYPT: 240,
             OKRESTORE: 241
+        };
+        this.pendingMessages = {
+            OKSETPIN: false,
+            OKSETSDPIN: false,
+            OKSETPDPIN: false,
         };
         this.messageFields = {
             LABEL: 1,
@@ -321,16 +326,30 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage({ msgId: 'OKGETLABELS' }, handleGetLabels);
     };
 
-    OnlyKey.prototype.flushMessage = function (callback) {
+    OnlyKey.prototype.flushMessage = function (callback = ()=>{}) {
         this.pollEnabled = false;
-        pollForInput({ flush: true }, (err, msg) => {
-            if (msg) {
-                console.info("FLUSHED MESSAGE");
-                console.dir({ "************* msg": msg });
-                return this.flushMessage(callback);
-            } else {
-                return callback();
-            }
+
+        const messageTypes = Object.keys(this.pendingMessages);
+        const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
+        if (!pendingMessagesTypes.length) {
+            console.info("No pending messages to flush.");
+            return callback();
+        }
+
+        const msgId = pendingMessagesTypes[0];
+
+        console.info(`Flushing pending ${msgId}.`);
+        this.sendPinMessage({ msgId, poll: false }, () => {
+            pollForInput({ flush: true }, (err, msg) => {
+                this.setLastMessage('received', 'Canceled');
+
+                if (msg) {
+                    console.info("Flushed previous message.");
+                    return this.flushMessage(callback);
+                } else {
+                    return callback();
+                }
+            });
         });
     };
 
@@ -360,22 +379,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     }
 
+    OnlyKey.prototype.sendPinMessage = function ({ msgId='', poll=true }, callback=()=>{}) {
+        this.pendingMessages[msgId] = !this.pendingMessages[msgId];
+        const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
+        this.sendMessage({ msgId }, cb);
+    };
+
     OnlyKey.prototype.sendSetPin = function (callback) {
-        this.sendMessage({ msgId: 'OKSETPIN' }, function (err, msg) {
-            pollForInput({}, callback);
-        }.bind(this));
+        this.sendPinMessage({ msgId: 'OKSETPIN' }, callback);
     };
 
     OnlyKey.prototype.sendSetSDPin = function (callback) {
-        this.sendMessage({ msgId: 'OKSETSDPIN' }, function (err, msg) {
-            pollForInput({}, callback);
-        }.bind(this));
+        this.sendPinMessage({ msgId: 'OKSETSDPIN' }, callback);
     };
 
     OnlyKey.prototype.sendSetPDPin = function (callback) {
-        this.sendMessage({ msgId: 'OKSETPDPIN' }, function (err, msg) {
-            pollForInput({}, callback);
-        }.bind(this));
+        this.sendPinMessage({ msgId: 'OKSETPDPIN' }, callback);
     };
 
     OnlyKey.prototype.setSlot = function (slot, field, value, callback) {
@@ -691,15 +710,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     var pollForInput = function (options, callback) {
-        options = options || {};
-
         console.info("Polling...");
         clearTimeout(myOnlyKey.poll);
-        callback = callback || handleMessage;
-        console.dir({
-            "**************** options": options,
-            "******************* callback": callback,
-        });
+
+        options = options || {};
+        callback = callback && typeof callback === 'function' ? callback : handleMessage;
 
         var msg;
         chromeHid.receive(myOnlyKey.connection, (reportId, data) => {
@@ -717,9 +732,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
 
             if (msg.length > 1 && msg !== 'OK') {
-                if (options.flush) {
-                    console.log('Flushed the message.');
-                } else {
+                if (!options.flush) {
                     myOnlyKey.setLastMessage('received', msg);
                 }
             }
@@ -823,7 +836,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             pref: "Pref",
             keys: "Keys",
             backup: "Backup",
-            advanced: "Advanced"
+            advanced: "Advanced",
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
