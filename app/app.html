@@ -35,6 +35,7 @@
 			      <a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
+            <a id="show-firmware-panel" href="" class="hide">Firmware</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
             <a id="show-advanced-panel" href="" class="hide">Advanced</a>
 		</nav>
@@ -43,18 +44,18 @@
 			<br/>
             <table border="1" cellpadding="5" cellspacing="0" id="HeaderTable">
                 <tr>
-                    <td data-step="Step1">Getting Started</td>
-                    <td data-step="Step2">Step 1: Set Your PIN</td>
-                    <td data-step="Step3">Step 2: Confirm PIN</td>
-                    <td data-step="Step4">Step 3: Set Your Backup Passphrase</td>
-                    <td data-step="Step5">Setup Complete. Continue to Optionally Set Self-Destruct and Plausible Deniability PINs</td>
+                    <td data-step="Step0">Getting Started</td>
+                    <td data-step="Step1">Step 1: Set Your PIN</td>
+                    <td data-step="Step2">Step 2: Confirm PIN</td>
+                    <td data-step="Step3">Step 3: Set Your Backup Passphrase</td>
+                    <td data-step="Step4">Setup Complete! Continue to Optionally Set Self-Destruct and Plausible Deniability PINs</td>
                 </tr>
             </table>
 
             <br />
 
             <div id="stepContent">
-                <div class="step" id="Step1">
+                <div class="step" id="Step0">
                     <h3>Welcome to the OnlyKey  Setup Wizard!</h3>
                     Use this wizard to setup your OnlyKey.
                     <br/><br />
@@ -77,23 +78,7 @@
                   </table>
                 </div>
 
-                <div class="step" id="Step5">
-                    <h3>Step 5: Select OnlyKey Edition</h3>
-                    <b>Modes:</b>
-                    <br/>
-                    <label>
-                        <input type="radio" checked name="ConfigMode" value="TwoFactor" />
-                        Standard Edition (default)
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="radio" name="ConfigMode" value="Unencrypted" />
-                        International Travel Edition
-                    </label>
-                    <br/><br/>
-                </div>
-
-                <div class="step" id="Step2">
+                <div class="step" id="Step1">
                     <h3>Step 1: Enter PIN on OnlyKey keypad</h3>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is also good to have a secure backup of your PIN somewhere just in case you forget.
@@ -110,14 +95,14 @@
                     </p>
                 </div>
 
-                <div class="step" id="Step3">
+                <div class="step" id="Step2">
                     <h3>Step 2: Re-enter PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click [Next] below.
                     </p>
                 </div>
 
-                <div class="step" id="Step4">
+                <div class="step" id="Step3">
                     <h3>Step 3: Enter a Backup Passphrase </h3>
                     <p>
                         Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p>
@@ -129,16 +114,41 @@
                     </p>
                     <label>
                         <b>Enter Passphrase:</b>
-                        <input type="password" id="backupPassphrase" name="backupPassphrase" size=30 />
+                        <input type="password" id="backupPassphrase" name="backupPassphrase" size=50 />
                         <br>Passphrase must be at least 25 characters
                     </label>
                     <br/><br/>
                     <label>
                         <b>Re-Enter Passphrase:</b>
-                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" size=30 />
+                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" size=50 />
                     </label>
                     <input type="button" id="backupKeySubmit" name="backupKeySubmit" value="Submit"/>
                 </div>
+
+                <div class="step" id="Step4">
+                    <h3>Setup Complete! Continue to Optionally Set Self-Destruct and Plausible Deniability PINs</h3>
+                    <b>Remove and reinsert OnlyKey to complete setup or optionally select next to set self-destruct and plausible deniablity PINs.</b>
+                    <br/><br/>
+                    Learn more about OnlyKey self destruct and plausible deniability features  <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.
+                    <br/><br/>
+                </div>
+
+                <div class="step" id="Step5">
+                    <h3>Step 5: Select OnlyKey Edition</h3>
+                    <b>Modes:</b>
+                    <br/>
+                    <label>
+                        <input type="radio" checked name="ConfigMode" value="TwoFactor" />
+                        Standard Edition (default)
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="radio" name="ConfigMode" value="Unencrypted" />
+                        International Travel Edition
+                    </label>
+                    <br/><br/>
+                </div>
+
 
                 <div class="step" id="Step6">
                     <h3>Step 6. Enter self-destruct PIN on OnlyKey keypad</h3>
@@ -472,7 +482,7 @@
                                 <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your backup file, then click [Restore to OnlyKey].
                             </p>
                             <p>
-                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then green when restoring is complete. Remove and reinsert OnlyKey to complete the process.
+                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then green when is complete. Remove and reinsert OnlyKey to complete the process.
                             </p>
                         </fieldset>
 
@@ -483,6 +493,35 @@
                         <br/>
                         <input type="button" id="doRestore" name="doRestore" value="Restore to OnlyKey" />
                         <div id="restoreFormError" class="form-error"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="firmware-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+                    <form id="firmwareForm" name="firmwareForm" class="auth-form">
+                        <h2>Load Firmware</h2>
+
+                        <fieldset>
+                            <p>
+                                <u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.
+                            </p>
+                            <p>
+                                <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].
+                            </p>
+                            <p>
+                                <u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete. 
+                            </p>
+                        </fieldset>
+
+                        <br/><br/>
+
+                        <input type="file" id="firmwareSelectFile" name="firmwareSelectFile" value="Select File" />
+                        <br/>
+                        <br/>
+                        <input type="button" id="doFirmware" name="doFirmware" value="Load Firmware to OnlyKey" />
+                        <div id="firmwareFormError" class="form-error"></div>
                     </form>
                 </div>
             </div>
