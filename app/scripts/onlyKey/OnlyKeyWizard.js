@@ -52,9 +52,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     };
 
     function Wizard() {
-        this.steps = {};
+        this.steps = steps;
         this.currentSlot = {};
-        this.dialog = new DialogMgr();
     }
 
     Wizard.prototype.init = function (myOnlyKey) {
@@ -70,10 +69,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step7"],[data-step="Step8"]'));
             var classListMethod = self.getMode() === 'TwoFactor' ? 'remove' : 'add';
 
-    Wizard.prototype.initSteps = function () {
-        if (!this.onlyKey) {
-            throw 'onlyKey instance is required before initializing wizard steps';
-        }
+            dynamicSteps.forEach(function (el) {
+                el.classList[classListMethod]('hide');
+            });
 
             return cb();
         };
@@ -110,14 +108,15 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         self.steps.Step8.enterFn = dialog.open.bind(null, self.finalStepDialog);
     };
 
-    Wizard.prototype.enableDisclaimer = function (fieldName) {
-        var field = this.initForm[fieldName];
-        field.removeEventListener('change', this.enableDisclaimer);
-        this.btnNext.disabled = !field.checked;
-        field.addEventListener('change', (e) => {
-            this.enableDisclaimer(fieldName);
+    function enableDisclaimer(fieldName) {
+        var self = this;
+        var field = self.initForm[fieldName];
+        field.removeEventListener('change', enableDisclaimer);
+        self.btnNext.disabled = !field.checked;
+        field.addEventListener('change', function (e) {
+            enableDisclaimer.call(self, fieldName);
         });
-    };
+    }
 
     Wizard.prototype.uiInit = function () {
         var self = this;
@@ -164,15 +163,15 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             e && e.preventDefault && e.preventDefault();
         };
 
-        this.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
-        this.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
-        this.slotWipeConfirmBtn.onclick = (e) => {
-            this.onlyKey.wipeSlot(null, null, (err, msg) => {
-                // this.onlyKey.listen(function (err, msg) {
+        self.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
+        self.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
+        self.slotWipeConfirmBtn.onclick = function (e) {
+            self.onlyKey.wipeSlot(null, null, function (err, msg) {
+                // self.onlyKey.listen(function (err, msg) {
                     if (!err) {
-                        this.slotConfigForm.reset();
-                        this.onlyKey.getLabels();
-                        this.dialog.closeAll();
+                        self.slotConfigForm.reset();
+                        self.onlyKey.getLabels();
+                        dialog.closeAll();
                     }
                 // });
             });
@@ -180,49 +179,49 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             e && e.preventDefault && e.preventDefault();
         };
 
-        this.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
-        this.slotWipeCancelBtn.onclick = (e) => {
-            this.dialog.close(this.slotWipeConfirmDialog);
+        self.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
+        self.slotWipeCancelBtn.onclick = function (e) {
+            dialog.close(self.slotWipeConfirmDialog);
             e && e.preventDefault && e.preventDefault();
         };
 
-        this.slotSubmit = document.getElementById('slotSubmit');
-        this.slotSubmit.onclick = (e) => {
-            this.setSlot();
+        self.slotSubmit = document.getElementById('slotSubmit');
+        self.slotSubmit.onclick = function (e) {
+            setSlot.call(self);
             e && e.preventDefault && e.preventDefault();
         };
 
-        this.backupKeySubmit = document.getElementById('backupKeySubmit');
-        this.backupKeySubmit.onclick = (e) => {
-            this.submitBackupKey();
+        self.backupKeySubmit = document.getElementById('backupKeySubmit');
+        self.backupKeySubmit.onclick = function (e) {
+            submitBackupKey.call(self);
             e && e.preventDefault && e.preventDefault();
         };
 
         // BEGIN PRIVATE KEY SELECTOR
-        this.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
-        this.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
-        this.selectPrivateKeyConfirmBtn.onclick = (e) => {
+        self.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
+        self.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
+        self.selectPrivateKeyConfirmBtn.onclick = function (e) {
             e && e.preventDefault && e.preventDefault();
             var selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
-            this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey]);
-            this.onlyKey.tempRsaKeys = null;
-            this.dialog.closeAll();
+            self.onlyKey.confirmRsaKeySelect(self.onlyKey.tempRsaKeys[selectedKey]);
+            self.onlyKey.tempRsaKeys = null;
+            dialog.closeAll();
         };
 
-        this.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
-        this.selectPrivateKeyCancelBtn.onclick = (e) => {
+        self.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
+        self.selectPrivateKeyCancelBtn.onclick = function (e) {
             e && e.preventDefault && e.preventDefault();
-            this.onlyKey.tempRsaKeys = null;
-            this.dialog.closeAll();
+            self.onlyKey.tempRsaKeys = null;
+            dialog.closeAll();
         };
         // END PRIVATE KEY SELECTOR
 
-        this.backupKeyForm = document.getElementById('Step4');
-
-        this.setActiveStepUI();
+        setActiveStepUI.call(this);
     };
 
     Wizard.prototype.initKeySelect = function (rawKey, cb) {
+        var self = this;
+
         if (! rawKey.primaryKey || ! rawKey.subKeys) {
             return cb('Cannot initialize key select form due to invalid keys object.');
         }
@@ -233,7 +232,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             q: rawKey.primaryKey.mpi[4].data.toByteArray()
         }];
 
-        rawKey.subKeys.forEach((subKey, i) => {
+        rawKey.subKeys.forEach(function (subKey, i) {
             keys.push({
                 name: 'Subkey ' + (i + 1),
                 p: subKey.subKey.mpi[3].data.toByteArray(),
@@ -241,24 +240,27 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             });
         });
 
-        this.onlyKey.tempRsaKeys = keys;
+        self.onlyKey.tempRsaKeys = keys;
 
         var pkDiv = document.getElementById('private-key-options');
         pkDiv.innerHTML = "";
 
-        keys.forEach((key, i) => {
+        keys.forEach(function (key, i) {
             pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
             pkDiv.appendChild(document.createElement("br"));
         });
 
         pkDiv.appendChild(document.createElement("br"));
 
-        this.dialog.open(this.selectPrivateKeyDialog, true);
+        dialog.open(self.selectPrivateKeyDialog, true);
     };
 
-    Wizard.prototype.submitBackupKey = function (e) {
-        this.backupKeySubmit.disabled = true;
+    function submitBackupKey(e) {
+        var self = this; // wizard
 
+        self.backupKeySubmit.disabled = true;
+
+        var form = self.initForm;
         var type = 128;
         var slot = 31;
         var key1 = document.getElementById('backupPassphrase');
@@ -290,7 +292,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
             formErrorsContainer.innerHTML = html + "</ul>";
 
-            this.backupKeySubmit.disabled = false;
+            self.backupKeySubmit.disabled = false;
             return;
         }
 
@@ -306,21 +308,24 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
             formErrorsContainer.innerHTML = html + "</ul>";
 
-            this.backupKeySubmit.disabled = false;
+            self.backupKeySubmit.disabled = false;
             return;
         }
 
-        this.onlyKey.setPrivateKey(slot, type, key1, (err) => {
-            this.onlyKey.listen(handleMessage);
-            this.backupKeyForm.reset();
+        self.onlyKey.setPrivateKey(slot, type, key1, function (err) {
+            self.onlyKey.listen(handleMessage);
+            ui.backupKeyForm.reset();
         });
-    };
 
-    Wizard.prototype.setSlot = function () {
-        this.slotSubmit.disabled = true;
-        this.slotWipe.disabled = true;
+    }
 
-        var form = this.slotConfigForm;
+    function setSlot() {
+        var self = this; // wizard
+
+        self.slotSubmit.disabled = true;
+        self.slotWipe.disabled = true;
+
+        var form = self.slotConfigForm;
         var formErrors = [];
         var formErrorsContainer = document.getElementById('slotConfigErrors');
         var fieldMap = {
@@ -396,8 +401,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
             formErrorsContainer.innerHTML = html + "</ul>";
 
-            this.slotSubmit.disabled = false;
-            this.slotWipe.disabled = false;
+            self.slotSubmit.disabled = false;
+            self.slotWipe.disabled = false;
             return;
         }
 
@@ -434,10 +439,10 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                     break;
             }
             if (isChecked) {
-                this.currentSlot[field] = formValue;
+                self.currentSlot[field] = formValue;
                 switch(field) {
                     case 'txt2FAUserName':
-                        if (this.currentSlot.mode === 'googleAuthOtp') {
+                        if (self.currentSlot.mode === 'googleAuthOtp') {
                             console.info("BASE32 value:", formValue);
                             formValue = base32tohex(formValue.replace(/\s/g, ''));
                             formValue = formValue.match(/.{2}/g);
@@ -446,9 +451,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                         break;
                 }
 
-                this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
+                self.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
                     if (!err) {
-                        this.setSlot();
+                        setSlot.call(self);
                     }
                 });
                 return;
@@ -456,39 +461,39 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         }
 
         form.reset();
-        this.currentSlot = {};
-        this.slotSubmit.disabled = false;
-        this.slotWipe.disabled = false;
-        this.onlyKey.getLabels();
-        this.dialog.close(this.slotConfigDialog);
-    };
+        self.currentSlot = {};
+        self.slotSubmit.disabled = false;
+        self.slotWipe.disabled = false;
+        self.onlyKey.getLabels();
+        dialog.close(self.slotConfigDialog);
+    }
 
     Wizard.prototype.getMode = function () {
         return this.initForm['ConfigMode'].value;
     };
 
-    Wizard.prototype.moveStep = function (direction) {
+    function moveStep(direction) {
         // if a next/prev step exists, call current step-related exit function
         // and set new current step
         if (this.steps[this.currentStep][direction]) {
             if (this.steps[this.currentStep].exitFn) {
-                this.steps[this.currentStep].exitFn((err, res) => {
+                this.steps[this.currentStep].exitFn(function (err, res) {
                     if (err) {
                         console.error(err);
-                        this.goBackOnError(err, res);
+                        goBackOnError(err, res);
                     } else if (res !== 'STOP') {
-                        this.setNewCurrentStep(this.steps[this.currentStep][direction]);
+                        setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
                     }
-                });
+                }.bind(this));
             } else {
-                this.setNewCurrentStep(this.steps[this.currentStep][direction]);
+                setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
             }
         }
 
         return false;
-    };
+    }
 
-    Wizard.prototype.goBackOnError = function (err, lastMessageSent) {
+    function goBackOnError(err, lastMessageSent) {
         console.info(err, lastMessageSent);
         if (err) {
             switch (lastMessageSent) {
@@ -503,11 +508,11 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                     break;
             }
         }
-    };
+    }
 
-    Wizard.prototype.setNewCurrentStep = function (stepId) {
+    function setNewCurrentStep(stepId) {
         this.currentStep = stepId;
-        this.setActiveStepUI();
+        setActiveStepUI.call(this);
 
         // call new current step-related enter function
         if (this.steps[stepId].enterFn) {
@@ -519,9 +524,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 }
             });
         }
-    };
+    }
 
-    Wizard.prototype.setActiveStepUI = function () {
+    function setActiveStepUI() {
         // set display style for all steps
         for(var stepId in this.steps) {
             var el = document.getElementById(stepId);
@@ -531,6 +536,17 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 } else {
                     el.classList.remove('active');
                 }
+            }
+        }
+
+        var header = document.getElementById('HeaderTable');
+        var tabs = header.getElementsByTagName("td");
+
+        for (var i = 0; i < tabs.length; i++) {
+            if(tabs[i].getAttribute("data-step") === this.currentStep) {
+                tabs[i].classList.add('active');
+            } else {
+                    tabs[i].classList.remove('active');
             }
         }
 
@@ -545,15 +561,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         } else {
             this.btnPrev.setAttribute('disabled', 'disabled');
         }
-
-        if (this.steps[this.currentStep].noExit) {
-            this.btnExit.classList.add('hide');
-        } else {
-            this.btnExit.classList.remove('hide');
-        }
-
         return false;
-    };
+    }
 
     Wizard.prototype.setLastMessages = function (messages) {
         var container = document.getElementById('lastMessage');
@@ -589,28 +598,29 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     }, false);
 })();
 
-class DialogMgr {
-    open(el, keepOthersOpen) {
+function dialogMgr() {
+    var self = this;
+    self.open = function (el, keepOthersOpen) {
         if (!keepOthersOpen) {
-            this.closeAll();
+            self.closeAll();
         }
         if (!el.open) {
             el.showModal();
         }
-    }
+    };
 
-    close(el) {
+    self.close = function (el) {
         if (el.open) {
             el.close();
         }
-    }
+    };
 
-    closeAll() {
+    self.closeAll = function () {
         var allDialogs = document.getElementsByTagName('dialog');
         for (var i = 0; i < allDialogs.length; i++) {
-            this.close(allDialogs[i]);
+            self.close(allDialogs[i]);
         }
-    }
+    };
 }
 
 function clearRadios(name) {
