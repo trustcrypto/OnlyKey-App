@@ -137,7 +137,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKWIPEPRIV: 238,
             OKSETPRIV: 239,
             OKDECRYPT: 240,
-            OKRESTORE: 241
+            OKRESTORE: 241,
+            OKFWUPDATE: 244
         };
         this.messageFields = {
             LABEL: 1,
@@ -469,6 +470,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(options, callback);
     };
 
+    OnlyKey.prototype.firmware = function (firmwareData, packetHeader, callback) {
+        var msg = [ packetHeader ];
+        msg = msg.concat(firmwareData.match(/.{2}/g));
+        var options = {
+            contents: msg,
+            msgId: 'OKFWUPDATE'
+        };
+        this.sendMessage(options, callback);
+    };
+
     OnlyKey.prototype.setLockout = function (lockout, callback) {
         this.setSlot('XX', 'LOCKOUT', lockout, callback);
     };
@@ -499,12 +510,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         showPrefPanel: null,
         showKeysPanel: null,
         showBackupPanel: null,
+        showFirmwarePanel: null,
         showAdvancedPanel: null,
         initPanel: null,
         slotPanel: null,
         prefPanel: null,
         keysPanel: null,
         backupPanel: null,
+        firmwarePanel: null,
         advancedPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
@@ -529,6 +542,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
         ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
         ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
+        ui.showFirmwarePanel.addEventListener('click', toggleConfigPanel);
         ui.showAdvancedPanel.addEventListener('click', toggleConfigPanel);
 
         ui.yubiAuthForm = document['yubiAuthForm'];
@@ -541,6 +555,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.rsaForm = document['rsaForm'];
         ui.backupForm = document['backupForm'];
         ui.restoreForm = document['restoreForm'];
+        ui.firmwareForm = document['firmwareForm'];
 
         enableIOControls(false);
         enableAuthForms();
@@ -573,11 +588,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showKeysPanel.classList.remove('hide', 'active');
                 ui.backupPanel.classList.add('hide');
                 ui.backupPanel.classList.remove('active');
+                ui.firmwarePanel.classList.add('hide');
+                ui.firmwarePanel.classList.remove('active');
                 ui.advancedPanel.classList.add('hide');
                 ui.advancedPanel.classList.remove('active');
                 ui.keysPanel.classList.add('hide');
                 ui.keysPanel.classList.remove('active');
                 ui.showBackupPanel.classList.remove('hide', 'active');
+                ui.showFirmwarePanel.classList.remove('hide', 'active');
                 ui.showAdvancedPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
@@ -587,6 +605,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.slotPanel.classList.remove('active');
             ui.backupPanel.classList.add('hide');
             ui.backupPanel.classList.remove('active');
+            ui.firmwarePanel.classList.add('hide');
+            ui.firmwarePanel.classList.remove('active');
             ui.advancedPanel.classList.add('hide');
             ui.advancedPanel.classList.remove('active');
             ui.keysPanel.classList.add('hide');
@@ -601,6 +621,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showKeysPanel.classList.add('hide');
             ui.showBackupPanel.classList.add('hide');
             ui.showAdvancedPanel.classList.add('hide');
+            ui.showFirmwarePanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -797,6 +818,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             pref: "Pref",
             keys: "Keys",
             backup: "Backup",
+            firmware: "Firmware",
             advanced: "Advanced"
 		};
 		var hiddenClass = 'hide';
@@ -894,10 +916,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             document.getElementById('restoreFormError').innerText = errString;
         };
 
+        var loadFirmware = document.getElementById('doFirmware');
+        loadFirmware.addEventListener('click', submitFirmwareForm);
+        ui.firmwareForm.setError = function (errString) {
+            document.getElementById('firmwareFormError').innerText = errString;
+        };
+
         ui.backupForm.setError('');
         ui.backupForm.reset();
         ui.restoreForm.setError('');
         ui.restoreForm.reset();
+        ui.firmwareForm.setError('');
+        ui.firmwareForm.reset();
     }
 
     function submitYubiAuthForm(e) {
@@ -1194,6 +1224,67 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
+    function submitFirmwareForm(e) {
+        e && e.preventDefault && e.preventDefault();
+        ui.firmwareForm.setError('');
+
+        var fileSelector = ui.firmwareForm.firmwareSelectFile;
+        if (fileSelector.files && fileSelector.files.length) {
+            var file = fileSelector.files[0];
+            var reader = new FileReader();
+
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    //console.info("RESULT:", e.target.result);
+                    var contents = e.target && e.target.result && e.target.result.trim();
+                    try {
+                        contents = parseFirmwareData(contents);
+                    } catch(parseError) {
+                        return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
+                    }
+
+                    if (contents) {
+                        ui.firmwareForm.setError('Working...');
+                        var i,j,temparray,chunk = 10;
+                        for (i=0,j=contents.length; i<j; i+=chunk) {
+                            temparray = contents.slice(i,i+chunk);
+                            submitFirmwareData(contents, function (err) {
+                                myOnlyKey.listen(handleMessage);
+                            });
+                        }
+                        ui.firmwareForm.reset();
+                        ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+                    } else {
+                        return ui.firmwareForm.setError('Incorrect firmware data format.');
+                    }
+                };
+            })(file);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(file);
+        } else {
+            ui.firmwareForm.setError('Please select a file first.');
+        }
+    }
+
+    function submitFirmwareData(firmwareData, callback) {
+        // this function should recursively call itself until all bytes are sent in chunks
+        if (!firmwareData.length) {
+            return callback();
+        }
+
+        var maxPacketSize = 114; // 57 byte pairs
+        var finalPacket = firmwareData.length - maxPacketSize <= 0;
+
+        var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
+
+        // packetHeader is hex number of bytes in certStr chunk
+        var packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
+
+        myOnlyKey.restore(firmwareData.slice(0, maxPacketSize), packetHeader, cb);
+    }
+
+
     function wipeRsaKeyForm(e) {
         ui.rsaForm.setError('');
 
@@ -1347,6 +1438,20 @@ function parseBackupData(contents) {
     contents.split('\n').forEach(function (line) {
         if (line.indexOf('--') !== 0) {
             newContents.push(base64tohex(line));
+        }
+    });
+
+    // join back to unified base64 string
+    newContents = newContents.join('');
+    return newContents;
+}
+
+function parseFirmwareData(contents) {
+    var newContents = [];
+    // split by newline
+    contents.split('\n').forEach(function (line) {
+        if (line.indexOf('--') !== 0) {
+            newContents.push(line);
         }
     });
 
