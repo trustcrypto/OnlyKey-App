@@ -103,11 +103,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                     this.enableDisclaimer('passcode3Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
+                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
             },
             Step9: {
                 prev: 'Step8',
                 next: 'Step10',
-                enterFn: () => this.onlyKey.sendSetPDPin.bind(this.onlyKey),
+                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
                 exitFn: () => {
                     this.onlyKey.sendSetPDPin.call(this.onlyKey);
                     this.dialog.open(this.finalStepDialog);
