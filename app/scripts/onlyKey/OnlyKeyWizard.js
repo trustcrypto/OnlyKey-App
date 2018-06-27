@@ -11,7 +11,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
     function Wizard() {
         this.steps = {};
-        this.currentSlot = {};
+        this.guided = true;
         this.dialog = new DialogMgr();
     }
 
@@ -21,8 +21,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         this.onlyKey = myOnlyKey;
         this.initSteps();
-        this.currentStep = Object.keys(this.steps)[0];
+        this.currentStep = 'Step1';
         this.uiInit();
+        this.reset();
     };
 
     Wizard.prototype.initSteps = function () {
@@ -39,6 +40,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 prev: 'Step1',
                 next: 'Step3',
                 enterFn: () => {
+                    this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
                     this.enableDisclaimer('passcode1Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey));
                 },
@@ -47,7 +49,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             Step3: {
                 prev: 'Step2',
                 next: 'Step4',
-                enterFn: this.onlyKey.flushMessage.bind(this.onlyKey, this.onlyKey.sendSetPin.bind(this.onlyKey)),
+                enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
                 exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
             },
             Step4: {
@@ -72,6 +74,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 prev: 'Step5',
                 next: 'Step7',
                 enterFn: () => {
+                    this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
                     this.enableDisclaimer('passcode2Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
                 },
@@ -96,6 +99,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 prev: 'Step7',
                 next: 'Step9',
                 enterFn: () => {
+                    this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
                     this.enableDisclaimer('passcode3Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
@@ -124,25 +128,47 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         });
     };
 
+    Wizard.prototype.setUnguidedStep = function (newStep) {
+        this.guided = false;
+        this.setNewCurrentStep(newStep);
+    };
+
     Wizard.prototype.uiInit = function () {
         this.initForm = document['init-panel'];
+
+        this.initConfigErrorsHtml = document.getElementById('initConfigErrors').innerHTML;
 
         this.setPIN = document.getElementById('SetPIN');
         this.setBackup = document.getElementById('SetBackup');
         this.setSDPIN = document.getElementById('SetSDPIN');
         this.setPDPIN = document.getElementById('SetPDPIN');
-        this.btnNext = document.getElementById('ButtonNext');
-        this.btnPrev = document.getElementById('ButtonPrevious');
-        this.btnExit = document.getElementById('ButtonExit');
 
-        this.setPIN.onclick = this.setNewCurrentStep.bind(this, 'Step2');
-        this.setBackup.onclick = this.setNewCurrentStep.bind(this, 'Step4');
-        this.setSDPIN.onclick = this.setNewCurrentStep.bind(this, 'Step6');
-        this.setPDPIN.onclick = this.setNewCurrentStep.bind(this, 'Step8');
+        this.btnNext = document.getElementById('btnNext');
+        this.btnPrev = document.getElementById('btnPrevious');
+        this.btnExit = document.getElementById('btnExit');
 
-        this.btnNext.onclick = this.moveStep.bind(this, 'next');
-        this.btnPrev.onclick = this.moveStep.bind(this, 'prev');
-        this.btnExit.onclick = this.onlyKey.flushMessage.bind(this.onlyKey, this.setNewCurrentStep.bind(this, 'Step1'));
+        this.btnSubmitStep = document.getElementById('btnSubmitStep');
+        this.btnCancelStep = document.getElementById('btnCancelStep');
+
+        this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
+        this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step4');
+        this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
+        this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step8');
+
+        this.btnNext.onclick = () => {
+            this.guided = true;
+            this.moveStep('next');
+        };
+
+        this.btnPrev.onclick = () => {
+            this.guided = true;
+            this.onlyKey.flushMessage.call(this.onlyKey, this.moveStep.bind(this, 'prev'));
+        };
+
+        this.btnExit.onclick = this.reset.bind(this);
+
+        this.btnSubmitStep.onclick = this.moveStep.bind(this, 'next');
+        this.btnCancelStep.onclick = this.reset.bind(this);
 
         this.slotConfigForm = document['slot-config-form'];
         this.slotConfigDialog = document.getElementById('slot-config-dialog');
@@ -256,9 +282,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         var key1 = document.getElementById('backupPassphrase');
         var key2 = document.getElementById('backupPassphrasec');
         var formErrors = [];
-        var formErrorsContainer = document.getElementById('initConfigErrors');
 
-        formErrorsContainer.innerHTML = "";
+        this.initConfigErrorsHtml = "";
 
         if (!key1.value) {
             formErrors.push('Passphrase cannot be empty.');
@@ -278,9 +303,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             // early exit
             var html = "<ul>";
             for (var i = 0; i < formErrors.length; i++) {
-                html += "<li><blink>" + formErrors[i]; + "</blink></li>";
+                html += "<li>" + formErrors[i] + "</li>";
             }
-            formErrorsContainer.innerHTML = html + "</ul>";
+            this.initConfigErrorsHtml = html + "</ul>";
 
             this.backupKeySubmit.disabled = false;
             return;
@@ -294,9 +319,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             // early exit
             var html = "<ul>";
             for (var i = 0; i < formErrors.length; i++) {
-                html += "<li><blink>" + formErrors[i]; + "</blink></li>";
+                html += "<li>" + formErrors[i] + "</li>";
             }
-            formErrorsContainer.innerHTML = html + "</ul>";
+            this.initConfigErrorsHtml = html + "</ul>";
 
             this.backupKeySubmit.disabled = false;
             return;
@@ -526,23 +551,33 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
         }
 
-        if (this.steps[this.currentStep].next) {
-            this.btnNext.removeAttribute('disabled');
+        if (this.guided) {
+            document.getElementById('guided').classList.remove('hide');
+            document.getElementById('unguided').classList.add('hide');
+            
+            if (this.steps[this.currentStep].next) {
+                this.btnNext.removeAttribute('disabled');
+            } else {
+                this.btnNext.setAttribute('disabled', 'disabled');
+            }
+    
+            if (this.steps[this.currentStep].prev) {
+                this.btnPrev.removeAttribute('disabled');
+            } else {
+                this.btnPrev.setAttribute('disabled', 'disabled');
+            }
+    
+            if (this.steps[this.currentStep].noExit) {
+                this.btnExit.classList.add('hide');
+            } else {
+                this.btnExit.classList.remove('hide');
+            }
         } else {
-            this.btnNext.setAttribute('disabled', 'disabled');
+            document.getElementById('guided').classList.add('hide');
+            document.getElementById('unguided').classList.remove('hide');
         }
 
-        if (this.steps[this.currentStep].prev) {
-            this.btnPrev.removeAttribute('disabled');
-        } else {
-            this.btnPrev.setAttribute('disabled', 'disabled');
-        }
-
-        if (this.steps[this.currentStep].noExit) {
-            this.btnExit.classList.add('hide');
-        } else {
-            this.btnExit.classList.remove('hide');
-        }
+        this.initConfigErrorsHtml = '';
 
         return false;
     };
@@ -572,6 +607,11 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         } else {
             slotLabel.classList.remove('empty');
         }
+    };
+
+    Wizard.prototype.reset = function () {
+        this.guided = true;
+        this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, 'Step1'));
     };
 
     document.addEventListener('DOMContentLoaded', function init() {

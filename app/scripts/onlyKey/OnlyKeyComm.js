@@ -112,38 +112,35 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var dialog = new DialogMgr();
 
     function OnlyKey() {
+        this.connection = -1;
+        this.currentSlotId = null;
+
         this.deviceInfo = {
             vendorId: 5824,
             productId: 1158
         };
+        
+        this.isInitialized = false;
+        this.isLocked = true;
+
+        this.keyTypeModifiers = {
+            Backup: 128, // 0x80
+            Signature: 64, // 0x40
+            Decryption: 32, // 0x20
+        };
+
+        this.labels = [];
+        
+        this.lastMessages = {
+            sent: [],
+            received: []
+        };
+        
+        this.maxFeatureReportSize = 0;
         this.maxInputReportSize = 64;
         this.maxOutputReportSize = 64;
-        this.maxFeatureReportSize = 0;
         this.messageHeader = [255, 255, 255, 255];
-        this.messages = {
-            OKSETPIN: 225, //0xE1
-            OKSETSDPIN: 226, //0xE2
-            OKSETPDPIN: 227, //0xE3
-            OKSETTIME: 228, //0xE4
-            OKGETLABELS: 229, //0xE5
-            OKSETSLOT: 230, //0xE6
-            OKWIPESLOT: 231, //0xE7
-            OKSETU2FPRIV: 232, //0xE8
-            OKWIPEU2FPRIV: 233, //0xE9
-            OKSETU2FCERT: 234, //0xEA
-            OKWIPEU2FCERT: 235, //0xEB
-            OKGETPUBKEY: 236,
-            OKSIGN: 237,
-            OKWIPEPRIV: 238,
-            OKSETPRIV: 239,
-            OKDECRYPT: 240,
-            OKRESTORE: 241
-        };
-        this.pendingMessages = {
-            OKSETPIN: false,
-            OKSETSDPIN: false,
-            OKSETPDPIN: false,
-        };
+
         this.messageFields = {
             LABEL: 1,
             URL: 15,
@@ -165,24 +162,30 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             TYPESPEED: 13,
             KBDLAYOUT: 14
         };
-        this.connection = -1;
-        this.isReceivePending = false;
-        this.pollEnabled = false;
-        this.isInitialized = false;
-        this.isLocked = true;
-        this.lastMessages = {
-            sent: [],
-            received: []
-        };
-        this.currentSlotId = null;
-        this.labels = [];
-		this.version = "";
 
-        this.keyTypeModifiers = {
-            Backup: 128,      // 0x80
-            Signature: 64,    // 0x40
-            Decryption: 32,    // 0x20
+        this.messages = {
+            OKSETPIN: 225, //0xE1
+            OKSETSDPIN: 226, //0xE2
+            OKSETPDPIN: 227, //0xE3
+            OKSETTIME: 228, //0xE4
+            OKGETLABELS: 229, //0xE5
+            OKSETSLOT: 230, //0xE6
+            OKWIPESLOT: 231, //0xE7
+            OKSETU2FPRIV: 232, //0xE8
+            OKWIPEU2FPRIV: 233, //0xE9
+            OKSETU2FCERT: 234, //0xEA
+            OKWIPEU2FCERT: 235, //0xEB
+            OKGETPUBKEY: 236,
+            OKSIGN: 237,
+            OKWIPEPRIV: 238,
+            OKSETPRIV: 239,
+            OKDECRYPT: 240,
+            OKRESTORE: 241
         };
+
+        this.pendingMessages = {};
+        this.pollEnabled = false;
+		this.version = "";
     }
 
     OnlyKey.prototype.setConnection = function (connectionId) {
@@ -285,7 +288,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
     };
 
-    OnlyKey.prototype.setLastMessage = function (type, msgStr) {
+    OnlyKey.prototype.setLastMessage = function (type, msgStr='') {
         if (msgStr) {
             var newMessage = { text: msgStr, timestamp: new Date().getTime() };
             var messages = this.lastMessages[type] || [];
@@ -626,8 +629,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.advancedPanel.classList.remove('active');
             ui.keysPanel.classList.add('hide');
             ui.keysPanel.classList.remove('active');
-      			ui.prefPanel.classList.add('hide');
-      			ui.prefPanel.classList.remove('active');
+            ui.prefPanel.classList.add('hide');
+            ui.prefPanel.classList.remove('active');
             ui.initPanel.classList.remove('hide');
             ui.showInitPanel.classList.remove('hide');
             ui.showInitPanel.classList.add('active');
@@ -842,8 +845,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		var activeClass = 'active';
 		for (var panel in panels) {
 			if (clicked.id.indexOf(panel) >= 0) {
-				ui[panel + "Panel"].classList.remove(hiddenClass);
-				ui["show" + panels[panel] + "Panel"].classList.add(activeClass);
+                if (!clicked.classList.contains(activeClass)) {
+                    onlyKeyConfigWizard.reset();
+                    ui[panel + "Panel"].classList.remove(hiddenClass);
+                    ui["show" + panels[panel] + "Panel"].classList.add(activeClass);
+                }
 			} else {
 				ui[panel + "Panel"].classList.add(hiddenClass);
 				ui["show" + panels[panel] + "Panel"].classList.remove(activeClass);

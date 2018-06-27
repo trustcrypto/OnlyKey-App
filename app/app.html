@@ -181,30 +181,22 @@
             </div>
 
             <br/>
-            <hr/>
 
-            <table border="0" cellpadding="5" cellspacing="0">
-                <tr>
-                    <td colspan="3">
-                        <b>Guided Setup</b>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="3" id="initConfigErrors">
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <button id="ButtonPrevious" type="button" disabled="disabled">Previous</button>
-                    </td>
-                    <td>
-                        <button id="ButtonNext" type="button">Next</button>
-                    </td>
-                    <td>
-                        <button id="ButtonExit" type="button" class="hide">Exit</button>
-                    </td>
-                </tr>
-            </table>
+            <div id="guided" class="step-nav">
+                <hr/>
+
+                <b>Guided Setup</b>
+
+                <button id="btnPrevious" type="button" disabled="disabled">Previous</button>
+                <button id="btnNext" type="button">Next</button>
+                <button id="btnExit" type="button" class="hide">Exit</button>
+            </div>
+
+            <div id="unguided" class="step-nav hide">
+                <button id="btnSubmitStep" type="button">Submit</button>
+                <button id="btnCancelStep" type="button">Cancel</button>
+            </div>
+            <p class="error" id="initConfigErrors"></p>
         </form>
 
         <div id="slot-panel" class="hide panel">
@@ -261,8 +253,8 @@
                             </td>
                         </tr>
                     </table>
+                </div>
             </div>
-          </div>
         </div>
 
         <div id="pref-panel" class="hide panel">
