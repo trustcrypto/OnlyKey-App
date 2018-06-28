@@ -296,9 +296,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             return;
         }
 
-        formErrors.push(key1.value);
+        //formErrors.push(key1.value);
         key1 = openpgp.crypto.hash.digest(8, key1.value); //32 byte backup key is Sha256 hash of passphrase
-        formErrors.push(key1);
+        //formErrors.push(key1);
 
         if (formErrors.length) {
             // early exit
