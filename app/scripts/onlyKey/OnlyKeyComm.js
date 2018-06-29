@@ -3,6 +3,7 @@
 // A proxy for the Chrome HID service. Stored in a global variable so it is
 // accessible for integration tests. We use this to simulate an OnlyKey being
 // plugged into the computer.
+var new_firmware;
 var chromeHid = {
     // chrome.hid.connect(integer deviceId, function callback)
     connect: function(deviceId, callback) {
@@ -790,6 +791,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                     updateUI = true;
                 }
             }
+          if (msg.indexOf("BOOTLOADER") >= 0) {
+            //TODO Go to Firmware TAB
+            //Don't Display instructions to go into config mode
+            //Do display firmware loading progress
+            loadFirmware(function (err) {
+                myOnlyKey.listen(handleMessage);
+            });
+          }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
         }
@@ -1224,7 +1233,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
-    async function submitFirmwareForm(e) {
+    function submitFirmwareForm(e) {
         e && e.preventDefault && e.preventDefault();
         ui.firmwareForm.setError('');
 
@@ -1245,26 +1254,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
                     if (contents) {
                         ui.firmwareForm.setError('Working...');
-                        var i,j,temparray,chunk = 10;
+                        var i,j,temparray;
+                        new_firmware = contents; //Save firmware file
                         temparray = 1234;
                         submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
                             myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
                         });
                         //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                        //TODO add delay of about 500ms, give OnlyKey time to get into bootloader
-                        do {
-                        var version = myOnlyKey.getVersion();
-                        console.info("Version =", version);
-                        } while (version.indexOf("BOOTLOADER") >= 0) {
-                          for (i=0,j=contents.length; i<j; i+=chunk) {
-                              temparray = contents.slice(i,i+chunk);
-                              submitFirmwareData(temparray, function (err) { //Send each 16K block
-                                  myOnlyKey.listen(handleMessage);
-                              });
-                          break;
-                          }
-                          //After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
-                        }
                         ui.firmwareForm.reset();
                         ui.firmwareForm.setError('Firmware file sent to OnlyKey');
                     } else {
@@ -1279,6 +1275,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.firmwareForm.setError('Please select a file first.');
         }
     }
+
+    function loadFirmware(callback) {
+        if (new_firmware.length) { //There is a firmware file to load
+          let lines = eol.split(new_firmware)
+          console.info("Firmware file found, number of lines = " + lines);
+          /*
+          lines.forEach(function(line) {
+            submitFirmwareData(line, function (err) { //Send each 16K block
+                myOnlyKey.listen(handleMessage);
+                //TODO listen for "READY FOR NEXT BLOCK" before proceeding to next line
+            });
+          })
+          */
+
+          //After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
+        }
+      }
 
     function submitFirmwareData(firmwareData, callback) {
         // this function should recursively call itself until all bytes are sent in chunks
