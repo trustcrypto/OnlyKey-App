@@ -783,22 +783,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 pollForInput();
             } else {
                 myOnlyKey.isInitialized = true;
-                myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
+                var version = msg.split("UNLOCKED").pop();
+                myOnlyKey.setVersion(version);
                 setOkVersionStr();
+                if (version.indexOf("BOOTLOADER") >= 0) {
+                  //TODO Go to Firmware TAB
+                  //Don't Display instructions to go into config mode
+                  //Do display firmware loading progress
+                  loadFirmware(function (err) {
+                      myOnlyKey.listen(handleMessage);
+                  });
+                }
                 if (myOnlyKey.isLocked) {
                     myOnlyKey.isLocked = false;
                     myOnlyKey.getLabels(pollForInput);
                     updateUI = true;
                 }
             }
-          if (msg.indexOf("BOOTLOADER") >= 0) {
-            //TODO Go to Firmware TAB
-            //Don't Display instructions to go into config mode
-            //Do display firmware loading progress
-            loadFirmware(function (err) {
-                myOnlyKey.listen(handleMessage);
-            });
-          }
         } else if (msg.indexOf("LOCKED") >= 0) {
             myOnlyKey.isLocked = true;
         }
