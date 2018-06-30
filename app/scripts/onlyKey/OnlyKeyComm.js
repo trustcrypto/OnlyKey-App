@@ -505,9 +505,21 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		return this.version;
 	};
 
+    OnlyKey.prototype.initBootloaderMode = function () {
+        this.inBootloader = true;
+
+        //TODO Go to Firmware TAB
+        //Don't Display instructions to go into config mode
+        //Do display firmware loading progress
+        
+        loadFirmware(function (err) {
+            myOnlyKey.listen(handleMessage);
+        });
+    };
+
     var ui = {
-    		showInitPanel: null,
-    		showSlotPanel: null,
+        showInitPanel: null,
+        showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
         showBackupPanel: null,
@@ -536,15 +548,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw "Missing UI element: " + k + ", " + id;
             }
             ui[k] = element;
-        }
 
-        ui.showInitPanel.addEventListener('click', toggleConfigPanel);
-        ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
-        ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
-        ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
-        ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
-        ui.showFirmwarePanel.addEventListener('click', toggleConfigPanel);
-        ui.showAdvancedPanel.addEventListener('click', toggleConfigPanel);
+            if (k.indexOf("show") === 0) {
+                ui[k].addEventListener('click', toggleConfigPanel);
+            }
+        }
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -778,7 +786,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             pollForInput();
         }
 
-        if (msg.indexOf("UNLOCKED") >= 0) {
+        if (msg.indexOf("BOOTLOADER") > 0) {
+            myOnlyKey.initBootloaderMode();            
+        } else if (msg.indexOf("UNLOCKED") >= 0) {
             if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
                 pollForInput();
             } else {
@@ -786,14 +796,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 var version = msg.split("UNLOCKED").pop();
                 myOnlyKey.setVersion(version);
                 setOkVersionStr();
-                if (version.indexOf("BOOTLOADER") >= 0) {
-                  //TODO Go to Firmware TAB
-                  //Don't Display instructions to go into config mode
-                  //Do display firmware loading progress
-                  loadFirmware(function (err) {
-                      myOnlyKey.listen(handleMessage);
-                  });
-                }
                 if (myOnlyKey.isLocked) {
                     myOnlyKey.isLocked = false;
                     myOnlyKey.getLabels(pollForInput);
@@ -1246,24 +1248,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             reader.onload = (function (theFile) {
                 return function (e) {
                     //console.info("RESULT:", e.target.result);
-                    var contents = e.target && e.target.result && e.target.result.trim();
-                    try {
-                        contents = parseFirmwareData(contents);
-                    } catch(parseError) {
-                        return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
-                    }
+                    const contents = e.target && e.target.result && e.target.result.trim();
 
                     if (contents) {
+                        onlyKeyConfigWizard.newFirmware = contents;
+
                         ui.firmwareForm.setError('Working...');
-                        var i,j,temparray;
-                        new_firmware = contents; //Save firmware file
-                        temparray = 1234;
+
+                        const temparray = "1234";
                         submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                            //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                            ui.firmwareForm.reset();
+                            ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+                            
                             myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
                         });
-                        //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                        ui.firmwareForm.reset();
-                        ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+
                     } else {
                         return ui.firmwareForm.setError('Incorrect firmware data format.');
                     }
@@ -1278,9 +1278,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function loadFirmware(callback) {
-        if (new_firmware.length) { //There is a firmware file to load
-          let lines = eol.split(new_firmware)
-          console.info("Firmware file found, number of lines = " + lines);
+        if (onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length) { // There is a firmware file to load
+          let lines = onlyKeyConfigWizard.newFirmware.split("\n");
+
+          alert("Firmware file found, number of lines = " + lines.length);
           /*
           lines.forEach(function(line) {
             submitFirmwareData(line, function (err) { //Send each 16K block
@@ -1465,20 +1466,6 @@ function parseBackupData(contents) {
     contents.split('\n').forEach(function (line) {
         if (line.indexOf('--') !== 0) {
             newContents.push(base64tohex(line));
-        }
-    });
-
-    // join back to unified base64 string
-    newContents = newContents.join('');
-    return newContents;
-}
-
-function parseFirmwareData(contents) {
-    var newContents = [];
-    // split by newline
-    contents.split('\n').forEach(function (line) {
-        if (line.indexOf('--') !== 0) {
-            newContents.push(line);
         }
     });
 
