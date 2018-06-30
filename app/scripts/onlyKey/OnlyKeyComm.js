@@ -811,9 +811,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     };
 
-    var enablePolling = function () {
+    var enablePolling = function (cb = null) {
         myOnlyKey.pollEnabled = true;
-        pollForInput();
+        pollForInput(cb);
     };
 
     function init() {
@@ -1248,8 +1248,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             reader.onload = (function (theFile) {
                 return function (e) {
                     //console.info("RESULT:", e.target.result);
-                    const contents = e.target && e.target.result && e.target.result.trim();
+                    let contents = e.target && e.target.result && e.target.result.trim();
 
+                    try {
+                        contents = parseFirmwareData(contents);
+                    } catch(parseError) {
+                        return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
+                    }
+                    
                     if (contents) {
                         onlyKeyConfigWizard.newFirmware = contents;
 
@@ -1277,23 +1283,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     }
 
-    function loadFirmware(callback) {
+    function loadFirmware() {
         if (onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length) { // There is a firmware file to load
-          let lines = onlyKeyConfigWizard.newFirmware.split("\n");
-
-          alert("Firmware file found, number of lines = " + lines.length);
-          /*
-          lines.forEach(function(line) {
-            submitFirmwareData(line, function (err) { //Send each 16K block
+            submitFirmwareData(onlyKeyConfigWizard.newFirmware, function (err) {
                 myOnlyKey.listen(handleMessage);
-                //TODO listen for "READY FOR NEXT BLOCK" before proceeding to next line
             });
-          })
-          */
-
-          //After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
+            // After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
         }
-      }
+    }
 
     function submitFirmwareData(firmwareData, callback) {
         // this function should recursively call itself until all bytes are sent in chunks
@@ -1301,17 +1298,54 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return callback();
         }
 
-        var maxPacketSize = 114; // 57 byte pairs
+        var maxPacketSize = 32898; // 16K byte pairs
         var finalPacket = firmwareData.length - maxPacketSize <= 0;
 
-        var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
+        var cb = finalPacket ? callback : listenForFWBlockReceived.bind(null, firmwareData.slice(maxPacketSize), callback);
+        // var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
 
-        // packetHeader is hex number of bytes in certStr chunk
+        // packetHeader is hex number of bytes in chunk
         var packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
 
         myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
+    function listenForFWBlockReceived(firmwareData, cb) {
+        enablePolling((err, msg) => {
+            console.info("LISTENFORFWBLOCKRECEIVED MSG:" + msg);
+            if (msg.toLowerCase().indexOf("received okfwupdate") === 0) {
+                enablePolling((err, msg) => {
+                    console.info("LISTENFORFWBLOCKRECEIVED nested listener MSG:" + msg);
+                    if (msg.toLowerCase().indexOf("ready") === 0) {
+                        submitFirmwareData(firmwareData, cb);
+                    } else {
+                        cb(`Unexpected message received: ${msg}`);
+                    }
+                });
+            } else {
+                cb(`Unexpected message received: ${msg}`);
+            }
+        });
+    }
+
+    function parseFirmwareData(contents = '') {
+        // split by newline
+        const lines = contents.split('\n');
+        const newContent = [];
+
+        for (let i = 0; i < lines.length - 1; i++) {
+            let line = lines[i];
+            console.info(`LENGTH: ${line.length}`);
+            if (line.length !== 32898 && i < lines.length - 1) {
+                // do not allow any line to be anything but 16K except last line
+                // throw `Invalid line length at line ${i + 1}: ${line.length}`;
+            }
+
+            newContent.push(line);
+        }
+
+        return newContent.join('');
+    }
 
     function wipeRsaKeyForm(e) {
         ui.rsaForm.setError('');
