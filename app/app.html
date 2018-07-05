@@ -55,26 +55,10 @@
 
             <div id="stepContent">
                 <div class="step" id="Step0">
-                    <h3>Welcome to the OnlyKey  Setup Wizard!</h3>
+                    <h3>Welcome to the OnlyKey Setup Wizard!</h3>
                     Use this wizard to setup your OnlyKey.
                     <br/><br />
-                    Click [Next] to get started with setup wizard. Or select from setup options below.<br><br>
-                  <table>
-                    <tr>
-                        <td>
-                            <button id="SetPIN" type="button">Set PIN</button>
-                        </td>
-                        <td>
-                            <button id="SetBackup" type="button">Set Backup Passphrase</button>
-                        </td>
-                        <td>
-                            <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
-                        </td>
-                        <td>
-                            <button id="SetPDPIN" type="button">Set Plausible Deniability PIN</button>
-                        </td>
-                    </tr>
-                  </table>
+                    <p id="setup-text"></p>
                 </div>
 
                 <div class="step" id="Step1">
@@ -103,26 +87,9 @@
 
                 <div class="step" id="Step3">
                     <h3>Step 3: Enter a Backup Passphrase </h3>
-                    <p>
-                        Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p>
-                    <p>
-                        Example of a <em>good</em> passphrase: "this passphrase is not complex but it is long and it is not a common phrase"
-                    </p>
-                    <p>
-                        Example of a <em>bad</em> passphrase: "the only thing we have to fear is fear itself"
-                    </p>
-                    <label>
-                        <b>Enter Passphrase:</b>
-                        <input type="password" id="backupPassphrase" name="backupPassphrase" size=50 />
-                        <br>Passphrase must be at least 25 characters
-                    </label>
-                    <br/><br/>
-                    <label>
-                        <b>Re-Enter Passphrase:</b>
-                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" size=50 />
-                    </label>
-                    <input type="button" id="backupKeySubmit" name="backupKeySubmit" value="Submit"/>
-                </div>
+                    <p id="step3-text"></p>
+                    <label><b>Enter Passphrase:</b><input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label><br/><br/><label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><input type='button' id='backupKeySubmit' name='backupKeySubmit' value='Submit'/>
+                    </div>
 
                 <div class="step" id="Step4">
                     <h3>Setup Complete! Continue to Optionally Set Self-Destruct and Plausible Deniability PINs</h3>
@@ -502,15 +469,7 @@
                         <h2>Load Firmware</h2>
 
                         <fieldset>
-                            <p>
-                                <u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.
-                            </p>
-                            <p>
-                                <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].
-                            </p>
-                            <p>
-                                <u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.
-                            </p>
+                            <p id="firmware-text"></p>
                         </fieldset>
 
                         <br/><br/>
@@ -524,7 +483,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="advanced-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">

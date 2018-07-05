@@ -120,6 +120,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
     Wizard.prototype.uiInit = function () {
         var self = this;
+        self.setuptext = document.getElementById('setup-text');
+        self.setuptext.innerHTML = "Click [Next] to get started with setup wizard. Or select from setup options below.<br><br><table><tr><td><button id='SetPIN' type='button'>Set PIN</button></td><td><button id='SetBackup' type='button'>Set Backup Passphrase</button></td><td><button id='SetSDPIN' type='button'>Set Self-destruct PIN</button></td><td><button id='SetPDPIN' type='button'>Set Plausible Deniability PIN</button></td></tr></table>"
+
 
         self.initForm = document['init-panel'];
 
