@@ -1350,7 +1350,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     }
 
-    function loadFirmware() {
+    async function loadFirmware() {
         var firmwaretext = document.getElementById('firmware-text');
         if (onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length) { // There is a firmware file to load
             var fwlength = onlyKeyConfigWizard.newFirmware.length;
@@ -1358,8 +1358,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 let line = onlyKeyConfigWizard.newFirmware[i].toString();
                 console.info(`LENGTH: ${onlyKeyConfigWizard.newFirmware.length}`);
                 firmwaretext.innerHTML = ((i/fwlength)*100) + "Percent Complete";
-                submitFirmwareData(line, function (err) {
+                console.info(`Line: ${line}`);
+                await submitFirmwareData(line, function (err) {
                     myOnlyKey.listen(handleMessage);
+                    console.info(`handleMessage: ${handleMessage}`)
                 });
             }
             // After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
@@ -1367,6 +1369,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     function submitFirmwareData(firmwareData, callback) {
+      return new Promise(resolve => {
         // this function should recursively call itself until all bytes are sent in chunks
         if (!firmwareData.length) {
             return callback();
@@ -1375,27 +1378,42 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var maxPacketSize = 114; // 57 byte pairs
         var finalPacket = firmwareData.length - maxPacketSize <= 0;
 
-        var cb = finalPacket ? callback : listenForFWBlockReceived.bind(null, firmwareData.slice(maxPacketSize), callback);
+        var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
         // var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
 
         // packetHeader is hex number of bytes in chunk
         var packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
-
+        if (finalPacket) resolve();
         myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, cb);
+      });
     }
 
-    function listenForFWBlockReceived(firmwareData, cb) {
+    function listenForFWBlockReceived(firmwareData, cb) { // To be called after last packet of block is sent
+      myOnlyKey.listen(handleMessage);
+      console.info(`handleMessage: ${handleMessage}`)
         enablePolling((err, msg) => {
-            console.info("LISTENFORFWBLOCKRECEIVED MSG:" + msg);
-            if (msg.toLowerCase().indexOf("received okfwupdate") === 0) {
+            console.info("listenForFWBlockReceived MSG:" + msg);
+            if (msg.indexOf("RECEIVED OKFWUPDATE PACKET") == 0) {
                 enablePolling((err, msg) => {
-                    console.info("LISTENFORFWBLOCKRECEIVED nested listener MSG:" + msg);
-                    if (msg.toLowerCase().indexOf("ready") === 0) {
+                    console.info("listenForFWBlockReceived nested listener MSG:" + msg);
+                    if (msg.indexOf("READY FOR NEXT BLOCK") == 0) { // This message indicates the signature verification of block succeeded
                         submitFirmwareData(firmwareData, cb);
                     } else {
                         cb(`Unexpected message received: ${msg}`);
                     }
                 });
+            } else {
+                cb(`Unexpected message received: ${msg}`);
+            }
+        });
+      }
+
+    function listenForFWPacketReceived(firmwareData, cb) { // To be called after packet is sent
+        console.info("listenForFWPacketReceived MSG:" + msg);
+        enablePolling((err, msg) => {
+            console.info("listenForFWPacketReceived MSG:" + msg);
+            if (msg.indexOf("RECEIVED OKFWUPDATE PACKET") == 0) {
+                submitFirmwareData(firmwareData, cb);
             } else {
                 cb(`Unexpected message received: ${msg}`);
             }
