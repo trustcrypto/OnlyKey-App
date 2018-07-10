@@ -168,7 +168,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.isBootloader = false;
         this.isLocked = true;
         this.fwUpdateSupport = false;
-        this.fwCheckEnabled = true; //TODO make this configurable in menubar
         this.lastMessages = {
             sent: [],
             received: []
@@ -864,8 +863,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
           step3text.innerHTML = "Backup passphrase is not available on this firmware version. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
         }
 
-        //check if new firmware is available
-        await checkForNewFW(version, myOnlyKey.fwCheckEnabled);
+        //check if new firmware is available if autoUpdateFW is enabled
+        console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+        await checkForNewFW(version, userPreferences.autoUpdateFW);
 
         if (updateUI) {
             enableIOControls(true);
