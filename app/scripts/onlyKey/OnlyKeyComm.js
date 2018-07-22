@@ -1362,7 +1362,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 try {
                     await submitFirmwareData(line);
                     if (i < fwlength - 1) {
-                        await messageIncludes('NEXT BLOCK');
+                        await listenForMessageIncludes('NEXT BLOCK');
                     }
                 } catch(err) {
                     console.error(`Error submitting firmware data:`, err);
@@ -1390,7 +1390,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             const packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
 
             myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, () => {
-                messageIncludes('OKFWUPDATE PACKET').then(result => {
+                listenForMessageIncludes('OKFWUPDATE PACKET').then(result => {
                     if (finalPacket) {
                         console.info(`FINAL PACKET SENT`); 
                         return resolve('submitFirmwareData complete');
@@ -1402,7 +1402,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
     }
 
-    function messageIncludes(str) {
+    function listenForMessageIncludes(str) {
         return new Promise((resolve, reject) => {
             console.info(`Listening for "${str}"...`);
             myOnlyKey.listen((err, msg) => {
