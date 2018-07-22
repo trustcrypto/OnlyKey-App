@@ -864,8 +864,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
 
         //check if new firmware is available if autoUpdateFW is enabled
-        console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
-        await checkForNewFW(version, userPreferences.autoUpdateFW);
+        // console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+        // await checkForNewFW(version, userPreferences.autoUpdateFW);
 
         if (updateUI) {
             enableIOControls(true);
@@ -1307,8 +1307,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             var reader = new FileReader();
 
             reader.onload = (function (theFile) {
-                return function (e) {
-                    //console.info("RESULT:", e.target.result);
+                return async function (e) {
                     let contents = e.target && e.target.result && e.target.result.trim();
 
                     try {
@@ -1322,20 +1321,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                     if (contents) {
                         onlyKeyConfigWizard.newFirmware = contents;
                         if (!myOnlyKey.isBootloader) {
-                          ui.firmwareForm.setError('Working...');
+                            ui.firmwareForm.setError('Working...');
 
-                          const temparray = "1234";
-                          submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-                              //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                              ui.firmwareForm.reset();
-                              ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+                            const temparray = "1234";
+                            submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                                //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                                ui.firmwareForm.reset();
+                                ui.firmwareForm.setError('Firmware file sent to OnlyKey');
 
-                              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
-                          });
+                                myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                            });
                         } else {
-                          loadFirmware(function (err) {
-                              myOnlyKey.listen(handleMessage);
-                          });
+                            await loadFirmware();
                         }
                     } else {
                         return ui.firmwareForm.setError('Incorrect firmware data format.');
@@ -1351,41 +1348,71 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     async function loadFirmware() {
-        var firmwaretext = document.getElementById('firmware-text');
-        if (onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length) { // There is a firmware file to load
-            var fwlength = onlyKeyConfigWizard.newFirmware.length;
+        const firmwaretext = document.getElementById('firmware-text');
+        const fwlength = onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length;
+
+        if (fwlength) { // There is a firmware file to load]
+            console.info(`Firmware file parsed into ${fwlength} lines.`);
             for (let i = 0; i < fwlength - 1; i++) {
-                let line = onlyKeyConfigWizard.newFirmware[i].toString();
-                console.info(`LENGTH: ${onlyKeyConfigWizard.newFirmware.length}`);
+                const line = onlyKeyConfigWizard.newFirmware[i].toString();
+                console.info(`Line ${i}: ${line}`);
+
                 firmwaretext.innerHTML = ((i/fwlength)*100) + "Percent Complete";
-                console.info(`Line: ${line}`);
-                await submitFirmwareData(line, function (err) {
-                    myOnlyKey.listen(handleMessage);
-                    console.info(`handleMessage: ${handleMessage}`)
-                });
+
+                try {
+                    await submitFirmwareData(line);
+                    if (i < fwlength - 1) {
+                        await messageIncludes('NEXT BLOCK');
+                    }
+                } catch(err) {
+                    console.error(`Error submitting firmware data:`, err);
+                    return err;
+                }
             }
+
+            // LISTEN FOR SOMETHING AFTER FINAL BLOCK?
+
             // After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
         }
     }
 
-    function submitFirmwareData(firmwareData, callback) {
-      return new Promise(resolve => {
-        // this function should recursively call itself until all bytes are sent in chunks
-        if (!firmwareData.length) {
-            return callback();
-        }
+    function submitFirmwareData(firmwareData) {
+        return new Promise((resolve, reject) => {
+            // this function should recursively call itself until all bytes are sent in chunks
+            if (!firmwareData.length) {
+                return reject(`Invalid firmwareData`);
+            }
 
-        var maxPacketSize = 114; // 57 byte pairs
-        var finalPacket = firmwareData.length - maxPacketSize <= 0;
+            const maxPacketSize = 114; // 57 byte pairs
+            const finalPacket = firmwareData.length - maxPacketSize <= 0;
 
-        var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
-        // var cb = finalPacket ? callback : submitFirmwareData.bind(null, firmwareData.slice(maxPacketSize), callback);
+            // packetHeader is hex number of bytes in chunk
+            const packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
 
-        // packetHeader is hex number of bytes in chunk
-        var packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
-        if (finalPacket) resolve();
-        myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, cb);
-      });
+            myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, () => {
+                messageIncludes('OKFWUPDATE PACKET').then(result => {
+                    if (finalPacket) {
+                        console.info(`FINAL PACKET SENT`); 
+                        return resolve('submitFirmwareData complete');
+                    } else {
+                        submitFirmwareData(firmwareData.slice(maxPacketSize)).then(resolve, reject);
+                    }
+                }, err => reject(err));
+            });
+        });
+    }
+
+    function messageIncludes(str) {
+        return new Promise((resolve, reject) => {
+            console.info(`Listening for "${str}"...`);
+            myOnlyKey.listen((err, msg) => {
+                if (msg && msg.includes(str)) {
+                    resolve();
+                } else {
+                    reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+                }
+            });
+        })
     }
 
     function listenForFWBlockReceived(firmwareData, cb) { // To be called after last packet of block is sent
@@ -1548,25 +1575,6 @@ function strPad(str, places, char) {
     }
 
     return str;
-}
-
-// we owe russ a beer
-// http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
-function base32tohex(base32) {
-    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    var bits = "";
-    var hex = "";
-
-    for (var i = 0; i < base32.length; i++) {
-        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
-        bits += strPad(val.toString(2), 5, '0');
-    }
-
-    for (var i = 0; i+4 <= bits.length; i+=4) {
-        var chunk = bits.substr(i, 4);
-        hex = hex + parseInt(chunk, 2).toString(16) ;
-    }
-    return hex;
 }
 
 // http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript
