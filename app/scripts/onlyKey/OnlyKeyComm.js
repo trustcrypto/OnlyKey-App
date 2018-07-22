@@ -1415,38 +1415,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         })
     }
 
-    function listenForFWBlockReceived(firmwareData, cb) { // To be called after last packet of block is sent
-      myOnlyKey.listen(handleMessage);
-      console.info(`handleMessage: ${handleMessage}`)
-        enablePolling((err, msg) => {
-            console.info("listenForFWBlockReceived MSG:" + msg);
-            if (msg.indexOf("RECEIVED OKFWUPDATE PACKET") == 0) {
-                enablePolling((err, msg) => {
-                    console.info("listenForFWBlockReceived nested listener MSG:" + msg);
-                    if (msg.indexOf("READY FOR NEXT BLOCK") == 0) { // This message indicates the signature verification of block succeeded
-                        submitFirmwareData(firmwareData, cb);
-                    } else {
-                        cb(`Unexpected message received: ${msg}`);
-                    }
-                });
-            } else {
-                cb(`Unexpected message received: ${msg}`);
-            }
-        });
-      }
-
-    function listenForFWPacketReceived(firmwareData, cb) { // To be called after packet is sent
-        console.info("listenForFWPacketReceived MSG:" + msg);
-        enablePolling((err, msg) => {
-            console.info("listenForFWPacketReceived MSG:" + msg);
-            if (msg.indexOf("RECEIVED OKFWUPDATE PACKET") == 0) {
-                submitFirmwareData(firmwareData, cb);
-            } else {
-                cb(`Unexpected message received: ${msg}`);
-            }
-        });
-    }
-
     function parseFirmwareData(contents = '') {
         // split by newline
         const lines = contents.split('\n');
