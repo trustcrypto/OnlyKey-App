@@ -1366,7 +1366,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                     }
                 } catch(err) {
                     console.error(`Error submitting firmware data:`, err);
-                    return err;
+                    return myOnlyKey.setLastMessage('received', err);
                 }
             }
 
@@ -1397,22 +1397,35 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                     } else {
                         submitFirmwareData(firmwareData.slice(maxPacketSize)).then(resolve, reject);
                     }
-                }, err => reject(err));
+                }, reject);
             });
         });
     }
 
-    function listenForMessageIncludes(str) {
+    function listenForMessageIncludes(str, attempted = 0) {
+        const maxRetries = 5;
+        console.info(`listenForMessageIncludes called with str="${str}" and attempted=${attempted}.`)
+
         return new Promise((resolve, reject) => {
+            if (attempted >= maxRetries) {
+                return reject(`Maximum retries attempted listening for "${str}".`);
+            }
+
             console.info(`Listening for "${str}"...`);
+
+            let timeoutId = setTimeout(function (str, attempted) {
+                listenForMessageIncludes(str, ++attempted).then(resolve, reject);
+            }.bind(null, str, attempted), 2000);
+
             myOnlyKey.listen((err, msg) => {
+                clearTimeout(timeoutId);
                 if (msg && msg.includes(str)) {
                     resolve();
                 } else {
                     reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
                 }
             });
-        })
+        });
     }
 
     function parseFirmwareData(contents = '') {
