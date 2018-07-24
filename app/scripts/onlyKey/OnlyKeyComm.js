@@ -1352,17 +1352,27 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         const fwlength = onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length;
 
         if (fwlength) { // There is a firmware file to load]
-            console.info(`Firmware file parsed into ${fwlength} lines.`);
-            for (let i = 0; i < fwlength - 1; i++) {
+            console.info(`Firmware file parsed into ${fwlength} lines.`); //Each line is a block in the blockchain
+
+            for (let i = 0; i < fwlength; i++) {
+                await wait(2000);
                 const line = onlyKeyConfigWizard.newFirmware[i].toString();
                 console.info(`Line ${i}: ${line}`);
 
-                firmwaretext.innerHTML = ((i/fwlength)*100) + "Percent Complete";
+                firmwaretext.innerHTML = "Loading Firmware<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>" + ((i/fwlength)*100) + " Percent Complete";
 
                 try {
                     await submitFirmwareData(line);
                     if (i < fwlength - 1) {
+                        console.info(`This signature`, line.slice(0, 64))
+                        console.info(`Block info`, line.slice(64, 65))
+                        console.info(`Next signature`, line.slice(65, 129))
                         await listenForMessageIncludes('NEXT BLOCK');
+                    } else {
+                      console.info(`This signature`, line.slice(0, 64))
+                      console.info(`Block info`, line.slice(64, 65))
+                      await listenForMessageIncludes('SUCCESSFULLY LOADED FIRMWARE');
+                      firmwaretext.innerHTML = "Firmware Load Complete!";
                     }
                 } catch(err) {
                     console.error(`Error submitting firmware data:`, err);
@@ -1370,11 +1380,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 }
             }
 
-            // LISTEN FOR SOMETHING AFTER FINAL BLOCK?
 
             // After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
         }
     }
+
+/**
+ * Use promise and setTimeout to wait x seconds
+ */
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     function submitFirmwareData(firmwareData) {
         return new Promise((resolve, reject) => {
@@ -1392,7 +1406,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, () => {
                 listenForMessageIncludes('OKFWUPDATE PACKET').then(result => {
                     if (finalPacket) {
-                        console.info(`FINAL PACKET SENT`); 
+                        console.info(`FINAL PACKET SENT`);
                         return resolve('submitFirmwareData complete');
                     } else {
                         submitFirmwareData(firmwareData.slice(maxPacketSize)).then(resolve, reject);
@@ -1402,35 +1416,25 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
     }
 
-    function listenForMessageIncludes(str, attempted = 0) {
-        const maxRetries = 5;
-        console.info(`listenForMessageIncludes called with str="${str}" and attempted=${attempted}.`)
-
+    async function listenForMessageIncludes(str) {
+        console.info(`listenForMessageIncludes called with str="${str}"`)
         return new Promise((resolve, reject) => {
-            if (attempted >= maxRetries) {
-                return reject(`Maximum retries attempted listening for "${str}".`);
-            }
-
             console.info(`Listening for "${str}"...`);
-
-            let timeoutId = setTimeout(function (str, attempted) {
-                listenForMessageIncludes(str, ++attempted).then(resolve, reject);
-            }.bind(null, str, attempted), 2000);
-
-            myOnlyKey.listen((err, msg) => {
-                clearTimeout(timeoutId);
-                if (msg && msg.includes(str)) {
-                    resolve();
-                } else {
-                    reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
-                }
-            });
-        });
+              myOnlyKey.listen((err, msg) => {
+                  if (msg && msg.includes(str)) {
+                      console.info(`Match received "${msg}"...`);
+                      resolve();
+                  } else {
+                      reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+                  }
+              });
+        })
     }
 
     function parseFirmwareData(contents = '') {
         // split by newline
         const lines = contents.split('\n');
+        lines.shift(); //Remove -----BEGIN SIGNED FIRMWARE-----
         const newContent = [];
 
         for (let i = 0; i < lines.length - 1; i++) {
