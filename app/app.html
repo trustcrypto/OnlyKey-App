@@ -35,6 +35,7 @@
             <a id="show-slot-panel" href="" class="hide">Slots</a>
             <a id="show-keys-panel" href="" class="hide">Keys</a>
             <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
+            <a id="show-firmware-panel" href="" class="hide">Firmware</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
             <a id="show-advanced-panel" href="" class="hide">Advanced</a>
 		</nav>
@@ -43,9 +44,8 @@
             <div id="stepContent">
                 <div class="step" id="Step1">
                     <h3>Initial Setup</h3>
-                    <p>
-                        Jump directly to a specific step, or begin the Guided Setup wizard at bottom.
-                    </p>
+                    <p>Jump directly to a specific step, or begin the Guided Setup wizard at bottom.</p>
+                    <p>Learn more about OnlyKey self destruct and plausible deniability features  <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.</p>
 
                     <table>
                         <tr>
@@ -65,24 +65,8 @@
                     </table>
                 </div>
 
-                <div class="step" id="Step5">
-                    <h3>Select OnlyKey Edition</h3>
-                    <b>Modes:</b>
-                    <br/>
-                    <label>
-                        <input type="radio" checked name="ConfigMode" value="TwoFactor" />
-                        Standard Edition (default)
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="radio" name="ConfigMode" value="Unencrypted" />
-                        International Travel Edition
-                    </label>
-                    <br/><br/>
-                </div>
-
                 <div class="step" id="Step2">
-                    <h3>Enter PIN on OnlyKey keypad</h3>
+                    <h3>Step 1: Enter PIN on OnlyKey keypad</h3>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is also good to have a secure backup of your PIN somewhere just in case you forget.
                     </p>
@@ -99,33 +83,35 @@
                 </div>
 
                 <div class="step" id="Step3">
-                    <h3>Re-enter PIN on OnlyKey Keypad</h3>
+                    <h3>Step 2: Re-enter PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click [Next] below.
                     </p>
                 </div>
 
                 <div class="step" id="Step4">
-                    <h3>Enter a Backup Passphrase </h3>
-                    <p>
-                        Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p>
-                    <p>
-                        Example of a <em>good</em> passphrase: "this passphrase is not complex but it is long and it is not a common phrase"
-                    </p>
-                    <p>
-                        Example of a <em>bad</em> passphrase: "the only thing we have to fear is fear itself"
-                    </p>
+                    <h3>Step 3: Enter a Backup Passphrase </h3>
+                    <p id="step3-text"></p>
+                    <label><b>Enter Passphrase:</b><input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label>
+                    <br/><br/>
+                    <label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label>
+                    <input type='button' id='backupKeySubmit' name='backupKeySubmit' value='Submit'/>
+                </div>
+
+                <div class="step" id="Step5">
+                    <h3>Step 5: Select OnlyKey Edition</h3>
+                    <b>Modes:</b>
+                    <br/>
                     <label>
-                        <b>Enter Passphrase:</b>
-                        <input type="password" id="backupPassphrase" name="backupPassphrase" size=30 />
-                        <br>Passphrase must be at least 25 characters
+                        <input type="radio" checked name="ConfigMode" value="TwoFactor" />
+                        Standard Edition (default)
+                    </label>
+                    <br/>
+                    <label>
+                        <input type="radio" name="ConfigMode" value="Unencrypted" />
+                        International Travel Edition
                     </label>
                     <br/><br/>
-                    <label>
-                        <b>Re-Enter Passphrase:</b>
-                        <input type="password" id="backupPassphrasec" name="backupPassphrasec" size=30 />
-                    </label>
-                    <input type="button" id="backupKeySubmit" name="backupKeySubmit" value="Submit"/>
                 </div>
 
                 <div class="step" id="Step6">
@@ -146,14 +132,14 @@
                 </div>
 
                 <div class="step" id="Step7">
-                    <h3>Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
+                    <h3>Step 7: Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
                     <p>
                         Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click confirm below.
                     </p>
                 </div>
 
                 <div class="step" id="Step8">
-                    <h3>Enter Plausible Deniability PIN on OnlyKey keypad</h3>
+                    <h3>Step 8: Enter Plausible Deniability PIN on OnlyKey keypad</h3>
                     <p>
                         If you are using the Standard Edition (default for US customers) you may proceed to enter plausible deniability passcode.
                     </p>
@@ -173,7 +159,7 @@
                 </div>
 
                 <div class="step" id="Step9">
-                    <h3>Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
+                    <h3>Step 9: Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
                     <p>
                        Re-enter the 7 - 10 digit PIN on your OnlyKey six button keypad and when you are finished click confirm below.
                     </p>
@@ -410,7 +396,6 @@
                 </div>
             </div>
         </div>
-
         <div id="backup-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
@@ -468,6 +453,27 @@
                         <br/>
                         <input type="button" id="doRestore" name="doRestore" value="Restore to OnlyKey" />
                         <div id="restoreFormError" class="form-error"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="firmware-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+                    <form id="firmwareForm" name="firmwareForm" class="auth-form">
+                        <h2>Load Firmware</h2>
+
+                        <fieldset>
+                            <p id="firmware-text"></p>
+                        </fieldset>
+
+                        <br/><br/>
+
+                        <input type="file" id="firmwareSelectFile" name="firmwareSelectFile" value="Select File" />
+                        <br/>
+                        <br/>
+                        <input type="button" id="doFirmware" name="doFirmware" value="Load Firmware to OnlyKey" />
+                        <div id="firmwareFormError" class="form-error"></div>
                     </form>
                 </div>
             </div>

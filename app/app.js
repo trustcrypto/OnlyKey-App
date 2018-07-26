@@ -24,7 +24,7 @@ if (typeof nw == 'undefined') {
 
     // read localStorage setting or default to true if first time running app
     const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
-    
+
     autoLaunch.isEnabled()
         .then(isEnabled => {
             if (isEnabled && !enableAutoLaunch) {
@@ -111,6 +111,9 @@ function setTime(connectionId) {
         if (chrome.runtime.lastError) {
             console.error("ERROR SENDING OKSETTIME:", chrome.runtime.lastError, { connectionId: connectionId });
             callback('ERROR SENDING OKSETTIME PACKETS');
+            if (process.platform === 'linux') {
+              alert(`Communication failed, follow instructions here when using app on Linux https://docs.crp.to/linux.html`);
+            }
         } else {
             console.info("OKSETTIME complete");
         }

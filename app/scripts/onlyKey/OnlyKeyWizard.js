@@ -13,6 +13,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         this.steps = {};
         this.guided = true;
         this.dialog = new DialogMgr();
+        this.currentSlot = {};
     }
 
     Wizard.prototype.init = function (myOnlyKey) {
@@ -27,10 +28,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     };
 
     Wizard.prototype.initSteps = function () {
-        if (!this.onlyKey) {
-            throw 'onlyKey instance is required before initializing wizard steps';
-        }
-
         this.steps = {
             Step1: {
                 next: 'Step2',
@@ -121,10 +118,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     };
 
     Wizard.prototype.enableDisclaimer = function (fieldName) {
-        var field = this.initForm[fieldName];
+        const field = this.initForm[fieldName];
+
         field.removeEventListener('change', this.enableDisclaimer);
         this.btnNext.disabled = !field.checked;
-        field.addEventListener('change', (e) => {
+
+        field.addEventListener('change', e => {
             this.enableDisclaimer(fieldName);
         });
     };
@@ -200,43 +199,41 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         };
 
         this.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
-        this.slotWipeCancelBtn.onclick = (e) => {
+        this.slotWipeCancelBtn.onclick = e => {
             this.dialog.close(this.slotWipeConfirmDialog);
             e && e.preventDefault && e.preventDefault();
         };
 
         this.slotSubmit = document.getElementById('slotSubmit');
-        this.slotSubmit.onclick = (e) => {
-            this.setSlot();
+        this.slotSubmit.onclick = e => {
+            setSlot.call(this);
             e && e.preventDefault && e.preventDefault();
         };
 
         this.backupKeySubmit = document.getElementById('backupKeySubmit');
-        this.backupKeySubmit.onclick = (e) => {
-            this.submitBackupKey();
+        this.backupKeySubmit.onclick = e => {
+            submitBackupKey.call(this);
             e && e.preventDefault && e.preventDefault();
         };
 
         // BEGIN PRIVATE KEY SELECTOR
         this.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
         this.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
-        this.selectPrivateKeyConfirmBtn.onclick = (e) => {
+        this.selectPrivateKeyConfirmBtn.onclick = e => {
             e && e.preventDefault && e.preventDefault();
-            var selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
+            const selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
             this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey]);
             this.onlyKey.tempRsaKeys = null;
             this.dialog.closeAll();
         };
 
         this.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
-        this.selectPrivateKeyCancelBtn.onclick = (e) => {
+        this.selectPrivateKeyCancelBtn.onclick = e => {
             e && e.preventDefault && e.preventDefault();
             this.onlyKey.tempRsaKeys = null;
             this.dialog.closeAll();
         };
         // END PRIVATE KEY SELECTOR
-
-        this.backupKeyForm = document.getElementById('Step4');
 
         this.setActiveStepUI();
     };
@@ -246,7 +243,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             return cb('Cannot initialize key select form due to invalid keys object.');
         }
 
-        var keys = [{
+        const keys = [{
             name: 'Primary Key',
             p: rawKey.primaryKey.mpi[3].data.toByteArray(),
             q: rawKey.primaryKey.mpi[4].data.toByteArray()
@@ -262,7 +259,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         this.onlyKey.tempRsaKeys = keys;
 
-        var pkDiv = document.getElementById('private-key-options');
+        const pkDiv = document.getElementById('private-key-options');
         pkDiv.innerHTML = "";
 
         keys.forEach((key, i) => {
@@ -275,9 +272,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         this.dialog.open(this.selectPrivateKeyDialog, true);
     };
 
-    Wizard.prototype.submitBackupKey = function (e) {
-        this.backupKeySubmit.disabled = true;
+    function submitBackupKey(e) {
+        var self = this; // wizard
 
+        self.backupKeySubmit.disabled = true;
+
+        var form = self.initForm;
         var type = 128;
         var slot = 31;
         var key1 = document.getElementById('backupPassphrase');
@@ -308,13 +308,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
             this.initConfigErrorsHtml = html + "</ul>";
 
-            this.backupKeySubmit.disabled = false;
+            self.backupKeySubmit.disabled = false;
             return;
         }
 
-        formErrors.push(key1.value);
+        //formErrors.push(key1.value);
         key1 = openpgp.crypto.hash.digest(8, key1.value); //32 byte backup key is Sha256 hash of passphrase
-        formErrors.push(key1);
+        //formErrors.push(key1);
 
         if (formErrors.length) {
             // early exit
@@ -324,24 +324,25 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
             }
             this.initConfigErrorsHtml = html + "</ul>";
 
-            this.backupKeySubmit.disabled = false;
+            self.backupKeySubmit.disabled = false;
             return;
         }
 
-        this.onlyKey.setPrivateKey(slot, type, key1, (err) => {
-            this.onlyKey.listen(handleMessage);
-            this.backupKeyForm.reset();
+        self.onlyKey.setPrivateKey(slot, type, key1, function (err) {
+            self.onlyKey.listen(handleMessage);
+            ui.backupKeyForm.reset();
         });
-    };
+
+    }
 
     Wizard.prototype.setSlot = function () {
         this.slotSubmit.disabled = true;
         this.slotWipe.disabled = true;
 
-        var form = this.slotConfigForm;
-        var formErrors = [];
-        var formErrorsContainer = document.getElementById('slotConfigErrors');
-        var fieldMap = {
+        const form = this.slotConfigForm;
+        const formErrors = [];
+        const formErrorsContainer = document.getElementById('slotConfigErrors');
+        const fieldMap = {
             chkSlotLabel: {
                 input: form.txtSlotLabel,
                 msgId: 'LABEL'
@@ -408,8 +409,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         if (formErrors.length) {
             // early exit
-            var html = "<ul>";
-            for (var i = 0; i < formErrors.length; i++) {
+            let html = "<ul>";
+            for (let i = 0; i < formErrors.length; i++) {
                 html += "<li><blink>" + formErrors[i]; + "</blink></li>";
             }
             formErrorsContainer.innerHTML = html + "</ul>";
@@ -420,9 +421,10 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         }
 
         // process all form fields
-        for (var field in fieldMap) {
-            var isChecked = false;
-            var formValue = null;
+        for (let field in fieldMap) {
+            let isChecked = false;
+            let formValue = null;
+
             switch(form[field].type) {
                 case 'checkbox':
                     if (form[field].checked) {
@@ -434,7 +436,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 case 'hidden':
                 case 'number':
                 case 'text':
-                    var checkVar = ('' + (form[field].value)).trim();
+                    const checkVar = ('' + (form[field].value)).trim();
                     if (checkVar.length) {
                         isChecked = true;
                         formValue = ('' + (fieldMap[field].input).value).trim();
@@ -451,8 +453,10 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 default:
                     break;
             }
+
             if (isChecked) {
                 this.currentSlot[field] = formValue;
+
                 switch(field) {
                     case 'txt2FAUserName':
                         if (this.currentSlot.mode === 'googleAuthOtp') {
@@ -464,11 +468,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                         break;
                 }
 
-                this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
+                this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
                     if (!err) {
                         this.setSlot();
                     }
                 });
+
                 return;
             }
         }
@@ -479,7 +484,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         this.slotWipe.disabled = false;
         this.onlyKey.getLabels();
         this.dialog.close(this.slotConfigDialog);
-    };
+    }
 
     Wizard.prototype.getMode = function () {
         return this.initForm['ConfigMode'].value;
@@ -490,14 +495,14 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         // and set new current step
         if (this.steps[this.currentStep][direction]) {
             if (this.steps[this.currentStep].exitFn) {
-                this.steps[this.currentStep].exitFn((err, res) => {
+                this.steps[this.currentStep].exitFn(function (err, res) {
                     if (err) {
                         console.error(err);
                         this.goBackOnError(err, res);
                     } else if (res !== 'STOP') {
                         this.setNewCurrentStep(this.steps[this.currentStep][direction]);
                     }
-                });
+                }.bind(this));
             } else {
                 this.setNewCurrentStep(this.steps[this.currentStep][direction]);
             }
@@ -511,13 +516,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         if (err) {
             switch (lastMessageSent) {
                 case 'OKSETPIN':
-                    this.setNewCurrentStep('Step2');
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step1');
                     break;
                 case 'OKSETSDPIN':
-                    this.setNewCurrentStep('Step6');
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
                     break;
                 case 'OKSETPDPIN':
-                    this.setNewCurrentStep('Step8');
+                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
                     break;
             }
         }
@@ -615,12 +620,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, 'Step1'));
     };
 
-    document.addEventListener('DOMContentLoaded', function init() {
+    document.addEventListener('DOMContentLoaded', () => {
         console.info("Creating wizard instance...");
         onlyKeyConfigWizard = new Wizard();
         OnlyKeyHID(onlyKeyConfigWizard);
     }, false);
 })();
+
 
 class DialogMgr {
     open(el, keepOthersOpen) {
@@ -639,8 +645,8 @@ class DialogMgr {
     }
 
     closeAll() {
-        var allDialogs = document.getElementsByTagName('dialog');
-        for (var i = 0; i < allDialogs.length; i++) {
+        const allDialogs = document.getElementsByTagName('dialog');
+        for (let i = 0; i < allDialogs.length; i++) {
             this.close(allDialogs[i]);
         }
     }
@@ -663,4 +669,24 @@ function makeRadioButton(name, value, text) {
     label.appendChild(radio);
     label.appendChild(document.createTextNode(text));
     return label;
+}
+
+// we owe russ a beer
+// http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
+function base32tohex(base32) {
+    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    var bits = "";
+    var hex = "";
+
+    for (var i = 0; i < base32.length; i++) {
+        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
+        bits += strPad(val.toString(2), 5, '0');
+    }
+
+    for (var i = 0; i+4 <= bits.length; i+=4) {
+        var chunk = bits.substr(i, 4);
+        hex = hex + parseInt(chunk, 2).toString(16) ;
+    }
+
+    return hex;
 }

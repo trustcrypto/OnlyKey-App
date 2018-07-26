@@ -10,7 +10,7 @@
     if (process.platform === 'darwin') {
         menubar = new nw.Menu({type: 'menubar'});
         menubar.createMacBuiltin(nw.App.manifest.productName);
-    }
+    } 
 
     if (!menubar) {
         menubar = win.menu && win.menu.type && win.menu.type === 'MenuBar' ? win.menu : new nw.Menu({type: 'menubar'});
@@ -45,13 +45,23 @@
     }));
 
     settingsMenu.append(new nw.MenuItem({
-        label: 'Check for updates on app start',
+        label: 'Automatically check for app updates',
         click: function() {
             userPreferences.autoUpdate = !userPreferences.autoUpdate;
             console.info(`Toggled autoUpdate to ${userPreferences.autoUpdate}`);
         },
         type: 'checkbox',
         checked: userPreferences.autoUpdate
+    }));
+
+    settingsMenu.append(new nw.MenuItem({
+        label: 'Automatically check for firmware updates',
+        click: function() {
+            userPreferences.autoUpdateFW = !userPreferences.autoUpdateFW;
+            console.info(`Toggled autoUpdateFW to ${userPreferences.autoUpdateFW}`);
+        },
+        type: 'checkbox',
+        checked: userPreferences.autoUpdateFW
     }));
 
     menubar.append(new nw.MenuItem({

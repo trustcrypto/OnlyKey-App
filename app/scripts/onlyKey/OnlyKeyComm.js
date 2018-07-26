@@ -21,7 +21,7 @@ var chromeHid = {
 
     // chrome.hid.receive(integer connectionId, function callback)
     receive: function(connectionId, callback) {
-        // console.log('>>> receive called with', arguments);
+        console.log('>>> receive called with', arguments);
         if (connectionId === 'mockConnection') {
             if (this._pendingReceive) {
                 throw "There must not be multiple pending receives.";
@@ -51,7 +51,7 @@ var chromeHid = {
 
     // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
     send: function(connectionId, reportId, data, callback) {
-        // console.log('>>> send called with', arguments);
+        console.log('>>> send called with', arguments);
         if (connectionId === 'mockConnection') {
             this._sent.push(arguments);
 
@@ -119,7 +119,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             vendorId: 5824,
             productId: 1158
         };
-        
+
+        this.fwUpdateSupport = false;
+
+        this.isBootloader = false;
         this.isInitialized = false;
         this.isLocked = true;
 
@@ -139,8 +142,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.maxFeatureReportSize = 0;
         this.maxInputReportSize = 64;
         this.maxOutputReportSize = 64;
-        this.messageHeader = [255, 255, 255, 255];
 
+        this.messageHeader = [255, 255, 255, 255];
         this.messageFields = {
             LABEL: 1,
             URL: 15,
@@ -180,12 +183,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             OKWIPEPRIV: 238,
             OKSETPRIV: 239,
             OKDECRYPT: 240,
-            OKRESTORE: 241
+            OKRESTORE: 241,
+            OKFWUPDATE: 244,
         };
 
         this.pendingMessages = {};
         this.pollEnabled = false;
-		this.version = "";
+        this.version = "";
     }
 
     OnlyKey.prototype.setConnection = function (connectionId) {
@@ -200,7 +204,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     };
 
-    OnlyKey.prototype.sendMessage = function (options = {}, callback) {
+    OnlyKey.prototype.sendMessage = function (options, callback) {
         var self = this;
         var bytesPerMessage = 64;
 
@@ -279,10 +283,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, { connectionId: self.connection });
                 callback('ERROR SENDING PACKETS');
             } else {
-                if (!options.flushMessage) {
-                    myOnlyKey.setLastMessage('sent', msgId);
-                }
-
+                myOnlyKey.setLastMessage('sent', msgId);
                 callback(null, 'OK');
             }
         });
@@ -306,27 +307,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     OnlyKey.prototype.getLastMessage = function (type) {
         return this.lastMessages[type] && this.lastMessages[type][0] && this.lastMessages[type][0].hasOwnProperty('text') ? this.lastMessages[type][0].text : '';
-
-    };
-
-    OnlyKey.prototype.listen = function (callback) {
-        pollForInput({}, callback);
-    };
-
-    OnlyKey.prototype.setTime = function (callback) {
-        var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
-        console.info("Setting current epoch time =", currentEpochTime);
-        var timeParts = currentEpochTime.match(/.{2}/g);
-        var options = {
-            contents: timeParts,
-            msgId: 'OKSETTIME'
-        };
-        this.sendMessage(options, callback);
-    };
-
-    OnlyKey.prototype.getLabels = function (callback) {
-        this.labels = 'GETTING';
-        this.sendMessage({ msgId: 'OKGETLABELS' }, handleGetLabels);
     };
 
     OnlyKey.prototype.flushMessage = function (callback = ()=>{}) {
@@ -356,6 +336,26 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
     };
 
+    OnlyKey.prototype.listen = function (callback) {
+        pollForInput(callback);
+    };
+
+    OnlyKey.prototype.setTime = function (callback) {
+        var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
+        console.info("Setting current epoch time =", currentEpochTime);
+        var timeParts = currentEpochTime.match(/.{2}/g);
+        var options = {
+            contents: timeParts,
+            msgId: 'OKSETTIME'
+        };
+        this.sendMessage(options, callback);
+    };
+
+    OnlyKey.prototype.getLabels = function (callback) {
+        this.labels = 'GETTING';
+        this.sendMessage({ msgId: 'OKGETLABELS' }, handleGetLabels);
+    };
+
     function handleGetLabels(err, msg) {
         msg = typeof msg === 'string' ? msg.trim() : '';
         console.info("HandleGetLabels msg:", msg);
@@ -382,22 +382,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     }
 
-    OnlyKey.prototype.sendPinMessage = function ({ msgId='', poll=true }, callback=()=>{}) {
-        this.pendingMessages[msgId] = !this.pendingMessages[msgId];
-        const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
-        this.sendMessage({ msgId }, cb);
-    };
-
     OnlyKey.prototype.sendSetPin = function (callback) {
-        this.sendPinMessage({ msgId: 'OKSETPIN' }, callback);
+        this.sendMessage({ msgId: 'OKSETPIN' }, function (err, msg) {
+            pollForInput(callback);
+        }.bind(this));
     };
 
     OnlyKey.prototype.sendSetSDPin = function (callback) {
-        this.sendPinMessage({ msgId: 'OKSETSDPIN' }, callback);
+        this.sendMessage({ msgId: 'OKSETSDPIN' }, function (err, msg) {
+            pollForInput(callback);
+        }.bind(this));
     };
 
     OnlyKey.prototype.sendSetPDPin = function (callback) {
-        this.sendPinMessage({ msgId: 'OKSETPDPIN' }, callback);
+        this.sendMessage({ msgId: 'OKSETPDPIN' }, function (err, msg) {
+            pollForInput(callback);
+        }.bind(this));
     };
 
     OnlyKey.prototype.setSlot = function (slot, field, value, callback) {
@@ -507,6 +507,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(options, callback);
     };
 
+    OnlyKey.prototype.firmware = function (firmwareData, packetHeader, callback) {
+        var msg = [ packetHeader ];
+        msg = msg.concat(firmwareData.match(/.{2}/g));
+        var options = {
+            contents: msg,
+            msgId: 'OKFWUPDATE'
+        };
+        console.info("OKFWUPDATE message sent ");
+        console.info(options);
+        this.sendMessage(options, callback);
+    };
+
     OnlyKey.prototype.setLockout = function (lockout, callback) {
         this.setSlot('XX', 'LOCKOUT', lockout, callback);
     };
@@ -531,18 +543,28 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 		return this.version;
 	};
 
+    OnlyKey.prototype.initBootloaderMode = function () {
+        this.inBootloader = true;
+
+        loadFirmware(function (err) {
+            myOnlyKey.listen(handleMessage);
+        });
+    };
+
     var ui = {
         showInitPanel: null,
         showSlotPanel: null,
         showPrefPanel: null,
         showKeysPanel: null,
         showBackupPanel: null,
+        showFirmwarePanel: null,
         showAdvancedPanel: null,
         initPanel: null,
         slotPanel: null,
         prefPanel: null,
         keysPanel: null,
         backupPanel: null,
+        firmwarePanel: null,
         advancedPanel: null,
         slotConfigBtns: null,
         lockedDialog: null,
@@ -560,14 +582,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw "Missing UI element: " + k + ", " + id;
             }
             ui[k] = element;
-        }
 
-        ui.showInitPanel.addEventListener('click', toggleConfigPanel);
-        ui.showSlotPanel.addEventListener('click', toggleConfigPanel);
-        ui.showPrefPanel.addEventListener('click', toggleConfigPanel);
-        ui.showKeysPanel.addEventListener('click', toggleConfigPanel);
-        ui.showBackupPanel.addEventListener('click', toggleConfigPanel);
-        ui.showAdvancedPanel.addEventListener('click', toggleConfigPanel);
+            if (k.indexOf("show") === 0) {
+                ui[k].addEventListener('click', toggleConfigPanel);
+            }
+        }
 
         ui.yubiAuthForm = document['yubiAuthForm'];
         ui.u2fAuthForm = document['u2fAuthForm'];
@@ -579,6 +598,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.rsaForm = document['rsaForm'];
         ui.backupForm = document['backupForm'];
         ui.restoreForm = document['restoreForm'];
+        ui.firmwareForm = document['firmwareForm'];
 
         enableIOControls(false);
         enableAuthForms();
@@ -598,6 +618,28 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         if (myOnlyKey.isInitialized) {
             if (myOnlyKey.isLocked) {
                 dialog.open(ui.lockedDialog);
+            } else if (myOnlyKey.isBootloader) {
+                ui.main.classList.remove('hide');
+                ui.initPanel.classList.add('hide');
+                ui.showInitPanel.classList.remove('hide', 'active');
+                ui.slotPanel.classList.add('hide');
+                ui.showSlotPanel.classList.remove('hide', 'active');
+                ui.prefPanel.classList.add('hide');
+                ui.showPrefPanel.classList.remove('hide', 'active');
+                ui.keysPanel.classList.add('hide');
+                ui.showKeysPanel.classList.remove('hide', 'active');
+                ui.backupPanel.classList.add('hide');
+                ui.backupPanel.classList.remove('active');
+                ui.firmwarePanel.classList.remove('hide');
+                ui.advancedPanel.classList.add('hide');
+                ui.advancedPanel.classList.remove('active');
+                ui.keysPanel.classList.add('hide');
+                ui.keysPanel.classList.remove('active');
+                ui.showBackupPanel.classList.remove('hide', 'active');
+                ui.showFirmwarePanel.classList.remove('hide');
+                ui.showFirmwarePanel.classList.add('active');
+                ui.showAdvancedPanel.classList.remove('hide', 'active');
+                dialog.close(ui.lockedDialog);
             } else {
                 ui.main.classList.remove('hide');
                 ui.initPanel.classList.add('hide');
@@ -611,11 +653,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 ui.showKeysPanel.classList.remove('hide', 'active');
                 ui.backupPanel.classList.add('hide');
                 ui.backupPanel.classList.remove('active');
+                ui.firmwarePanel.classList.add('hide');
+                ui.firmwarePanel.classList.remove('active');
                 ui.advancedPanel.classList.add('hide');
                 ui.advancedPanel.classList.remove('active');
                 ui.keysPanel.classList.add('hide');
                 ui.keysPanel.classList.remove('active');
                 ui.showBackupPanel.classList.remove('hide', 'active');
+                ui.showFirmwarePanel.classList.remove('hide', 'active');
                 ui.showAdvancedPanel.classList.remove('hide', 'active');
                 dialog.close(ui.lockedDialog);
             }
@@ -625,6 +670,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.slotPanel.classList.remove('active');
             ui.backupPanel.classList.add('hide');
             ui.backupPanel.classList.remove('active');
+            ui.firmwarePanel.classList.add('hide');
+            ui.firmwarePanel.classList.remove('active');
             ui.advancedPanel.classList.add('hide');
             ui.advancedPanel.classList.remove('active');
             ui.keysPanel.classList.add('hide');
@@ -639,6 +686,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             ui.showKeysPanel.classList.add('hide');
             ui.showBackupPanel.classList.add('hide');
             ui.showAdvancedPanel.classList.add('hide');
+            ui.showFirmwarePanel.classList.add('hide');
             dialog.close(ui.lockedDialog);
         }
     };
@@ -712,15 +760,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         enableIOControls(false);
     }
 
-    var pollForInput = function (options, callback) {
+    var pollForInput = function (callback) {
         console.info("Polling...");
         clearTimeout(myOnlyKey.poll);
-
-        options = options || {};
-        callback = callback && typeof callback === 'function' ? callback : handleMessage;
+        callback = callback || handleMessage;
 
         var msg;
-        chromeHid.receive(myOnlyKey.connection, (reportId, data) => {
+        chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
             if (chrome.runtime.lastError) {
                 myOnlyKey.setLastMessage('received', '[error]');
                 return callback(chrome.runtime.lastError);
@@ -735,9 +781,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
 
             if (msg.length > 1 && msg !== 'OK') {
-                if (!options.flush) {
-                    myOnlyKey.setLastMessage('received', msg);
-                }
+                myOnlyKey.setLastMessage('received', msg);
             }
 
             // if message begins with Error, call callback with msg as err
@@ -766,13 +810,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         return msgStr;
     };
 
-    var handleMessage = function (err, msg) {
+    var handleMessage = async function (err, msg) {
+
         if (err) {
             return console.error("MESSAGE ERROR:", err);
         }
 
         msg = msg.trim();
         var updateUI = false;
+        var version;
         dialog.close(ui.workingDialog);
 
         switch (msg) {
@@ -798,13 +844,37 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             pollForInput();
         }
 
-        if (msg.indexOf("UNLOCKED") >= 0) {
+        if (msg.indexOf("UNINITIALIZED v") > 0) {
+          myOnlyKey.fwUpdateSupport = true;
+          version = msg.split("UNINITIALIZED").pop();
+          myOnlyKey.setVersion(version);
+          setOkVersionStr();
+          updateUI = true;
+          myOnlyKey.fwUpdateSupport = true;
+        }
+        else if (msg.indexOf("BOOTLOADER") > 0) {
+           myOnlyKey.isInitialized = true;
+           myOnlyKey.isBootloader = true;
+           myOnlyKey.isLocked = false;
+           version = msg.split("UNLOCKED").pop();
+           myOnlyKey.setVersion(version);
+           setOkVersionStr();
+           updateUI = true;
+           myOnlyKey.fwUpdateSupport = true;
+           myOnlyKey.initBootloaderMode();
+        } else if (msg.indexOf("UNLOCKED") >= 0) {
             if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
                 pollForInput();
             } else {
                 myOnlyKey.isInitialized = true;
-                myOnlyKey.setVersion(msg.split("UNLOCKED").pop());
+                version = msg.split("UNLOCKED").pop();
+                myOnlyKey.setVersion(version);
                 setOkVersionStr();
+                console.info(version[9]);
+                console.info(version[10]);
+                if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
+                  myOnlyKey.fwUpdateSupport = true;
+                }
                 if (myOnlyKey.isLocked) {
                     myOnlyKey.isLocked = false;
                     myOnlyKey.getLabels(pollForInput);
@@ -815,14 +885,31 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             myOnlyKey.isLocked = true;
         }
 
+        var firmwaretext = document.getElementById('firmware-text');
+        var step3text = document.getElementById('step3-text');
+        if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized ) { //Firmware load in app without config mode
+          firmwaretext.innerHTML = "To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p> The OnlyKey will restart automatically when firmware load is complete.";
+          step3text.innerHTML = "<p>Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p>";
+        } else if (myOnlyKey.fwUpdateSupport) { //Firmware load in app with config mode
+          firmwaretext.innerHTML = "<u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.</p><p><u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.";
+          step3text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Using the instructions below select a passphrase and submit to set the passphrase on your OnlyKey. When finished remove and reinsert OnlyKey.</p><p>Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p>";
+        } else { //Firmware load not supported in app
+          firmwaretext.innerHTML = "Firmware updates are not available on this firmware version. See firmware loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
+          step3text.innerHTML = "Backup passphrase is not available on this firmware version. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
+        }
+
+        //check if new firmware is available if autoUpdateFW is enabled
+        // console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+        // await checkForNewFW(version, userPreferences.autoUpdateFW);
+
         if (updateUI) {
             enableIOControls(true);
         }
     };
 
-    var enablePolling = function () {
+    var enablePolling = function (cb = null) {
         myOnlyKey.pollEnabled = true;
-        pollForInput();
+        pollForInput(cb);
     };
 
     function init() {
@@ -839,7 +926,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             pref: "Pref",
             keys: "Keys",
             backup: "Backup",
-            advanced: "Advanced",
+            firmware: "Firmware",
+            advanced: "Advanced"
 		};
 		var hiddenClass = 'hide';
 		var activeClass = 'active';
@@ -939,10 +1027,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             document.getElementById('restoreFormError').innerText = errString;
         };
 
+        var loadFirmware = document.getElementById('doFirmware');
+        loadFirmware.addEventListener('click', submitFirmwareForm);
+        ui.firmwareForm.setError = function (errString) {
+            document.getElementById('firmwareFormError').innerText = errString;
+        };
+
         ui.backupForm.setError('');
         ui.backupForm.reset();
         ui.restoreForm.setError('');
         ui.restoreForm.reset();
+        ui.firmwareForm.setError('');
+        ui.firmwareForm.reset();
     }
 
     function submitYubiAuthForm(e) {
@@ -1239,6 +1335,156 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         myOnlyKey.restore(restoreData.slice(0, maxPacketSize), packetHeader, cb);
     }
 
+    function submitFirmwareForm(e) {
+        e && e.preventDefault && e.preventDefault();
+        ui.firmwareForm.setError('');
+
+        var fileSelector = ui.firmwareForm.firmwareSelectFile;
+        if (fileSelector.files && fileSelector.files.length) {
+            var file = fileSelector.files[0];
+            var reader = new FileReader();
+
+            reader.onload = (function (theFile) {
+                return async function (e) {
+                    let contents = e.target && e.target.result && e.target.result.trim();
+
+                    try {
+                        console.info("unparsed contents", contents);
+                        contents = parseFirmwareData(contents);
+                        console.info("parsed contents", contents);
+                    } catch(parseError) {
+                        return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
+                    }
+
+                    if (contents) {
+                        onlyKeyConfigWizard.newFirmware = contents;
+                        if (!myOnlyKey.isBootloader) {
+                            ui.firmwareForm.setError('Working...');
+
+                            const temparray = "1234";
+                            submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                                //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                                ui.firmwareForm.reset();
+                                ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+
+                                myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                            });
+                        } else {
+                            await loadFirmware();
+                        }
+                    } else {
+                        return ui.firmwareForm.setError('Incorrect firmware data format.');
+                    }
+                };
+            })(file);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(file);
+        } else {
+            ui.firmwareForm.setError('Please select a file first.');
+        }
+    }
+
+    async function loadFirmware() {
+        const firmwaretext = document.getElementById('firmware-text');
+        const fwlength = onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length;
+
+        if (fwlength) { // There is a firmware file to load]
+            console.info(`Firmware file parsed into ${fwlength} lines.`); //Each line is a block in the blockchain
+
+            for (let i = 0; i < fwlength; i++) {
+                await wait(2000);
+                const line = onlyKeyConfigWizard.newFirmware[i].toString();
+                console.info(`Line ${i}: ${line}`);
+
+                firmwaretext.innerHTML = "Loading Firmware<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>" + ((i/fwlength)*100) + " Percent Complete";
+
+                try {
+                    await submitFirmwareData(line);
+                    if (i < fwlength - 1) {
+                        console.info(`This signature`, line.slice(0, 64))
+                        console.info(`Block info`, line.slice(64, 65))
+                        console.info(`Next signature`, line.slice(65, 129))
+                        await listenForMessageIncludes('NEXT BLOCK');
+                    } else {
+                      console.info(`This signature`, line.slice(0, 64))
+                      console.info(`Block info`, line.slice(64, 65))
+                      await listenForMessageIncludes('SUCCESSFULLY LOADED FIRMWARE');
+                      firmwaretext.innerHTML = "Firmware Load Complete!";
+                    }
+                } catch(err) {
+                    console.error(`Error submitting firmware data:`, err);
+                    return myOnlyKey.setLastMessage('received', err);
+                }
+            }
+
+
+            // After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
+        }
+    }
+
+/**
+ * Use promise and setTimeout to wait x seconds
+ */
+let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    function submitFirmwareData(firmwareData) {
+        return new Promise((resolve, reject) => {
+            // this function should recursively call itself until all bytes are sent in chunks
+            if (!firmwareData.length) {
+                return reject(`Invalid firmwareData`);
+            }
+
+            const maxPacketSize = 114; // 57 byte pairs
+            const finalPacket = firmwareData.length - maxPacketSize <= 0;
+
+            // packetHeader is hex number of bytes in chunk
+            const packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
+
+            myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, () => {
+                listenForMessageIncludes('OKFWUPDATE PACKET').then(result => {
+                    if (finalPacket) {
+                        console.info(`FINAL PACKET SENT`);
+                        return resolve('submitFirmwareData complete');
+                    } else {
+                        submitFirmwareData(firmwareData.slice(maxPacketSize)).then(resolve, reject);
+                    }
+                }, reject);
+            });
+        });
+    }
+
+    async function listenForMessageIncludes(str) {
+        console.info(`listenForMessageIncludes called with str="${str}"`)
+        return new Promise((resolve, reject) => {
+            console.info(`Listening for "${str}"...`);
+              myOnlyKey.listen((err, msg) => {
+                  if (msg && msg.includes(str)) {
+                      console.info(`Match received "${msg}"...`);
+                      resolve();
+                  } else {
+                      reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+                  }
+              });
+        })
+    }
+
+    function parseFirmwareData(contents = '') {
+        // split by newline
+        const lines = contents.split('\n');
+        lines.shift(); //Remove -----BEGIN SIGNED FIRMWARE-----
+        const newContent = [];
+
+        for (let i = 0; i < lines.length - 1; i++) {
+            let line = lines[i];
+            console.info(`LENGTH: ${line.length}`);
+            console.info(`BLOCK: ${line}`);
+            newContent.push(line);
+        }
+
+        return newContent;
+    }
+
     function wipeRsaKeyForm(e) {
         ui.rsaForm.setError('');
 
@@ -1354,25 +1600,6 @@ function strPad(str, places, char) {
     return str;
 }
 
-// we owe russ a beer
-// http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
-function base32tohex(base32) {
-    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-    var bits = "";
-    var hex = "";
-
-    for (var i = 0; i < base32.length; i++) {
-        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
-        bits += strPad(val.toString(2), 5, '0');
-    }
-
-    for (var i = 0; i+4 <= bits.length; i+=4) {
-        var chunk = bits.substr(i, 4);
-        hex = hex + parseInt(chunk, 2).toString(16) ;
-    }
-    return hex;
-}
-
 // http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript
 function base64tohex(base64) {
     var raw = atob(base64);
@@ -1408,6 +1635,74 @@ function byteToHex(value) {
     if (value < 16) return '0' + value.toString(16);
     return value.toString(16);
 }
+
+function checkForNewFW(version, checkForNewFW) {
+  return new Promise(resolve => {
+  if (checkForNewFW == true && (version[3] > 2 || (version[3] == 2 && (version[9] != '.' || version[10] > 6)))) { //fw checking enabled and firmware version supports app updates
+    var request = require('request');
+    var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
+      console.log(r.uri.href);
+      console.log(res.request.uri.href);
+      console.log(this.uri.href);
+      var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
+      console.info(version);
+      console.info(latestver);
+      if (latestversion[3] > version[3] || (latestversion[3] == version[3] && (latestversion[9] == '.' && latestversion[10] > version[10]) || (latestversion[9] != '.' && latestversion[9] > version[9] || (latestversion[9] == version[9] && latestversion[10] > version[10])))) {
+        if (version[9] != '.' || version[10] > 6) {
+          if (confirm(`Version ${latestversion} firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?`)) {
+            if (version[11] == 'o') {
+              //Download latest standard firmware for original from URL
+              // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+              // + latestversion
+              // + /
+              // + OnlyKey_
+              // + latestversion
+              // + _STD_Original.txt
+              // downloaded file = contents
+              if (contents) {
+                  onlyKeyConfigWizard.newFirmware = contents;
+                  const temparray = "1234";
+                  submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                      //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                      myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                  });
+              } else {
+                  alert(`Firmware Download Failed`);
+                  return;
+              }
+            } else if (version[11] == 'c') {
+              // Download latest standard firmware for color from URL
+              // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+              // + latestversion
+              // + /
+              // + OnlyKey_
+              // + latestversion
+              // + _STD_Color.txt
+              // downloaded file = contents
+              if (contents) {
+                  onlyKeyConfigWizard.newFirmware = contents;
+                  const temparray = "1234";
+                  submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                      //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                      myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                  });
+              } else {
+                  alert(`Firmware Download Failed`);
+                  return;
+              }
+            }
+          }
+        }
+      }
+    });
+  } else if (version[9] == '.' && version[10] <= 6) {
+      alert(`A new version of firware is available. Go to https://docs.crp.to/usersguide.html#loading-onlykey-firmware and follow the legacy firmware loading instructions to update to the latest firmware.`);
+      var latestver = 0;
+  }
+  resolve(latestver);
+});
+}
+
 
 //nw.Window.get().on('new-win-policy', function(frame, url, policy) {
 //  // do not open the window
