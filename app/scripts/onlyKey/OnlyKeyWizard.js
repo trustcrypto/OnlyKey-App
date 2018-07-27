@@ -11,7 +11,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
     function Wizard() {
         this.steps = {};
-        this.guided = true;
+        this.setGuided(true);
         this.dialog = new DialogMgr();
         this.currentSlot = {};
     }
@@ -129,7 +129,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     };
 
     Wizard.prototype.setUnguidedStep = function (newStep) {
-        this.guided = false;
+        this.setGuided(false);
         this.setNewCurrentStep(newStep);
     };
 
@@ -156,12 +156,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step8');
 
         this.btnNext.onclick = () => {
-            this.guided = true;
+            this.setGuided(true);
             this.moveStep('next');
         };
 
         this.btnPrev.onclick = () => {
-            this.guided = true;
+            this.setGuided(true);
             this.onlyKey.flushMessage.call(this.onlyKey, this.moveStep.bind(this, 'prev'));
         };
 
@@ -236,6 +236,12 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         // END PRIVATE KEY SELECTOR
 
         this.setActiveStepUI();
+    };
+
+    Wizard.prototype.setGuided = function (guided) {
+        this.guided = !!guided;
+        const nextTxt = document.querySelectorAll('.nextTxt');
+        nextTxt.forEach(e => e.innerHTML = this.guided ? 'Next' : 'Submit');
     };
 
     Wizard.prototype.initKeySelect = function (rawKey, cb) {
@@ -616,7 +622,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     };
 
     Wizard.prototype.reset = function () {
-        this.guided = true;
+        this.setGuided(true);
         this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, 'Step1'));
     };
 
