@@ -121,7 +121,9 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         const field = this.initForm[fieldName];
 
         field.removeEventListener('change', this.enableDisclaimer);
+
         this.btnNext.disabled = !field.checked;
+        this.btnSubmitStep.disabled = !field.checked;
 
         field.addEventListener('change', e => {
             this.enableDisclaimer(fieldName);
@@ -522,13 +524,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         if (err) {
             switch (lastMessageSent) {
                 case 'OKSETPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step1');
+                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step1');
                     break;
                 case 'OKSETSDPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
+                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
                     break;
                 case 'OKSETPDPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
+                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
                     break;
             }
         }

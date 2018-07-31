@@ -337,7 +337,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.listen = function (callback) {
-        pollForInput(callback);
+        pollForInput({}, callback);
     };
 
     OnlyKey.prototype.setTime = function (callback) {
@@ -381,23 +381,23 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
         }
     }
+    
+    OnlyKey.prototype.sendPinMessage = function ({ msgId='', poll=true }, callback=()=>{}) {
+        this.pendingMessages[msgId] = !this.pendingMessages[msgId];
+        const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
+        this.sendMessage({ msgId }, cb);
+    };
 
     OnlyKey.prototype.sendSetPin = function (callback) {
-        this.sendMessage({ msgId: 'OKSETPIN' }, function (err, msg) {
-            pollForInput(callback);
-        }.bind(this));
+        this.sendPinMessage({ msgId: 'OKSETPIN' }, callback);
     };
 
     OnlyKey.prototype.sendSetSDPin = function (callback) {
-        this.sendMessage({ msgId: 'OKSETSDPIN' }, function (err, msg) {
-            pollForInput(callback);
-        }.bind(this));
+        this.sendPinMessage({ msgId: 'OKSETSDPIN' }, callback);
     };
 
     OnlyKey.prototype.sendSetPDPin = function (callback) {
-        this.sendMessage({ msgId: 'OKSETPDPIN' }, function (err, msg) {
-            pollForInput(callback);
-        }.bind(this));
+        this.sendPinMessage({ msgId: 'OKSETPDPIN' }, callback);
     };
 
     OnlyKey.prototype.setSlot = function (slot, field, value, callback) {
@@ -760,10 +760,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         enableIOControls(false);
     }
 
-    var pollForInput = function (callback) {
+    var pollForInput = function (options, callback) {
         console.info("Polling...");
         clearTimeout(myOnlyKey.poll);
-        callback = callback || handleMessage;
+
+        options = options || {};
+        callback = callback && typeof callback === 'function' ? callback : handleMessage;
 
         var msg;
         chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
@@ -780,7 +782,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 myOnlyKey.poll = setTimeout(pollForInput, 0);
             }
 
-            if (msg.length > 1 && msg !== 'OK') {
+            if (msg.length > 1 && msg !== 'OK' && !options.flush) {
                 myOnlyKey.setLastMessage('received', msg);
             }
 
