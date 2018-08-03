@@ -188,7 +188,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         };
 
         this.pendingMessages = {};
-        this.pollEnabled = false;
         this.version = "";
     }
 
@@ -310,8 +309,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.flushMessage = function (callback = ()=>{}) {
-        this.pollEnabled = false;
-
         const messageTypes = Object.keys(this.pendingMessages);
         const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
         if (!pendingMessagesTypes.length) {
@@ -765,7 +762,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         clearTimeout(myOnlyKey.poll);
 
         options = options || {};
-        callback = callback && typeof callback === 'function' ? callback : handleMessage;
+        callback = typeof callback === 'function' ? callback : handleMessage;
 
         var msg;
         chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
@@ -777,10 +774,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
 
             console.info("RECEIVED:", msg);
-
-            if (myOnlyKey.pollEnabled) {
-                myOnlyKey.poll = setTimeout(pollForInput, 0);
-            }
 
             if (msg.length > 1 && msg !== 'OK' && !options.flush) {
                 myOnlyKey.setLastMessage('received', msg);
@@ -842,7 +835,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 break;
         }
 
-        if (msg === "INITIALIZED" && !myOnlyKey.pollEnabled) { // OK should still be locked
+        if (msg === "INITIALIZED") { // OK should still be locked
             pollForInput();
         }
 
@@ -907,11 +900,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         if (updateUI) {
             enableIOControls(true);
         }
-    };
-
-    var enablePolling = function (cb = null) {
-        myOnlyKey.pollEnabled = true;
-        pollForInput(cb);
     };
 
     function init() {

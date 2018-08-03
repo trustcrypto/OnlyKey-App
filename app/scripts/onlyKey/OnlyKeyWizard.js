@@ -44,6 +44,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
             },
             Step3: {
+                onError: 'Step2',
                 prev: 'Step2',
                 next: 'Step4',
                 enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
@@ -285,7 +286,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         self.backupKeySubmit.disabled = true;
 
-        var form = self.initForm;
         var type = 128;
         var slot = 31;
         var key1 = document.getElementById('backupPassphrase');
@@ -542,9 +542,10 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         // call new current step-related enter function
         if (this.steps[stepId].enterFn) {
-            this.steps[stepId].enterFn(function (err, res) {
+            this.steps[stepId].enterFn((err, res) => {
                 if (err) {
                     console.error(err);
+                    this.goBackOnError(err, res);
                 } else {
                     console.info(res);
                 }
