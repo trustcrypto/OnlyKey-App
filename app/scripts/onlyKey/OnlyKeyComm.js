@@ -1445,7 +1445,6 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     }
 
     async function listenForMessageIncludes(str) {
-        console.info(`listenForMessageIncludes called with str="${str}"`)
         return new Promise((resolve, reject) => {
             console.info(`Listening for "${str}"...`);
               myOnlyKey.listen((err, msg) => {

@@ -30,6 +30,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
     Wizard.prototype.initSteps = function () {
         this.steps = {
             Step1: {
+                enterFn: this.setGuided.bind(this, true),
                 next: 'Step2',
                 noExit: true,
             },
@@ -502,14 +503,14 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         // and set new current step
         if (this.steps[this.currentStep][direction]) {
             if (this.steps[this.currentStep].exitFn) {
-                this.steps[this.currentStep].exitFn(function (err, res) {
+                this.steps[this.currentStep].exitFn((err, res) => {
                     if (err) {
                         console.error(err);
                         this.goBackOnError(err, res);
                     } else if (res !== 'STOP') {
                         this.setNewCurrentStep(this.steps[this.currentStep][direction]);
                     }
-                }.bind(this));
+                });
             } else {
                 this.setNewCurrentStep(this.steps[this.currentStep][direction]);
             }
@@ -537,7 +538,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
     Wizard.prototype.setNewCurrentStep = function (stepId) {
         this.currentStep = stepId;
-        this.setActiveStepUI();
 
         // call new current step-related enter function
         if (this.steps[stepId].enterFn) {
@@ -550,6 +550,8 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 }
             });
         }
+
+        this.setActiveStepUI();
     };
 
     Wizard.prototype.setActiveStepUI = function () {
