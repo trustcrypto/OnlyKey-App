@@ -44,7 +44,6 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                 exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
             },
             Step3: {
-                onError: 'Step2',
                 prev: 'Step2',
                 next: 'Step4',
                 enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
@@ -524,13 +523,13 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
         if (err) {
             switch (lastMessageSent) {
                 case 'OKSETPIN':
-                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step1');
+                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step2');
                     break;
                 case 'OKSETSDPIN':
-                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
+                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step6');
                     break;
                 case 'OKSETPDPIN':
-                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
+                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step8');
                     break;
             }
         }
