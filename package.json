@@ -8,7 +8,7 @@
   "dependencies": {
     "auto-launch": "^5.0.3",
     "fs-jetpack": "^1.2.0",
-    "nw": "^0.31.5",
+    "nw": "^0.32.1-sdk",
     "nw-autoupdater": "^1.1.4",
     "nw-dev": "^3.0.1",
     "q": "^1.5.1"

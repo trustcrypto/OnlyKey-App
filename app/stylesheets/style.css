@@ -106,6 +106,7 @@ dialog a {
 	right: 0;
 	padding: .5em 1em;
     font-size: 10pt;
+    text-align: right;
 }
 
 #versions > i {
