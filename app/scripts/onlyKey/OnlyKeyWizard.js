@@ -1,9 +1,11 @@
-// Remove all saved vault passwords in this app and prevent future saving
-chrome.passwordsPrivate.getSavedPasswordList(passwords => {
-    passwords.forEach((p, i) => chrome.passwordsPrivate.removeSavedPassword(i));
-});
+if (chrome.passwordsPrivate) {
+    // Remove all saved vault passwords in this app and prevent future saving
+    chrome.passwordsPrivate.getSavedPasswordList(passwords => {
+        passwords.forEach((p, i) => chrome.passwordsPrivate.removeSavedPassword(i));
+    });
 
-chrome.privacy.services.passwordSavingEnabled.set({ value: false });
+    chrome.privacy.services.passwordSavingEnabled.set({ value: false });
+}
 
 // Wizard
 (function () {
@@ -209,7 +211,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
 
         this.slotSubmit = document.getElementById('slotSubmit');
         this.slotSubmit.onclick = e => {
-            setSlot.call(this);
+            this.setSlot();
             e && e.preventDefault && e.preventDefault();
         };
 
@@ -476,7 +478,7 @@ chrome.privacy.services.passwordSavingEnabled.set({ value: false });
                         break;
                 }
 
-                this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
+                this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
                     if (!err) {
                         this.setSlot();
                     }

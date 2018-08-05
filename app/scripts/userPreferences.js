@@ -1,5 +1,7 @@
 /* Simple interface for localStorage */
 
+if (typeof nw === 'undefined') return;
+
 let onlyKeyAppUserPreferences; // singleton
 
 (function() {

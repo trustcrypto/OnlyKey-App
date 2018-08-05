@@ -1,6 +1,8 @@
 (function() {
     'use strict';
 
+    if (typeof nw == 'undefined') return;
+
     const userPreferences = require('./scripts/userPreferences.js');
     if (!userPreferences.autoUpdate) return;
 

@@ -81,7 +81,11 @@ dialog a {
     left: 0;
     padding: .5em 1em;
     background-color: white;
-    color: red;
+    color: maroon;
+}
+
+#lastMessage ul {
+    margin-bottom: 0;
 }
 
 #lastMessage > span {
@@ -89,14 +93,14 @@ dialog a {
 }
 
 #lastMessage li {
-    color: rgba(255,0,0,.5);
+    opacity: .7;
 }
 
 #lastMessage li + li {
-    color: rgba(255,0,0,.3);
+    opacity: .4;
 }
 
-#okVersionStr {
+#versions {
 	position: absolute;
 	bottom: 0;
 	right: 0;
@@ -171,7 +175,7 @@ nav > a.active {
 	color: maroon;
 }
 
-#main, #main > h1 {
+#main {
 	margin-top: 0;
 	padding-top: 0;
 }

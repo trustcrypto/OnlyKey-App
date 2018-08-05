@@ -1413,10 +1413,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         }
     }
 
-/**
- * Use promise and setTimeout to wait x seconds
- */
-let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    /**
+     * Use promise and setTimeout to wait x seconds
+     */
+    let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     function submitFirmwareData(firmwareData) {
         return new Promise((resolve, reject) => {
@@ -1553,7 +1553,7 @@ let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 	function setOkVersionStr() {
 		var version = myOnlyKey.getVersion();
 		if (version) {
-			document.getElementById("okVersionStr").innerText = "OnlyKey firmware " + version;
+			document.getElementById("fwVersion").innerText = `Firmware ${version}`;
 		}
 	}
 

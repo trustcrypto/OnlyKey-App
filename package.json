@@ -2,6 +2,7 @@
   "name": "OnlyKey",
   "productName": "OnlyKey App",
   "version": "5.1.0",
+  "version_name": "5.1-beta.0",
   "description": "OnlyKey Configuration App",
   "main": "app.js",
   "dependencies": {
