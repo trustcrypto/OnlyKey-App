@@ -105,6 +105,11 @@ dialog a {
 	bottom: 0;
 	right: 0;
 	padding: .5em 1em;
+    font-size: 10pt;
+}
+
+#versions > i {
+    display: block;
 }
 
 /* configure onlykey photo background */
@@ -156,6 +161,10 @@ td.ok-photo-cell {
     margin-left: 1em;
 }
 
+nav {
+    margin-top: 1em;
+}
+
 nav > a {
     padding: 4px 4px 2px 4px;
     border-radius: 6px 6px 0 0;
@@ -178,11 +187,6 @@ nav > a.active {
 #main {
 	margin-top: 0;
 	padding-top: 0;
-}
-
-#main > h1 > i {
-    font-size: 10pt;
-    font-weight: normal;
 }
 
 .form-error {
