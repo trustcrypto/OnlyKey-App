@@ -17,12 +17,6 @@
         menubar = win.menu && win.menu.type && win.menu.type === 'MenuBar' ? win.menu : new nw.Menu({type: 'menubar'});
     }
 
-    // insert check for app updates menu item
-    menubar.items[0].submenu.insert(new nw.MenuItem({
-        label: 'Check for Updates...',
-        click: checkForAppUpdate,
-    }), 1);
-
     // begin settings menu
     const settingsMenu = new nw.Menu();
 
@@ -71,6 +65,19 @@
         type: 'checkbox',
         checked: userPreferences.autoUpdateFW,
     }));
+
+    // first try to insert check for updates menu item at top level
+    // fall back to appending to settings menu
+    const checkForUpdates = new nw.MenuItem({
+        label: 'Check for Updates...',
+        click: checkForAppUpdate,
+    });
+
+    try {
+        menubar.items[0].submenu.insert(checkForUpdates, 1);
+    } catch(e) {
+        settingsMenu.append(checkForUpdates);
+    }
 
     menubar.append(new nw.MenuItem({
         label: 'Settings',
