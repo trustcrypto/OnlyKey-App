@@ -133,12 +133,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         };
 
         this.labels = [];
-        
+
         this.lastMessages = {
             sent: [],
             received: []
         };
-        
+
         this.maxFeatureReportSize = 0;
         this.maxInputReportSize = 64;
         this.maxOutputReportSize = 64;
@@ -378,7 +378,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             }
         }
     }
-    
+
     OnlyKey.prototype.sendPinMessage = function ({ msgId='', poll=true }, callback=()=>{}) {
         this.pendingMessages[msgId] = !this.pendingMessages[msgId];
         const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
@@ -466,9 +466,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setBackupPassphrase = function (passphrase) {
-        const key = openpgp.crypto.hash.digest(8, passphrase); //32 byte backup key is Sha256 hash of passphrase
+        const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); //32 byte backup key is Sha256 hash of passphrase
         const type = 128;
-        const slot = 31;
+        const slot = 131;
 
         this.setPrivateKey(slot, type, key, err => {
             this.listen(handleMessage);
@@ -1394,7 +1394,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             console.info(`Firmware file parsed into ${fwlength} lines.`); //Each line is a block in the blockchain
 
             for (let i = 0; i < fwlength; i++) {
-                await wait(2000);
                 const line = onlyKeyConfigWizard.newFirmware[i].toString();
                 console.info(`Line ${i}: ${line}`);
 
