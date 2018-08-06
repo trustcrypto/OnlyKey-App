@@ -55,6 +55,8 @@ if (chrome.passwordsPrivate) {
             Step4: {
                 prev: 'Step3',
                 next: 'Step5',
+                enterFn: this.onlyKey.flushMessage.bind(this.onlyKey),
+                exitFn: this.submitBackupKey.bind(this),
             },
             Step5: {
                 prev: 'Step4',
@@ -141,7 +143,7 @@ if (chrome.passwordsPrivate) {
     Wizard.prototype.uiInit = function () {
         this.initForm = document['init-panel'];
 
-        this.initConfigErrorsHtml = document.getElementById('initConfigErrors').innerHTML;
+        this.initConfigErrors = document.getElementById('initConfigErrors');
 
         this.setPIN = document.getElementById('SetPIN');
         this.setBackup = document.getElementById('SetBackup');
@@ -181,15 +183,16 @@ if (chrome.passwordsPrivate) {
         this.finalStepDialog = document.getElementById('finalStep-dialog');
 
         this.slotWipe = document.getElementById('slotWipe');
-        this.slotWipe.onclick = (e) => {
+        this.slotWipe.onclick = e => {
+            e && e.preventDefault && e.preventDefault();
             document.getElementById('wipeCurrentSlotId').innerText = this.onlyKey.currentSlotId;
             this.dialog.open(this.slotWipeConfirmDialog, true);
-            e && e.preventDefault && e.preventDefault();
         };
 
         this.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
         this.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
-        this.slotWipeConfirmBtn.onclick = (e) => {
+        this.slotWipeConfirmBtn.onclick = e => {
+            e && e.preventDefault && e.preventDefault();
             this.onlyKey.wipeSlot(null, null, (err, msg) => {
                 // this.onlyKey.listen(function (err, msg) {
                     if (!err) {
@@ -199,26 +202,18 @@ if (chrome.passwordsPrivate) {
                     }
                 // });
             });
-
-            e && e.preventDefault && e.preventDefault();
         };
 
         this.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
         this.slotWipeCancelBtn.onclick = e => {
-            this.dialog.close(this.slotWipeConfirmDialog);
             e && e.preventDefault && e.preventDefault();
+            this.dialog.close(this.slotWipeConfirmDialog);
         };
 
         this.slotSubmit = document.getElementById('slotSubmit');
         this.slotSubmit.onclick = e => {
+            e && e.preventDefault && e.preventDefault();
             this.setSlot();
-            e && e.preventDefault && e.preventDefault();
-        };
-
-        this.backupKeySubmit = document.getElementById('backupKeySubmit');
-        this.backupKeySubmit.onclick = e => {
-            submitBackupKey.call(this);
-            e && e.preventDefault && e.preventDefault();
         };
 
         // BEGIN PRIVATE KEY SELECTOR
@@ -283,67 +278,38 @@ if (chrome.passwordsPrivate) {
         this.dialog.open(this.selectPrivateKeyDialog, true);
     };
 
-    function submitBackupKey(e) {
-        var self = this; // wizard
+    Wizard.prototype.submitBackupKey = function () {
+        const key1Input = document.getElementById('backupPassphrase');
+        const key2Input = document.getElementById('backupPassphrasec');
+        const formErrors = [];
 
-        self.backupKeySubmit.disabled = true;
+        this.initConfigErrors.innerHTML = "";
 
-        var type = 128;
-        var slot = 31;
-        var key1 = document.getElementById('backupPassphrase');
-        var key2 = document.getElementById('backupPassphrasec');
-        var formErrors = [];
-
-        this.initConfigErrorsHtml = "";
-
-        if (!key1.value) {
+        if (!key1Input.value) {
             formErrors.push('Passphrase cannot be empty.');
         }
 
-        if (key1.value !== key2.value) {
-            formErrors.push('Passphrase fields do not match');
-            formErrors.push(key1.value.toString().replace(/\s/g,'').slice(0, 64));
-            formErrors.push(key2.value.toString().replace(/\s/g,'').slice(0, 64));
+        if (key1Input.value !== key2Input.value) {
+            formErrors.push('Passphrase fields do not match.');
         }
 
-        if (key1.length < 25) {
-            formErrors.push('Passphrase must be at least 25 characters');
+        if (key1Input.value.length < 25) {
+            formErrors.push('Passphrase must be at least 25 characters.');
         }
 
         if (formErrors.length) {
             // early exit
-            var html = "<ul>";
-            for (var i = 0; i < formErrors.length; i++) {
+            let html = "<ul>";
+            for (let i = 0; i < formErrors.length; i++) {
                 html += "<li>" + formErrors[i] + "</li>";
             }
-            this.initConfigErrorsHtml = html + "</ul>";
-
-            self.backupKeySubmit.disabled = false;
+            this.initConfigErrors.innerHTML = html + "</ul>";
             return;
         }
 
         //formErrors.push(key1.value);
-        key1 = openpgp.crypto.hash.digest(8, key1.value); //32 byte backup key is Sha256 hash of passphrase
-        //formErrors.push(key1);
-
-        if (formErrors.length) {
-            // early exit
-            var html = "<ul>";
-            for (var i = 0; i < formErrors.length; i++) {
-                html += "<li>" + formErrors[i] + "</li>";
-            }
-            this.initConfigErrorsHtml = html + "</ul>";
-
-            self.backupKeySubmit.disabled = false;
-            return;
-        }
-
-        self.onlyKey.setPrivateKey(slot, type, key1, function (err) {
-            self.onlyKey.listen(handleMessage);
-            ui.backupKeyForm.reset();
-        });
-
-    }
+        this.onlyKey.setBackupPassphrase(key1Input.value);
+    };
 
     Wizard.prototype.setSlot = function () {
         this.slotSubmit.disabled = true;
@@ -526,13 +492,13 @@ if (chrome.passwordsPrivate) {
         if (err) {
             switch (lastMessageSent) {
                 case 'OKSETPIN':
-                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step2');
+                    this.setNewCurrentStep('Step2');
                     break;
                 case 'OKSETSDPIN':
-                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step6');
+                    this.setNewCurrentStep('Step6');
                     break;
                 case 'OKSETPDPIN':
-                    this.setNewCurrentStep.call(onlyKeyConfigWizard, 'Step8');
+                    this.setNewCurrentStep('Step8');
                     break;
             }
         }
@@ -595,7 +561,7 @@ if (chrome.passwordsPrivate) {
             document.getElementById('unguided').classList.remove('hide');
         }
 
-        this.initConfigErrorsHtml = '';
+        this.initConfigErrors.innerHTML = '';
 
         return false;
     };

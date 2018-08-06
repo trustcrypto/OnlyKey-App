@@ -465,9 +465,20 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage({ msgId: 'OKWIPEU2FCERT' }, callback);
     };
 
+    OnlyKey.prototype.setBackupPassphrase = function (passphrase) {
+        const key = openpgp.crypto.hash.digest(8, passphrase); //32 byte backup key is Sha256 hash of passphrase
+        const type = 128;
+        const slot = 31;
+
+        this.setPrivateKey(slot, type, key, err => {
+            this.listen(handleMessage);
+            onlyKeyConfigWizard.initForm.reset();
+        });
+    };
+
     OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
         var msg, contentType;
-        if (Array.isArray(key)) {
+        if (Array.isArray(key) || key.constructor === Uint8Array) {
             // RSA private key is an array of DEC bytes
             contentType = 'DEC';
             msg = key;
@@ -781,7 +792,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
             // if message begins with Error, call callback with msg as err
             // and the last sent message as 2nd arg
-            if (msg.indexOf("Error") === 0) {
+            if (msg.indexOf("Error") === 0 || msg.indexOf("ERROR") === 0) {
                 return callback(msg, myOnlyKey.getLastMessage('sent'));
             }
 
@@ -1231,9 +1242,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         // console.info("retKey:", retKey);
 
-        submitRsaKey(slot, type, retKey, function (err) {
+        submitRsaKey(slot, type, retKey, err => {
             // TODO: check for success, then reset
-            myOnlyKey.listen(handleMessage);
+            this.listen(handleMessage);
             ui.rsaForm.reset();
         });
 
@@ -1416,7 +1427,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     /**
      * Use promise and setTimeout to wait x seconds
      */
-    let wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     function submitFirmwareData(firmwareData) {
         return new Promise((resolve, reject) => {
