@@ -162,6 +162,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             YUBIAUTH: 10,
             LOCKOUT: 11,
             WIPEMODE: 12,
+            BACKUPKEYMODE: 20,
+            SSHCHALLENGEMODE: 21,
+            PGPCHALLENGEMODE: 22,
+            SECPROFILEMODE: 23,
             TYPESPEED: 13,
             KBDLAYOUT: 14
         };
@@ -535,6 +539,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setSlot('XX', 'WIPEMODE', wipeMode, callback);
     };
 
+    OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
+        this.setSlot('XX', 'SECPROFILEMODE', secProfileMode, callback);
+    };
+
+    OnlyKey.prototype.setsshchallengeMode = function (sshchallengeMode, callback) {
+        this.setSlot('XX', 'SSHCHALLENGEMODE', sshchallengeMode, callback);
+    };
+
+    OnlyKey.prototype.setpgpchallengeMode = function (pgpchallengeMode, callback) {
+        this.setSlot('XX', 'PGPCHALLENGEMODE', pgpchallengeMode, callback);
+    };
+
+    OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
+        this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, callback);
+    };
+
     OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
         this.setSlot('XX', 'TYPESPEED', typeSpeed, callback);
     };
@@ -895,10 +915,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var step3text = document.getElementById('step3-text');
         if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized ) { //Firmware load in app without config mode
           firmwaretext.innerHTML = "To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p> The OnlyKey will restart automatically when firmware load is complete.";
-          step3text.innerHTML = "<p>Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p>";
+          step3text.innerHTML = "<p>Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p><br/><label><b>Enter Passphrase:</b><input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label><br/><br/><label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br/><label><input type='radio' checked name='backupKeyMode' value=1 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyMode' value=2 /><u>Set backup key only once</u></label>";
         } else if (myOnlyKey.fwUpdateSupport) { //Firmware load in app with config mode
           firmwaretext.innerHTML = "<u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.</p><p><u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.";
-          step3text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Using the instructions below select a passphrase and submit to set the passphrase on your OnlyKey. When finished remove and reinsert OnlyKey.</p><p>Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p>";
+          step3text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Using the instructions below select a passphrase and submit to set the passphrase on your OnlyKey. When finished remove and reinsert OnlyKey.</p><p>Your passphrase will be used to backup and restore your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself' </p><br/><label><b>Enter Passphrase:</b><input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label><br/><br/><label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br/><label><input type='radio' checked name='backupKeyMode' value=1 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyMode' value=2 /><u>Set backup key only once</u></label>";
         } else { //Firmware load not supported in app
           firmwaretext.innerHTML = "Firmware updates are not available on this firmware version. See firmware loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
           step3text.innerHTML = "Backup passphrase is not available on this firmware version. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
@@ -1521,6 +1541,50 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         myOnlyKey.setWipeMode(wipeMode, function (err) {
             myOnlyKey.setLastMessage('received', 'Wipe Mode set successfully');
             ui.wipeModeForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitSecProfileModeForm(e) {
+        var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
+
+        myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'Second Profile Mode set successfully');
+            ui.SecProfileModeForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitsshchallengeMode(e) {
+        var sshchallengeMode = parseInt(ui.sshchallengeModeForm.oksshchallengeMode.value, 10);
+
+        myOnlyKey.setsshchallengeMode(sshchallengeMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'SSH Challenge Mode set successfully');
+            ui.sshchallengeModeForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitpgpchallengeMode(e) {
+        var pgpchallengeMode = parseInt(ui.pgpchallengeModeForm.okpgpchallengeMode.value, 10);
+
+        myOnlyKey.setpgpchallengeMode(pgpchallengeMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'PGP Challenge Mode set successfully');
+            ui.pgpchallengeModeForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitbackupKeyMode(e) {
+        var backupKeyMode = parseInt(ui.backupKeyModeForm.okbackupKeyMode.value, 10);
+
+        myOnlyKey.setbackupKeyMode(backupKeyMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'Backup Key Mode set successfully');
+            ui.backupKeyModeForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();

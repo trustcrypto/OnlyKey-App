@@ -61,7 +61,7 @@
                                 <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
                             </td>
                             <td>
-                                <button id="SetPDPIN" type="button">Set Plausible Deniability PIN</button>
+                                <button id="SetPDPIN" type="button">Set Second Profile PIN</button>
                             </td>
                         </tr>
                     </table>
@@ -94,9 +94,6 @@
                 <div class="step" id="Step4">
                     <h3>Enter a Backup Passphrase </h3>
                     <p id="step3-text"></p>
-                    <label><b>Enter Passphrase:</b><input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label>
-                    <br/><br/>
-                    <label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label>
                 </div>
 
                 <div class="step" id="Step5">
@@ -140,10 +137,19 @@
                 </div>
 
                 <div class="step" id="Step8">
-                    <h3>Enter Plausible Deniability PIN on OnlyKey keypad</h3>
+                    <h3>Enter PIN for Second Profile on OnlyKey Keypad</h3>
                     <p>
-                        If you are using the Standard Edition (default for US customers) you may proceed to enter plausible deniability passcode.
+                        The second profile contains an additional 12 slots. Select either a standard (default) or a plausible deniability profile. Learn more about standard and plausible deniability profile <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.
                     </p>
+                    <label>
+                      <input type="radio" checked name="2ndProfileMode" value=1 />
+                      <u>Standard Profile (Default)</u>
+                    </label>
+                    <br/>
+                    <label>
+                      <input type="radio" name="2ndProfileMode" value=2 />
+                      <u>Plausible Deniability Profile</u>
+                    </label>
                     <p>
                         WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
                     </p>
@@ -160,7 +166,7 @@
                 </div>
 
                 <div class="step" id="Step9">
-                    <h3>Re-enter Plausible Deniability PIN on OnlyKey Keypad</h3>
+                    <h3>Re-enter PIN for Second Profile on OnlyKey Keypad</h3>
                     <p>
                        Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.
                     </p>
@@ -247,15 +253,29 @@
         <div id="pref-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
-					<form id="lockoutForm" name="lockoutForm">
-						<h2>Inactivity Lockout Period</h2>
-						Lockout time in minutes:
-						<input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1-255" />
-						<input type="button" id="lockoutSubmit" value="Set Lockout" />
-						<br/>
-						(1 &ndash; 255 minutes; default = 30; 0 to disable)
-					</form>
-					<br/>
+          <form id="sshchallengeModeForm" name="sshchallengeModeForm">
+            <h2>SSH Challenge Mode</h2>
+            <h3>Enable or disable challenge code for SSH</h3>
+            <label>
+              <input type="radio" checked name="okSSHChallengeMode" value=1 />
+              <u>Enable Challenge Code for SSH</u>
+            </label>
+            <br/>
+            <label>
+              <input type="radio" name="okSSHChallengeMode" value=2 />
+              <u>Disable Challenge Code for SSH</u>
+            </label>
+            <br/>
+            <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
+          </form>
+          <form id="lockoutForm" name="lockoutForm">
+            <h2>Inactivity Lockout Period</h2>
+            Lockout time in minutes:
+            <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1-255" />
+            <input type="button" id="lockoutSubmit" value="Set Lockout" />
+            <br/>
+            (1 &ndash; 255 minutes; default = 30; 0 to disable)
+          </form>
 					<form id="wipeModeForm" name="wipeModeForm">
 						<h2>Wipe Mode</h2>
 						<h3>Configure how the OnlyKey responds to<br/>a factory reset.</h3>
@@ -269,7 +289,6 @@
 							<input type="radio" name="okWipeMode" value=2 />
 							<u>Full Wipe</u> (recommended for plausible deniability users)
 							<br/>Entire device is wiped. Firmware must be reloaded.
-							<br/>
 						</label>
 						<br/>
 						<span style="font-size: small; color: red;"><b>WARNING - Setting to Full Wipe mode cannot be changed.</b></span>
@@ -279,7 +298,22 @@
 				</div>
 
 				<div class="flex-item">
-					<form id="typeSpeedForm" name="typeSpeedForm">
+          <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
+            <h2>PGP Challenge Mode</h2>
+            <h3>Enable or disable challenge code for PGP</h3>
+            <label>
+              <input type="radio" checked name="okPGPChallengeMode" value=1 />
+              <u>Enable Challenge Code for PGP</u>
+            </label>
+            <br/>
+            <label>
+              <input type="radio" name="okPGPChallengeMode" value=2 />
+              <u>Disable Challenge Code for PGP</u>
+            </label>
+            <br/>
+            <input type="button" id="pgpchallengeModeSubmit" value="Set PGP Challenge Mode" />
+          </form>
+          <form id="typeSpeedForm" name="typeSpeedForm">
 						<h2>Keyboard Type Speed</h2>
 						Choose a setting:
 						<input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1-10" />
@@ -287,7 +321,6 @@
 						<br/>
 						(1 = slowest; 10 = fastest [4 = default])
 					</form>
-					<br/>
 					<form id="keyboardLayoutForm" name="keyboardLayoutForm">
 						<h2>Keyboard Layout</h2>
 						Choose a keyboard layout:
@@ -321,6 +354,17 @@
 						<br/>
 						<input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
 					</form>
+          <form id="backupModeForm" name="backupModeForm">
+            <h2>Backup Key Mode</h2>
+            <label>
+              <input type="radio" name="okBackupMode" value=2 />
+              <u>Set once</u> (backup key may only be set once)
+            </label>
+            <br/>
+            <span style="font-size: small; color: red;"><b>WARNING - Setting Backup Key mode to set once cannot be changed.</b></span>
+            <br/><br/>
+            <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" />
+          </form>
 				</div>
 			</div>
         </div>
@@ -458,7 +502,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div id="firmware-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">

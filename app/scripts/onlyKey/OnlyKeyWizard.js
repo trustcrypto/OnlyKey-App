@@ -56,7 +56,10 @@ if (chrome.passwordsPrivate) {
                 prev: 'Step3',
                 next: 'Step5',
                 enterFn: this.onlyKey.flushMessage.bind(this.onlyKey),
-                exitFn: this.submitBackupKey.bind(this),
+                exitFn: () => {
+                  this.setbackupKeyMode('backupKeyMode');
+                  this.submitBackupKey.bind(this);
+              },
             },
             Step5: {
                 prev: 'Step4',
@@ -64,11 +67,11 @@ if (chrome.passwordsPrivate) {
                 exitFn: (cb) => {
                     var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step8"],[data-step="Step9"]'));
                     var classListMethod = this.getMode() === 'TwoFactor' ? 'remove' : 'add';
-        
+
                     dynamicSteps.forEach(function (el) {
                         el.classList[classListMethod]('hide');
                     });
-        
+
                     return cb();
                 },
             },
@@ -91,7 +94,7 @@ if (chrome.passwordsPrivate) {
                         if (err || this.getMode() === 'TwoFactor') {
                             return cb(err, res);
                         }
-        
+
                         this.dialog.open(this.finalStepDialog);
                         return cb(null, 'STOP');
                     });
@@ -103,6 +106,7 @@ if (chrome.passwordsPrivate) {
                 enterFn: () => {
                     this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
                     this.enableDisclaimer('passcode3Disclaimer');
+                    this.set2ndProfileMode('2ndProfileMode');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
                 exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
@@ -119,7 +123,7 @@ if (chrome.passwordsPrivate) {
             Step10: {
                 prev: 'Step10',
             }
-        };        
+        };
     };
 
     Wizard.prototype.enableDisclaimer = function (fieldName) {
@@ -133,6 +137,34 @@ if (chrome.passwordsPrivate) {
         field.addEventListener('change', e => {
             this.enableDisclaimer(fieldName);
         });
+    };
+
+    Wizard.prototype.set2ndProfileMode = function (fieldName) {
+        const field = this.initForm[fieldName];
+        var step9text = document.getElementById('step9-text');
+        if (field == 2) {
+          step9text.innerHTML = "To l"
+        } else {
+
+        }
+
+        //Send message to set 2nd profile mode to value in field
+        this.onlyKey.setSecProfileMode(field, function (err) {
+            this.onlyKey.setLastMessage('received', 'Second Profile Mode set successfully');
+            ui.secProfileModeForm.reset();
+        });
+
+    };
+
+    Wizard.prototype.setbackupKeyMode = function (fieldName) {
+        const field = this.initForm[fieldName];
+
+        //Send message to set backup mode to set once
+        this.onlyKey.setbackupKeyMode(field, function (err) {
+            this.onlyKey.setLastMessage('received', 'Backup Key Mode set successfully');
+            ui.backupKeyModeForm.reset();
+        });
+
     };
 
     Wizard.prototype.setUnguidedStep = function (newStep) {
@@ -538,19 +570,19 @@ if (chrome.passwordsPrivate) {
         if (this.guided) {
             document.getElementById('guided').classList.remove('hide');
             document.getElementById('unguided').classList.add('hide');
-            
+
             if (this.steps[this.currentStep].next) {
                 this.btnNext.removeAttribute('disabled');
             } else {
                 this.btnNext.setAttribute('disabled', 'disabled');
             }
-    
+
             if (this.steps[this.currentStep].prev) {
                 this.btnPrev.removeAttribute('disabled');
             } else {
                 this.btnPrev.setAttribute('disabled', 'disabled');
             }
-    
+
             if (this.steps[this.currentStep].noExit) {
                 this.btnExit.classList.add('hide');
             } else {
