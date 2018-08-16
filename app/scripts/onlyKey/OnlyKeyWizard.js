@@ -106,7 +106,7 @@ if (chrome.passwordsPrivate) {
                 enterFn: () => {
                     this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
                     this.enableDisclaimer('passcode3Disclaimer');
-                    this.set2ndProfileMode('2ndProfileMode');
+                    this.set2ndProfileMode('secProfileMode');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
                 exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
@@ -141,13 +141,7 @@ if (chrome.passwordsPrivate) {
 
     Wizard.prototype.set2ndProfileMode = function (fieldName) {
         const field = this.initForm[fieldName];
-        var step9text = document.getElementById('step9-text');
-        if (field == 2) {
-          step9text.innerHTML = "To l"
-        } else {
-
-        }
-
+        console.info(field);
         //Send message to set 2nd profile mode to value in field
         this.onlyKey.setSecProfileMode(field, function (err) {
             this.onlyKey.setLastMessage('received', 'Second Profile Mode set successfully');

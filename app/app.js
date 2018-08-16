@@ -12,10 +12,17 @@ chrome.app.runtime.onLaunched.addListener(function() {
 //
 // Do not run this when using nwjs.
 if (typeof nw == 'undefined') {
-    var onlyKeyLite = new OnlyKeyLite();
-
-    chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
+    var onlyKeyLite = new OnlyKeyLiteA();
+    chrome.hid.getDevices(onlyKeyLiteA.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+    /*
+    if (device A has not been connected) {
+      onlyKeyLite = new OnlyKeyLiteB();
+      chrome.hid.getDevices(onlyKeyLiteB.deviceInfo, onDevicesEnumerated);
+      chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+    }
+    */
+
 } else {
     const AutoLaunch = require('auto-launch');
     const autoLaunch = new AutoLaunch({
@@ -37,7 +44,18 @@ if (typeof nw == 'undefined') {
         .catch(console.error);
 }
 
-function OnlyKeyLite() {
+function OnlyKeyLiteA() {
+    this.deviceInfo = {
+        vendorId: 7504,
+        productId: 24828
+    };
+    this.maxInputReportSize = 64;
+    this.maxOutputReportSize = 64;
+    this.maxFeatureReportSize = 0;
+    this.messageHeader = [255, 255, 255, 255];
+}
+
+function OnlyKeyLiteB() {
     this.deviceInfo = {
         vendorId: 5824,
         productId: 1158
@@ -62,9 +80,9 @@ function onDevicesEnumerated(devices) {
 }
 
 function onDeviceAdded(device) {
-    if (device.maxInputReportSize === onlyKeyLite.maxInputReportSize &&
-        device.maxOutputReportSize === onlyKeyLite.maxOutputReportSize &&
-        device.maxFeatureReportSize === onlyKeyLite.maxFeatureReportSize) {
+    if (device.maxInputReportSize === onlyKeyLiteA.maxInputReportSize &&
+        device.maxOutputReportSize === onlyKeyLiteA.maxOutputReportSize &&
+        device.maxFeatureReportSize === onlyKeyLiteA.maxFeatureReportSize) {
 
         chrome.hid.connect(device.deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
@@ -77,7 +95,22 @@ function onDeviceAdded(device) {
 
             setTime(connectInfo.connectionId);
         });
-    }
+    } else if (device.maxInputReportSize === onlyKeyLiteB.maxInputReportSize &&
+            device.maxOutputReportSize === onlyKeyLiteB.maxOutputReportSize &&
+            device.maxFeatureReportSize === onlyKeyLiteB.maxFeatureReportSize) {
+
+            chrome.hid.connect(device.deviceId, function (connectInfo) {
+                if (chrome.runtime.lastError) {
+                    console.error("ERROR CONNECTING:", chrome.runtime.lastError);
+                } else if (!connectInfo) {
+                    console.warn("Unable to connect to device.");
+                } else {
+                    console.info("CONNECTINFO:", connectInfo);
+                }
+
+                setTime(connectInfo.connectionId);
+            });
+        }
 }
 
 function setTime(connectionId) {
