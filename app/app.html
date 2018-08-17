@@ -58,10 +58,10 @@
                                 <button id="SetBackup" type="button">Set Backup Passphrase</button>
                             </td>
                             <td>
-                                <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
+                                <button id="SetPDPIN" type="button">Set Second Profile PIN</button>
                             </td>
                             <td>
-                                <button id="SetPDPIN" type="button">Set Second Profile PIN</button>
+                                <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
                             </td>
                         </tr>
                     </table>
@@ -97,48 +97,10 @@
                 </div>
 
                 <div class="step" id="Step5">
-                    <h3>Select OnlyKey Edition</h3>
-                    <b>Modes:</b>
-                    <br/>
-                    <label>
-                        <input type="radio" checked name="ConfigMode" value="TwoFactor" />
-                        Standard Edition (default)
-                    </label>
-                    <br/>
-                    <label>
-                        <input type="radio" name="ConfigMode" value="Unencrypted" />
-                        International Travel Edition
-                    </label>
-                    <br/><br/>
-                </div>
-
-                <div class="step" id="Step6">
-                    <h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3>
-                    <p>
-                        WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. Also this PIN should not be similar to your regular PIN as this could result in unintentionally wiping your OnlyKey. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
-                    </p>
-                    <p>
-                        DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.
-                    </p>
-                    <label>
-                        <input type="checkbox" name="passcode2Disclaimer" />
-                        I understand and accept the above risk.
-                    </label>
-                    <p>
-                        Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.
-                    </p>
-                </div>
-
-                <div class="step" id="Step7">
-                    <h3>Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
-                    <p>
-                        Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.
-                    </p>
-                </div>
-
-                <div class="step" id="Step8">
                     <h3>Enter PIN for Second Profile on OnlyKey Keypad</h3>
                     <p>
+                        Your OnlyKey is now set up and ready to use! If you do not wish to set up a second profile to store addtional accounts or a self-destruct PIN you can remove and reinsert your OnlyKey to start using it right away. <br/>
+                        <br/>
                         The second profile contains an additional 12 slots. Select either a standard (default) or a plausible deniability profile. Learn more about standard and plausible deniability profile <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.
                     </p>
                     <label>
@@ -165,12 +127,37 @@
                     </p>
                 </div>
 
-                <div class="step" id="Step9">
+                <div class="step" id="Step6">
                     <h3>Re-enter PIN for Second Profile on OnlyKey Keypad</h3>
                     <p>
                        Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.
                     </p>
                 </div>
+
+                <div class="step" id="Step7">
+                    <h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3>
+                    <p>
+                        WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. Also this PIN should not be similar to your regular PIN as this could result in unintentionally wiping your OnlyKey. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
+                    </p>
+                    <p>
+                        DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.
+                    </p>
+                    <label>
+                        <input type="checkbox" name="passcode2Disclaimer" />
+                        I understand and accept the above risk.
+                    </label>
+                    <p>
+                        Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.
+                    </p>
+                </div>
+
+                <div class="step" id="Step8">
+                    <h3>Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
+                    <p>
+                        Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.
+                    </p>
+                </div>
+
             </div>
 
             <br/>

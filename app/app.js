@@ -44,7 +44,7 @@ if (typeof nw == 'undefined') {
         .catch(console.error);
 }
 
-function OnlyKeyLiteA() {
+function OnlyKeyLiteB() {
     this.deviceInfo = {
         vendorId: 7504,
         productId: 24828
@@ -55,7 +55,7 @@ function OnlyKeyLiteA() {
     this.messageHeader = [255, 255, 255, 255];
 }
 
-function OnlyKeyLiteB() {
+function OnlyKeyLiteA() {
     this.deviceInfo = {
         vendorId: 5824,
         productId: 1158

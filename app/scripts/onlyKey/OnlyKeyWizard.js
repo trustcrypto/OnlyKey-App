@@ -56,38 +56,44 @@ if (chrome.passwordsPrivate) {
                 prev: 'Step3',
                 next: 'Step5',
                 enterFn: this.onlyKey.flushMessage.bind(this.onlyKey),
-                exitFn: () => {
-                  this.setbackupKeyMode('backupKeyMode');
-                  this.submitBackupKey.bind(this);
-              },
+                exitFn: this.submitBackupKey.bind(this),
             },
             Step5: {
                 prev: 'Step4',
                 next: 'Step6',
-                exitFn: (cb) => {
-                    var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step8"],[data-step="Step9"]'));
-                    var classListMethod = this.getMode() === 'TwoFactor' ? 'remove' : 'add';
-
-                    dynamicSteps.forEach(function (el) {
-                        el.classList[classListMethod]('hide');
-                    });
-
-                    return cb();
+                enterFn: () => {
+                    this.steps.Step6.next = this.guided ? 'Step6' : 'Step1';
+                    this.enableDisclaimer('passcode3Disclaimer');
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
+                },
+                exitFn: () => {
+                  const SetSecProfileMode = document.getElementById('secProfileMode');
+                  this.onlyKey.setSecProfileMode(SetSecProfileMode.value);
+                  this.onlyKey.sendSetPDPin.bind(this.onlyKey);
                 },
             },
             Step6: {
                 prev: 'Step5',
                 next: 'Step7',
+                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
+                exitFn: () => {
+                    this.onlyKey.sendSetPDPin.call(this.onlyKey);
+                    this.dialog.open(this.finalStepDialog);
+                },
+            },
+            Step7: {
+                prev: 'Step6',
+                next: 'Step8',
                 enterFn: () => {
-                    this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
+                    this.steps.Step9.next = this.guided ? 'Step9' : 'Step1';
                     this.enableDisclaimer('passcode2Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
                 },
                 exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
             },
-            Step7: {
-                prev: 'Step6',
-                next: 'Step8',
+            Step8: {
+                prev: 'Step7',
+                next: 'Step9',
                 enterFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
                 exitFn: (cb) => {
                     this.onlyKey.sendSetSDPin((err, res) => {
@@ -100,28 +106,8 @@ if (chrome.passwordsPrivate) {
                     });
                 }
             },
-            Step8: {
-                prev: 'Step7',
-                next: 'Step9',
-                enterFn: () => {
-                    this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
-                    this.enableDisclaimer('passcode3Disclaimer');
-                    this.set2ndProfileMode('secProfileMode');
-                    this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
-                },
-                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
-            },
             Step9: {
                 prev: 'Step8',
-                next: 'Step10',
-                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
-                exitFn: () => {
-                    this.onlyKey.sendSetPDPin.call(this.onlyKey);
-                    this.dialog.open(this.finalStepDialog);
-                },
-            },
-            Step10: {
-                prev: 'Step10',
             }
         };
     };
@@ -139,27 +125,6 @@ if (chrome.passwordsPrivate) {
         });
     };
 
-    Wizard.prototype.set2ndProfileMode = function (fieldName) {
-        const field = this.initForm[fieldName];
-        console.info(field);
-        //Send message to set 2nd profile mode to value in field
-        this.onlyKey.setSecProfileMode(field, function (err) {
-            this.onlyKey.setLastMessage('received', 'Second Profile Mode set successfully');
-            ui.secProfileModeForm.reset();
-        });
-
-    };
-
-    Wizard.prototype.setbackupKeyMode = function (fieldName) {
-        const field = this.initForm[fieldName];
-
-        //Send message to set backup mode to set once
-        this.onlyKey.setbackupKeyMode(field, function (err) {
-            this.onlyKey.setLastMessage('received', 'Backup Key Mode set successfully');
-            ui.backupKeyModeForm.reset();
-        });
-
-    };
 
     Wizard.prototype.setUnguidedStep = function (newStep) {
         this.setGuided(false);
@@ -185,8 +150,9 @@ if (chrome.passwordsPrivate) {
 
         this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
         this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step4');
-        this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
-        this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step8');
+        this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step5');
+        this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step7');
+
 
         this.btnNext.onclick = () => {
             this.setGuided(true);
@@ -307,6 +273,7 @@ if (chrome.passwordsPrivate) {
     Wizard.prototype.submitBackupKey = function () {
         const key1Input = document.getElementById('backupPassphrase');
         const key2Input = document.getElementById('backupPassphrasec');
+        const SetBackupKeyMode = document.getElementById('backupKeyMode');
         const formErrors = [];
 
         this.initConfigErrors.innerHTML = "";
@@ -335,6 +302,7 @@ if (chrome.passwordsPrivate) {
 
         //formErrors.push(key1.value);
         this.onlyKey.setBackupPassphrase(key1Input.value);
+        this.onlyKey.setbackupKeyMode(SetBackupKeyMode.value);
     };
 
     Wizard.prototype.setSlot = function () {
@@ -520,11 +488,11 @@ if (chrome.passwordsPrivate) {
                 case 'OKSETPIN':
                     this.setNewCurrentStep('Step2');
                     break;
-                case 'OKSETSDPIN':
-                    this.setNewCurrentStep('Step6');
-                    break;
                 case 'OKSETPDPIN':
-                    this.setNewCurrentStep('Step8');
+                    this.setNewCurrentStep('Step5');
+                    break;
+                case 'OKSETSDPIN':
+                    this.setNewCurrentStep('Step7');
                     break;
             }
         }
