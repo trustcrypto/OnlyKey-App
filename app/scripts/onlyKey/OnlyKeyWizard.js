@@ -67,8 +67,8 @@ if (chrome.passwordsPrivate) {
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
                 exitFn: () => {
-                  const SetSecProfileMode = document.getElementById('secProfileMode');
-                  this.onlyKey.setSecProfileMode(SetSecProfileMode.value);
+                  const setSecProfileMode = this.initForm.secProfileMode;
+                  this.onlyKey.setSecProfileMode(setSecProfileMode.value);
                   this.onlyKey.sendSetPDPin.bind(this.onlyKey);
                 },
             },
