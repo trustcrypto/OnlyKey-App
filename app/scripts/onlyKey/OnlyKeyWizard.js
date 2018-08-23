@@ -56,7 +56,11 @@ if (chrome.passwordsPrivate) {
                 prev: 'Step3',
                 next: 'Step5',
                 enterFn: this.onlyKey.flushMessage.bind(this.onlyKey),
-                exitFn: this.submitBackupKey.bind(this),
+                exitFn: () => {
+                  const backupKeyMode = this.initForm.backupKeyMode;
+                  this.onlyKey.setbackupKeyMode(backupKeyMode.value);
+                  this.submitBackupKey(this); //Not polling for this message
+                },
             },
             Step5: {
                 prev: 'Step4',
@@ -69,7 +73,7 @@ if (chrome.passwordsPrivate) {
                 exitFn: () => {
                   const setSecProfileMode = this.initForm.secProfileMode;
                   this.onlyKey.setSecProfileMode(setSecProfileMode.value);
-                  this.onlyKey.sendSetPDPin.bind(this.onlyKey);
+                  this.onlyKey.sendSetPDPin(this.onlyKey);
                 },
             },
             Step6: {
@@ -273,7 +277,6 @@ if (chrome.passwordsPrivate) {
     Wizard.prototype.submitBackupKey = function () {
         const key1Input = document.getElementById('backupPassphrase');
         const key2Input = document.getElementById('backupPassphrasec');
-        const SetBackupKeyMode = document.getElementById('backupKeyMode');
         const formErrors = [];
 
         this.initConfigErrors.innerHTML = "";
@@ -302,7 +305,6 @@ if (chrome.passwordsPrivate) {
 
         //formErrors.push(key1.value);
         this.onlyKey.setBackupPassphrase(key1Input.value);
-        this.onlyKey.setbackupKeyMode(SetBackupKeyMode.value);
     };
 
     Wizard.prototype.setSlot = function () {

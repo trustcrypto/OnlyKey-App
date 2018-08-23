@@ -540,6 +540,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
+        secProfileMode = parseInt(secProfileMode, 10);
         this.setSlot('XX', 'SECPROFILEMODE', secProfileMode, callback);
     };
 
@@ -552,6 +553,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
+        backupKeyMode = parseInt(backupKeyMode, 10);
         this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, callback);
     };
 
@@ -796,6 +798,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         callback = typeof callback === 'function' ? callback : handleMessage;
 
         var msg;
+        //var msg = new Uint8Array(4);
+        //do {
         chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
             if (chrome.runtime.lastError) {
                 myOnlyKey.setLastMessage('received', '[error]');
@@ -819,6 +823,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // else call callback with null err and msg as 2nd arg
             return callback(null, msg);
         });
+      //} while (msg[0] != 0 && msg[1] != 0 && msg[2] != 0 && msg[3] != 0);
     };
 
     var readBytes = function (bytes) {
