@@ -55,11 +55,13 @@ if (chrome.passwordsPrivate) {
             Step4: {
                 prev: 'Step3',
                 next: 'Step5',
-                enterFn: this.onlyKey.flushMessage.bind(this.onlyKey),
+                enterFn: () => {
+                    this.btnSubmitStep.disabled = false;
+                    this.onlyKey.flushMessage.call(this.onlyKey);
+                },
                 exitFn: () => {
                   const backupKeyMode = this.initForm.backupKeyMode;
-                  this.onlyKey.setbackupKeyMode(backupKeyMode.value);
-                  this.submitBackupKey(this); //Not polling for this message
+                  this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this));
                 },
             },
             Step5: {

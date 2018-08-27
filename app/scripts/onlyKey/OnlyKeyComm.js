@@ -470,7 +470,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.setBackupPassphrase = function (passphrase) {
-        const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); //32 byte backup key is Sha256 hash of passphrase
+        // abcdefghijklmnopqrstuvwxyz
+        const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
         const type = 161; //Backup and Decryption key
         const slot = 131;
 
