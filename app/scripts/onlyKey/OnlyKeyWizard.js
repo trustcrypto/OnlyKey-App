@@ -57,7 +57,7 @@ if (chrome.passwordsPrivate) {
                 next: 'Step5',
                 enterFn: () => {
                     this.btnSubmitStep.disabled = false;
-                    this.onlyKey.flushMessage.call(this.onlyKey);
+                    this.onlyKey.flushMessage();
                 },
                 exitFn: () => {
                   const backupKeyMode = this.initForm.backupKeyMode;
@@ -72,20 +72,16 @@ if (chrome.passwordsPrivate) {
                     this.enableDisclaimer('passcode3Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
-                exitFn: () => {
-                  const setSecProfileMode = this.initForm.secProfileMode;
-                  this.onlyKey.setSecProfileMode(setSecProfileMode.value);
-                  this.onlyKey.sendSetPDPin(this.onlyKey);
-                },
+                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
             },
             Step6: {
                 prev: 'Step5',
                 next: 'Step7',
-                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
-                exitFn: () => {
-                    this.onlyKey.sendSetPDPin.call(this.onlyKey);
-                    this.dialog.open(this.finalStepDialog);
+                enterFn: () => {
+                    const setSecProfileMode = this.initForm.secProfileMode;
+                    this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
+                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
             },
             Step7: {
                 prev: 'Step6',
