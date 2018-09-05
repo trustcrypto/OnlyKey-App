@@ -469,15 +469,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage({ msgId: 'OKWIPEU2FCERT' }, callback);
     };
 
-    OnlyKey.prototype.setBackupPassphrase = function (passphrase) {
+    OnlyKey.prototype.setBackupPassphrase = function (passphrase, cb) {
         // abcdefghijklmnopqrstuvwxyz
         const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
         const type = 161; //Backup and Decryption key
         const slot = 131;
 
         this.setPrivateKey(slot, type, key, err => {
-            this.listen(handleMessage);
             onlyKeyConfigWizard.initForm.reset();
+            this.listen(cb);
         });
     };
 

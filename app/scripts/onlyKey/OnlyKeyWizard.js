@@ -59,16 +59,16 @@ if (chrome.passwordsPrivate) {
                     this.btnSubmitStep.disabled = false;
                     this.onlyKey.flushMessage();
                 },
-                exitFn: () => {
+                exitFn: (cb) => {
                   const backupKeyMode = this.initForm.backupKeyMode;
-                  this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this));
+                  this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
                 },
             },
             Step5: {
                 prev: 'Step4',
                 next: 'Step6',
                 enterFn: () => {
-                    this.steps.Step6.next = this.guided ? 'Step6' : 'Step1';
+                    this.steps.Step6.next = this.guided ? 'Step7' : 'Step1';
                     this.enableDisclaimer('passcode3Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
@@ -99,7 +99,7 @@ if (chrome.passwordsPrivate) {
                 enterFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
                 exitFn: (cb) => {
                     this.onlyKey.sendSetSDPin((err, res) => {
-                        if (err || this.getMode() === 'TwoFactor') {
+                        if (err || !this.guided) {
                             return cb(err, res);
                         }
 
@@ -272,7 +272,7 @@ if (chrome.passwordsPrivate) {
         this.dialog.open(this.selectPrivateKeyDialog, true);
     };
 
-    Wizard.prototype.submitBackupKey = function () {
+    Wizard.prototype.submitBackupKey = function (cb) {
         const key1Input = document.getElementById('backupPassphrase');
         const key2Input = document.getElementById('backupPassphrasec');
         const formErrors = [];
@@ -302,7 +302,7 @@ if (chrome.passwordsPrivate) {
         }
 
         //formErrors.push(key1.value);
-        this.onlyKey.setBackupPassphrase(key1Input.value);
+        this.onlyKey.setBackupPassphrase(key1Input.value, cb);
     };
 
     Wizard.prototype.setSlot = function () {
