@@ -45,9 +45,8 @@
         <form id="init-panel" name="init-panel" class="hide panel">
             <div id="stepContent">
                 <div class="step" id="Step1">
-                    <h3>Initial Setup</h3>
-                    <p>Jump directly to a specific step, or begin the Guided Setup wizard at bottom by clicking [Next].</p>
-                    <p>Learn more about OnlyKey self destruct and plausible deniability features  <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.</p>
+                    <h3>OnlyKey Setup</h3>
+                    <p>Begin the Guided Setup wizard at bottom by clicking [Next] or if you know what you want to configure, jump directly to a specific step below:</p>
 
                     <table>
                         <tr>
@@ -70,7 +69,10 @@
                 <div class="step" id="Step2">
                     <h3>Enter PIN on OnlyKey Keypad</h3>
                     <p>
-                        WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is also good to have a secure backup of your PIN somewhere just in case you forget.
+                        The first step in setting up OnlyKey is to set a PIN code using the six-button keypad on the OnlyKey. This PIN will be used to unlock your OnlyKey to access your accounts.
+                        <br/>
+                        <br/>
+                        Make sure to choose a PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.
                     </p>
                     <p>
                         DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.
@@ -99,24 +101,23 @@
                 <div class="step" id="Step5">
                     <h3>Enter PIN for Second Profile on OnlyKey Keypad</h3>
                     <p>
-                        Your OnlyKey is now set up and ready to use! If you do not wish to set up a second profile to store addtional accounts or a self-destruct PIN you can remove and reinsert your OnlyKey to start using it right away. <br/>
+                        Your OnlyKey is now set up to store 12 accounts and is ready to use! OnlyKey permits adding a second profile to store an additonal 12 accounts (24 total). Set a second PIN to access the second profile. Second profile must be configured during initial setup and cannot be set up later.  <br/>
                         <br/>
-                        The second profile contains an additional 12 slots. Select either a standard (default) or a plausible deniability profile. Learn more about standard and plausible deniability profile <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.
-                    </p>
+                        Select a second profile type:
+                        </p>
                     <label>
                       <input type="radio" checked name="secProfileMode" value=1 />
-                      <u>Standard Profile (Default)</u>
+                      <u>Standard Profile (recommended for most users)</u>
                     </label>
                     <br/>
                     <label>
                       <input type="radio" name="secProfileMode" value=2 />
                       <u>Plausible Deniability Profile</u>
                     </label>
+                    <br/>
+                    Learn more about standard and plausible deniability profile <a href="https://docs.crp.to/features.html#self-destruct" class="external">here</a>.
                     <p>
-                        WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
-                    </p>
-                    <p>
-                        DISCLAIMER &mdash; I understand that entering this passcode will cause OnlyKey to load a second profile and appear as if I am using the Unencrypted Password Manager (International Version) firmware. This may be helpful if I am forced to give up my passcode in some situations; however, I understand that there is no level of safety guaranteed or implied, and I am using this feature at my own risk.
+                      DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.
                     </p>
                     <label>
                         <input type="checkbox" name="passcode3Disclaimer" />
@@ -137,7 +138,10 @@
                 <div class="step" id="Step7">
                     <h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3>
                     <p>
-                        WARNING &mdash; Make sure to choose a PIN that you will not forget and that only you know. Also this PIN should not be similar to your regular PIN as this could result in unintentionally wiping your OnlyKey. It is your responsibility to maintain a secure backup of your PIN somewhere just in case you forget.
+                      Your OnlyKey is now set up to store 24 accounts and is ready to use! OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.
+                    </p>
+                    </p>
+                        WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.
                     </p>
                     <p>
                         DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.
@@ -400,23 +404,24 @@
                         <br/>
 
                         <label>
-                            <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true"/>
-                            Set as backup key (only one backup may be set)
-                        </label>
-
-                        <br/>
-
-                        <label>
                             <input type="checkbox" id="rsaSetAsSignature" name="rsaSetAsSignature" value="true"/>
-                            Set as signature key
+                            Set as signature key - Use key to sign messages
                         </label>
 
                         <br/>
 
                         <label>
                             <input type="checkbox" id="rsaSetAsDecryption" name="rsaSetAsDecryption" value="true"/>
-                            Set as decryption key
+                            Set as decryption key - Use key to decrypt messages
                         </label>
+
+                        <br/>
+
+                        <label>
+                            <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true"/>
+                            Set as backup key - Only one backup key may be set. If you already have a backup passphrase set this will use PGP key for secure backup instead of passphrase.
+                        </label>
+
 
                         <br/>
                         <br/>
@@ -436,7 +441,7 @@
 
                         <fieldset>
                             <p>
-                                <u>Step 1</u>. To begin backup ensure that you have a backup key set (in the keys tab) and that you have an offline copy of this backup key. The same key that you use to backup your OnlyKey will be required to restore your OnlyKey.
+                                <u>Step 1</u>. To begin backup ensure that you have a backup passphrase or key set and that you have an offline copy of this backup key. The same key that you use to backup your OnlyKey will be required to restore your OnlyKey.
                             </p>
                             <p>
                                 <u>Step 2</u>. Click inside the text area below with your mouse. Hold the #1 button down on your OnlyKey for 5+ seconds and release. This will type out an encrypted backup of your OnlyKey into the box.
@@ -474,7 +479,7 @@
                                 <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your backup file, then click [Restore to OnlyKey].
                             </p>
                             <p>
-                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then green when restoring is complete. Remove and reinsert OnlyKey to complete the process.
+                                <u>Step 3</u>. The OnlyKey will flash yellow while restoring your backup, then will automatically reboot when restoring is complete.
                             </p>
                         </fieldset>
 
