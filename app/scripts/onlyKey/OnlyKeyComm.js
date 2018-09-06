@@ -545,11 +545,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setSlot('XX', 'SECPROFILEMODE', secProfileMode, callback);
     };
 
-    OnlyKey.prototype.setsshchallengeMode = function (sshchallengeMode, callback) {
+    OnlyKey.prototype.setSSHChallengeMode = function (sshchallengeMode, callback) {
         this.setSlot('XX', 'SSHCHALLENGEMODE', sshchallengeMode, callback);
     };
 
-    OnlyKey.prototype.setpgpchallengeMode = function (pgpchallengeMode, callback) {
+    OnlyKey.prototype.setPGPChallengeMode = function (pgpchallengeMode, callback) {
         this.setSlot('XX', 'PGPCHALLENGEMODE', pgpchallengeMode, callback);
     };
 
@@ -623,6 +623,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.u2fAuthForm = document['u2fAuthForm'];
         ui.lockoutForm = document['lockoutForm'];
         ui.wipeModeForm = document['wipeModeForm'];
+        ui.pgpchallengeModeForm = document['pgpchallengeModeForm'];
+        ui.sshchallengeModeForm = document['sshchallengeModeForm'];
         ui.typeSpeedForm = document['typeSpeedForm'];
         ui.keyboardLayoutForm = document['keyboardLayoutForm'];
         ui.eccForm = document['eccForm'];
@@ -1017,6 +1019,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         var wipeModeSubmit = document.getElementById('wipeModeSubmit');
         wipeModeSubmit.addEventListener('click', submitWipeModeForm);
+
+        var pgpchallengeModeSubmit = document.getElementById('pgpchallengeModeSubmit');
+        pgpchallengeModeSubmit.addEventListener('click', submitpgpchallengeModeForm);
+
+        var sshchallengeModeSubmit = document.getElementById('sshchallengeModeSubmit');
+        sshchallengeModeSubmit.addEventListener('click', submitsshchallengeModeForm);
 
         var typeSpeedSubmit = document.getElementById('typeSpeedSubmit');
         typeSpeedSubmit.addEventListener('click', submitTypeSpeedForm);
@@ -1552,21 +1560,21 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitSecProfileModeForm(e) {
-        var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
+    function submitpgpchallengeModeForm(e) {
+        var pgpchallengeMode = parseInt(ui.pgpchallengeModeForm.okPGPChallengeMode.value, 10);
 
-        myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'Second Profile Mode set successfully');
-            ui.SecProfileModeForm.reset();
+        myOnlyKey.setPGPChallengeMode(pgpchallengeMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'PGP Challenge Mode set successfully');
+            ui.pgpchallengeModeForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitsshchallengeMode(e) {
-        var sshchallengeMode = parseInt(ui.sshchallengeModeForm.oksshchallengeMode.value, 10);
+    function submitsshchallengeModeForm(e) {
+        var sshchallengeMode = parseInt(ui.sshchallengeModeForm.okSSHChallengeMode.value, 10);
 
-        myOnlyKey.setsshchallengeMode(sshchallengeMode, function (err) {
+        myOnlyKey.setSSHChallengeMode(sshchallengeMode, function (err) {
             myOnlyKey.setLastMessage('received', 'SSH Challenge Mode set successfully');
             ui.sshchallengeModeForm.reset();
         });
@@ -1574,12 +1582,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitpgpchallengeMode(e) {
-        var pgpchallengeMode = parseInt(ui.pgpchallengeModeForm.okpgpchallengeMode.value, 10);
 
-        myOnlyKey.setpgpchallengeMode(pgpchallengeMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'PGP Challenge Mode set successfully');
-            ui.pgpchallengeModeForm.reset();
+    function submitSecProfileModeForm(e) {
+        var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
+
+        myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {
+            myOnlyKey.setLastMessage('received', 'Second Profile Mode set successfully');
+            ui.SecProfileModeForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
