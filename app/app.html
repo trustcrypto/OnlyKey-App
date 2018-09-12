@@ -46,21 +46,22 @@
             <div id="stepContent">
                 <div class="step" id="Step1">
                     <h3>OnlyKey Setup</h3>
-                    <p>Begin the Guided Setup wizard at bottom by clicking [Next] or if you know what you want to configure, jump directly to a specific step below:</p>
+                    <p class="uninit-only">Begin the Guided Setup wizard at bottom by clicking [Next] or, if you know what you want to configure, jump directly to a specific step below:</p>
+                    <p class="init-only">Your OnlyKey is ready to use! You can change the security settings below at any time.</p>
 
                     <table>
                         <tr>
-                            <td>
+                            <td class="uninit-only">
                                 <button id="SetPIN" type="button">Set PIN</button>
                             </td>
                             <td>
                                 <button id="SetBackup" type="button">Set Backup Passphrase</button>
                             </td>
-                            <td>
+                            <td class="uninit-only">
                                 <button id="SetPDPIN" type="button">Set Second Profile PIN</button>
                             </td>
                             <td>
-                                <button id="SetSDPIN" type="button">Set Self-destruct PIN</button>
+                                <button id="SetSDPIN" type="button">Set Self-Destruct PIN</button>
                             </td>
                         </tr>
                     </table>
@@ -166,7 +167,7 @@
 
             <br/>
 
-            <div id="guided" class="step-nav">
+            <div id="guided" class="step-nav hide uninit-only">
                 <hr/>
 
                 <b>Guided Setup</b>

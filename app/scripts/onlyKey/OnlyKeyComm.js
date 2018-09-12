@@ -123,7 +123,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.fwUpdateSupport = false;
 
         this.isBootloader = false;
-        this.isInitialized = false;
         this.isLocked = true;
 
         this.keyTypeModifiers = {
@@ -200,6 +199,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.connection = connectionId;
         if (connectionId === -1) {
             myOnlyKey = new OnlyKey();
+            myOnlyKey.setInitialized(false);
             dialog.open(ui.disconnectedDialog);
         } else {
             dialog.open(ui.workingDialog);
@@ -582,6 +582,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
     };
 
+    OnlyKey.prototype.setInitialized = function (initialized) {
+        if (initialized !== this.isInitialized) {
+            this.isInitialized = initialized;
+            onlyKeyConfigWizard.init(this);
+        }
+    };
+
     var ui = {
         showInitPanel: null,
         showSlotPanel: null,
@@ -858,7 +865,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         switch (msg) {
             case "UNINITIALIZED":
             case "INITIALIZED":
-                myOnlyKey.isInitialized = (msg === "INITIALIZED");
+                myOnlyKey.setInitialized(msg === "INITIALIZED");
                 updateUI = true;
 
                 // special handling if last message sent was PIN-related
@@ -887,7 +894,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
           myOnlyKey.fwUpdateSupport = true;
         }
         else if (msg.indexOf("BOOTLOADER") > 0) {
-           myOnlyKey.isInitialized = true;
+           myOnlyKey.setInitialized(true);
            myOnlyKey.isBootloader = true;
            myOnlyKey.isLocked = false;
            version = msg.split("UNLOCKED").pop();
@@ -900,7 +907,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
                 pollForInput();
             } else {
-                myOnlyKey.isInitialized = true;
+                myOnlyKey.setInitialized(true);
                 version = msg.split("UNLOCKED").pop();
                 myOnlyKey.setVersion(version);
                 setOkVersionStr();

@@ -13,7 +13,6 @@ if (chrome.passwordsPrivate) {
 
     function Wizard() {
         this.steps = {};
-        this.setGuided(true);
         this.dialog = new DialogMgr();
         this.currentSlot = {};
     }
@@ -24,7 +23,7 @@ if (chrome.passwordsPrivate) {
 
         this.onlyKey = myOnlyKey;
         this.initSteps();
-        this.currentStep = 'Step1';
+        this.currentStep = null;
         this.uiInit();
         this.reset();
     };
@@ -56,6 +55,7 @@ if (chrome.passwordsPrivate) {
                 prev: 'Step3',
                 next: 'Step5',
                 enterFn: () => {
+                    this.steps.Step4.next = this.guided ? 'Step5' : 'Step1';
                     this.btnSubmitStep.disabled = false;
                     this.onlyKey.flushMessage();
                 },
@@ -87,7 +87,7 @@ if (chrome.passwordsPrivate) {
                 prev: 'Step6',
                 next: 'Step8',
                 enterFn: () => {
-                    this.steps.Step9.next = this.guided ? 'Step9' : 'Step1';
+                    this.steps.Step8.next = this.guided ? 'Step9' : 'Step1';
                     this.enableDisclaimer('passcode2Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
                 },
@@ -126,7 +126,6 @@ if (chrome.passwordsPrivate) {
             this.enableDisclaimer(fieldName);
         });
     };
-
 
     Wizard.prototype.setUnguidedStep = function (newStep) {
         this.setGuided(false);
@@ -232,10 +231,22 @@ if (chrome.passwordsPrivate) {
         this.setActiveStepUI();
     };
 
+    Wizard.prototype.checkInitialized = function () {
+        const isInitialized = this.onlyKey && this.onlyKey.isInitialized;
+
+        if (isInitialized) {
+            document.querySelectorAll('.init-only').forEach(el => el.classList.remove('hide'));
+            document.querySelectorAll('.uninit-only').forEach(el => el.classList.add('hide'));
+        } else {
+            document.querySelectorAll('.init-only').forEach(el => el.classList.add('hide'));
+            document.querySelectorAll('.uninit-only').forEach(el => el.classList.remove('hide'));
+        }
+
+        return isInitialized;
+    };
+
     Wizard.prototype.setGuided = function (guided) {
-        this.guided = !!guided;
-        const nextTxt = document.querySelectorAll('.nextTxt');
-        nextTxt.forEach(e => e.innerHTML = this.guided ? 'Next' : 'Submit');
+        this.guided = !!guided && !this.checkInitialized(); // guided setup is only for uninitialized devices
     };
 
     Wizard.prototype.initKeySelect = function (rawKey, cb) {
@@ -463,6 +474,8 @@ if (chrome.passwordsPrivate) {
     Wizard.prototype.moveStep = function (direction) {
         // if a next/prev step exists, call current step-related exit function
         // and set new current step
+        this.currentStep = this.currentStep || 'Step1';
+
         if (this.steps[this.currentStep][direction]) {
             if (this.steps[this.currentStep].exitFn) {
                 this.steps[this.currentStep].exitFn((err, res) => {
@@ -501,16 +514,19 @@ if (chrome.passwordsPrivate) {
     Wizard.prototype.setNewCurrentStep = function (stepId) {
         this.currentStep = stepId;
 
-        // call new current step-related enter function
-        if (this.steps[stepId].enterFn) {
-            this.steps[stepId].enterFn((err, res) => {
-                if (err) {
-                    console.error(err);
-                    this.goBackOnError(err, res);
-                } else {
-                    console.info(res);
-                }
-            });
+        if (this.currentStep) {
+
+            // call new current step-related enter function
+            if (this.steps[stepId].enterFn) {
+                this.steps[stepId].enterFn((err, res) => {
+                    if (err) {
+                        console.error(err);
+                        this.goBackOnError(err, res);
+                    } else {
+                        console.info(res);
+                    }
+                });
+            }
         }
 
         this.setActiveStepUI();
@@ -518,10 +534,12 @@ if (chrome.passwordsPrivate) {
 
     Wizard.prototype.setActiveStepUI = function () {
         // set display style for all steps
+        const currentStepOrFirst = this.currentStep || 'Step1';
+        
         for(var stepId in this.steps) {
             var el = document.getElementById(stepId);
             if (el) {
-                if (stepId === this.currentStep) {
+                if (stepId === currentStepOrFirst) {
                     el.classList.add('active');
                 } else {
                     el.classList.remove('active');
@@ -533,26 +551,31 @@ if (chrome.passwordsPrivate) {
             document.getElementById('guided').classList.remove('hide');
             document.getElementById('unguided').classList.add('hide');
 
-            if (this.steps[this.currentStep].next) {
+            if (this.steps[currentStepOrFirst].next) {
                 this.btnNext.removeAttribute('disabled');
             } else {
                 this.btnNext.setAttribute('disabled', 'disabled');
             }
 
-            if (this.steps[this.currentStep].prev) {
+            if (this.steps[currentStepOrFirst].prev) {
                 this.btnPrev.removeAttribute('disabled');
             } else {
                 this.btnPrev.setAttribute('disabled', 'disabled');
             }
 
-            if (this.steps[this.currentStep].noExit) {
+            if (this.steps[currentStepOrFirst].noExit) {
                 this.btnExit.classList.add('hide');
             } else {
                 this.btnExit.classList.remove('hide');
             }
         } else {
             document.getElementById('guided').classList.add('hide');
-            document.getElementById('unguided').classList.remove('hide');
+
+            if (this.currentStep) {
+                document.getElementById('unguided').classList.remove('hide');
+            } else {
+                document.getElementById('unguided').classList.add('hide');
+            }
         }
 
         this.initConfigErrors.innerHTML = '';
@@ -589,7 +612,7 @@ if (chrome.passwordsPrivate) {
 
     Wizard.prototype.reset = function () {
         this.setGuided(true);
-        this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, 'Step1'));
+        this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, null));
     };
 
     document.addEventListener('DOMContentLoaded', () => {
