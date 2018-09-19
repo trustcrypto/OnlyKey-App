@@ -1,9 +1,41 @@
 /* jshint esnext:true */
+const SUPPORTED_DEVICES = [
+    {
+        vendorId: 5824,
+        productId: 1158,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 7504,
+        productId: 24828,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+];
+
+function getSupportedDevice(deviceInfo) {
+    let supportedDevice;
+
+    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+        let device = SUPPORTED_DEVICES[d];
+
+        const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
+        if (isMatch) {
+            supportedDevice = device;
+            break;
+        }
+    }
+
+    return supportedDevice;
+}
 
 // A proxy for the Chrome HID service. Stored in a global variable so it is
 // accessible for integration tests. We use this to simulate an OnlyKey being
 // plugged into the computer.
-var chromeHid = {
+const chromeHid = {
     // chrome.hid.connect(integer deviceId, function callback)
     connect: function(deviceId, callback) {
         if (deviceId === 'mockDevice') {
@@ -111,14 +143,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var myOnlyKey = new OnlyKey();
     var dialog = new DialogMgr();
 
-    function OnlyKey() {
+    function OnlyKey(params = {}) {
         this.connection = -1;
         this.currentSlotId = null;
 
-        this.deviceInfo = {
-            vendorId: 5824,
-            productId: 1158
-        };
+        Object.assign(this, params.deviceInfo); // vendorId, productId, maxInputReportSize, etc
 
         this.fwUpdateSupport = false;
 
@@ -137,10 +166,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             sent: [],
             received: []
         };
-
-        this.maxFeatureReportSize = 0;
-        this.maxInputReportSize = 64;
-        this.maxOutputReportSize = 64;
 
         this.messageHeader = [255, 255, 255, 255];
         this.messageFields = {
@@ -197,8 +222,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     OnlyKey.prototype.setConnection = function (connectionId) {
         console.info("Setting connectionId to " + connectionId);
         this.connection = connectionId;
+
         if (connectionId === -1) {
-            myOnlyKey = new OnlyKey();
+            myOnlyKey = new OnlyKey({ deviceInfo: this.deviceInfo });
             myOnlyKey.setInitialized(false);
             dialog.open(ui.disconnectedDialog);
         } else {
@@ -732,9 +758,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     var enumerateDevices = function () {
-        chromeHid.getDevices(myOnlyKey.deviceInfo, onDevicesEnumerated);
-        chromeHid.onDeviceAdded.addListener(onDeviceAdded);
-        chromeHid.onDeviceRemoved.addListener(onDeviceRemoved);
+        for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+            const { vendorId, productId } = SUPPORTED_DEVICES[d];
+            const deviceInfo = { vendorId, productId };
+    
+            console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
+
+            chromeHid.getDevices(deviceInfo, onDevicesEnumerated);
+        }
     };
 
     var onDevicesEnumerated = function (devices) {
@@ -743,24 +774,24 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             return;
         }
 
-        console.info("HID devices:", devices);
-
-        for (var device of devices) {
-            onDeviceAdded(device);
+        if (devices && devices.length) {
+            console.info("HID devices found:", devices);
+            devices.forEach(onDeviceAdded);
         }
     };
 
     var onDeviceAdded = function (device) {
         // auto connect desired device
-        if (device.maxInputReportSize === myOnlyKey.maxInputReportSize &&
-            device.maxOutputReportSize === myOnlyKey.maxOutputReportSize &&
-            device.maxFeatureReportSize === myOnlyKey.maxFeatureReportSize) {
-            connectDevice(device.deviceId);
+        const supportedDevice = getSupportedDevice(device);
+        if (supportedDevice) {
+            connectDevice(device);
         }
     };
 
-    var connectDevice = function (deviceId) {
-        console.info('CONNECTING deviceId:', deviceId);
+    var connectDevice = function (device) {
+        const deviceId = device.deviceId;
+
+        console.info('CONNECTING device:', device);
 
         dialog.close(ui.disconnectedDialog);
         dialog.open(ui.workingDialog);
@@ -770,8 +801,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 console.error("ERROR CONNECTING:", chrome.runtime.lastError);
             } else if (!connectInfo) {
                 console.warn("Unable to connect to device.");
-            } else {
-                console.info("CONNECTINFO:", connectInfo);
             }
 
             myOnlyKey.setConnection(connectInfo.connectionId);
@@ -958,6 +987,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         console.info("OnlyKeyComm init() called");
         initializeWindow();
         myOnlyKey.setConnection(-1);
+        chromeHid.onDeviceAdded.addListener(onDeviceAdded);
+        chromeHid.onDeviceRemoved.addListener(onDeviceRemoved);
     }
 
     function toggleConfigPanel(e) {
