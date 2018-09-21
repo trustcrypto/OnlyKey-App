@@ -1,15 +1,22 @@
 /*jshint esnext: true */
 const SUPPORTED_DEVICES = [
     {
-        vendorId: 5824,
+        vendorId: 5824, //OnlyKey firmware before Beta 7
         productId: 1158,
         maxInputReportSize: 64,
         maxOutputReportSize: 64,
         maxFeatureReportSize: 0,
     },
     {
-        vendorId: 7504,
+        vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
         productId: 24828,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 0000, //Black Vault Labs Bootloaderv1
+        productId: 45057,
         maxInputReportSize: 64,
         maxOutputReportSize: 64,
         maxFeatureReportSize: 0,

@@ -1,15 +1,22 @@
 /* jshint esnext:true */
 const SUPPORTED_DEVICES = [
     {
-        vendorId: 5824,
+        vendorId: 5824, //OnlyKey firmware before Beta 7
         productId: 1158,
         maxInputReportSize: 64,
         maxOutputReportSize: 64,
         maxFeatureReportSize: 0,
     },
     {
-        vendorId: 7504,
+        vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
         productId: 24828,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 0000, //Black Vault Labs Bootloaderv1
+        productId: 45057,
         maxInputReportSize: 64,
         maxOutputReportSize: 64,
         maxFeatureReportSize: 0,
@@ -761,7 +768,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
             const { vendorId, productId } = SUPPORTED_DEVICES[d];
             const deviceInfo = { vendorId, productId };
-    
+
             console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
 
             chromeHid.getDevices(deviceInfo, onDevicesEnumerated);
@@ -1495,7 +1502,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                     } else {
                       console.info(`This signature`, line.slice(0, 64))
                       console.info(`Block info`, line.slice(64, 65))
-                      await listenForMessageIncludes('SUCCESSFULLY LOADED FIRMWARE');
+                      await listenForMessageIncludes('SUCCESSFULLY LOADED FW');
                       firmwaretext.innerHTML = "Firmware Load Complete!";
                     }
                 } catch(err) {
@@ -1528,7 +1535,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             const packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
 
             myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, () => {
-                listenForMessageIncludes('OKFWUPDATE PACKET').then(result => {
+                listenForMessageIncludes('RECEIVED OKFWUPDATE').then(result => {
                     if (finalPacket) {
                         console.info(`FINAL PACKET SENT`);
                         return resolve('submitFirmwareData complete');
