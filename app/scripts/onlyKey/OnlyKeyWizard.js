@@ -153,19 +153,16 @@ if (chrome.passwordsPrivate) {
 
         this.initConfigErrors = document.getElementById('initConfigErrors');
 
-        var step8text = document.getElementById('step8-text');
-        var step9text = document.getElementById('step9-text');
-        var step10text = document.getElementById('step10-text');
-        step8text.innerHTML = "<p>Your passphrase will be used for secure backup and restore of your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p><br/><label><b>Enter Passphrase:</b><input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label><br/><br/><label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br/><label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label><br/><td><button id='SetPGPKey' type='button'><b>Use PGP Key instead of passphrase</b></button></td><br/><br/>Learn more about secure backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere' class='external'>here</a>.";
-        step9text.innerHTML = "<p>Your PGP key will be used for secure backup and restore of your OnlyKey, make sure to store it in a secure location.</p><div class='flex-item'><p>Need a key? Follow our guide <a href='https://docs.crp.to/usersguide.html#generating-keys' class='external'>here</a> for generating an OpenPGP key with Keybase.</p><div class='flex-item'><form id='rsaForm' name='rsaForm' class='auth-form'><h2>RSA Private Key (PEM Format)</h2><label>Slot:<select id='rsaSlot' name='rsaSlot'><option value=1>1</option><option value=2>2</option><option value=3>3</option><option value=4>4</option></select></label><br/><br/><label>Key:<br/><textarea id='rsaKey' name='rsaKey' cols='40' rows='10' placeholder='RSA Key -- paste PEM file contents' required></textarea></label><br/><label>Passphrase:<input type='password' id='rsaPasscode' name='rsaPasscode' /></label><br/><br/><label><input type='checkbox' id='rsaSetAsSignature' name='rsaSetAsSignature' value='true'/>Set as signature key - Use key to sign messages</label><br/><label><input type='checkbox' id='rsaSetAsDecryption' name='rsaSetAsDecryption' value='true' checked/>Set as decryption key - Use key to decrypt messages</label><br/><label><input type='checkbox' id='rsaSetAsBackup' name='rsaSetAsBackup' value='true' checked/>Set as backup key - Only one backup key may be set. If you already have a backup passphrase set this will use PGP key for secure backup instead of passphrase.</label><br/><br/><input type='button' id='rsaSubmit' name='rsaSubmit' value='Save Backup Key' /><div id='rsaFormError' class='form-error'></div></form></div><br/><label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label><br/><td><button id='SetPasshrase' type='button'><b>Use passphrase instead of PGP key</b></button></td><br/><br/>Learn more about secure backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere' class='external'>here</a>.";
-        step10text.innerHTML = "<form id='restoreForm' name='restoreForm' class='auth-form'><fieldset>To restore a backup file to your OnlyKey, ensure you have loaded the same key you used to create the backup and set the key as your backup key.<p>Click [Choose File], select your backup file, then click [Restore to OnlyKey].</p><p>The OnlyKey light will be yellow while restoring your backup, then will automatically reboot when restoring is complete.</p></fieldset><br/><br/><input type='file' id='restoreSelectFile' name='restoreSelectFile' value='Select File' /><br/><br/><input type='button' id='doRestore' name='doRestore' value='Restore to OnlyKey' /><div id='restoreFormError' class='form-error'></div></form>";
-
         this.setPIN = document.getElementById('SetPIN');
         this.setBackup = document.getElementById('SetBackup');
+        this.skipPDPIN = document.getElementById('SkipPDPIN');
         this.setSDPIN = document.getElementById('SetSDPIN');
+        this.skipSDPIN = document.getElementById('SkipSDPIN');
         this.setPDPIN = document.getElementById('SetPDPIN');
         this.setPassphrase = document.getElementById('SetPasshrase');
         this.setPGPKey = document.getElementById('SetPGPKey');
+        this.restoreBackup = document.getElementById('RestoreBackup');
+        this.loadFirmware = document.getElementById('LoadFirmware');
 
         this.btnNext = document.getElementById('btnNext');
         this.btnPrev = document.getElementById('btnPrevious');
@@ -178,8 +175,12 @@ if (chrome.passwordsPrivate) {
         this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
         this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step4');
         this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
+        this.skipPDPIN.onclick = this.gotoStep.bind(this, 'Step6');
+        this.skipSDPIN.onclick = this.gotoStep.bind(this, 'Step8');
         this.setPassphrase.onclick = this.gotoStep.bind(this, 'Step8');
         this.setPGPKey.onclick = this.gotoStep.bind(this, 'Step9');
+        this.restoreBackup.onclick = this.setUnguidedStep.bind(this, 'Step10');
+        this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
 
 
 
