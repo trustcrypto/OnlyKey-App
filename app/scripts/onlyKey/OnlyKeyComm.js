@@ -689,7 +689,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage(options, callback);
     };
 
-    OnlyKey.prototype.firmware = function (firmwareData, packetHeader, callback) {
+    OnlyKey.prototype.firmware = async function (firmwareData, packetHeader, callback) {
         var msg = [ packetHeader ];
         msg = msg.concat(firmwareData.match(/.{2}/g));
         var options = {
@@ -1655,7 +1655,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
     function submitFirmwareData(firmwareData) {
-        return new Promise((resolve, reject) => {
+        return new Promise(async function (resolve, reject) {
             // this function should recursively call itself until all bytes are sent in chunks
             if (!firmwareData.length) {
                 return reject(`Invalid firmwareData`);
@@ -1667,8 +1667,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // packetHeader is hex number of bytes in chunk
             const packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
 
-            myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, () => {
-                listenForMessageIncludes('RECEIVED OKFWUPDATE').then(result => {
+            myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, async function () {
+                await listenForMessageIncludes('RECEIVED OKFWUPDATE').then(result => {
                     if (finalPacket) {
                         console.info(`FINAL PACKET SENT`);
                         return resolve('submitFirmwareData complete');
@@ -1680,14 +1680,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         });
     }
 
+
     async function listenForMessageIncludes(str) {
-        return new Promise((resolve, reject) => {
-            console.info(`Listening for "${str}"...`);
+        return new Promise(async function listenForMessageIncludesAgain (resolve, reject) {
+              console.info(`Listening for "${str}"...`);
+              var match = 0;
               myOnlyKey.listen((err, msg) => {
                   if (msg && msg.includes(str)) {
                       console.info(`Match received "${msg}"...`);
+                      match=1;
                       resolve();
+                  } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
+                    //Chrome app background page sends settime which results in unexpected unlocked response
+                      console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
+                      listenForMessageIncludesAgain(str);
                   } else {
+                      match=-1;
                       reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
                   }
               });
