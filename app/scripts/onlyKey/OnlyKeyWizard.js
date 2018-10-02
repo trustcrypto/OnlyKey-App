@@ -116,11 +116,18 @@ if (chrome.passwordsPrivate) {
                 enterFn: () => {
                 },
                 exitFn: (cb) => {
+                  this.submitRestoreFile(this, cb);
                 },
             },
-            Step11: {
+            Step11: { //Load Firmware
                 prev: 'Step10',
-            }
+                next: 'Step1',
+                enterFn: () => {
+                },
+                exitFn: (cb) => {
+                  this.submitFirmwareFile(this, cb);
+                },
+            },
         };
     };
 
@@ -159,7 +166,7 @@ if (chrome.passwordsPrivate) {
         this.setSDPIN = document.getElementById('SetSDPIN');
         this.skipSDPIN = document.getElementById('SkipSDPIN');
         this.setPDPIN = document.getElementById('SetPDPIN');
-        this.setPassphrase = document.getElementById('SetPasshrase');
+        this.setPassphrase = document.getElementById('SetPassphrase');
         this.setPGPKey = document.getElementById('SetPGPKey');
         this.restoreBackup = document.getElementById('RestoreBackup');
         this.loadFirmware = document.getElementById('LoadFirmware');
@@ -349,25 +356,30 @@ if (chrome.passwordsPrivate) {
     };
 
 
+    Wizard.prototype.submitFirmwareFile = function (cb) {
+        var firmwareSelectFile  = document.getElementById('firmwareSelectFile');
+        this.onlykey.submitFirmware(firmwareSelectFile, cb);
+    };
+
+    Wizard.prototype.submitRestoreFile = function (cb) {
+        var fileSelector  = document.getElementById('restoreSelectFile');
+        this.onlykey.submitRestore(fileSelector, cb);
+    };
+
     Wizard.prototype.submitBackupRSAKey = function (cb) {
-        const rsaKey = document.getElementById('rsaKey');
-        const rsaPasscode = document.getElementById('rsaPasscode');
+        const backuprsaKey = document.getElementById('backupRSAKey');
+        const backuprsaPasscode = document.getElementById('backupRSAPasscode');
+        const backupKeyModePGP = document.getElementById('backupKeyModePGP');
+        const backuprsaslot = document.getElementById('backupRSASlot');
+        const backupRSASetAsSignature = document.getElementById('backupRSASetAsSignature');
+        const backupRSASetAsDecryption = 1;
+        const backupRSASetAsBackup = 1;
         const formErrors = [];
 
         this.initConfigErrors.innerHTML = "";
 
-        if (formErrors.length) {
-            // early exit
-            let html = "<ul>";
-            for (let i = 0; i < formErrors.length; i++) {
-                html += "<li>" + formErrors[i] + "</li>";
-            }
-            this.initConfigErrors.innerHTML = html + "</ul>";
-            return;
-        }
-
-        var key = rsaKey.value || '';
-        var passcode = rsaPasscode.value || '';
+        var key = backuprsaKey.value || '';
+        var passcode = backuprsaPasscode.value || '';
 
         //key = key.toString().replace(/\s/g,'');
 
@@ -380,14 +392,9 @@ if (chrome.passwordsPrivate) {
           formErrors.push('Passcode cannot be empty.');
             //return ui.rsaForm.setError('Passcode cannot be empty.');
         }
-        const backupKeyMode = this.initForm.backupKeyMode;
-        const rsaslot = this.initForm.rsaSlot;
 
-        this.onlykey.setRSABackupKey(key, passcode, rsaslot.value, backupKeyMode.value, cb);
-
-
+        this.onlykey.setRSABackupKey(key, passcode, backuprsaslot.value, backupKeyModePGP.value, cb);
     };
-
 
     Wizard.prototype.setSlot = function () {
         this.slotSubmit.disabled = true;
