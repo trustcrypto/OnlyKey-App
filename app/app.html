@@ -185,11 +185,9 @@
                     <h3>Set a Backup Key</h3>
                     <p id="step9-text"></p>
                     <p>Your PGP key will be used for secure backup and restore of your OnlyKey, make sure to store it in a secure location.</p>
-                    <div class='flex-item'>
+                    <div>
                       <p>Need a key? Follow our guide <a href='https://docs.crp.to/usersguide.html#generating-keys' class='external'>here</a> for generating an OpenPGP key with Keybase.</p>
                     </div>
-                      <div class='flex-item'>
-                        <form id='rsaForm' name='rsaForm' class='auth-form'>
                           <label>Slot:<select id='rsaSlot' name='rsaSlot'>
                             <option value=1>1</option>
                             <option value=2>2</option>
@@ -213,8 +211,7 @@
                       </label>
                       <br/>
                       <div id='rsaFormError' class='form-error'></div>
-                    </form>
-                    </div><br/><label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label>
+                    <br/><label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label>
                     <br/>
                     <td>
                       <br/>

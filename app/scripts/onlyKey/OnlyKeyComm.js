@@ -502,7 +502,48 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage({ msgId: 'OKWIPEU2FCERT' }, callback);
     };
 
-    OnlyKey.prototype.setBackupPassphrase = function (passphrase, cb) {
+    OnlyKey.prototype.setRSABackupKey = function (key, passcode, slot, mode, cb) {
+        e && e.preventDefault && e.preventDefault();
+        //ui.rsaForm.setError('');
+
+        if (!key) {
+            //return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
+        }
+
+        if (!passcode) {
+            //return ui.rsaForm.setError('Passcode cannot be empty.');
+        }
+
+        var privKey, keyObj = {}, retKey;
+
+        try {
+            var privKeys = openpgp.key.readArmored(key);
+            privKey = privKeys.keys[0];
+
+            var success = privKey.decrypt(passcode);
+
+            if (!success) {
+                //throw new Error("Private Key decryption failed. Did you forget your passcode?");
+            }
+
+            if (!(privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6)) {
+              //  throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
+            }
+        } catch (e) {
+          //  return ui.rsaForm.setError('Error parsing RSA key: ' + e);
+        }
+
+        var allKeys = {
+            primaryKey: privKey.primaryKey,
+            subKeys: privKey.subKeys
+        };
+
+        onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
+            //ui.rsaForm.setError(err);
+        });
+    };
+
+    OnlyKey.prototype.setBackupPassphrase = function (passphrase, mode, cb) {
         // abcdefghijklmnopqrstuvwxyz
         const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
         const type = 161; //Backup and Decryption key
@@ -511,6 +552,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setPrivateKey(slot, type, key, err => {
             onlyKeyConfigWizard.initForm.reset();
             this.listen(cb);
+            this.setbackupKeyMode(mode);
         });
     };
 

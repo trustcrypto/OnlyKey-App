@@ -95,8 +95,7 @@ if (chrome.passwordsPrivate) {
                     this.onlyKey.flushMessage();
                 },
                 exitFn: (cb) => {
-                  const backupKeyMode = this.initForm.backupKeyMode;
-                  this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+                  this.submitBackupKey(this, cb);
                 },
             },
             Step9: { //Set PGP Key
@@ -107,7 +106,8 @@ if (chrome.passwordsPrivate) {
                   this.btnSubmitStep.disabled = false;
                   this.onlyKey.flushMessage();
                 },
-                exitFn: () => {
+                exitFn: (cb) => {
+                  this.submitBackupRSAKey(this, cb);
                 },
             },
             Step10: { //Restore from backup
@@ -314,6 +314,7 @@ if (chrome.passwordsPrivate) {
     };
 
     Wizard.prototype.submitBackupKey = function (cb) {
+
         const key1Input = document.getElementById('backupPassphrase');
         const key2Input = document.getElementById('backupPassphrasec');
         const formErrors = [];
@@ -343,8 +344,50 @@ if (chrome.passwordsPrivate) {
         }
 
         //formErrors.push(key1.value);
-        this.onlyKey.setBackupPassphrase(key1Input.value, cb);
+        const backupKeyMode = this.initForm.backupKeyMode;
+        this.onlyKey.setBackupPassphrase(key1Input.value, backupKeyMode.value, cb);
     };
+
+
+    Wizard.prototype.submitBackupRSAKey = function (cb) {
+        const rsaKey = document.getElementById('rsaKey');
+        const rsaPasscode = document.getElementById('rsaPasscode');
+        const formErrors = [];
+
+        this.initConfigErrors.innerHTML = "";
+
+        if (formErrors.length) {
+            // early exit
+            let html = "<ul>";
+            for (let i = 0; i < formErrors.length; i++) {
+                html += "<li>" + formErrors[i] + "</li>";
+            }
+            this.initConfigErrors.innerHTML = html + "</ul>";
+            return;
+        }
+
+        var key = rsaKey.value || '';
+        var passcode = rsaPasscode.value || '';
+
+        //key = key.toString().replace(/\s/g,'');
+
+        if (!key) {
+           formErrors.push('RSA Key cannot be empty.');
+            //return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
+        }
+
+        if (!passcode) {
+          formErrors.push('Passcode cannot be empty.');
+            //return ui.rsaForm.setError('Passcode cannot be empty.');
+        }
+        const backupKeyMode = this.initForm.backupKeyMode;
+        const rsaslot = this.initForm.rsaSlot;
+
+        this.onlykey.setRSABackupKey(key, passcode, rsaslot.value, backupKeyMode.value, cb);
+
+
+    };
+
 
     Wizard.prototype.setSlot = function () {
         this.slotSubmit.disabled = true;
