@@ -504,16 +504,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     OnlyKey.prototype.setRSABackupKey = function (key, passcode, slot, mode, cb) {
 
-        e && e.preventDefault && e.preventDefault();
-        ui.rsaForm.setError('');
+        //e && e.preventDefault && e.preventDefault();
+        //ui.rsaForm.setError('');
 
-        if (!key) {
-            return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
-        }
+        //if (!key) {
+            //return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
+        //}
 
-        if (!passcode) {
-            return ui.rsaForm.setError('Passcode cannot be empty.');
-        }
+        //if (!passcode) {
+            //return ui.rsaForm.setError('Passcode cannot be empty.');
+        //}
 
         var privKey, keyObj = {}, retKey;
 
@@ -531,7 +531,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
             }
         } catch (e) {
-            return ui.rsaForm.setError('Error parsing RSA key: ' + e);
+            //return ui.rsaForm.setError('Error parsing RSA key: ' + e);
+            throw new Error("Error parsing RSA key");
         }
 
         var allKeys = {
@@ -541,57 +542,35 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         this.setbackupKeyMode(mode);
 
+        this.setPrivateKey(slot, type, key, err => {
+            onlyKeyConfigWizard.initForm.reset();
+            this.listen(cb);
+        });
+
         this.initKeySelect(allKeys, err => {
-            ui.rsaForm.setError(err);
+            //ui.rsaForm.setError(err);
             onlyKeyConfigWizard.initForm.reset();
             this.listen(cb);
         });
 
     };
 
-    OnlyKey.prototype.submitRestore = function (fileSelector, cb) {
-        e && e.preventDefault && e.preventDefault();
-        ui.restoreForm.setError('');
+    OnlyKey.prototype.setBackupPassphrase = function (passphrase, mode, cb) {
+        // abcdefghijklmnopqrstuvwxyz
+        const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
+        const type = 161; //Backup and Decryption key
+        const slot = 131;
 
-        if (fileSelector.files && fileSelector.files.length) {
-            var file = fileSelector.files[0];
-            var reader = new FileReader();
 
-            reader.onload = (function (theFile) {
-                return function (e) {
-                    //console.info("RESULT:", e.target.result);
-                    var contents = e.target && e.target.result && e.target.result.trim();
-                    try {
-                        contents = parseBackupData(contents);
-                    } catch(parseError) {
-                        return ui.restoreForm.setError('Could not parse backup file.\n\n' + parseError);
-                    }
+        this.setPrivateKey(slot, type, key, err => {
+            onlyKeyConfigWizard.initForm.reset();
+            this.listen(cb);
+        });
 
-                    if (contents) {
-                        ui.restoreForm.setError('Working...');
-                        submitRestoreData(contents, function (err) {
-                            // TODO: check for success, then reset
-                            ui.restoreForm.reset();
-                            ui.restoreForm.setError('Backup file sent to OnlyKey');
-                        });
-                    } else {
-                        return ui.restoreForm.setError('Incorrect backup data format.');
-                    }
-                };
-            })(file);
-
-            // Read in the image file as a data URL.
-            reader.readAsText(file);
-        } else {
-            ui.restoreForm.setError('Please select a file first.');
-        }
-    }
+    };
 
     OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
-        e && e.preventDefault && e.preventDefault();
-        ui.firmwareForm.setError('');
-
-        if (fileSelector.files && fileSelector.files.length) {
+            if (fileSelector.files && fileSelector.files.length) {
             var file = fileSelector.files[0];
             var reader = new FileReader();
 
@@ -604,19 +583,19 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                         contents = parseFirmwareData(contents);
                         console.info("parsed contents", contents);
                     } catch(parseError) {
-                        return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
+                      //  return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
                     }
 
                     if (contents) {
                         onlyKeyConfigWizard.newFirmware = contents;
                         if (!myOnlyKey.isBootloader) {
-                            ui.firmwareForm.setError('Working...');
+                            //ui.firmwareForm.setError('Working...');
 
                             const temparray = "1234";
                             submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
                                 //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                                ui.firmwareForm.reset();
-                                ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+                                //ui.firmwareForm.reset();
+                                //ui.firmwareForm.setError('Firmware file sent to OnlyKey');
 
                                 myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
                             });
@@ -624,7 +603,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                             await loadFirmware();
                         }
                     } else {
-                        return ui.firmwareForm.setError('Incorrect firmware data format.');
+                        //return ui.firmwareForm.setError('Incorrect firmware data format.');
                     }
                 };
             })(file);
@@ -632,23 +611,47 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // Read in the image file as a data URL.
             reader.readAsText(file);
         } else {
-            ui.firmwareForm.setError('Please select a file first.');
+            //ui.firmwareForm.setError('Please select a file first.');
         }
     }
 
-    OnlyKey.prototype.setBackupPassphrase = function (passphrase, mode, cb) {
-        // abcdefghijklmnopqrstuvwxyz
-        const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
-        const type = 161; //Backup and Decryption key
-        const slot = 131;
+    OnlyKey.prototype.submitRestore = function (fileSelector, cb) {
+        //e && e.preventDefault && e.preventDefault();
+        //ui.restoreForm.setError('');
 
-        this.setPrivateKey(slot, type, key, err => {
-            onlyKeyConfigWizard.initForm.reset();
-            this.setbackupKeyMode(mode);
-            this.listen(cb);
-        });
+        if (fileSelector.files && fileSelector.files.length) {
+            var file = fileSelector.files[0];
+            var reader = new FileReader();
 
-    };
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    //console.info("RESULT:", e.target.result);
+                    var contents = e.target && e.target.result && e.target.result.trim();
+                    try {
+                        contents = parseBackupData(contents);
+                    } catch(parseError) {
+                        //return ui.restoreForm.setError('Could not parse backup file.\n\n' + parseError);
+                    }
+
+                    if (contents) {
+                        ui.restoreForm.setError('Working...');
+                        submitRestoreData(contents, function (err) {
+                            // TODO: check for success, then reset
+                            //ui.restoreForm.reset();
+                            //ui.restoreForm.setError('Backup file sent to OnlyKey');
+                        });
+                    } else {
+                        //return ui.restoreForm.setError('Incorrect backup data format.');
+                    }
+                };
+            })(file);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(file);
+        } else {
+            //ui.restoreForm.setError('Please select a file first.');
+        }
+    }
 
     OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
         var msg, contentType;
@@ -1564,10 +1567,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     function submitFirmwareForm(e) {
         e && e.preventDefault && e.preventDefault();
-        ui.firmwareForm.setError('');
 
-        var fileSelector = ui.firmwareForm.firmwareSelectFile;
-        if (fileSelector.files && fileSelector.files.length) {
+          ui.firmwareForm.setError('');
+          var fileSelector = ui.firmwareForm.firmwareSelectFile
+
+            if (fileSelector.files && fileSelector.files.length) {
             var file = fileSelector.files[0];
             var reader = new FileReader();
 
@@ -1684,18 +1688,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     async function listenForMessageIncludes(str) {
         return new Promise(async function listenForMessageIncludesAgain (resolve, reject) {
               console.info(`Listening for "${str}"...`);
-              var match = 0;
               myOnlyKey.listen((err, msg) => {
                   if (msg && msg.includes(str)) {
                       console.info(`Match received "${msg}"...`);
-                      match=1;
                       resolve();
                   } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
                     //Chrome app background page sends settime which results in unexpected unlocked response
                       console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
                       listenForMessageIncludesAgain(str);
                   } else {
-                      match=-1;
                       reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
                   }
               });

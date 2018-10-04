@@ -95,7 +95,7 @@ if (chrome.passwordsPrivate) {
                     this.onlyKey.flushMessage();
                 },
                 exitFn: (cb) => {
-                  this.submitBackupKey(this, cb);
+                  this.submitBackupKey.call(this, cb);
                 },
             },
             Step9: { //Set PGP Key
@@ -107,13 +107,14 @@ if (chrome.passwordsPrivate) {
                   this.onlyKey.flushMessage();
                 },
                 exitFn: (cb) => {
-                  this.submitBackupRSAKey(this, cb);
+                  this.submitBackupRSAKey.call(this, cb);
                 },
             },
             Step10: { //Restore from backup
                 prev: 'Step9',
                 next: 'Step11',
                 enterFn: () => {
+                  this.btnSubmitStep.disabled = false;
                 },
                 exitFn: (cb) => {
                   this.submitRestoreFile(this, cb);
@@ -123,6 +124,7 @@ if (chrome.passwordsPrivate) {
                 prev: 'Step10',
                 next: 'Step1',
                 enterFn: () => {
+                  this.btnSubmitStep.disabled = false;
                 },
                 exitFn: (cb) => {
                   this.submitFirmwareFile(this, cb);
@@ -182,14 +184,18 @@ if (chrome.passwordsPrivate) {
         this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
         this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step4');
         this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
-        this.skipPDPIN.onclick = this.gotoStep.bind(this, 'Step6');
-        this.skipSDPIN.onclick = this.gotoStep.bind(this, 'Step8');
+        this.skipPDPIN.onclick = () => {
+          this.onlyKey.sendSetPDPin.bind(this.onlyKey);
+          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+        };
+        this.skipSDPIN.onclick = () => {
+          this.onlyKey.sendSetSDPin.bind(this.onlyKey);
+          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step8'));
+        }
         this.setPassphrase.onclick = this.gotoStep.bind(this, 'Step8');
         this.setPGPKey.onclick = this.gotoStep.bind(this, 'Step9');
         this.restoreBackup.onclick = this.setUnguidedStep.bind(this, 'Step10');
         this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
-
-
 
 
         this.btnNext.onclick = () => {
@@ -320,6 +326,17 @@ if (chrome.passwordsPrivate) {
         this.dialog.open(this.selectPrivateKeyDialog, true);
     };
 
+
+      Wizard.prototype.submitFirmwareFile = function (cb) {
+          var firmwareSelect  = document.getElementById('firmwareSelectFile');
+          this.onlyKey.submitFirmware(firmwareSelect, cb);
+      };
+
+      Wizard.prototype.submitRestoreFile = function (cb) {
+          var fileSelector  = document.getElementById('restoreSelectFile');
+          this.onlyKey.submitRestore(fileSelector, cb);
+      };
+
     Wizard.prototype.submitBackupKey = function (cb) {
 
         const key1Input = document.getElementById('backupPassphrase');
@@ -355,17 +372,6 @@ if (chrome.passwordsPrivate) {
         this.onlyKey.setBackupPassphrase(key1Input.value, backupKeyMode.value, cb);
     };
 
-
-    Wizard.prototype.submitFirmwareFile = function (cb) {
-        var firmwareSelectFile  = document.getElementById('firmwareSelectFile');
-        this.onlykey.submitFirmware(firmwareSelectFile, cb);
-    };
-
-    Wizard.prototype.submitRestoreFile = function (cb) {
-        var fileSelector  = document.getElementById('restoreSelectFile');
-        this.onlykey.submitRestore(fileSelector, cb);
-    };
-
     Wizard.prototype.submitBackupRSAKey = function (cb) {
         const backuprsaKey = document.getElementById('backupRSAKey');
         const backuprsaPasscode = document.getElementById('backupRSAPasscode');
@@ -393,7 +399,7 @@ if (chrome.passwordsPrivate) {
             //return ui.rsaForm.setError('Passcode cannot be empty.');
         }
 
-        this.onlykey.setRSABackupKey(key, passcode, backuprsaslot.value, backupKeyModePGP.value, cb);
+        this.onlyKey.setRSABackupKey.call(key, passcode, backuprsaslot.value, backupKeyModePGP.value, cb);
     };
 
     Wizard.prototype.setSlot = function () {
