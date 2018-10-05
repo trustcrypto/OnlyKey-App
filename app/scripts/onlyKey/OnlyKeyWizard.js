@@ -117,7 +117,7 @@ if (chrome.passwordsPrivate) {
                   this.btnSubmitStep.disabled = false;
                 },
                 exitFn: (cb) => {
-                  this.submitRestoreFile(this, cb);
+                  this.submitRestoreFile.call(this, cb);
                 },
             },
             Step11: { //Load Firmware
@@ -127,7 +127,7 @@ if (chrome.passwordsPrivate) {
                   this.btnSubmitStep.disabled = false;
                 },
                 exitFn: (cb) => {
-                  this.submitFirmwareFile(this, cb);
+                  this.submitFirmwareFile.call(this, cb);
                 },
             },
         };
@@ -375,11 +375,11 @@ if (chrome.passwordsPrivate) {
     Wizard.prototype.submitBackupRSAKey = function (cb) {
         const backuprsaKey = document.getElementById('backupRSAKey');
         const backuprsaPasscode = document.getElementById('backupRSAPasscode');
-        const backupKeyModePGP = document.getElementById('backupKeyModePGP');
+        const backupKeyModePGP = this.initForm.backupKeyModePGP;
         const backuprsaslot = document.getElementById('backupRSASlot');
         const backupRSASetAsSignature = document.getElementById('backupRSASetAsSignature');
-        const backupRSASetAsDecryption = 1;
-        const backupRSASetAsBackup = 1;
+        //const backupRSASetAsDecryption = 1;
+        //const backupRSASetAsBackup = 1;
         const formErrors = [];
 
         this.initConfigErrors.innerHTML = "";
@@ -387,19 +387,19 @@ if (chrome.passwordsPrivate) {
         var key = backuprsaKey.value || '';
         var passcode = backuprsaPasscode.value || '';
 
-        //key = key.toString().replace(/\s/g,'');
-
         if (!key) {
            formErrors.push('RSA Key cannot be empty.');
-            //return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
+
         }
 
         if (!passcode) {
           formErrors.push('Passcode cannot be empty.');
-            //return ui.rsaForm.setError('Passcode cannot be empty.');
+
         }
 
-        this.onlyKey.setRSABackupKey.call(key, passcode, backuprsaslot.value, backupKeyModePGP.value, cb);
+        var type = backupRSASetAsSignature ? 224 : 160;
+
+        this.onlyKey.setRSABackupKey(key, passcode, backuprsaslot.value, backupKeyModePGP.value, type, cb);
     };
 
     Wizard.prototype.setSlot = function () {

@@ -177,9 +177,12 @@
                     <p id="step8-text"></p>
                     <p>Your passphrase will be used for secure backup and restore of your OnlyKey so make sure to choose a good one, write it down, and store it in a secure location.</p><p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is not a common phrase'</p><p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p>
                     <br/><label><b>Enter Passphrase:</b>
-                      <input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label><br/><br/><label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br/><label>
-                      <input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes (Default)</u></label><br/>
-                      <label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label><br/><td>
+                      <input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase must be at least 25 characters</label><br/><br/><label><b>Re-Enter Passphrase:</b><input type='password' id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br/>
+                      <label>
+                      <input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes (Default)</u>
+                      </label><br/>
+                      <label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label>
+                      <br/><td>
                         <button id='SetPGPKey' type='button'>
                       <b>Use PGP Key instead of passphrase</b></button></td><br/><br/>Learn more about secure backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere' class='external'>here</a>.
                 </div>
@@ -208,11 +211,12 @@
                     <label>
                           <input type='checkbox' id='backupRSASetAsSignature' name='backupRSASetAsSignature' value='true'/>Set as signature key - Use key to sign messages
                     </label>
-                      <br/>
+                    <br/>
                     <br/>
                     <label>
-                      <input type='radio' checked name='backupKeyModePGP' value=0 /><u>Permit future backup key changes (Default)</u></label><br/><label><input type='radio' name='backupKeyModePGP' value=1 /><u>Set backup key only once</u>
-                    </label>
+                    <input type='radio' checked name='backupKeyModePGP' value=0 /><u>Permit future backup key changes (Default)</u>
+                    </label><br/>
+                    <label><input type='radio' name='backupKeyModePGP' value=1 /><u>Set backup key only once</u></label>
                     <br/>
                     <td>
                       <br/>
@@ -323,7 +327,7 @@
                 <div class="flex-item">
           <form id="sshchallengeModeForm" name="sshchallengeModeForm">
             <h2>SSH Challenge Mode</h2>
-            <h3>Enable or disable challenge code for SSH</h3>
+            <h4>Enable or disable challenge code for SSH</h4>
             <label>
               <input type="radio" checked name="okSSHChallengeMode" value=0 />
               <u>Enable Challenge Code for SSH</u>
@@ -346,13 +350,13 @@
           </form>
 					<form id="wipeModeForm" name="wipeModeForm">
 						<h2>Wipe Mode</h2>
-						<h3>Configure how the OnlyKey responds to<br/>a factory reset.</h3>
+						<h4>Configure how the OnlyKey responds to<br/>a factory reset.</h4>
 						<label>
 							<input type="radio" checked name="okWipeMode" value=1 />
 							<u>Sensitive Data Only</u> (default)
 							<br/>All sensitive data is wiped.
 						</label>
-						<br/><br/>
+						<br/>
 						<label>
 							<input type="radio" name="okWipeMode" value=2 />
 							<u>Full Wipe</u> (recommended for plausible deniability users)
@@ -368,7 +372,7 @@
 				<div class="flex-item">
           <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
             <h2>PGP Challenge Mode</h2>
-            <h3>Enable or disable challenge code for PGP</h3>
+            <h4>Enable or disable challenge code for PGP</h4>
             <label>
               <input type="radio" checked name="okPGPChallengeMode" value=0 />
               <u>Enable Challenge Code for PGP</u>
@@ -424,10 +428,11 @@
 					</form>
           <form id="backupModeForm" name="backupModeForm">
             <h2>Backup Key Mode</h2>
-            <label>
-              <input type="radio" name="okBackupMode" value=2 />
-              <u>Set once</u> (backup key may only be set once)
-            </label>
+            <h4>Backup key may be changed by default.</h4>
+						<label>
+							<input type="radio" checked name="okBackupMode" value=1 />
+							<u>Set once</u> (backup key may only be set once)
+						</label>
             <br/>
             <span style="font-size: small; color: red;"><b>WARNING - Setting Backup Key mode to set once cannot be changed.</b></span>
             <br/><br/>

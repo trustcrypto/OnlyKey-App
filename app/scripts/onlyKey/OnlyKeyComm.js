@@ -502,18 +502,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage({ msgId: 'OKWIPEU2FCERT' }, callback);
     };
 
-    OnlyKey.prototype.setRSABackupKey = function (key, passcode, slot, mode, cb) {
-
-        //e && e.preventDefault && e.preventDefault();
-        //ui.rsaForm.setError('');
-
-        //if (!key) {
-            //return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
-        //}
-
-        //if (!passcode) {
-            //return ui.rsaForm.setError('Passcode cannot be empty.');
-        //}
+    OnlyKey.prototype.setRSABackupKey = function (key, passcode, slot, mode, type, cb) {
 
         var privKey, keyObj = {}, retKey;
 
@@ -524,21 +513,21 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             var success = privKey.decrypt(passcode);
 
             if (!success) {
-                throw new Error("Private Key decryption failed. Did you forget your passcode?");
+                throw new Error('Private Key decryption failed. Did you forget your passcode?');
             }
 
             if (!(privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6)) {
-                throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
+                throw new Error('Private Key decryption was successful, but resulted in invalid mpi data.');
             }
-        } catch (e) {
-            //return ui.rsaForm.setError('Error parsing RSA key: ' + e);
-            throw new Error("Error parsing RSA key");
-        }
 
-        var allKeys = {
-            primaryKey: privKey.primaryKey,
-            subKeys: privKey.subKeys
-        };
+            var allKeys = {
+                primaryKey: privKey.primaryKey,
+                subKeys: privKey.subKeys
+            };
+
+        } catch (parseError) {
+          throw new Error('Error parsing RSA key' + parseError);
+        }
 
         this.setbackupKeyMode(mode);
 
@@ -583,27 +572,24 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                         contents = parseFirmwareData(contents);
                         console.info("parsed contents", contents);
                     } catch(parseError) {
-                      //  return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
+                      throw new Error('Could not parse firmware file.\n\n' + parseError);
                     }
 
                     if (contents) {
                         onlyKeyConfigWizard.newFirmware = contents;
                         if (!myOnlyKey.isBootloader) {
-                            //ui.firmwareForm.setError('Working...');
+                          console.info('Working...');
 
                             const temparray = "1234";
                             submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-                                //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                                //ui.firmwareForm.reset();
-                                //ui.firmwareForm.setError('Firmware file sent to OnlyKey');
-
-                                myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                            console.info('Firmware file sent to OnlyKey');
+                            myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
                             });
                         } else {
                             await loadFirmware();
                         }
                     } else {
-                        //return ui.firmwareForm.setError('Incorrect firmware data format.');
+                      throw new Error('Incorrect firmware data format.');
                     }
                 };
             })(file);
@@ -611,13 +597,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // Read in the image file as a data URL.
             reader.readAsText(file);
         } else {
-            //ui.firmwareForm.setError('Please select a file first.');
+          throw new Error('Please select a file first.');
         }
     }
 
     OnlyKey.prototype.submitRestore = function (fileSelector, cb) {
-        //e && e.preventDefault && e.preventDefault();
-        //ui.restoreForm.setError('');
 
         if (fileSelector.files && fileSelector.files.length) {
             var file = fileSelector.files[0];
@@ -625,23 +609,20 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
             reader.onload = (function (theFile) {
                 return function (e) {
-                    //console.info("RESULT:", e.target.result);
                     var contents = e.target && e.target.result && e.target.result.trim();
                     try {
                         contents = parseBackupData(contents);
                     } catch(parseError) {
-                        //return ui.restoreForm.setError('Could not parse backup file.\n\n' + parseError);
+                      throw new Error('Could not parse backup file.\n\n' + parseError);
                     }
 
                     if (contents) {
                         ui.restoreForm.setError('Working...');
                         submitRestoreData(contents, function (err) {
-                            // TODO: check for success, then reset
-                            //ui.restoreForm.reset();
-                            //ui.restoreForm.setError('Backup file sent to OnlyKey');
+                          throw new Error('Backup file sent to OnlyKey');
                         });
                     } else {
-                        //return ui.restoreForm.setError('Incorrect backup data format.');
+                      throw new Error('Incorrect backup data format.');
                     }
                 };
             })(file);
@@ -649,7 +630,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // Read in the image file as a data URL.
             reader.readAsText(file);
         } else {
-            //ui.restoreForm.setError('Please select a file first.');
+          throw new Error('Please select a file first.');
         }
     }
 
@@ -803,6 +784,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.lockoutForm = document['lockoutForm'];
         ui.wipeModeForm = document['wipeModeForm'];
         ui.pgpchallengeModeForm = document['pgpchallengeModeForm'];
+        ui.backupModeForm = document['backupModeForm'];
         ui.sshchallengeModeForm = document['sshchallengeModeForm'];
         ui.typeSpeedForm = document['typeSpeedForm'];
         ui.keyboardLayoutForm = document['keyboardLayoutForm'];
@@ -1206,6 +1188,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
         var wipeModeSubmit = document.getElementById('wipeModeSubmit');
         wipeModeSubmit.addEventListener('click', submitWipeModeForm);
+
+        var backupModeSubmit = document.getElementById('backupModeSubmit');
+        backupModeSubmit.addEventListener('click', submitBackupModeForm);
 
         var pgpchallengeModeSubmit = document.getElementById('pgpchallengeModeSubmit');
         pgpchallengeModeSubmit.addEventListener('click', submitpgpchallengeModeForm);
@@ -1750,22 +1735,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitWipeModeForm(e) {
-        var wipeMode = parseInt(ui.wipeModeForm.okWipeMode.value, 10);
-
-        myOnlyKey.setWipeMode(wipeMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'Wipe Mode set successfully');
-            ui.wipeModeForm.reset();
-        });
-
-        e && e.preventDefault && e.preventDefault();
-    }
-
     function submitpgpchallengeModeForm(e) {
         var pgpchallengeMode = parseInt(ui.pgpchallengeModeForm.okPGPChallengeMode.value, 10);
 
         myOnlyKey.setPGPChallengeMode(pgpchallengeMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'PGP Challenge Mode set successfully');
+            myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
             ui.pgpchallengeModeForm.reset();
         });
 
@@ -1776,7 +1750,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var sshchallengeMode = parseInt(ui.sshchallengeModeForm.okSSHChallengeMode.value, 10);
 
         myOnlyKey.setSSHChallengeMode(sshchallengeMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'SSH Challenge Mode set successfully');
+            myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
             ui.sshchallengeModeForm.reset();
         });
 
@@ -1788,19 +1762,30 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
 
         myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'Second Profile Mode set successfully');
+            myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
             ui.SecProfileModeForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
     }
 
-    function submitbackupKeyMode(e) {
-        var backupKeyMode = parseInt(ui.backupKeyModeForm.okbackupKeyMode.value, 10);
+    function submitBackupModeForm(e) {
+        var backupKeyMode = parseInt(ui.backupModeForm.okBackupMode.value, 10);
 
         myOnlyKey.setbackupKeyMode(backupKeyMode, function (err) {
-            myOnlyKey.setLastMessage('received', 'Backup Key Mode set successfully');
-            ui.backupKeyModeForm.reset();
+            myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+            ui.backupModeForm.reset();
+        });
+
+        e && e.preventDefault && e.preventDefault();
+    }
+
+    function submitWipeModeForm(e) {
+        var wipeMode = parseInt(ui.wipeModeForm.okWipeMode.value, 10);
+
+        myOnlyKey.setWipeMode(wipeMode, function (err) {
+            myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+            ui.wipeModeForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
