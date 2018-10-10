@@ -64,11 +64,11 @@ if (chrome.passwordsPrivate) {
             Step5: {
                 prev: 'Step4',
                 next: 'Step6',
-                enterFn: () => {
-                    const setSecProfileMode = this.initForm.secProfileMode;
-                    this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.bind(this.onlyKey));
+                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
+                exitFn: () => {
+                const setSecProfileMode = this.initForm.secProfileMode;
+                this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
-                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
             },
             Step6: {
                 prev: 'Step5',
