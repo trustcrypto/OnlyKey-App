@@ -1,3 +1,6 @@
+
+const userPreferences = require('./scripts/userPreferences.js');
+
 /* jshint esnext:true */
 const SUPPORTED_DEVICES = [
     {
@@ -693,9 +696,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setSlot('XX', 'WIPEMODE', wipeMode, callback);
     };
 
-    OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
+    OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback=()=>{}) {
         secProfileMode = parseInt(secProfileMode, 10);
-        this.setSlot('XX', 'SECPROFILEMODE', secProfileMode, callback);
+        const cb = pollForInput.bind(this, {}, callback);
+        var options = {
+            contents: secProfileMode,
+            msgId: 'OKSETSLOT',
+            slotId: 'XX',
+            fieldId: 'SECPROFILEMODE'
+        };
+        this.sendMessage(options, cb);
     };
 
     OnlyKey.prototype.setSSHChallengeMode = function (sshchallengeMode, callback) {
@@ -965,9 +975,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         callback = typeof callback === 'function' ? callback : handleMessage;
 
         var msg;
-        //var msg = new Uint8Array(4);
-        //do {
-        chromeHid.receive(myOnlyKey.connection, function (reportId, data) {
+
+        chromeHid.receive(myOnlyKey.connection, async function (reportId, data) {
             if (chrome.runtime.lastError) {
                 myOnlyKey.setLastMessage('received', '[error]');
                 return callback(chrome.runtime.lastError);
@@ -985,6 +994,59 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // and the last sent message as 2nd arg
             if (msg.indexOf("Error") === 0 || msg.indexOf("ERROR") === 0) {
                 return callback(msg, myOnlyKey.getLastMessage('sent'));
+            }
+            else if (msg.indexOf("UNINITIALIZEDv") >= 0) {
+              console.info("RECEIVED:", msg);
+              myOnlyKey.fwUpdateSupport = true;
+              version = msg.split("UNINITIALIZED").pop();
+              myOnlyKey.setVersion(version);
+              setOkVersionStr();
+              updateUI = true;
+              console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+              await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+            }
+            else if (msg.indexOf("UNINITIALIZED") >=  0) {
+              myOnlyKey.fwUpdateSupport = false;
+              version = 'v0.2-beta.6';
+              myOnlyKey.setVersion(version);
+              setOkVersionStr();
+              updateUI = true;
+              console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+              await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+            }
+            else if (msg.indexOf("BOOTLOADER") >=  0) {
+               myOnlyKey.setInitialized(true);
+               myOnlyKey.isBootloader = true;
+               myOnlyKey.isLocked = false;
+               version = msg.split("UNLOCKED").pop();
+               myOnlyKey.setVersion(version);
+               setOkVersionStr();
+               updateUI = true;
+               myOnlyKey.fwUpdateSupport = true;
+               myOnlyKey.initBootloaderMode();
+            } else if (msg.indexOf("UNLOCKED") >= 0) {
+                if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
+                    pollForInput();
+                } else {
+                    myOnlyKey.setInitialized(true);
+                    version = msg.split("UNLOCKED").pop();
+                    myOnlyKey.setVersion(version);
+                    setOkVersionStr();
+                    console.info(version[9]);
+                    console.info(version[10]);
+                    if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
+                      myOnlyKey.fwUpdateSupport = true;
+                    }
+                    console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+                    await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+                    if (myOnlyKey.isLocked) {
+                        myOnlyKey.isLocked = false;
+                        myOnlyKey.getLabels(pollForInput);
+                        updateUI = true;
+                    }
+                }
+            } else if (msg.indexOf("LOCKED") >= 0) {
+                myOnlyKey.isLocked = true;
             }
 
             // else call callback with null err and msg as 2nd arg
@@ -1042,47 +1104,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             pollForInput();
         }
 
-        if (msg.indexOf("UNINITIALIZED v") > 0) {
-          myOnlyKey.fwUpdateSupport = true;
-          version = msg.split("UNINITIALIZED").pop();
-          myOnlyKey.setVersion(version);
-          setOkVersionStr();
-          updateUI = true;
-          myOnlyKey.fwUpdateSupport = true;
-        }
-        else if (msg.indexOf("BOOTLOADER") > 0) {
-           myOnlyKey.setInitialized(true);
-           myOnlyKey.isBootloader = true;
-           myOnlyKey.isLocked = false;
-           version = msg.split("UNLOCKED").pop();
-           myOnlyKey.setVersion(version);
-           setOkVersionStr();
-           updateUI = true;
-           myOnlyKey.fwUpdateSupport = true;
-           myOnlyKey.initBootloaderMode();
-        } else if (msg.indexOf("UNLOCKED") >= 0) {
-            if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
-                pollForInput();
-            } else {
-                myOnlyKey.setInitialized(true);
-                version = msg.split("UNLOCKED").pop();
-                myOnlyKey.setVersion(version);
-                setOkVersionStr();
-                console.info(version[9]);
-                console.info(version[10]);
-                if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
-                  myOnlyKey.fwUpdateSupport = true;
-                }
-                if (myOnlyKey.isLocked) {
-                    myOnlyKey.isLocked = false;
-                    myOnlyKey.getLabels(pollForInput);
-                    updateUI = true;
-                }
-            }
-        } else if (msg.indexOf("LOCKED") >= 0) {
-            myOnlyKey.isLocked = true;
-        }
-
         var firmwaretext = document.getElementById('firmware-text');
         var step8text = document.getElementById('step8-text');
         var step9text = document.getElementById('step9-text');
@@ -1098,10 +1119,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
           firmwaretext.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
           step8text.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
           }
-
-        //check if new firmware is available if autoUpdateFW is enabled
-        // console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
-        // await checkForNewFW(version, userPreferences.autoUpdateFW);
 
         if (updateUI) {
             enableIOControls(true);
@@ -1900,9 +1917,9 @@ function byteToHex(value) {
     return value.toString(16);
 }
 
-function checkForNewFW(version, checkForNewFW) {
+function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
   return new Promise(resolve => {
-  if (checkForNewFW == true && (version[3] > 2 || (version[3] == 2 && (version[9] != '.' || version[10] > 6)))) { //fw checking enabled and firmware version supports app updates
+  if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
     var request = require('request');
     var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
       console.log(r.uri.href);
@@ -1913,6 +1930,11 @@ function checkForNewFW(version, checkForNewFW) {
       console.info(latestver);
       if (latestversion[3] > version[3] || (latestversion[3] == version[3] && (latestversion[9] == '.' && latestversion[10] > version[10]) || (latestversion[9] != '.' && latestversion[9] > version[9] || (latestversion[9] == version[9] && latestversion[10] > version[10])))) {
         if (version[9] != '.' || version[10] > 6) {
+          if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.'))
+        {
+        window.location.href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+        };
+                  /*
           if (confirm(`Version ${latestversion} firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?`)) {
             if (version[11] == 'o') {
               //Download latest standard firmware for original from URL
@@ -1957,13 +1979,18 @@ function checkForNewFW(version, checkForNewFW) {
             }
           }
         }
+        */
       }
-    });
-  } else if (version[9] == '.' && version[10] <= 6) {
-      alert(`A new version of firware is available. Go to https://docs.crp.to/usersguide.html#loading-onlykey-firmware and follow the legacy firmware loading instructions to update to the latest firmware.`);
-      var latestver = 0;
-  }
-  resolve(latestver);
+    }
+  });
+  resolve();
+} else if (!fwUpdateSupport) {
+  if (window.confirm('This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page.'))
+{
+window.location.href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+};
+}
+  resolve();
 });
 }
 
