@@ -59,15 +59,19 @@ if (chrome.passwordsPrivate) {
                     this.enableDisclaimer('passcode3Disclaimer');
                     this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
                 },
-                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
+                exitFn: (cb) => {
+                    const setSecProfileMode = this.initForm.secProfileMode;
+                    this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.call(this.onlyKey, cb));
+                },
             },
             Step5: {
                 prev: 'Step4',
                 next: 'Step6',
-                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
-                exitFn: () => {
-                const setSecProfileMode = this.initForm.secProfileMode;
-                this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.bind(this.onlyKey));
+                enterFn: (cb) => {
+                  this.onlyKey.sendSetPDPin.call(this.onlyKey, cb);
+                },
+                exitFn: (cb) => {
+                this.onlyKey.sendSetPDPin.call(this.onlyKey, cb);
                 },
             },
             Step6: {
@@ -183,7 +187,7 @@ if (chrome.passwordsPrivate) {
         this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
         this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
         this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step4');
-        this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
+
         this.skipPDPIN.onclick = () => {
           this.onlyKey.sendSetPDPin.bind(this.onlyKey);
           this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));

@@ -1,5 +1,7 @@
 
 const userPreferences = require('./scripts/userPreferences.js');
+var fwchecked = false;
+var expectedmsg = '';
 
 /* jshint esnext:true */
 const SUPPORTED_DEVICES = [
@@ -422,6 +424,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     OnlyKey.prototype.sendPinMessage = function ({ msgId='', poll=true }, callback=()=>{}) {
         this.pendingMessages[msgId] = !this.pendingMessages[msgId];
         const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
+        console.info('sendPinMessage');
         this.sendMessage({ msgId }, cb);
     };
 
@@ -434,6 +437,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
     OnlyKey.prototype.sendSetPDPin = function (callback) {
+        console.info('made it to sendSetPDPin');
         this.sendPinMessage({ msgId: 'OKSETPDPIN' }, callback);
     };
 
@@ -696,16 +700,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.setSlot('XX', 'WIPEMODE', wipeMode, callback);
     };
 
-    OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback=()=>{}) {
+    OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
         secProfileMode = parseInt(secProfileMode, 10);
-        const cb = pollForInput.bind(this, {}, callback);
         var options = {
             contents: secProfileMode,
             msgId: 'OKSETSLOT',
             slotId: 'XX',
             fieldId: 'SECPROFILEMODE'
         };
-        this.sendMessage(options, cb);
+        this.sendMessage(options, callback);
     };
 
     OnlyKey.prototype.setSSHChallengeMode = function (sshchallengeMode, callback) {
@@ -1001,7 +1004,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
               version = msg.split("UNINITIALIZED").pop();
               myOnlyKey.setVersion(version);
               setOkVersionStr();
-              updateUI = true;
               console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
               await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
             }
@@ -1010,43 +1012,19 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
               version = 'v0.2-beta.6';
               myOnlyKey.setVersion(version);
               setOkVersionStr();
-              updateUI = true;
               console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
               await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+              return;
             }
-            else if (msg.indexOf("BOOTLOADER") >=  0) {
-               myOnlyKey.setInitialized(true);
-               myOnlyKey.isBootloader = true;
-               myOnlyKey.isLocked = false;
-               version = msg.split("UNLOCKED").pop();
-               myOnlyKey.setVersion(version);
-               setOkVersionStr();
-               updateUI = true;
-               myOnlyKey.fwUpdateSupport = true;
-               myOnlyKey.initBootloaderMode();
-            } else if (msg.indexOf("UNLOCKED") >= 0) {
-                if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
-                    pollForInput();
-                } else {
-                    myOnlyKey.setInitialized(true);
-                    version = msg.split("UNLOCKED").pop();
-                    myOnlyKey.setVersion(version);
-                    setOkVersionStr();
-                    console.info(version[9]);
-                    console.info(version[10]);
-                    if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
-                      myOnlyKey.fwUpdateSupport = true;
-                    }
-                    console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
-                    await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
-                    if (myOnlyKey.isLocked) {
-                        myOnlyKey.isLocked = false;
-                        myOnlyKey.getLabels(pollForInput);
-                        updateUI = true;
-                    }
-                }
-            } else if (msg.indexOf("LOCKED") >= 0) {
-                myOnlyKey.isLocked = true;
+            else if (msg.indexOf("UNLOCKED") >= 0) {
+              version = msg.split("UNLOCKED").pop();
+              myOnlyKey.setVersion(version);
+              setOkVersionStr();
+              if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
+                myOnlyKey.fwUpdateSupport = true;
+              }
+                console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
+                await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
             }
 
             // else call callback with null err and msg as 2nd arg
@@ -1072,58 +1050,99 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     var handleMessage = async function (err, msg) {
 
-        if (err) {
-            return console.error("MESSAGE ERROR:", err);
-        }
+            if (err) {
+                return console.error("MESSAGE ERROR:", err);
+            }
 
-        msg = msg.trim();
-        var updateUI = false;
-        var version;
-        dialog.close(ui.workingDialog);
+            msg = msg.trim();
+            var updateUI = false;
+            var version;
+            dialog.close(ui.workingDialog);
 
-        switch (msg) {
-            case "UNINITIALIZED":
-            case "INITIALIZED":
-                myOnlyKey.setInitialized(msg === "INITIALIZED");
-                updateUI = true;
+            switch (msg) {
+                case "UNINITIALIZED":
+                case "INITIALIZED":
+                    myOnlyKey.setInitialized(msg === "INITIALIZED");
+                    updateUI = true;
 
-                // special handling if last message sent was PIN-related
-                switch (myOnlyKey.getLastMessage('sent')) {
-                    case 'OKSETPIN':
-                    case 'OKSETPDPIN':
-                    case 'OKSETSDPIN':
-                        return pollForInput();
+                    // special handling if last message sent was PIN-related
+                    switch (myOnlyKey.getLastMessage('sent')) {
+                        case 'OKSETPIN':
+                        case 'OKSETPDPIN':
+                        case 'OKSETSDPIN':
+                            return pollForInput();
+                    }
+
+                    break;
+                default:
+                    break;
+            }
+
+            if (msg === "INITIALIZED") { // OK should still be locked
+                pollForInput();
+            }
+
+            if (msg.indexOf("UNINITIALIZED v") > 0) {
+              myOnlyKey.fwUpdateSupport = true;
+              version = msg.split("UNINITIALIZED").pop();
+              myOnlyKey.setVersion(version);
+              setOkVersionStr();
+              updateUI = true;
+              myOnlyKey.fwUpdateSupport = true;
+            }
+            else if (msg.indexOf("BOOTLOADER") > 0) {
+               myOnlyKey.setInitialized(true);
+               myOnlyKey.isBootloader = true;
+               myOnlyKey.isLocked = false;
+               version = msg.split("UNLOCKED").pop();
+               myOnlyKey.setVersion(version);
+               setOkVersionStr();
+               updateUI = true;
+               myOnlyKey.fwUpdateSupport = true;
+               myOnlyKey.initBootloaderMode();
+            } else if (msg.indexOf("UNLOCKED") >= 0) {
+                if ( myOnlyKey.getLastMessage('sent') === 'OKSETPRIV' ) {
+                    pollForInput();
+                } else {
+                    myOnlyKey.setInitialized(true);
+                    version = msg.split("UNLOCKED").pop();
+                    myOnlyKey.setVersion(version);
+                    setOkVersionStr();
+                    console.info(version[9]);
+                    console.info(version[10]);
+                    if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
+                      myOnlyKey.fwUpdateSupport = true;
+                    }
+                    if (myOnlyKey.isLocked) {
+                        myOnlyKey.isLocked = false;
+                        myOnlyKey.getLabels(pollForInput);
+                        updateUI = true;
+                    }
                 }
+            } else if (msg.indexOf("LOCKED") >= 0) {
+                myOnlyKey.isLocked = true;
+            }
 
-                break;
-            default:
-                break;
-        }
+            var firmwaretext = document.getElementById('firmware-text');
+            var step8text = document.getElementById('step8-text');
+            var step9text = document.getElementById('step9-text');
+            if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized ) { //Firmware load in app without config mode
+              firmwaretext.innerHTML = "To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p> The OnlyKey will restart automatically when firmware load is complete.";
+              step8text.innerHTML = " ";
+              step9text.innerHTML = " ";
+              } else if (myOnlyKey.fwUpdateSupport) { //Firmware load in app with config mode
+              firmwaretext.innerHTML = "<u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.</p><p><u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.";
+              step8text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+              step9text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+            } else { //Firmware load not supported in app
+              firmwaretext.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
+              step8text.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
+              }
 
-        if (msg === "INITIALIZED") { // OK should still be locked
-            pollForInput();
-        }
-
-        var firmwaretext = document.getElementById('firmware-text');
-        var step8text = document.getElementById('step8-text');
-        var step9text = document.getElementById('step9-text');
-        if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized ) { //Firmware load in app without config mode
-          firmwaretext.innerHTML = "To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p> The OnlyKey will restart automatically when firmware load is complete.";
-          step8text.innerHTML = " ";
-          step9text.innerHTML = " ";
-          } else if (myOnlyKey.fwUpdateSupport) { //Firmware load in app with config mode
-          firmwaretext.innerHTML = "<u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.</p><p><u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.";
-          step8text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
-          step9text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
-        } else { //Firmware load not supported in app
-          firmwaretext.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
-          step8text.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
-          }
-
-        if (updateUI) {
-            enableIOControls(true);
-        }
-    };
+            if (updateUI) {
+                enableIOControls(true);
+            }
+        };
 
     function init() {
         console.info("OnlyKeyComm init() called");
@@ -1779,8 +1798,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
 
         myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {
-            myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
-            ui.SecProfileModeForm.reset();
         });
 
         e && e.preventDefault && e.preventDefault();
@@ -1918,80 +1935,83 @@ function byteToHex(value) {
 }
 
 function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
-  return new Promise(resolve => {
-  if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
-    var request = require('request');
-    var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
-      console.log(r.uri.href);
-      console.log(res.request.uri.href);
-      console.log(this.uri.href);
-      var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
-      console.info(version);
-      console.info(latestver);
-      if (latestversion[3] > version[3] || (latestversion[3] == version[3] && (latestversion[9] == '.' && latestversion[10] > version[10]) || (latestversion[9] != '.' && latestversion[9] > version[9] || (latestversion[9] == version[9] && latestversion[10] > version[10])))) {
-        if (version[9] != '.' || version[10] > 6) {
-          if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.'))
-        {
-        window.location.href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-        };
-                  /*
-          if (confirm(`Version ${latestversion} firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?`)) {
-            if (version[11] == 'o') {
-              //Download latest standard firmware for original from URL
-              // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
-              // + latestversion
-              // + /
-              // + OnlyKey_
-              // + latestversion
-              // + _STD_Original.txt
-              // downloaded file = contents
-              if (contents) {
-                  onlyKeyConfigWizard.newFirmware = contents;
-                  const temparray = "1234";
-                  submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-                      //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                      myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
-                  });
-              } else {
-                  alert(`Firmware Download Failed`);
-                  return;
-              }
-            } else if (version[11] == 'c') {
-              // Download latest standard firmware for color from URL
-              // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
-              // + latestversion
-              // + /
-              // + OnlyKey_
-              // + latestversion
-              // + _STD_Color.txt
-              // downloaded file = contents
-              if (contents) {
-                  onlyKeyConfigWizard.newFirmware = contents;
-                  const temparray = "1234";
-                  submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-                      //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
-                      myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
-                  });
-              } else {
-                  alert(`Firmware Download Failed`);
-                  return;
+  if (!fwchecked) {
+    return new Promise(resolve => {
+    fwchecked=true;
+    if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
+      var request = require('request');
+      var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
+        console.log(r.uri.href);
+        console.log(res.request.uri.href);
+        console.log(this.uri.href);
+        var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
+        console.info(version);
+        console.info(latestver);
+        if (latestversion[3] > version[3] || (latestversion[3] == version[3] && (latestversion[9] == '.' && latestversion[10] > version[10]) || (latestversion[9] != '.' && latestversion[9] > version[9] || (latestversion[9] == version[9] && latestversion[10] > version[10])))) {
+          if (version[9] != '.' || version[10] > 6) {
+            if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.'))
+          {
+          window.location.href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+          };
+                    /*
+            if (confirm(`Version ${latestversion} firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?`)) {
+              if (version[11] == 'o') {
+                //Download latest standard firmware for original from URL
+                // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+                // + latestversion
+                // + /
+                // + OnlyKey_
+                // + latestversion
+                // + _STD_Original.txt
+                // downloaded file = contents
+                if (contents) {
+                    onlyKeyConfigWizard.newFirmware = contents;
+                    const temparray = "1234";
+                    submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                        //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                        myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                    });
+                } else {
+                    alert(`Firmware Download Failed`);
+                    return;
+                }
+              } else if (version[11] == 'c') {
+                // Download latest standard firmware for color from URL
+                // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+                // + latestversion
+                // + /
+                // + OnlyKey_
+                // + latestversion
+                // + _STD_Color.txt
+                // downloaded file = contents
+                if (contents) {
+                    onlyKeyConfigWizard.newFirmware = contents;
+                    const temparray = "1234";
+                    submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                        //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
+                        myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                    });
+                } else {
+                    alert(`Firmware Download Failed`);
+                    return;
+                }
               }
             }
           }
+          */
         }
-        */
       }
-    }
+    });
+    resolve();
+  } else if (!fwUpdateSupport) {
+    if (window.confirm('This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page.'))
+  {
+  window.location.href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+  };
+  }
+    resolve();
   });
-  resolve();
-} else if (!fwUpdateSupport) {
-  if (window.confirm('This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page.'))
-{
-window.location.href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-};
-}
-  resolve();
-});
+  }
 }
 
 
