@@ -509,6 +509,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         this.sendMessage({ msgId: 'OKWIPEU2FCERT' }, callback);
     };
 
+
+
+
+
+
+
+
     OnlyKey.prototype.setRSABackupKey = function (key, passcode, slot, mode, type, cb) {
 
         var privKey, keyObj = {}, retKey;
@@ -527,26 +534,20 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw new Error('Private Key decryption was successful, but resulted in invalid mpi data.');
             }
 
-            var allKeys = {
-                primaryKey: privKey.primaryKey,
-                subKeys: privKey.subKeys
-            };
+
 
         } catch (parseError) {
           throw new Error('Error parsing RSA key' + parseError);
         }
 
-        this.setbackupKeyMode(mode);
+        var allKeys = {
+            primaryKey: privKey.primaryKey,
+            subKeys: privKey.subKeys
+        };
+        //this.setbackupKeyMode(mode);
 
-        this.setPrivateKey(slot, type, key, err => {
-            onlyKeyConfigWizard.initForm.reset();
-            this.listen(cb);
-        });
-
-        this.initKeySelect(allKeys, err => {
-            //ui.rsaForm.setError(err);
-            onlyKeyConfigWizard.initForm.reset();
-            this.listen(cb);
+        onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
+            ui.rsaForm.setError(err);
         });
 
     };
