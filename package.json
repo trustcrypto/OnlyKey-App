@@ -1,15 +1,16 @@
 {
   "name": "OnlyKey",
   "productName": "OnlyKey App",
-  "version": "5.0.0",
-  "version_name": "5.0-beta.0",
+  "version": "5.1.0",
+  "version_name": "5.1-beta.0",
   "description": "OnlyKey Configuration App",
   "main": "app.js",
   "dependencies": {
     "auto-launch": "^5.0.3",
     "fs-jetpack": "^1.2.0",
-    "nw": "^0.24.4",
+    "nw": "^0.32.1-sdk",
     "nw-autoupdater": "^1.1.4",
+    "nw-dev": "^3.0.1",
     "q": "^1.5.1"
   },
   "devDependencies": {

@@ -9,8 +9,17 @@ let onlyKeyAppUserPreferences; // singleton
 
     class UserPreferences {
         constructor(params = {}) {
-            const keys = ['autoLaunch', 'autoUpdate'];
+            const keys = ['autoLaunch', 'autoUpdate', 'autoUpdateFW'];
             keys.forEach(key => this[`_${key}`] = this.getPropVal(key));
+        }
+
+        get autoUpdateFW() {
+            return this.getPropVal('autoUpdateFW');
+        }
+
+        set autoUpdateFW(value) {
+            this._autoUpdateFW = getBoolean(value);
+            typeof localStorage !== 'undefined' && (localStorage.autoUpdateFW = getBooleanString(value));
         }
 
         get autoLaunch() {

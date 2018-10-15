@@ -1,4 +1,44 @@
 /*jshint esnext: true */
+const SUPPORTED_DEVICES = [
+    {
+        vendorId: 5824, //OnlyKey firmware before Beta 7
+        productId: 1158,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
+        productId: 24828,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 0000, //Black Vault Labs Bootloaderv1
+        productId: 45057,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+];
+
+function getSupportedDevice(deviceInfo) {
+    let supportedDevice;
+
+    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+        let device = SUPPORTED_DEVICES[d];
+
+        const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
+        if (isMatch) {
+            supportedDevice = device;
+            break;
+        }
+    }
+
+    return supportedDevice;
+}
+
 chrome.app.runtime.onLaunched.addListener(function() {
   chrome.app.window.create(
       "app.html", {
@@ -12,10 +52,16 @@ chrome.app.runtime.onLaunched.addListener(function() {
 //
 // Do not run this when using nwjs.
 if (typeof nw == 'undefined') {
-    var onlyKeyLite = new OnlyKeyLite();
-
-    chrome.hid.getDevices(onlyKeyLite.deviceInfo, onDevicesEnumerated);
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
+
+    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+        const { vendorId, productId } = SUPPORTED_DEVICES[d];
+        const deviceInfo = { vendorId, productId };
+
+        console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
+
+        chrome.hid.getDevices(deviceInfo, onDevicesEnumerated);
+    }
 } else {
     const AutoLaunch = require('auto-launch');
     const autoLaunch = new AutoLaunch({
@@ -37,48 +83,33 @@ if (typeof nw == 'undefined') {
         .catch(console.error);
 }
 
-function OnlyKeyLite() {
-    this.deviceInfo = {
-        vendorId: 5824,
-        productId: 1158
-    };
-    this.maxInputReportSize = 64;
-    this.maxOutputReportSize = 64;
-    this.maxFeatureReportSize = 0;
-    this.messageHeader = [255, 255, 255, 255];
-}
-
-function onDevicesEnumerated(devices) {
+var onDevicesEnumerated = function (devices) {
     if (chrome.runtime.lastError) {
         console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
         return;
     }
 
-    console.info("HID devices:", devices);
-
-    for (var device of devices) {
-        onDeviceAdded(device);
+    if (devices && devices.length) {
+        console.info("HID devices found:", devices);
+        devices.forEach(onDeviceAdded);
     }
-}
+};
 
-function onDeviceAdded(device) {
-    if (device.maxInputReportSize === onlyKeyLite.maxInputReportSize &&
-        device.maxOutputReportSize === onlyKeyLite.maxOutputReportSize &&
-        device.maxFeatureReportSize === onlyKeyLite.maxFeatureReportSize) {
-
+var onDeviceAdded = function (device) {
+    // auto connect desired device
+    const supportedDevice = getSupportedDevice(device);
+    if (supportedDevice) {
         chrome.hid.connect(device.deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
                 console.error("ERROR CONNECTING:", chrome.runtime.lastError);
             } else if (!connectInfo) {
                 console.warn("Unable to connect to device.");
-            } else {
-                console.info("CONNECTINFO:", connectInfo);
             }
 
             setTime(connectInfo.connectionId);
         });
     }
-}
+};
 
 function setTime(connectionId) {
     var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -112,6 +143,9 @@ function setTime(connectionId) {
         if (chrome.runtime.lastError) {
             console.error("ERROR SENDING OKSETTIME:", chrome.runtime.lastError, { connectionId: connectionId });
             callback('ERROR SENDING OKSETTIME PACKETS');
+            if (process.platform === 'linux') {
+              alert(`Communication failed, follow instructions here when using app on Linux https://docs.crp.to/linux.html`);
+            }
         } else {
             console.info("OKSETTIME complete");
         }

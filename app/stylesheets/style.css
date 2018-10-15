@@ -26,9 +26,7 @@ body > div {
 }
 
 .hide {
-    opacity: 0;
-	position: absolute;
-	z-index: 0;
+    display: none;
 }
 
 #output-panel, #input-panel {
@@ -107,6 +105,12 @@ dialog a {
 	bottom: 0;
 	right: 0;
 	padding: .5em 1em;
+    font-size: 10pt;
+    text-align: right;
+}
+
+#versions > i {
+    display: block;
 }
 
 /* configure onlykey photo background */
@@ -123,7 +127,7 @@ td.ok-photo-cell {
 }
 /* end photo background styles */
 
-#slotConfigErrors ul {
+#slotConfigErrors, #initConfigErrors {
     background-color: white;
     color: red;
     font-weight: bold;
@@ -143,6 +147,19 @@ td.ok-photo-cell {
 .flex-item {
     -webkit-flex: 1 auto;
     flex: 1 45%;
+}
+
+.flex-item > p,
+.flex-item > form,
+.flex-item > div {
+    margin-right: 1em;
+}
+
+.flex-item + .flex-item > p,
+.flex-item + .flex-item > form,
+.flex-item + .flex-item > div {
+    margin-right: 0;
+    margin-left: 1em;
 }
 
 nav {
@@ -187,4 +204,8 @@ nav > a.active {
 .empty {
     font-style: italic;
     font-weight: normal;
+}
+
+.step-nav > * {
+    margin-right: 1em;
 }

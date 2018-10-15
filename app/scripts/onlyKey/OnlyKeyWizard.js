@@ -10,47 +10,10 @@ if (chrome.passwordsPrivate) {
 // Wizard
 (function () {
     var onlyKeyConfigWizard;
-    var dialog = new dialogMgr();
-
-    var steps = {
-        Step1: {
-            next: 'Step2'
-        },
-        Step2: {
-            prev: 'Step1',
-            next: 'Step3'
-        },
-        Step3: {
-            prev: 'Step2',
-            next: 'Step4'
-        },
-        Step4: {
-            prev: 'Step3',
-            next: 'Step5'
-        },
-        Step5: {
-            prev: 'Step4',
-            next: 'Step6'
-        },
-        Step6: {
-            prev: 'Step5',
-            next: 'Step7'
-        },
-        Step7: {
-            prev: 'Step6',
-            next: 'Step8'
-        },
-        Step8: {
-            prev: 'Step7',
-            next: 'Step9'
-        },
-        Step9: {
-            prev: 'Step8'
-        }
-    };
 
     function Wizard() {
-        this.steps = steps;
+        this.steps = {};
+        this.dialog = new DialogMgr();
         this.currentSlot = {};
     }
 
@@ -58,151 +21,293 @@ if (chrome.passwordsPrivate) {
         // reset all forms
         document.querySelectorAll('form').forEach(form => form.reset());
 
-        var self = this;
-        self.onlyKey = myOnlyKey;
-        self.currentStep = Object.keys(self.steps)[0];
-        self.uiInit();
-
-        self.steps.Step2.exitFn = function (cb) {
-            var dynamicSteps = Array.from(document.querySelectorAll('[data-step="Step7"],[data-step="Step8"]'));
-            var classListMethod = self.getMode() === 'TwoFactor' ? 'remove' : 'add';
-
-            dynamicSteps.forEach(function (el) {
-                el.classList[classListMethod]('hide');
-            });
-
-            return cb();
-        };
-        self.steps.Step3.enterFn = function () {
-            enableDisclaimer.call(self, 'passcode1Disclaimer');
-            myOnlyKey.sendSetPin.call(myOnlyKey);
-        };
-        self.steps.Step3.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        self.steps.Step4.enterFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        self.steps.Step4.exitFn = myOnlyKey.sendSetPin.bind(myOnlyKey);
-        self.steps.Step5.enterFn = function () {
-            enableDisclaimer.call(self, 'passcode2Disclaimer');
-            myOnlyKey.sendSetSDPin.call(myOnlyKey);
-        };
-        self.steps.Step5.exitFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        self.steps.Step6.enterFn = myOnlyKey.sendSetSDPin.bind(myOnlyKey);
-        self.steps.Step6.exitFn = function (cb) {
-            myOnlyKey.sendSetSDPin.call(myOnlyKey, function (err, res) {
-                if (err || self.getMode() === 'TwoFactor') {
-                    return cb(err, res);
-                }
-
-                dialog.open.call(null, self.finalStepDialog);
-                return cb(null, 'STOP');
-            });
-        };
-        self.steps.Step7.enterFn = function () {
-            enableDisclaimer.call(self, 'passcode3Disclaimer');
-            myOnlyKey.sendSetPDPin.call(myOnlyKey);
-        };
-        self.steps.Step7.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        self.steps.Step8.enterFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        self.steps.Step8.exitFn = myOnlyKey.sendSetPDPin.bind(myOnlyKey);
-        self.steps.Step9.enterFn = dialog.open.bind(null, self.finalStepDialog);
+        this.onlyKey = myOnlyKey;
+        this.initSteps();
+        this.currentStep = null;
+        this.uiInit();
+        this.reset();
     };
 
-    function enableDisclaimer(fieldName) {
-        var self = this;
-        var field = self.initForm[fieldName];
-        field.removeEventListener('change', enableDisclaimer);
-        self.btnNext.disabled = !field.checked;
-        field.addEventListener('change', function (e) {
-            enableDisclaimer.call(self, fieldName);
+    Wizard.prototype.initSteps = function () {
+        this.steps = {
+            Step1: {
+                enterFn: this.setGuided.bind(this, true),
+                next: 'Step2',
+                noExit: true,
+            },
+            Step2: {
+                prev: 'Step1',
+                next: 'Step3',
+                enterFn: () => {
+                    this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
+                    this.enableDisclaimer('passcode1Disclaimer');
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey));
+                },
+                exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+            },
+            Step3: {
+                prev: 'Step2',
+                next: 'Step4',
+                enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+                exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+            },
+            Step4: {
+                prev: 'Step3',
+                next: 'Step5',
+                enterFn: () => {
+                    this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
+                    this.enableDisclaimer('passcode3Disclaimer');
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
+                },
+                exitFn: (cb) => {
+                    const setSecProfileMode = this.initForm.secProfileMode;
+                    this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.call(this.onlyKey, cb));
+                },
+            },
+            Step5: {
+                prev: 'Step4',
+                next: 'Step6',
+                enterFn: (cb) => {
+                  this.onlyKey.sendSetPDPin.call(this.onlyKey, cb);
+                },
+                exitFn: (cb) => {
+                this.onlyKey.sendSetPDPin.call(this.onlyKey, cb);
+                },
+            },
+            Step6: {
+                prev: 'Step5',
+                next: 'Step7',
+                enterFn: () => {
+                    this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
+                    this.enableDisclaimer('passcode2Disclaimer');
+                    this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
+                },
+                exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
+            },
+            Step7: {
+                prev: 'Step6',
+                next: 'Step8',
+                enterFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
+                exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
+            },
+            Step8: {
+                prev: 'Step7',
+                next: 'Step9',
+                enterFn: () => {
+                    this.steps.Step8.next = this.guided ? 'Step10' : 'Step1';
+                    this.btnSubmitStep.disabled = false;
+                    this.onlyKey.flushMessage();
+                },
+                exitFn: (cb) => {
+                  this.submitBackupKey.call(this, cb);
+                },
+            },
+            Step9: { //Set PGP Key
+                prev: 'Step8',
+                next: 'Step10',
+                enterFn: () => {
+                  this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
+                  this.btnSubmitStep.disabled = false;
+                  this.onlyKey.flushMessage();
+                },
+                exitFn: (cb) => {
+                  this.submitBackupRSAKey.call(this, cb);
+                },
+            },
+            Step10: { //Restore from backup
+                prev: 'Step9',
+                next: 'Step11',
+                enterFn: () => {
+                  this.btnSubmitStep.disabled = false;
+                },
+                exitFn: (cb) => {
+                  this.submitRestoreFile.call(this, cb);
+                },
+            },
+            Step11: { //Load Firmware
+                prev: 'Step10',
+                next: 'Step1',
+                enterFn: () => {
+                  this.btnSubmitStep.disabled = false;
+                },
+                exitFn: (cb) => {
+                  this.submitFirmwareFile.call(this, cb);
+                },
+            },
+        };
+    };
+
+    Wizard.prototype.enableDisclaimer = function (fieldName) {
+        const field = this.initForm[fieldName];
+
+        field.removeEventListener('change', this.enableDisclaimer);
+
+        this.btnNext.disabled = !field.checked;
+        this.btnSubmitStep.disabled = !field.checked;
+
+        field.addEventListener('change', e => {
+            this.enableDisclaimer(fieldName);
         });
-    }
+    };
+
+    Wizard.prototype.setUnguidedStep = function (newStep) {
+        this.setGuided(false);
+        this.setNewCurrentStep(newStep);
+    };
+
+    Wizard.prototype.gotoStep = function (newStep) {
+        this.setGuided(true);
+        this.setNewCurrentStep(newStep);
+        this.moveStep('next');
+    };
 
     Wizard.prototype.uiInit = function () {
-        var self = this;
+        this.initForm = document['init-panel'];
 
-        self.initForm = document['init-panel'];
+        this.initConfigErrors = document.getElementById('initConfigErrors');
 
-        self.btnNext = document.getElementById('ButtonNext');
-        self.btnPrev = document.getElementById('ButtonPrevious');
+        this.setPIN = document.getElementById('SetPIN');
+        this.setBackup = document.getElementById('SetBackup');
+        this.skipPDPIN = document.getElementById('SkipPDPIN');
+        this.setSDPIN = document.getElementById('SetSDPIN');
+        this.skipSDPIN = document.getElementById('SkipSDPIN');
+        this.setPDPIN = document.getElementById('SetPDPIN');
+        this.setPassphrase = document.getElementById('SetPassphrase');
+        this.setPGPKey = document.getElementById('SetPGPKey');
+        this.restoreBackup = document.getElementById('RestoreBackup');
+        this.loadFirmware = document.getElementById('LoadFirmware');
 
-        self.btnNext.onclick = moveStep.bind(this, 'next');
-        self.btnPrev.onclick = moveStep.bind(this, 'prev');
+        this.btnNext = document.getElementById('btnNext');
+        this.btnPrev = document.getElementById('btnPrevious');
+        this.btnExit = document.getElementById('btnExit');
 
-        self.slotConfigForm = document['slot-config-form'];
-        self.slotConfigDialog = document.getElementById('slot-config-dialog');
+        this.btnSubmitStep = document.getElementById('btnSubmitStep');
+        this.btnCancelStep = document.getElementById('btnCancelStep');
 
-        self.finalStepDialog = document.getElementById('finalStep-dialog');
+        this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
+        this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
+        this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step4');
 
-        self.slotWipe = document.getElementById('slotWipe');
-        self.slotWipe.onclick = function (e) {
-            document.getElementById('wipeCurrentSlotId').innerText = self.onlyKey.currentSlotId;
-            dialog.open(self.slotWipeConfirmDialog, true);
-            e && e.preventDefault && e.preventDefault();
+        this.skipPDPIN.onclick = () => {
+          this.onlyKey.sendSetPDPin.bind(this.onlyKey);
+          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+        };
+        this.skipSDPIN.onclick = () => {
+          this.onlyKey.sendSetSDPin.bind(this.onlyKey);
+          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step8'));
+        }
+        this.setPassphrase.onclick = this.gotoStep.bind(this, 'Step8');
+        this.setPGPKey.onclick = this.gotoStep.bind(this, 'Step9');
+        this.restoreBackup.onclick = this.setUnguidedStep.bind(this, 'Step10');
+        this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
+
+
+        this.btnNext.onclick = () => {
+            this.setGuided(true);
+            this.moveStep('next');
         };
 
-        self.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
-        self.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
-        self.slotWipeConfirmBtn.onclick = function (e) {
-            self.onlyKey.wipeSlot(null, null, function (err, msg) {
-                // self.onlyKey.listen(function (err, msg) {
+        this.btnPrev.onclick = () => {
+            this.setGuided(true);
+            this.onlyKey.flushMessage.call(this.onlyKey, this.moveStep.bind(this, 'prev'));
+        };
+
+        this.btnExit.onclick = this.reset.bind(this);
+
+        this.btnSubmitStep.onclick = this.moveStep.bind(this, 'next');
+        this.btnCancelStep.onclick = this.reset.bind(this);
+
+        this.slotConfigForm = document['slot-config-form'];
+        this.slotConfigDialog = document.getElementById('slot-config-dialog');
+
+        this.finalStepDialog = document.getElementById('finalStep-dialog');
+
+        this.slotWipe = document.getElementById('slotWipe');
+        this.slotWipe.onclick = e => {
+            e && e.preventDefault && e.preventDefault();
+            document.getElementById('wipeCurrentSlotId').innerText = this.onlyKey.currentSlotId;
+            this.dialog.open(this.slotWipeConfirmDialog, true);
+        };
+
+        this.slotWipeConfirmDialog = document.getElementById('slot-wipe-confirm');
+        this.slotWipeConfirmBtn = document.getElementById('slotWipeConfirm');
+        this.slotWipeConfirmBtn.onclick = e => {
+            e && e.preventDefault && e.preventDefault();
+            this.onlyKey.wipeSlot(null, null, (err, msg) => {
+                // this.onlyKey.listen(function (err, msg) {
                     if (!err) {
-                        self.slotConfigForm.reset();
-                        self.onlyKey.getLabels();
-                        dialog.closeAll();
+                        this.slotConfigForm.reset();
+                        this.onlyKey.getLabels();
+                        this.dialog.closeAll();
                     }
                 // });
             });
-
-            e && e.preventDefault && e.preventDefault();
         };
 
-        self.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
-        self.slotWipeCancelBtn.onclick = function (e) {
-            dialog.close(self.slotWipeConfirmDialog);
+        this.slotWipeCancelBtn = document.getElementById('slotWipeCancel');
+        this.slotWipeCancelBtn.onclick = e => {
             e && e.preventDefault && e.preventDefault();
+            this.dialog.close(this.slotWipeConfirmDialog);
         };
 
-        self.slotSubmit = document.getElementById('slotSubmit');
-        self.slotSubmit.onclick = function (e) {
-            setSlot.call(self);
+        this.slotSubmit = document.getElementById('slotSubmit');
+        this.slotSubmit.onclick = e => {
             e && e.preventDefault && e.preventDefault();
+            this.setSlot();
         };
 
         // BEGIN PRIVATE KEY SELECTOR
-        self.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
-        self.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
-        self.selectPrivateKeyConfirmBtn.onclick = function (e) {
+        this.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
+        this.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
+        this.selectPrivateKeyConfirmBtn.onclick = e => {
             e && e.preventDefault && e.preventDefault();
-            var selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
-            self.onlyKey.confirmRsaKeySelect(self.onlyKey.tempRsaKeys[selectedKey]);
-            self.onlyKey.tempRsaKeys = null;
-            dialog.closeAll();
+            const selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
+            this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey]);
+            this.onlyKey.tempRsaKeys = null;
+            this.dialog.closeAll();
         };
 
-        self.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
-        self.selectPrivateKeyCancelBtn.onclick = function (e) {
+        this.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
+        this.selectPrivateKeyCancelBtn.onclick = e => {
             e && e.preventDefault && e.preventDefault();
-            self.onlyKey.tempRsaKeys = null;
-            dialog.closeAll();
+            this.onlyKey.tempRsaKeys = null;
+            this.dialog.closeAll();
         };
         // END PRIVATE KEY SELECTOR
 
-        setActiveStepUI.call(this);
+        this.setActiveStepUI();
+    };
+
+    Wizard.prototype.checkInitialized = function () {
+        const isInitialized = this.onlyKey && this.onlyKey.isInitialized;
+
+        if (isInitialized) {
+            document.querySelectorAll('.init-only').forEach(el => el.classList.remove('hide'));
+            document.querySelectorAll('.uninit-only').forEach(el => el.classList.add('hide'));
+        } else {
+            document.querySelectorAll('.init-only').forEach(el => el.classList.add('hide'));
+            document.querySelectorAll('.uninit-only').forEach(el => el.classList.remove('hide'));
+        }
+
+        return isInitialized;
+    };
+
+    Wizard.prototype.setGuided = function (guided) {
+        this.guided = !!guided && !this.checkInitialized(); // guided setup is only for uninitialized devices
     };
 
     Wizard.prototype.initKeySelect = function (rawKey, cb) {
-        var self = this;
-
         if (! rawKey.primaryKey || ! rawKey.subKeys) {
             return cb('Cannot initialize key select form due to invalid keys object.');
         }
 
-        var keys = [{
+        const keys = [{
             name: 'Primary Key',
             p: rawKey.primaryKey.mpi[3].data.toByteArray(),
             q: rawKey.primaryKey.mpi[4].data.toByteArray()
         }];
 
-        rawKey.subKeys.forEach(function (subKey, i) {
+        rawKey.subKeys.forEach((subKey, i) => {
             keys.push({
                 name: 'Subkey ' + (i + 1),
                 p: subKey.subKey.mpi[3].data.toByteArray(),
@@ -210,31 +315,105 @@ if (chrome.passwordsPrivate) {
             });
         });
 
-        self.onlyKey.tempRsaKeys = keys;
+        this.onlyKey.tempRsaKeys = keys;
 
-        var pkDiv = document.getElementById('private-key-options');
+        const pkDiv = document.getElementById('private-key-options');
         pkDiv.innerHTML = "";
 
-        keys.forEach(function (key, i) {
+        keys.forEach((key, i) => {
             pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
             pkDiv.appendChild(document.createElement("br"));
         });
 
         pkDiv.appendChild(document.createElement("br"));
 
-        dialog.open(self.selectPrivateKeyDialog, true);
+        this.dialog.open(this.selectPrivateKeyDialog, true);
     };
 
-    function setSlot() {
-        var self = this; // wizard
 
-        self.slotSubmit.disabled = true;
-        self.slotWipe.disabled = true;
+      Wizard.prototype.submitFirmwareFile = function (cb) {
+          var firmwareSelect  = document.getElementById('firmwareSelectFile');
+          this.onlyKey.submitFirmware(firmwareSelect, cb);
+      };
 
-        var form = self.slotConfigForm;
-        var formErrors = [];
-        var formErrorsContainer = document.getElementById('slotConfigErrors');
-        var fieldMap = {
+      Wizard.prototype.submitRestoreFile = function (cb) {
+          var fileSelector  = document.getElementById('restoreSelectFile');
+          this.onlyKey.submitRestore(fileSelector, cb);
+      };
+
+    Wizard.prototype.submitBackupKey = function (cb) {
+
+        const key1Input = document.getElementById('backupPassphrase');
+        const key2Input = document.getElementById('backupPassphrasec');
+        const formErrors = [];
+
+        this.initConfigErrors.innerHTML = "";
+
+        if (!key1Input.value) {
+            formErrors.push('Passphrase cannot be empty.');
+        }
+
+        if (key1Input.value !== key2Input.value) {
+            formErrors.push('Passphrase fields do not match.');
+        }
+
+        if (key1Input.value.length < 25) {
+            formErrors.push('Passphrase must be at least 25 characters.');
+        }
+
+        if (formErrors.length) {
+            // early exit
+            let html = "<ul>";
+            for (let i = 0; i < formErrors.length; i++) {
+                html += "<li>" + formErrors[i] + "</li>";
+            }
+            this.initConfigErrors.innerHTML = html + "</ul>";
+            return;
+        }
+
+        //formErrors.push(key1.value);
+        const backupKeyMode = this.initForm.backupKeyMode;
+        this.onlyKey.setBackupPassphrase(key1Input.value, backupKeyMode.value, cb);
+    };
+
+    Wizard.prototype.submitBackupRSAKey = function (cb) {
+        const backuprsaKey = document.getElementById('backupRSAKey');
+        const backuprsaPasscode = document.getElementById('backupRSAPasscode');
+        const backupKeyModePGP = this.initForm.backupKeyModePGP;
+        const backuprsaslot = document.getElementById('backupRSASlot');
+        const backupRSASetAsSignature = document.getElementById('backupRSASetAsSignature');
+        //const backupRSASetAsDecryption = 1;
+        //const backupRSASetAsBackup = 1;
+        const formErrors = [];
+
+        this.initConfigErrors.innerHTML = "";
+
+        var key = backuprsaKey.value || '';
+        var passcode = backuprsaPasscode.value || '';
+
+        if (!key) {
+           formErrors.push('RSA Key cannot be empty.');
+
+        }
+
+        if (!passcode) {
+          formErrors.push('Passcode cannot be empty.');
+
+        }
+
+        var type = backupRSASetAsSignature ? 224 : 160;
+
+        this.onlyKey.setRSABackupKey(key, passcode, backuprsaslot.value, backupKeyModePGP.value, type, cb);
+    };
+
+    Wizard.prototype.setSlot = function () {
+        this.slotSubmit.disabled = true;
+        this.slotWipe.disabled = true;
+
+        const form = this.slotConfigForm;
+        const formErrors = [];
+        const formErrorsContainer = document.getElementById('slotConfigErrors');
+        const fieldMap = {
             chkSlotLabel: {
                 input: form.txtSlotLabel,
                 msgId: 'LABEL'
@@ -301,21 +480,22 @@ if (chrome.passwordsPrivate) {
 
         if (formErrors.length) {
             // early exit
-            var html = "<ul>";
-            for (var i = 0; i < formErrors.length; i++) {
+            let html = "<ul>";
+            for (let i = 0; i < formErrors.length; i++) {
                 html += "<li><blink>" + formErrors[i]; + "</blink></li>";
             }
             formErrorsContainer.innerHTML = html + "</ul>";
 
-            self.slotSubmit.disabled = false;
-            self.slotWipe.disabled = false;
+            this.slotSubmit.disabled = false;
+            this.slotWipe.disabled = false;
             return;
         }
 
         // process all form fields
-        for (var field in fieldMap) {
-            var isChecked = false;
-            var formValue = null;
+        for (let field in fieldMap) {
+            let isChecked = false;
+            let formValue = null;
+
             switch(form[field].type) {
                 case 'checkbox':
                     if (form[field].checked) {
@@ -327,7 +507,7 @@ if (chrome.passwordsPrivate) {
                 case 'hidden':
                 case 'number':
                 case 'text':
-                    var checkVar = ('' + (form[field].value)).trim();
+                    const checkVar = ('' + (form[field].value)).trim();
                     if (checkVar.length) {
                         isChecked = true;
                         formValue = ('' + (fieldMap[field].input).value).trim();
@@ -344,11 +524,13 @@ if (chrome.passwordsPrivate) {
                 default:
                     break;
             }
+
             if (isChecked) {
-                self.currentSlot[field] = formValue;
+                this.currentSlot[field] = formValue;
+
                 switch(field) {
                     case 'txt2FAUserName':
-                        if (self.currentSlot.mode === 'googleAuthOtp') {
+                        if (this.currentSlot.mode === 'googleAuthOtp') {
                             console.info("BASE32 value:", formValue);
                             formValue = base32tohex(formValue.replace(/\s/g, ''));
                             formValue = formValue.match(/.{2}/g);
@@ -357,87 +539,97 @@ if (chrome.passwordsPrivate) {
                         break;
                 }
 
-                self.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, function (err, msg) {
+                this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
                     if (!err) {
-                        setSlot.call(self);
+                        this.setSlot();
                     }
                 });
+
                 return;
             }
         }
 
         form.reset();
-        self.currentSlot = {};
-        self.slotSubmit.disabled = false;
-        self.slotWipe.disabled = false;
-        self.onlyKey.getLabels();
-        dialog.close(self.slotConfigDialog);
+        this.currentSlot = {};
+        this.slotSubmit.disabled = false;
+        this.slotWipe.disabled = false;
+        this.onlyKey.getLabels();
+        this.dialog.close(this.slotConfigDialog);
     }
 
     Wizard.prototype.getMode = function () {
         return this.initForm['ConfigMode'].value;
     };
 
-    function moveStep(direction) {
+    Wizard.prototype.moveStep = function (direction) {
         // if a next/prev step exists, call current step-related exit function
         // and set new current step
+        this.currentStep = this.currentStep || 'Step1';
+
         if (this.steps[this.currentStep][direction]) {
             if (this.steps[this.currentStep].exitFn) {
-                this.steps[this.currentStep].exitFn(function (err, res) {
+                this.steps[this.currentStep].exitFn((err, res) => {
                     if (err) {
                         console.error(err);
-                        goBackOnError(err, res);
+                        this.goBackOnError(err, res);
                     } else if (res !== 'STOP') {
-                        setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
+                        this.setNewCurrentStep(this.steps[this.currentStep][direction]);
                     }
-                }.bind(this));
+                });
             } else {
-                setNewCurrentStep.call(this, this.steps[this.currentStep][direction]);
+                this.setNewCurrentStep(this.steps[this.currentStep][direction]);
             }
         }
 
         return false;
-    }
+    };
 
-    function goBackOnError(err, lastMessageSent) {
+    Wizard.prototype.goBackOnError = function (err, lastMessageSent) {
         console.info(err, lastMessageSent);
         if (err) {
             switch (lastMessageSent) {
                 case 'OKSETPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step3');
-                    break;
-                case 'OKSETSDPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step5');
+                    this.setNewCurrentStep('Step2');
                     break;
                 case 'OKSETPDPIN':
-                    setNewCurrentStep.call(onlyKeyConfigWizard, 'Step7');
+                    this.setNewCurrentStep('Step4');
+                    break;
+                case 'OKSETSDPIN':
+                    this.setNewCurrentStep('Step6');
                     break;
             }
         }
-    }
+    };
 
-    function setNewCurrentStep(stepId) {
+    Wizard.prototype.setNewCurrentStep = function (stepId) {
         this.currentStep = stepId;
-        setActiveStepUI.call(this);
 
-        // call new current step-related enter function
-        if (this.steps[stepId].enterFn) {
-            this.steps[stepId].enterFn(function (err, res) {
-                if (err) {
-                    console.error(err);
-                } else {
-                    console.info(res);
-                }
-            });
+        if (this.currentStep) {
+
+            // call new current step-related enter function
+            if (this.steps[stepId].enterFn) {
+                this.steps[stepId].enterFn((err, res) => {
+                    if (err) {
+                        console.error(err);
+                        this.goBackOnError(err, res);
+                    } else {
+                        console.info(res);
+                    }
+                });
+            }
         }
-    }
 
-    function setActiveStepUI() {
+        this.setActiveStepUI();
+    };
+
+    Wizard.prototype.setActiveStepUI = function () {
         // set display style for all steps
+        const currentStepOrFirst = this.currentStep || 'Step1';
+
         for(var stepId in this.steps) {
             var el = document.getElementById(stepId);
             if (el) {
-                if (stepId === this.currentStep) {
+                if (stepId === currentStepOrFirst) {
                     el.classList.add('active');
                 } else {
                     el.classList.remove('active');
@@ -445,30 +637,41 @@ if (chrome.passwordsPrivate) {
             }
         }
 
-        var header = document.getElementById('HeaderTable');
-        var tabs = header.getElementsByTagName("td");
+        if (this.guided) {
+            document.getElementById('guided').classList.remove('hide');
+            document.getElementById('unguided').classList.add('hide');
 
-        for (var i = 0; i < tabs.length; i++) {
-            if(tabs[i].getAttribute("data-step") === this.currentStep) {
-                tabs[i].classList.add('active');
+            if (this.steps[currentStepOrFirst].next) {
+                this.btnNext.removeAttribute('disabled');
             } else {
-                    tabs[i].classList.remove('active');
+                this.btnNext.setAttribute('disabled', 'disabled');
+            }
+
+            if (this.steps[currentStepOrFirst].prev) {
+                this.btnPrev.removeAttribute('disabled');
+            } else {
+                this.btnPrev.setAttribute('disabled', 'disabled');
+            }
+
+            if (this.steps[currentStepOrFirst].noExit) {
+                this.btnExit.classList.add('hide');
+            } else {
+                this.btnExit.classList.remove('hide');
+            }
+        } else {
+            document.getElementById('guided').classList.add('hide');
+
+            if (this.currentStep) {
+                document.getElementById('unguided').classList.remove('hide');
+            } else {
+                document.getElementById('unguided').classList.add('hide');
             }
         }
 
-        if (this.steps[this.currentStep].next) {
-            this.btnNext.removeAttribute('disabled');
-        } else {
-            this.btnNext.setAttribute('disabled', 'disabled');
-        }
+        this.initConfigErrors.innerHTML = '';
 
-        if (this.steps[this.currentStep].prev) {
-            this.btnPrev.removeAttribute('disabled');
-        } else {
-            this.btnPrev.setAttribute('disabled', 'disabled');
-        }
         return false;
-    }
+    };
 
     Wizard.prototype.setLastMessages = function (messages) {
         var container = document.getElementById('lastMessage');
@@ -497,36 +700,41 @@ if (chrome.passwordsPrivate) {
         }
     };
 
-    document.addEventListener('DOMContentLoaded', function init() {
+    Wizard.prototype.reset = function () {
+        this.setGuided(true);
+        this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, null));
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
         console.info("Creating wizard instance...");
         onlyKeyConfigWizard = new Wizard();
         OnlyKeyHID(onlyKeyConfigWizard);
     }, false);
 })();
 
-function dialogMgr() {
-    var self = this;
-    self.open = function (el, keepOthersOpen) {
+
+class DialogMgr {
+    open(el, keepOthersOpen) {
         if (!keepOthersOpen) {
-            self.closeAll();
+            this.closeAll();
         }
         if (!el.open) {
             el.showModal();
         }
-    };
+    }
 
-    self.close = function (el) {
+    close(el) {
         if (el.open) {
             el.close();
         }
-    };
+    }
 
-    self.closeAll = function () {
-        var allDialogs = document.getElementsByTagName('dialog');
-        for (var i = 0; i < allDialogs.length; i++) {
-            self.close(allDialogs[i]);
+    closeAll() {
+        const allDialogs = document.getElementsByTagName('dialog');
+        for (let i = 0; i < allDialogs.length; i++) {
+            this.close(allDialogs[i]);
         }
-    };
+    }
 }
 
 function clearRadios(name) {
@@ -546,4 +754,24 @@ function makeRadioButton(name, value, text) {
     label.appendChild(radio);
     label.appendChild(document.createTextNode(text));
     return label;
+}
+
+// we owe russ a beer
+// http://blog.tinisles.com/2011/10/google-authenticator-one-time-password-algorithm-in-javascript/
+function base32tohex(base32) {
+    var base32chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    var bits = "";
+    var hex = "";
+
+    for (var i = 0; i < base32.length; i++) {
+        var val = base32chars.indexOf(base32.charAt(i).toUpperCase());
+        bits += strPad(val.toString(2), 5, '0');
+    }
+
+    for (var i = 0; i+4 <= bits.length; i+=4) {
+        var chunk = bits.substr(i, 4);
+        hex = hex + parseInt(chunk, 2).toString(16) ;
+    }
+
+    return hex;
 }

@@ -4,24 +4,30 @@ This is the official app for **OnlyKey**
 
 OnlyKey can be purchased here: [OnlyKey order](http://www.crp.to/p/)
 
+## Geting Started
+
+Just getting started with OnlyKey?
+
+[Start here](http://www.crp.to/okstart)
+
 ## About
 
 **OnlyKey App** is an app to be used along with an OnlyKey device. The app is used for things like:
 
-- Initial setup of OnlyKey (PINs)
+- Initial setup of OnlyKey (Setup)
 - Configuration of accounts (Slots)
-- Loading keys for OpenPGP and secure backup (Keys)
+- Loading keys for PGP, SSH, and secure backup (Keys)
 - Backup and restore of OnlyKey (Backup/Restore)
 - Setting OnlyKey preferences (Preferences)
 - Setting advanced options such as Yubikey and U2F security info (Advanced)
 
 *The app is required on all systems where Google Authenticator (TOTP) is used*
 
-For information on using the app with OnlyKey see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html)
+For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html)
 
 ## Installation
 
-To use the **OnlyKey Desktop App:**
+To use the **standalone app:**
 
 - Obtain an installer from https://github.com/trustcrypto/OnlyKey-Chrome-App/releases/latest
 - Install and launch the app.
@@ -39,14 +45,6 @@ To use the **OnlyKey Chrome App:** (Chromebook Users)
 Check out the [OnlyKey Support Forum](https://groups.google.com/forum/#!forum/onlykey)
 
 Check out the [OnlyKey Documentation](https://docs.crp.to)
-
-### GNU/Linux users: 
-
-Your system may by default only allow read access to USB devices including the OnlyKey. You'll need to insert a udev rule in order to allow read/write access if the app hangs and you see "Working... please wait". Here are instructions for inserting a udev rule:
-
-1. Get the rules: `wget https://www.pjrc.com/teensy/49-teensy.rules`
-2. Copy the rules to /etc/udev/rules.d/: `sudo cp 49-teensy.rules /etc/udev/rules.d/`
-3. Refresh udev: `sudo udevadm control --reload`
 
 ## Developer Notes
 
