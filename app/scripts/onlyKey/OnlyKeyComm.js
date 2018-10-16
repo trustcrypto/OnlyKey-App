@@ -772,8 +772,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         firmwarePanel: null,
         advancedPanel: null,
         slotConfigBtns: null,
-        lockedDialog: null,
+        slotConfigForm: null,
         slotConfigDialog: null,
+        lockedDialog: null,
         workingDialog: null,
         disconnectedDialog: null,
         main: null
@@ -1190,6 +1191,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             btn.addEventListener('click', showSlotConfigForm);
         });
         ui.slotConfigDialog.getElementsByClassName('slot-config-close')[0].addEventListener('click', closeSlotConfigForm);
+        ui.slotConfigDialog.addEventListener('close', () => ui.slotConfigForm.reset());
     }
 
     function showSlotConfigForm(e) {
