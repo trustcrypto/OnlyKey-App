@@ -67,12 +67,8 @@ if (chrome.passwordsPrivate) {
             Step5: {
                 prev: 'Step4',
                 next: 'Step6',
-                enterFn: (cb) => {
-                  this.onlyKey.sendSetPDPin.call(this.onlyKey, cb);
-                },
-                exitFn: (cb) => {
-                this.onlyKey.sendSetPDPin.call(this.onlyKey, cb);
-                },
+                enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
+                exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
             },
             Step6: {
                 prev: 'Step5',
@@ -98,9 +94,7 @@ if (chrome.passwordsPrivate) {
                     this.btnSubmitStep.disabled = false;
                     this.onlyKey.flushMessage();
                 },
-                exitFn: (cb) => {
-                  this.submitBackupKey.call(this, cb);
-                },
+                exitFn: this.submitBackupKey.bind(this),
             },
             Step9: { //Set PGP Key
                 prev: 'Step8',
@@ -110,9 +104,7 @@ if (chrome.passwordsPrivate) {
                   this.btnSubmitStep.disabled = false;
                   this.onlyKey.flushMessage();
                 },
-                exitFn: (cb) => {
-                  this.submitBackupRSAKey.call(this, cb);
-                },
+                exitFn: this.submitBackupRSAKey.bind(this),
             },
             Step10: { //Restore from backup
                 prev: 'Step9',
@@ -120,9 +112,7 @@ if (chrome.passwordsPrivate) {
                 enterFn: () => {
                   this.btnSubmitStep.disabled = false;
                 },
-                exitFn: (cb) => {
-                  this.submitRestoreFile.call(this, cb);
-                },
+                exitFn: this.submitRestoreFile.bind(this),
             },
             Step11: { //Load Firmware
                 prev: 'Step10',
@@ -130,9 +120,7 @@ if (chrome.passwordsPrivate) {
                 enterFn: () => {
                   this.btnSubmitStep.disabled = false;
                 },
-                exitFn: (cb) => {
-                  this.submitFirmwareFile.call(this, cb);
-                },
+                exitFn: this.submitFirmwareFile.bind(this),
             },
         };
     };
@@ -187,6 +175,7 @@ if (chrome.passwordsPrivate) {
         this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
         this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
         this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step4');
+        this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
 
         this.skipPDPIN.onclick = () => {
           this.onlyKey.sendSetPDPin.bind(this.onlyKey);

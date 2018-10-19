@@ -510,12 +510,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     };
 
 
-
-
-
-
-
-
     OnlyKey.prototype.setRSABackupKey = function (key, passcode, slot, mode, type, cb) {
 
         var privKey, keyObj = {}, retKey;
@@ -533,8 +527,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             if (!(privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6)) {
                 throw new Error('Private Key decryption was successful, but resulted in invalid mpi data.');
             }
-
-
 
         } catch (parseError) {
           throw new Error('Error parsing RSA key' + parseError);
@@ -610,6 +602,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     OnlyKey.prototype.submitRestore = function (fileSelector, cb) {
+        const _this = this;
+        ui.restoreForm.setError('');
 
         if (fileSelector.files && fileSelector.files.length) {
             var file = fileSelector.files[0];
@@ -621,16 +615,26 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                     try {
                         contents = parseBackupData(contents);
                     } catch(parseError) {
-                      throw new Error('Could not parse backup file.\n\n' + parseError);
+                        const error = 'Could not parse backup file.';
+                        _this.setLastMessage('received', error)
+                      throw Error(error + '\n\n' + parseError);
                     }
 
                     if (contents) {
                         ui.restoreForm.setError('Working...');
                         submitRestoreData(contents, function (err) {
-                          throw new Error('Backup file sent to OnlyKey');
+                            if (err) {
+                                _this.setLastMessage(error)
+                                throw Error(error);
+                            }
+
+                          _this.setLastMessage('Backup file sent to OnlyKey.');
+                          cb();
                         });
                     } else {
-                      throw new Error('Incorrect backup data format.');
+                        const error = 'Incorrect backup data format.';
+                        _this.setLastMessage(error)
+                      throw Error(error);
                     }
                 };
             })(file);
@@ -638,7 +642,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             // Read in the image file as a data URL.
             reader.readAsText(file);
         } else {
-          throw new Error('Please select a file first.');
+          throw Error('Please select a file first.');
         }
     }
 
