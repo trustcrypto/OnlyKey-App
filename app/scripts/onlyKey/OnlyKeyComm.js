@@ -1531,9 +1531,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     submitRsaKey(slot, type, retKey, err => {
       // TODO: check for success, then reset
-      this.listen(handleMessage);
-      ui.rsaForm.reset();
       if (typeof cb === 'function') cb(err);
+      ui.rsaForm.reset();
+      this.listen(handleMessage);
     });
 
   };

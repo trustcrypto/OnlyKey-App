@@ -257,20 +257,20 @@ if (chrome.passwordsPrivate) {
     this.selectPrivateKeyConfirmBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
       const selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
-      //this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey], err => {
-          //if (err) {
-              //return ???
-          //}
+      this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey], err => {
+          if (err) {
+            //   return ???
+          }
 
           this.onlyKey.tempRsaKeys = null;
           this.dialog.closeAll();
     
           if (this.guided) {
-              this.moveStep('next');
+            this.setNewCurrentStep(this.steps[this.currentStep]['next'])
           } else {
             this.reset();
           }
-      //});
+      });
     };
 
     this.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
@@ -562,7 +562,7 @@ if (chrome.passwordsPrivate) {
 
     if (this.steps[this.currentStep][direction]) {
       if (this.steps[this.currentStep].exitFn) {
-        return this.steps[this.currentStep].exitFn((err, res) => {
+        this.steps[this.currentStep].exitFn((err, res) => {
           if (err) {
             console.error(err);
             this.goBackOnError(err, res);
