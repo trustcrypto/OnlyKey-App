@@ -172,9 +172,7 @@ if (chrome.passwordsPrivate) {
     this.btnSubmitStep = document.getElementById('btnSubmitStep');
     this.btnCancelStep = document.getElementById('btnCancelStep');
 
-    this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
     this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
-    this.setPDPIN.onclick = this.setUnguidedStep.bind(this, 'Step4');
     this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
 
     this.skipPDPIN.onclick = () => {
@@ -193,7 +191,6 @@ if (chrome.passwordsPrivate) {
       e && e.preventDefault && e.preventDefault();
       this.gotoStep('Step9');
     };
-    this.restoreBackup.onclick = this.setUnguidedStep.bind(this, 'Step10');
     this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
 
 
@@ -264,7 +261,7 @@ if (chrome.passwordsPrivate) {
 
           this.onlyKey.tempRsaKeys = null;
           this.dialog.closeAll();
-    
+
           if (this.guided) {
             this.setNewCurrentStep(this.steps[this.currentStep]['next'])
           } else {
@@ -381,6 +378,12 @@ if (chrome.passwordsPrivate) {
   Wizard.prototype.submitBackupRSAKey = function (cb) {
     const backuprsaKey = document.getElementById('backupRSAKey');
     const backuprsaPasscode = document.getElementById('backupRSAPasscode');
+    const backupRSASetAsSignature = document.getElementById('backupRSASetAsSignature')
+    if (backupRSASetAsSignature.checked) {
+      backupsigFlag = 1;
+    } else {
+      backupsigFlag = 0;
+    }
 
     this.initConfigErrors.innerHTML = "";
 
@@ -396,6 +399,8 @@ if (chrome.passwordsPrivate) {
         this.initConfigErrors.innerHTML = 'Passcode cannot be empty.';
         return false;
     }
+    backuprsaKey.value = '';
+    backuprsaPasscode.value = '';
 
     this.onlyKey.setRSABackupKey(key, passcode, cb);
   };

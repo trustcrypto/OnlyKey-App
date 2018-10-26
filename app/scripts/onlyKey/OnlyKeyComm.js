@@ -1,6 +1,7 @@
 const userPreferences = require('./scripts/userPreferences.js');
 var fwchecked = false;
 var expectedmsg = '';
+var backupsigFlag = -1;
 
 /* jshint esnext:true */
 const SUPPORTED_DEVICES = [{
@@ -1527,12 +1528,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     type += typeModifier;
 
+    console.info("backupsigFlag" + backupsigFlag);
+    if (backupsigFlag >= 0) {
+      type += 128 + 32 + (backupsigFlag*64); //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
+      console.info("type" + type);
+    }
+
     // console.info("retKey:", retKey);
 
     submitRsaKey(slot, type, retKey, err => {
       // TODO: check for success, then reset
       if (typeof cb === 'function') cb(err);
       ui.rsaForm.reset();
+      if (backupsigFlag >= 0) {
+      backupsigFlag = -1;
+      //reset backup form
+      }
       this.listen(handleMessage);
     });
 
