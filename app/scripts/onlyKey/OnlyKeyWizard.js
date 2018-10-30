@@ -93,18 +93,26 @@ if (chrome.passwordsPrivate) {
         next: 'Step10',
         enterFn: () => {
           this.btnSubmitStep.disabled = false;
+          this.steps.Step8.next = this.guided ? 'Step10' : 'Step1';
           this.onlyKey.flushMessage();
         },
-        exitFn: this.submitBackupKey.bind(this),
+        exitFn: (cb) => {
+          const backupKeyMode = this.initForm.backupKeyMode;
+          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.call(this, cb));
+        }
       },
       Step9: { //Set PGP Key
         prev: 'Step7',
         next: 'Step10',
         enterFn: () => {
           this.btnSubmitStep.disabled = false;
+          this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
           this.onlyKey.flushMessage();
         },
-        exitFn: this.submitBackupRSAKey.bind(this),
+        exitFn: (cb) => {
+          const backupKeyMode = this.initForm.backupKeyMode;
+          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupRSAKey.call(this, cb));
+        }
       },
       Step10: { //Restore from backup
         prev: 'Step9',
@@ -371,8 +379,7 @@ if (chrome.passwordsPrivate) {
     }
 
     //formErrors.push(key1.value);
-    const backupKeyMode = this.initForm.backupKeyMode;
-    this.onlyKey.setBackupPassphrase(key1Input.value, backupKeyMode.value, cb);
+    this.onlyKey.setBackupPassphrase(key1Input.value, cb);
   };
 
   Wizard.prototype.submitBackupRSAKey = function (cb) {
