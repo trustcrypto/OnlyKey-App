@@ -1782,7 +1782,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
           //Chrome app background page sends settime which results in unexpected unlocked response
           console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
-          await listenForMessageIncludesAgain(str);
+          await listenForMessageIncludesAgain(resolve, reject);
         } else {
           reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
         }
