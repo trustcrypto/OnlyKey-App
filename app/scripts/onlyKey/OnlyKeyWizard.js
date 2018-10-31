@@ -183,22 +183,26 @@ if (chrome.passwordsPrivate) {
     this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
     this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
 
-    this.skipPDPIN.onclick = () => {
-      this.onlyKey.sendSetPDPin.bind(this.onlyKey);
+    this.skipPDPIN.onclick = (e) => {
+      e && e.preventDefault && e.preventDefault();
       this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
     };
-    this.skipSDPIN.onclick = () => {
-      this.onlyKey.sendSetSDPin.bind(this.onlyKey);
+
+    this.skipSDPIN.onclick = (e) => {
+      e && e.preventDefault && e.preventDefault();
       this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step8'));
     };
+
     this.setPassphrase.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
       this.gotoStep('Step8');
     };
+
     this.setPGPKey.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
       this.gotoStep('Step9');
     };
+    
     this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
 
 
