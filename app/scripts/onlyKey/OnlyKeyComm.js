@@ -386,6 +386,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     });
   };
 
+  OnlyKey.prototype.listenfor = async function (msg, callback) {
+    await listenForMessageIncludes(msg);
+  };
+
   OnlyKey.prototype.listen = function (callback) {
     pollForInput({}, callback);
   };
@@ -762,7 +766,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
   OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
     backupKeyMode = parseInt(backupKeyMode, 10);
-    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, callback);
+    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, this.listen(callback));
   };
 
   OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
