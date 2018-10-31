@@ -40,9 +40,9 @@ if (chrome.passwordsPrivate) {
       Step2: {
         prev: 'Step1',
         next: 'Step3',
+        disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: () => {
           this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
-          this.enableDisclaimer('passcode1Disclaimer');
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey));
         },
         exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
@@ -56,14 +56,14 @@ if (chrome.passwordsPrivate) {
       Step4: {
         prev: 'Step3',
         next: 'Step5',
+        disclaimerTrigger: 'passcode3Disclaimer',
         enterFn: () => {
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.enableDisclaimer('passcode3Disclaimer');
           this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
         },
         exitFn: (cb) => {
           const setSecProfileMode = this.initForm.secProfileMode;
-          this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.call(this.onlyKey, cb));
+          this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.bind(this.onlyKey, cb));
         },
       },
       Step5: {
@@ -75,9 +75,9 @@ if (chrome.passwordsPrivate) {
       Step6: {
         prev: 'Step5',
         next: 'Step7',
+        disclaimerTrigger: 'passcode2Disclaimer',
         enterFn: () => {
           this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
-          this.enableDisclaimer('passcode2Disclaimer');
           this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
         },
         exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
@@ -98,7 +98,7 @@ if (chrome.passwordsPrivate) {
         },
         exitFn: (cb) => {
           const backupKeyMode = this.initForm.backupKeyMode;
-          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.call(this, cb));
+          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
         }
       },
       Step9: { //Set PGP Key
@@ -111,7 +111,7 @@ if (chrome.passwordsPrivate) {
         },
         exitFn: (cb) => {
           const backupKeyMode = this.initForm.backupKeyMode;
-          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupRSAKey.call(this, cb));
+          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupRSAKey.bind(this, cb));
         }
       },
       Step10: { //Restore from backup
@@ -646,7 +646,12 @@ if (chrome.passwordsPrivate) {
       document.getElementById('unguided').classList.add('hide');
 
       if (this.steps[currentStepOrFirst].next) {
-        this.btnNext.removeAttribute('disabled');
+        const disclaimerTrigger = this.steps[currentStepOrFirst].disclaimerTrigger;
+        if (!disclaimerTrigger) {
+          this.btnNext.removeAttribute('disabled');
+        } else {
+          this.enableDisclaimer(disclaimerTrigger);
+        }
       } else {
         this.btnNext.setAttribute('disabled', 'disabled');
       }
