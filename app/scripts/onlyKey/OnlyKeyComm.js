@@ -766,7 +766,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
   OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
     backupKeyMode = parseInt(backupKeyMode, 10);
-    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, this.listen(callback));
+    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, async () => {
+      await this.listenfor('Backup Key Mode', callback);
+      return callback();
+    });
   };
 
   OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
@@ -1772,14 +1775,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   async function listenForMessageIncludes(str) {
     return new Promise(async function listenForMessageIncludesAgain(resolve, reject) {
       console.info(`Listening for "${str}"...`);
-      myOnlyKey.listen((err, msg) => {
+      myOnlyKey.listen(async (err, msg) => {
         if (msg && msg.includes(str)) {
           console.info(`Match received "${msg}"...`);
           resolve();
         } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
           //Chrome app background page sends settime which results in unexpected unlocked response
           console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
-          listenForMessageIncludesAgain(str);
+          await listenForMessageIncludesAgain(str);
         } else {
           reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
         }
