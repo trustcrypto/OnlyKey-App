@@ -1728,6 +1728,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             console.info(`Block info`, line.slice(64, 65))
             await listenForMessageIncludes('SUCCESSFULLY LOADED FW');
             firmwaretext.innerHTML = "Firmware Load Complete!";
+            document.getElementById('firmwareSelectFile').value = null;
+            //
           }
         } catch (err) {
           console.error(`Error submitting firmware data:`, err);
