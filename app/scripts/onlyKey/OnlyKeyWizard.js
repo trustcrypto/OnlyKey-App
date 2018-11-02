@@ -134,6 +134,8 @@ if (chrome.passwordsPrivate) {
   };
 
   Wizard.prototype.enableDisclaimer = function (fieldName) {
+    if (!fieldName) return;
+    
     const field = this.initForm[fieldName];
 
     field.removeEventListener('change', this.enableDisclaimer);
@@ -206,20 +208,32 @@ if (chrome.passwordsPrivate) {
     this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
 
 
-    this.btnNext.onclick = () => {
+    this.btnNext.onclick = (e) => {
+      e && e.preventDefault && e.preventDefault();
       this.setGuided(true);
       this.moveStep('next');
     };
 
-    this.btnPrev.onclick = () => {
+    this.btnPrev.onclick = (e) => {
+      e && e.preventDefault && e.preventDefault();
       this.setGuided(true);
       this.onlyKey.flushMessage.call(this.onlyKey, this.moveStep.bind(this, 'prev'));
     };
 
-    this.btnExit.onclick = this.reset.bind(this);
+    this.btnExit.onclick = (e) => {
+      e && e.preventDefault && e.preventDefault();
+      this.reset();
+    };
 
-    this.btnSubmitStep.onclick = this.moveStep.bind(this, 'next');
-    this.btnCancelStep.onclick = this.reset.bind(this);
+    this.btnSubmitStep.onclick = (e) => {
+      // e && e.preventDefault && e.preventDefault();
+      this.moveStep('next');
+    };
+
+    this.btnCancelStep.onclick = (e) => {
+      e && e.preventDefault && e.preventDefault();
+      this.reset();
+    };
 
     this.slotConfigForm = document['slot-config-form'];
     this.slotConfigDialog = document.getElementById('slot-config-dialog');
@@ -645,12 +659,13 @@ if (chrome.passwordsPrivate) {
       }
     }
 
+    const disclaimerTrigger = this.steps[currentStepOrFirst].disclaimerTrigger;
+
     if (this.guided) {
       document.getElementById('guided').classList.remove('hide');
       document.getElementById('unguided').classList.add('hide');
 
       if (this.steps[currentStepOrFirst].next) {
-        const disclaimerTrigger = this.steps[currentStepOrFirst].disclaimerTrigger;
         if (!disclaimerTrigger) {
           this.btnNext.removeAttribute('disabled');
         } else {
@@ -675,6 +690,7 @@ if (chrome.passwordsPrivate) {
       document.getElementById('guided').classList.add('hide');
 
       if (this.currentStep) {
+        this.enableDisclaimer(disclaimerTrigger);
         document.getElementById('unguided').classList.remove('hide');
       } else {
         document.getElementById('unguided').classList.add('hide');
