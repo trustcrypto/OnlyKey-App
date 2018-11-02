@@ -202,7 +202,7 @@
                         <input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes
                             (Default)</u>
                     </label><br />
-                    <label><input type='radio' name='backupKeyMode' value=1 /><u>Set backup key only once</u></label>
+                    <label><input type='radio' name='backupKeyMode' value=1 /><u>Lock backup key on this device</u></label>
                     <br />
                     <td>
                         <button id='SetPGPKey' type='button'>
@@ -242,7 +242,7 @@
                         <input type='radio' checked name='backupKeyModePGP' value=0 /><u>Permit future backup key
                             changes (Default)</u>
                     </label><br />
-                    <label><input type='radio' name='backupKeyModePGP' value=1 /><u>Set backup key only once</u></label>
+                    <label><input type='radio' name='backupKeyModePGP' value=1 /><u>Lock backup key on this device</u></label>
                     <br />
                     <td>
                         <br />
@@ -385,18 +385,14 @@
                     <form id="wipeModeForm" name="wipeModeForm">
                         <h2>Wipe Mode</h2>
                         <h4>Configure how the OnlyKey responds to<br />a factory reset.</h4>
+                        <h4>Only sensitive data is wiped by default.</h4>
                         <label>
-                            <input type="radio" checked name="okWipeMode" value=1 />
-                            <u>Sensitive Data Only</u> (default) &ndash; <em>All sensitive data is wiped.</em>
+                            <input type="radio" checked name="okWipeMode" value=2 />
+                            <u>Full Wipe</u> &ndash; <em>Entire device is wiped. Firmware must be reloaded</em> (recommended for plausible deniability users).
                         </label>
                         <br />
-                        <label>
-                            <input type="radio" name="okWipeMode" value=2 />
-                            <u>Full Wipe</u> (recommended for plausible deniability users) &ndash; <em>Entire device is wiped. Firmware must be reloaded.</em>
-                        </label>
-                        <br />
-                        <span style="font-size: small; color: red;"><b>WARNING - Setting to "Full Wipe" cannot be
-                                changed.</b></span>
+                        <span style="font-size: small; color: red;"><b>WARNING - Once set to "Full Wipe" this cannot be
+                                changed on this device.</b></span>
                         <br /><br />
                         <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
                     </form>
@@ -464,11 +460,11 @@
                         <h4>Backup key may be changed by default.</h4>
                         <label>
                             <input type="radio" checked name="okBackupMode" value=1 />
-                            <u>Set Once</u> (backup key may only be set once)
+                            <u>Locked</u> - <em>Backup key may not be changed on device</em>
                         </label>
                         <br />
-                        <span style="font-size: small; color: red;"><b>WARNING - Setting to "Set Once"
-                                cannot be changed.</b></span>
+                        <span style="font-size: small; color: red;"><b>WARNING - Once set to "Locked"
+                                this cannot be changed on this device.</b></span>
                         <br /><br />
                         <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" />
                     </form>

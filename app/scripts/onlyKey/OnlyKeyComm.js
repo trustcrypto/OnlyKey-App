@@ -682,7 +682,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       // Read in the image file as a data URL.
       reader.readAsText(file);
     } else {
-      throw Error('Please select a file first.');
+      var contents = '000000000'
+      submitRestoreData(contents, function (err) {
+        if (err) {
+          _this.setLastMessage(error)
+          throw Error(error);
+        }
+
+        _this.setLastMessage('Backup file sent to OnlyKey.');
+        cb();
+      });
     }
   }
 

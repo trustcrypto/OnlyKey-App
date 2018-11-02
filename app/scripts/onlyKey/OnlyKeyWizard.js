@@ -135,7 +135,7 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.enableDisclaimer = function (fieldName) {
     if (!fieldName) return;
-    
+
     const field = this.initForm[fieldName];
 
     field.removeEventListener('change', this.enableDisclaimer);
@@ -204,7 +204,7 @@ if (chrome.passwordsPrivate) {
       e && e.preventDefault && e.preventDefault();
       this.gotoStep('Step9');
     };
-    
+
     this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
 
 
@@ -363,6 +363,9 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.submitRestoreFile = function (cb) {
     var fileSelector = document.getElementById('restoreSelectFile');
+    if (!fileSelector.files.length) {
+      fileSelector = new File(["-----BEGIN ONLYKEY BACKUP-----\n-----END ONLYKEY BACKUP-----"], "emptybackup.txt");
+    }
     this.onlyKey.submitRestore(fileSelector, cb);
   };
 
