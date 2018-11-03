@@ -156,7 +156,6 @@ if (chrome.passwordsPrivate) {
   Wizard.prototype.gotoStep = function (newStep) {
     this.setGuided(true);
     this.setNewCurrentStep(newStep);
-    this.moveStep('next');
   };
 
   Wizard.prototype.uiInit = function () {
