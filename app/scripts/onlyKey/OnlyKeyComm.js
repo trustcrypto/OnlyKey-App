@@ -1737,7 +1737,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             console.info(`Block info`, line.slice(64, 65))
             await listenForMessageIncludes('SUCCESSFULLY LOADED FW');
             firmwaretext.innerHTML = "Firmware Load Complete!";
+            ui.firmwareForm.setError('');
             document.getElementById('firmwareSelectFile').value = '';
+            onlyKeyConfigWizard.newFirmware = null;
             //
           }
         } catch (err) {
