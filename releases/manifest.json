@@ -4,16 +4,16 @@
   "version": "5.1.0",
   "packages": {
     "linux64": {
-      "url": "https://s3.amazonaws.com/onlykey/apps/desktop/releases/latest/OnlyKey_5.1.0.deb",
-      "size": 60958315
+      "url": "https://s3.amazonaws.com/onlykey/apps/desktop/releases/latest/OnlyKey_5.1.0_amd64.deb",
+      "size": 59000000
     },
     "win64": {
       "url": "https://s3.amazonaws.com/onlykey/apps/desktop/releases/latest/OnlyKey_5.1.0.exe",
-      "size": 60958315
+      "size": 62000000
     },
     "mac64": {
       "url": "https://s3.amazonaws.com/onlykey/apps/desktop/releases/latest/OnlyKey_5.1.0.dmg",
-      "size": 97202995
+      "size": 97000000
     }
   },
   "description": "OnlyKey Configuration App"
