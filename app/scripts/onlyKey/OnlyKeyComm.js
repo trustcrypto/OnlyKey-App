@@ -1,6 +1,11 @@
-const userPreferences = require('./scripts/userPreferences.js');
+const desktopApp = typeof nw !== 'undefined';
+let userPreferences;
+
+if (desktopApp) {
+  userPreferences = require('./scripts/userPreferences.js');
+}
+
 var fwchecked = false;
-var expectedmsg = '';
 var backupsigFlag = -1;
 
 /* jshint esnext:true */
@@ -1067,15 +1072,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         version = msg.split("UNINITIALIZED").pop();
         myOnlyKey.setVersion(version);
         setOkVersionStr();
-        console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
-        await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+        desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
       } else if (msg.indexOf("UNINITIALIZED") >= 0) {
         myOnlyKey.fwUpdateSupport = false;
         version = 'v0.2-beta.6';
         myOnlyKey.setVersion(version);
         setOkVersionStr();
-        console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
-        await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+        desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
         return;
       } else if (msg.indexOf("UNLOCKED") >= 0) {
         version = msg.split("UNLOCKED").pop();
@@ -1084,8 +1087,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
           myOnlyKey.fwUpdateSupport = true;
         }
-        console.info("userPreferences.autoUpdateFW" + userPreferences.autoUpdateFW);
-        await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+        desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
       }
 
       // else call callback with null err and msg as 2nd arg

@@ -2,7 +2,6 @@
 
 var gulp = require('gulp');
 var sourcemaps = require('gulp-sourcemaps');
-var less = require('gulp-less');
 var jetpack = require('fs-jetpack');
 
 var utils = require('./utils');
@@ -10,6 +9,8 @@ var utils = require('./utils');
 var projectDir = jetpack;
 var rootDir = projectDir.cwd('./');
 var destDir = projectDir.cwd('./build');
+
+const isChrome = utils.getEnvName() === 'chrome';
 
 var paths = {
     jsCodeToTranspile: [
@@ -27,7 +28,8 @@ var paths = {
     ],
 };
 
-if (utils.getEnvName() === 'chrome') {
+if (isChrome) {
+    const manifest = rootDir.read('manifest.json', 'json')
     paths.filesToCopyFromRootDir.push(
         'resources/onlykey_logo_*.png'
     );

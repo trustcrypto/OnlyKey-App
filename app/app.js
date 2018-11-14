@@ -46,6 +46,34 @@ chrome.app.runtime.onLaunched.addListener(function() {
       });
 });
 
+var onDevicesEnumerated = function (devices) {
+    if (chrome.runtime.lastError) {
+        console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
+        return;
+    }
+
+    if (devices && devices.length) {
+        console.info("HID devices found:", devices);
+        devices.forEach(onDeviceAdded);
+    }
+};
+
+var onDeviceAdded = function (device) {
+    // auto connect desired device
+    const supportedDevice = getSupportedDevice(device);
+    if (supportedDevice) {
+        chrome.hid.connect(device.deviceId, function (connectInfo) {
+            if (chrome.runtime.lastError) {
+                console.error("ERROR CONNECTING:", chrome.runtime.lastError);
+            } else if (!connectInfo) {
+                console.warn("Unable to connect to device.");
+            }
+
+            setTime(connectInfo.connectionId);
+        });
+    }
+};
+
 // Use a "lite" version of the OnlyKey code to send OKSETTIME messages whenever
 // the key is plugged in. This is run by Chrome in the background, and ensures
 // that the key knows the correct time for TOTP.
@@ -82,34 +110,6 @@ if (typeof nw == 'undefined') {
         })
         .catch(console.error);
 }
-
-var onDevicesEnumerated = function (devices) {
-    if (chrome.runtime.lastError) {
-        console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
-        return;
-    }
-
-    if (devices && devices.length) {
-        console.info("HID devices found:", devices);
-        devices.forEach(onDeviceAdded);
-    }
-};
-
-var onDeviceAdded = function (device) {
-    // auto connect desired device
-    const supportedDevice = getSupportedDevice(device);
-    if (supportedDevice) {
-        chrome.hid.connect(device.deviceId, function (connectInfo) {
-            if (chrome.runtime.lastError) {
-                console.error("ERROR CONNECTING:", chrome.runtime.lastError);
-            } else if (!connectInfo) {
-                console.warn("Unable to connect to device.");
-            }
-
-            setTime(connectInfo.connectionId);
-        });
-    }
-};
 
 function setTime(connectionId) {
     var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);

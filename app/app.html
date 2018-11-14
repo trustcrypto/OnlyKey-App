@@ -124,7 +124,7 @@
                     </label>
                     <br />
                     Learn more about standard and plausible deniability profile <a href="https://docs.crp.to/features.html#self-destruct"
-                        class="external">here</a>.
+                        class="external" target="_new">here</a>.
                     <p>
                         DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my
                         PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive
@@ -207,7 +207,7 @@
                     <td>
                         <button id='SetPGPKey' type='button'>
                             <b>Use PGP Key instead of passphrase</b></button></td><br /><br />Learn more about secure
-                    backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere' class='external'>here</a>.
+                    backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere' class='external' target="_new">here</a>.
                 </div>
 
                 <div class="step" id="Step9">
@@ -215,7 +215,7 @@
                     <p id="step9-text"></p>
                     <p>Your OpenPGP key will be used for secure backup and restore of your OnlyKey, make sure to store
                         it in a secure location.</p>
-                    <p>Need a key? Follow our guide <a href='https://docs.crp.to/usersguide.html#generating-keys' class='external'>here</a>
+                    <p>Need a key? Follow our guide <a href='https://docs.crp.to/usersguide.html#generating-keys' class='external' target="_new">here</a>
                         for generating an OpenPGP key with Keybase.</p>
                     <label>Slot:
                         <select id='backupRSASlot' name='backupRSASlot'>
@@ -302,7 +302,7 @@
                     <p>Slots are where you store login information. There are 12 slots in your profile, and each slot
                         can
                         store a login URL, Username, Password, and two-factor. More information on slots available <a
-                            href="https://docs.crp.to/usersguide.html#all-about-slots" class="external">here</a>.</p>
+                            href="https://docs.crp.to/usersguide.html#all-about-slots" class="external" target="_new">here</a>.</p>
                     <hr />
                     <table id="slot-config-btns">
                         <tr>
@@ -475,12 +475,12 @@
         <div id="keys-panel" class="hide panel">
             <p>
                 Use the [Keys] tab to load OpenPGP keys onto your OnlyKey. OpenPGP keys can be used to encrypt OnlyKey
-                backups and are used for <a href="https://docs.crp.to/webcrypt.html" class="external">secure messaging</a>.
+                backups and are used for <a href="https://docs.crp.to/webcrypt.html" class="external" target="_new">secure messaging</a>.
             </p>
             <hr />
             <div class="flex-container">
                 <div class="flex-item">
-                    <p>Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys" class="external">here</a>
+                    <p>Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys" class="external" target="_new">here</a>
                         for generating an OpenPGP key with Keybase.</p>
                     <p>To get started loading your OpenPGP key put your OnlyKey in config mode:</p>
                     <p>Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. Your OnlyKey
@@ -1069,16 +1069,7 @@
     <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
     <script src="/scripts/updater.js"></script>
     <script src="/scripts/menubar.js"></script>
-    <script>
-        document.querySelector('#main').addEventListener('click', evt => {
-            if ((evt.target !== evt.currentTarget) && (!!evt.target.href && evt.target.className.includes('external'))) {
-                // nw.Window.open(evt.target.href);
-                nw.Shell.openExternal(evt.target.href);
-                evt.preventDefault();
-                evt.stopPropagation();
-            }
-        });
-    </script>
+    <script src="/scripts/external-links.js"></script>
 </body>
 
 </html>
