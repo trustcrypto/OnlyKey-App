@@ -14,7 +14,8 @@
     "hid",
     {
       "usbDevices": [
-        { "vendorId": 5824, "productId": 1158 }
+        { "vendorId": 5824, "productId": 1158 },
+        { "vendorId": 7504, "productId": 24828 }
       ]
     }
   ],

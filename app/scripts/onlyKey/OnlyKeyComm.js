@@ -1076,6 +1076,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       } else if (msg.indexOf("UNINITIALIZED") >= 0) {
         myOnlyKey.fwUpdateSupport = false;
         version = 'v0.2-beta.6';
+        var upgradetext = document.getElementById('upgrade-text');
+        upgradetext.innerHTML = "This application is designed to work with a newer version of OnlyKey firmware. <br>Go to https://docs.crp.to/upgradeguide.html ";
         myOnlyKey.setVersion(version);
         setOkVersionStr();
         desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
