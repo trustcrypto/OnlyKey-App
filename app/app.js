@@ -21,6 +21,13 @@ const SUPPORTED_DEVICES = [
         maxOutputReportSize: 64,
         maxFeatureReportSize: 0,
     },
+    {
+        vendorId: 4176,
+        productId: 16,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
 ];
 
 function getSupportedDevice(deviceInfo) {
