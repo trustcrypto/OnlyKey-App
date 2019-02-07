@@ -24,7 +24,8 @@ var paths = {
         '*.html',
     ],
     filesToCopyFromRootDir: [
-        'manifest.json'
+        'manifest.json',
+        // 'node_modules/**/*',
     ],
 };
 
@@ -40,8 +41,7 @@ if (isChrome) {
 // -------------------------------------
 
 gulp.task('clean', function(callback) {
-    destDir.dir('.', { empty: true });
-    return callback();
+    return destDir.dirAsync('.', { empty: true }).then(res => callback());
 });
 
 
@@ -74,9 +74,9 @@ gulp.task('copy-watch', copyTask);
 
 var transpileTask = function () {
     return gulp.src(paths.jsCodeToTranspile, { base: 'app' })
-    .pipe(sourcemaps.init())
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest(destDir.path()));
+        .pipe(sourcemaps.init())
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest(destDir.path()));
 };
 gulp.task('transpile', transpileTask);
 gulp.task('transpile-watch', transpileTask);

@@ -11,7 +11,8 @@
     "nw": "^0.36.0",
     "nw-autoupdater": "^1.1.8",
     "nw-dev": "^3.0.1",
-    "q": "^1.5.1"
+    "q": "^1.5.1",
+    "request": "^2.88.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",
