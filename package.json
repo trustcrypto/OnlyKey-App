@@ -16,10 +16,9 @@
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "gulp": "^3.8.8",
+    "gulp": "^4.0.0",
     "gulp-sourcemaps": "^2.6.4",
-    "gulp-util": "^3.0.1",
-    "mocha": "^3.5.3",
+    "mocha": "^5.2.0",
     "selenium-webdriver": "^3.6.0",
     "tree-kill": "^1.2.1",
     "yargs": "^8.0.2"
