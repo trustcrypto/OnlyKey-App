@@ -57,9 +57,9 @@ if (chrome.passwordsPrivate) {
         prev: 'Step3',
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
-        enterFn: () => {
+        enterFn: (cb) => {
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey, cb));
         },
         exitFn: (cb) => {
           const setSecProfileMode = this.initForm.secProfileMode;
@@ -76,9 +76,9 @@ if (chrome.passwordsPrivate) {
         prev: 'Step5',
         next: 'Step7',
         disclaimerTrigger: 'passcode2Disclaimer',
-        enterFn: () => {
+        enterFn: (cb) => {
           this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey, cb));
         },
         exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
       },
