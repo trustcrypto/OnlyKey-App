@@ -449,7 +449,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   }, callback = () => {}) {
     this.pendingMessages[msgId] = !this.pendingMessages[msgId];
     const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
-    console.info('sendPinMessage');
+    console.info(`sendPinMessage ${msgId}`);
     this.sendMessage({
       msgId
     }, cb);
@@ -468,7 +468,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   };
 
   OnlyKey.prototype.sendSetPDPin = function (callback) {
-    console.info('made it to sendSetPDPin');
     this.sendPinMessage({
       msgId: 'OKSETPDPIN'
     }, callback);
