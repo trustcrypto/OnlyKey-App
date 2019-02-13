@@ -24,7 +24,8 @@ var paths = {
         '*.html',
     ],
     filesToCopyFromRootDir: [
-        'manifest.json'
+        'manifest.json',
+        // 'node_modules/**/*',
     ],
 };
 
@@ -40,7 +41,7 @@ if (isChrome) {
 // -------------------------------------
 
 gulp.task('clean', function(callback) {
-    return destDir.dirAsync('.', { empty: true });
+    return destDir.dirAsync('.', { empty: true }).then(res => callback());
 });
 
 
@@ -66,22 +67,23 @@ var copyTask = function () {
     });
     return result;
 };
-gulp.task('copy', ['clean'], copyTask);
+
+gulp.task('copy', copyTask);
 gulp.task('copy-watch', copyTask);
 
 
 var transpileTask = function () {
     return gulp.src(paths.jsCodeToTranspile, { base: 'app' })
-    .pipe(sourcemaps.init())
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest(destDir.path()));
+        .pipe(sourcemaps.init())
+        .pipe(sourcemaps.write('.'))
+        .pipe(gulp.dest(destDir.path()));
 };
-gulp.task('transpile', ['clean'], transpileTask);
+gulp.task('transpile', transpileTask);
 gulp.task('transpile-watch', transpileTask);
 
 
 // Add and customize OS-specific and target-specific stuff.
-gulp.task('finalize', ['clean'], function () {
+gulp.task('finalize', function (done) {
     var manifest = rootDir.read('package.json', 'json');
     switch (utils.getEnvName()) {
         case 'production':
@@ -104,14 +106,15 @@ gulp.task('finalize', ['clean'], function () {
 
     var configFilePath = projectDir.path('config/env_' + utils.getEnvName() + '.json');
     destDir.copy(configFilePath, 'env_config.json');
+    return done();
 });
 
 
 gulp.task('watch', function () {
-    gulp.watch(paths.jsCodeToTranspile, ['transpile-watch']);
-    gulp.watch(paths.filesToCopyFromRootDir, ['copy-watch']);
-    gulp.watch(paths.filesToCopyFromAppDir, { cwd: 'app' }, ['copy-watch']);
+    gulp.watch(paths.jsCodeToTranspile, transpileTask);
+    gulp.watch(paths.filesToCopyFromRootDir, copyTask);
+    gulp.watch(paths.filesToCopyFromAppDir, { cwd: 'app' }, copyTask);
 });
 
 
-gulp.task('build', ['transpile', 'copy', 'finalize']);
+gulp.task('build', gulp.series('clean', 'transpile', 'copy', 'finalize'));

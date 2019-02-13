@@ -252,7 +252,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   };
 
   OnlyKey.prototype.sendMessage = function (options, callback) {
-    var self = this;
     var bytesPerMessage = 64;
 
     var msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
@@ -267,12 +266,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var bytes = new Uint8Array(bytesPerMessage);
     var cursor = 0;
 
-    for (; cursor < self.messageHeader.length; cursor++) {
-      bytes[cursor] = self.messageHeader[cursor];
+    for (; cursor < this.messageHeader.length; cursor++) {
+      bytes[cursor] = this.messageHeader[cursor];
     }
 
-    if (msgId && self.messages[msgId]) {
-      bytes[cursor] = strPad(self.messages[msgId], 2, 0);
+    if (msgId && this.messages[msgId]) {
+      bytes[cursor] = strPad(this.messages[msgId], 2, 0);
       cursor++;
     }
 
@@ -282,8 +281,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     if (fieldId !== null) {
-      if (self.messageFields[fieldId]) {
-        bytes[cursor] = strPad(self.messageFields[fieldId], 2, 0);
+      if (this.messageFields[fieldId]) {
+        bytes[cursor] = strPad(this.messageFields[fieldId], 2, 0);
       } else {
         bytes[cursor] = fieldId;
       }
@@ -294,7 +293,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     if (!Array.isArray(contents)) {
       switch (typeof contents) {
         case 'string':
-          contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, function (match, capture) {
+          contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, (match, capture) => {
             return String.fromCharCode(parseInt(capture, 16));
           });
 
@@ -323,12 +322,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       bytes[cursor++] = pad;
     }
 
-    console.info("SENDING " + msgId + " to connectionId " + self.connection + ":", bytes);
+    console.info("SENDING " + msgId + " to connectionId " + this.connection + ":", bytes);
 
-    chromeHid.send(self.connection, reportId, bytes.buffer, function () {
+    chromeHid.send(this.connection, reportId, bytes.buffer, () => {
       if (chrome.runtime.lastError) {
         console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, {
-          connectionId: self.connection
+          connectionId: this.connection
         });
         callback('ERROR SENDING PACKETS');
       } else {

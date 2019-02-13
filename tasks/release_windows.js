@@ -1,7 +1,6 @@
 'use strict';
 
 var Q = require('q');
-var gulpUtil = require('gulp-util');
 var childProcess = require('child_process');
 var jetpack = require('fs-jetpack');
 var utils = require('./utils');
@@ -51,7 +50,7 @@ var createInstaller = function () {
     });
     tmpDir.write('installer.nsi', installScript);
 
-    gulpUtil.log('Building installer with NSIS...');
+    console.log('Building installer with NSIS...');
 
     // Remove destination file if already exists.
     releasesDir.remove(finalPackageName);
@@ -61,7 +60,7 @@ var createInstaller = function () {
     nsis.stdout.pipe(process.stdout);
     nsis.stderr.pipe(process.stderr);
     nsis.on('close', function () {
-        gulpUtil.log('Installer ready!', releasesDir.path(finalPackageName));
+        console.log('Installer ready!', releasesDir.path(finalPackageName));
         deferred.resolve();
     });
 

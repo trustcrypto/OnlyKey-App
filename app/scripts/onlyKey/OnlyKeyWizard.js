@@ -41,9 +41,9 @@ if (chrome.passwordsPrivate) {
         prev: 'Step1',
         next: 'Step3',
         disclaimerTrigger: 'passcode1Disclaimer',
-        enterFn: () => {
+        enterFn: (cb) => {
           this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
         },
         exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
       },
@@ -57,9 +57,9 @@ if (chrome.passwordsPrivate) {
         prev: 'Step3',
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
-        enterFn: (cb) => {
+        enterFn: () => {
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey, cb));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
         },
         exitFn: (cb) => {
           const setSecProfileMode = this.initForm.secProfileMode;
@@ -76,9 +76,9 @@ if (chrome.passwordsPrivate) {
         prev: 'Step5',
         next: 'Step7',
         disclaimerTrigger: 'passcode2Disclaimer',
-        enterFn: (cb) => {
+        enterFn: () => {
           this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey, cb));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
         },
         exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
       },
@@ -594,13 +594,17 @@ if (chrome.passwordsPrivate) {
 
     if (this.steps[this.currentStep][direction]) {
       if (this.steps[this.currentStep].exitFn) {
+        console.info(`Calling ${this.currentStep} exitFn.`);
         this.steps[this.currentStep].exitFn((err, res) => {
           if (err) {
             console.error(err);
             this.goBackOnError(err, res);
           } else if (res !== 'STOP') {
+            console.info(`exitFn callback res === ${res}`);
             this.setNewCurrentStep(this.steps[this.currentStep][direction]);
           }
+
+          console.warn(`exitFn callback called with no return.`)
         });
       } else {
         this.setNewCurrentStep(this.steps[this.currentStep][direction]);
@@ -609,7 +613,7 @@ if (chrome.passwordsPrivate) {
   };
 
   Wizard.prototype.goBackOnError = function (err, lastMessageSent) {
-    console.info(err, lastMessageSent);
+    console.warn(`goBackOnError handling ${lastMessageSent} error: ${err}`);
     if (err) {
       switch (lastMessageSent) {
         case 'OKSETPIN':
@@ -632,6 +636,7 @@ if (chrome.passwordsPrivate) {
 
       // call new current step-related enter function
       if (this.steps[stepId].enterFn) {
+        console.info(`Calling ${stepId} enterFn.`);
         this.steps[stepId].enterFn((err, res) => {
           if (err) {
             console.error(err);

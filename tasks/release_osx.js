@@ -1,8 +1,6 @@
 'use strict';
 
 var Q = require('q');
-var gulpUtil = require('gulp-util');
-var childProcess = require('child_process');
 var jetpack = require('fs-jetpack');
 var utils = require('./utils');
 
@@ -72,7 +70,7 @@ var packToDmgFile = function () {
     // Delete DMG file with this name if already exists
     releasesDir.remove(dmgName);
 
-    gulpUtil.log('Packaging to DMG file...');
+    console.log('Packaging to DMG file...');
 
     var readyDmgPath = releasesDir.path(dmgName);
     appdmg({
@@ -83,7 +81,7 @@ var packToDmgFile = function () {
         console.error(err);
     })
     .on('finish', function () {
-        gulpUtil.log('DMG file ready!', readyDmgPath);
+        console.log('DMG file ready!', readyDmgPath);
         deferred.resolve();
     });
 

@@ -1,7 +1,6 @@
 'use strict';
 
 var Q = require('q');
-var gulpUtil = require('gulp-util');
 var childProcess = require('child_process');
 var jetpack = require('fs-jetpack');
 var utils = require('./utils');
@@ -55,7 +54,7 @@ var packToDebFile = function () {
     var debFileName = packName + '_amd64.deb';
     var debPath = releasesDir.path(debFileName);
 
-    gulpUtil.log('Creating DEB package...');
+    console.log('Creating DEB package...');
 
     // Counting size of the app in KiB
     var appSize = Math.round(readyAppDir.inspectTree('.').size / 1024);
@@ -79,7 +78,7 @@ var packToDebFile = function () {
                 console.log(error);
                 console.log(stderr);
             } else {
-                gulpUtil.log('DEB package ready!', debPath);
+                console.log('DEB package ready!', debPath);
             }
             deferred.resolve();
         });
