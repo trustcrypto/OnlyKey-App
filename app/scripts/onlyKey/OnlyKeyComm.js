@@ -1,6 +1,6 @@
 const desktopApp = typeof nw !== 'undefined';
-let userPreferences;
 
+let userPreferences;
 if (desktopApp) {
   userPreferences = require('./scripts/userPreferences.js');
 }
@@ -2019,14 +2019,14 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
     return new Promise(resolve => {
       fwchecked = true;
       if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
-        var request = require('request');
+        const request = require('request');
         var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
           console.log(r.uri.href);
           console.log(res.request.uri.href);
           console.log(this.uri.href);
-          var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
-          console.info(version);
-          console.info(latestver);
+          var latestversion = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
+          console.info('version: ' + version);
+          console.info('latest version: ' + latestversion);
           if (latestversion[3] > version[3] || (latestversion[3] == version[3] && (latestversion[9] == '.' && latestversion[10] > version[10]) || (latestversion[9] != '.' && latestversion[9] > version[9] || (latestversion[9] == version[9] && latestversion[10] > version[10])))) {
             if (version[9] != '.' || version[10] > 6) {
               if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.')) {
