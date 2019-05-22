@@ -82,6 +82,19 @@ const chromeHid = {
     }
   },
 
+  // chrome.hid.receiveFeatureReport(integer connectionId, function callback)
+  receivefeature: function (connectionId, reportId, callback) {
+    console.log('>>> receive called with', arguments);
+    if (connectionId === 'mockConnection') {
+      if (this._pendingReceive) {
+        throw "There must not be multiple pending receives.";
+      }
+      this._pendingReceive = callback;
+    } else {
+      return chrome.hid.receiveFeatureReport(connectionId, reportId, callback);
+    }
+  },
+
   mockResponse: function (response) {
     // Response is [reportId, data]. Note that WebDriver.executeScript will
     // convert the ArrayBuffer data to an object, so we have to convert it
@@ -98,6 +111,20 @@ const chromeHid = {
   },
 
   _pendingReceive: null,
+
+  // chrome.hid.sendFeatureReport(integer connectionId, integer reportId, ArrayBuffer data, function callback)
+  sendfeature: function (connectionId, reportId, data, callback) {
+    console.log('>>> send called with', arguments);
+    if (connectionId === 'mockConnection') {
+      this._sent.push(arguments);
+
+      // Simulate a successful send operation by calling the callback
+      // without setting chrome.runtime.lastError.
+      callback();
+    } else {
+      chrome.hid.sendFeatureReport(connectionId, reportId, data, callback);
+    }
+  },
 
   // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
   send: function (connectionId, reportId, data, callback) {
@@ -325,6 +352,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     console.info("SENDING " + msgId + " to connectionId " + this.connection + ":", bytes);
 
+    var bytes2 = new Uint8Array(70);
+    memcpy(bytes2, 64, bytes, 5, 4); //SET BYTES 63 - 66 to Epoch Time
+    bytes2[69] = 0xE4; //SET BYTE 69 to OKSETTIME
+    sendViaUSBFeatureReports(myOnlyKey, this.connection, reportId, bytes2, () => {
+    myOnlyKey.setLastMessage('sent', msgId);
+    callback(null, 'OK');
+    });
+    /*
     chromeHid.send(this.connection, reportId, bytes.buffer, () => {
       if (chrome.runtime.lastError) {
         console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, {
@@ -336,7 +371,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         callback(null, 'OK');
       }
     });
+    */
   };
+
 
   OnlyKey.prototype.setLastMessage = function (type, msgStr = '') {
     if (msgStr) {
@@ -2117,6 +2154,119 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
     });
   }
 }
+
+
+var sendViaUSBFeatureReports = function (myOnlyKey, connectionId, reportId, bytes, callback) {
+
+  var size = bytes.length;
+  var getbuffer = new Uint8Array(8); // Feature reports are 8 bytes
+  var setbuffer = new Uint8Array(8); // 7 bytes usable for data, last byte is packet number
+  var bytestosend = new Uint8Array(70); // Total bytes fixed size, 7*10 packets (0x80 - 0x89)
+  var receivedbytes = new Uint8Array(28); // Total bytes fixed size, 7*4 packets (0xC0 - 0xC3)
+
+  memcpy(bytestosend, 0, bytes, 0, bytes.length);
+
+  var readBytes = function (bytes) {
+    var msgStr = '';
+    var msgBytes = new Uint8Array(bytes.buffer);
+
+    for (var i = 0; i < msgBytes.length; i++) {
+      if (msgBytes[i] > 31 && msgBytes[i] < 127)
+        msgStr += String.fromCharCode(msgBytes[i]);
+      else if (i === 0)
+        // if first byte is a hex, this is probably a slot number
+        msgStr += byteToHex(msgBytes[i]);
+    }
+
+    return msgStr;
+  };
+
+  // Need to add checksum of bytes 0 - 63 and store in bytes 64 and 65
+
+  //First read bytes to make sure device is ready.
+  chromeHid.receivefeature(connectionId, reportId, async function (data) {
+    if (chrome.runtime.lastError) {
+      myOnlyKey.setLastMessage('received', '[error]');
+      console.info("Get Feature Report Error:", chrome.runtime.lastError);
+      return callback(chrome.runtime.lastError);
+    } else {
+      getbuffer = readBytes(new Uint8Array(data));
+      console.info("Get Feature Report :", getbuffer);
+      if (getbuffer[7] != 0x00) {
+        console.info("DEVICE NOT READY", getbuffer);
+      }
+    }
+
+
+  });
+
+
+ /*
+  for (var i = 0; i<=9; i++) {
+
+    setbuffer.buffer[0] = bytestosend[(i*8)];
+    setbuffer.buffer[1] = bytestosend[(i*8)+1];
+    setbuffer.buffer[2] = bytestosend[(i*8)+2];
+    setbuffer.buffer[3] = bytestosend[(i*8)+3];
+    setbuffer.buffer[4] = bytestosend[(i*8)+4];
+    setbuffer.buffer[5] = bytestosend[(i*8)+5];
+    setbuffer.buffer[6] = bytestosend[(i*8)+6];
+    setbuffer.buffer[7] = i+0x80;
+
+    chrome.hid.sendFeatureReport(connectionId, reportId, setbuffer.buffer, function () {
+        if (chrome.runtime.lastError) {
+            console.error("ERROR SENDING OKSETTIME FEATURE:", chrome.runtime.lastError, { connectionId: connectionId });
+            callback('ERROR SENDING OKSETTIME PACKETS');
+        } else {
+            console.info("SENT FEATURE REPORT :", i);
+        }
+    });
+
+   if (setbuffer.buffer[7] < 0x89) {
+      chrome.hid.receiveFeatureReport(connectionId, reportId, getbuffer.buffer, function () {
+        console.info("Get Feature Report :", getbuffer);
+        //Last byte of getbuffer.buffer should be 00 until last setbuffer[7] = 0x89
+      });
+    }
+
+  }
+
+  // Done sending now get Response in form of 5 receiveFeatureReport and then send a final setFeatureReport sf 00  00 00 00 00 00 00 00 8F to finish
+  for (var i = 0; i<=5; i++) {
+    chrome.hid.receiveFeatureReport(connectionId, reportId, getbuffer.buffer, function () {
+      //Will receive reports as follows:
+      // C0 - first 7 bytes
+      //RD 00  0a 6b 12 1c 68 68 37 C0
+      // C1 - second 7 bytes
+      //RD 00  26 ab 8b 84 c3 1e 9c C1
+      // C2 - third 7 bytes
+      //RD 00  72 49 ac 34 a7 48 6e C2
+      // C3 - forth 7 bytes
+      // RD 00  89 00 00 00 d6 00 00 C3
+      // C0 - first bytes sent again, this indicates we are done.
+      // RD 00  0a 6b 12 1c 68 68 37 C0
+      console.info("Get Feature Report :", getbuffer);
+        if (getbuffer.buffer[7] == 0x89) {
+          //add delay, MCU still processing
+          i=0;
+        } else if (getbuffer.buffer[7] >= 0xC0) {
+          memcpy(receivedbytes, (7*(getbuffer.buffer[7]-0xC0), getbuffer, 0, 7);
+        }
+        }
+      }
+    });
+  }
+
+ console.info("Received Response :", receivedbytes);
+ */
+}
+
+function memcpy(dst, dstOffset, src, srcOffset, length) {
+  var dstU8 = new Uint8Array(dst, dstOffset, length);
+  var srcU8 = new Uint8Array(src, srcOffset, length);
+  dstU8.set(srcU8);
+};
+
 
 
 //nw.Window.get().on('new-win-policy', function(frame, url, policy) {
