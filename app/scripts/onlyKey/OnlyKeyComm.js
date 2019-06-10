@@ -1,3 +1,11 @@
+require("@babel/polyfill");
+const TransportNodeHid = require("@trustcrypto/hw-transport-node-hid");
+const TransportNodeKeyboard = require("@trustcrypto/hw-transport-node-hid-keyboard");
+
+console.dir(TransportNodeHid);
+
+
+
 const desktopApp = typeof nw !== 'undefined';
 
 let userPreferences;

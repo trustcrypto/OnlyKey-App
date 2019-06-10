@@ -1,9 +1,4 @@
 /*jshint esnext: true */
-const { TransportNodeHid } = require("@trustcrypto/hw-transport-node-hid");
-const { TransportNodeKeyboard } = require("@trustcrypto/hw-transport-node-hid-keyboard");
-
-console.dir(TransportNodeHid);
-
 const SUPPORTED_DEVICES = [
     {
         vendorId: 5824, //OnlyKey firmware before Beta 7
