@@ -1,77 +1,76 @@
 /* Simple interface for localStorage */
+if (typeof nw !== 'undefined') {
+    let onlyKeyAppUserPreferences; // singleton
 
-if (typeof nw === 'undefined') return;
+    (function() {
+        'use strict';
 
-let onlyKeyAppUserPreferences; // singleton
+        class UserPreferences {
+            constructor(params = {}) {
+                const keys = ['autoLaunch', 'autoUpdate', 'autoUpdateFW'];
+                keys.forEach(key => this[`_${key}`] = this.getPropVal(key));
+            }
 
-(function() {
-    'use strict';
+            get autoUpdateFW() {
+                return this.getPropVal('autoUpdateFW');
+            }
 
-    class UserPreferences {
-        constructor(params = {}) {
-            const keys = ['autoLaunch', 'autoUpdate', 'autoUpdateFW'];
-            keys.forEach(key => this[`_${key}`] = this.getPropVal(key));
-        }
+            set autoUpdateFW(value) {
+                this._autoUpdateFW = getBoolean(value);
+                typeof localStorage !== 'undefined' && (localStorage.autoUpdateFW = getBooleanString(value));
+            }
 
-        get autoUpdateFW() {
-            return this.getPropVal('autoUpdateFW');
-        }
+            get autoLaunch() {
+                return this.getPropVal('autoLaunch');
+            }
 
-        set autoUpdateFW(value) {
-            this._autoUpdateFW = getBoolean(value);
-            typeof localStorage !== 'undefined' && (localStorage.autoUpdateFW = getBooleanString(value));
-        }
+            set autoLaunch(value) {
+                this._autoLaunch = getBoolean(value);
+                typeof localStorage !== 'undefined' && (localStorage.autoLaunch = getBooleanString(value));
+            }
 
-        get autoLaunch() {
-            return this.getPropVal('autoLaunch');
-        }
+            get autoUpdate() {
+                return this.getPropVal('autoUpdate');
+            }
 
-        set autoLaunch(value) {
-            this._autoLaunch = getBoolean(value);
-            typeof localStorage !== 'undefined' && (localStorage.autoLaunch = getBooleanString(value));
-        }
+            set autoUpdate(value) {
+                this._autoUpdate = getBoolean(value);
+                typeof localStorage !== 'undefined' && (localStorage.autoUpdate = getBooleanString(value));
+            }
 
-        get autoUpdate() {
-            return this.getPropVal('autoUpdate');
-        }
-
-        set autoUpdate(value) {
-            this._autoUpdate = getBoolean(value);
-            typeof localStorage !== 'undefined' && (localStorage.autoUpdate = getBooleanString(value));
-        }
-
-        getPropVal(key) {
-            if (this.hasOwnProperty(`_${key}`)) {
-                return this[`_${key}`];
-            } else if (typeof localStorage !== 'undefined' && localStorage.hasOwnProperty(key)) {
-                return getBoolean(localStorage[key]);
-            } else {
-                return true;
+            getPropVal(key) {
+                if (this.hasOwnProperty(`_${key}`)) {
+                    return this[`_${key}`];
+                } else if (typeof localStorage !== 'undefined' && localStorage.hasOwnProperty(key)) {
+                    return getBoolean(localStorage[key]);
+                } else {
+                    return true;
+                }
             }
         }
-    }
 
-    onlyKeyAppUserPreferences = onlyKeyAppUserPreferences || new UserPreferences();
-    if (module && module.exports) {
-        module.exports = onlyKeyAppUserPreferences;
-    } else {
-        return onlyKeyAppUserPreferences;
-    }
-
-    /* private helpers */
-    function getBoolean(value) {
-        if (value === 'false' || !value) {
-            return false;
+        onlyKeyAppUserPreferences = onlyKeyAppUserPreferences || new UserPreferences();
+        if (module && module.exports) {
+            module.exports = onlyKeyAppUserPreferences;
+        } else {
+            return onlyKeyAppUserPreferences;
         }
 
-        return true;
-    }
+        /* private helpers */
+        function getBoolean(value) {
+            if (value === 'false' || !value) {
+                return false;
+            }
 
-    function getBooleanString(value) {
-        if (value === 'false' || !value) {
-            return 'false';
+            return true;
         }
 
-        return 'true';
-    }
-})();
+        function getBooleanString(value) {
+            if (value === 'false' || !value) {
+                return 'false';
+            }
+
+            return 'true';
+        }
+    })();
+}

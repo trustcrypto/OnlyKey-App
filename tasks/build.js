@@ -1,18 +1,19 @@
 'use strict';
 
-var gulp = require('gulp');
-var sourcemaps = require('gulp-sourcemaps');
-var jetpack = require('fs-jetpack');
+const gulp = require('gulp');
+const babel = require('gulp-babel');
+const sourcemaps = require('gulp-sourcemaps');
+const jetpack = require('fs-jetpack');
 
-var utils = require('./utils');
+const utils = require('./utils');
 
-var projectDir = jetpack;
-var rootDir = projectDir.cwd('./');
-var destDir = projectDir.cwd('./build');
+const projectDir = jetpack;
+const rootDir = projectDir.cwd('./');
+const destDir = projectDir.cwd('./build');
 
 const isChrome = utils.getEnvName() === 'chrome';
 
-var paths = {
+const paths = {
     jsCodeToTranspile: [
         'app/scripts/**/*.js',
         'app/*.js',
@@ -75,6 +76,12 @@ gulp.task('copy-watch', copyTask);
 var transpileTask = function () {
     return gulp.src(paths.jsCodeToTranspile, { base: 'app' })
         .pipe(sourcemaps.init())
+        .pipe(babel({
+            plugins: [
+                '@babel/plugin-transform-modules-amd',
+                '@babel/transform-runtime'
+            ]
+         }))
         .pipe(sourcemaps.write('.'))
         .pipe(gulp.dest(destDir.path()));
 };

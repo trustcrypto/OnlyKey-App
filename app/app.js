@@ -1,4 +1,6 @@
 /*jshint esnext: true */
+import "babel-polyfill";
+
 const SUPPORTED_DEVICES = [
     {
         vendorId: 5824, //OnlyKey firmware before Beta 7
@@ -15,7 +17,7 @@ const SUPPORTED_DEVICES = [
         maxFeatureReportSize: 0,
     },
     {
-        vendorId: 0000, //Black Vault Labs Bootloaderv1
+        vendorId: 0x00, //Black Vault Labs Bootloaderv1
         productId: 45057,
         maxInputReportSize: 64,
         maxOutputReportSize: 64,
