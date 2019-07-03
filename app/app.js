@@ -33,13 +33,9 @@ var numsentA = device.write(request);
 console.log("Attaching receive 'data' handler");
 device.on('data', function(data) {
     console.log("Response is: ", data.toString('ascii'));
+    device.close();
 });
 device.on('error', function(err) {
     console.log("error:",err);
-});
-
-console.log("Waiting 200ms for response");
-setTimeout( function() {
-    console.log("Done");
     device.close();
-}, 200);
+});
