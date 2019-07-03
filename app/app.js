@@ -20,7 +20,7 @@ var fill = [];
 for (var i=0; i<55; i++){
   fill[i] = 0;
 }
-var cmd = 0x30;
+var cmd = 0x00;
 request = header.concat(time);
 request = request.concat(fill);
 request = request.concat(cmd);
