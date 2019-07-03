@@ -1,7 +1,5 @@
 /*jshint esnext: true */
-const usbDetect = require('usb-detection');
-const OK = require('./scripts/onlyKey/ok');
-const retry = require('./scripts/utils/retry');
+const HID = require('@trustcrypto/onlykey_usb');
 
 chrome.app.runtime.onLaunched.addListener(function () {
   chrome.app.window.create(
@@ -13,70 +11,35 @@ chrome.app.runtime.onLaunched.addListener(function () {
     });
 });
 
-function okConnect(deviceInfo, retries = 40) {
-  const ok = new OK();
-  return retry(ok.connect.bind(ok, deviceInfo), retries, 250);
+device = new HID.HID(0);
+
+const OKSETTIME = 228;
+var header = [0xFF, 0xFF, 0xFF, 0xFF, OKSETTIME];
+var time = [0x5C, 0xF7, 0x17, 0x44];
+var fill = [];
+for (var i=0; i<55; i++){
+  fill[i] = 0;
 }
+var cmd = 0x30;
+request = header.concat(time);
+request = request.concat(fill);
+request = request.concat(cmd);
 
-function listen() {
-  // Detect add/insert
-  OK.SUPPORTED_DEVICES.forEach(deviceInfo => usbDetect.on(`add:${deviceInfo.vendorId}:${deviceInfo.productId}`, () => okConnect(deviceInfo)));
-  usbDetect.startMonitoring();
-}
+//Max size for request is 65 bytes, 64 bytes + cmd
 
-function appInit() {
-  createWindow();
+console.log('Request is: ', JSON.stringify(request))
+var numsentA = device.write(request);
 
-  let connected = false;
-  OK.SUPPORTED_DEVICES.forEach(deviceInfo => {
-    connected = !!okConnect(deviceInfo, 5);
-  });
+console.log("Attaching receive 'data' handler");
+device.on('data', function(data) {
+    console.log("Response is: ", data.toString('ascii'));
+});
+device.on('error', function(err) {
+    console.log("error:",err);
+});
 
-  if (!connected) listen();
-}
-
-// Do not run this when using nwjs.
-if (typeof nw == 'undefined') {
-
-  for (let d = 0; d < OK.SUPPORTED_DEVICES.length; d++) {
-    const {
-      vendorId,
-      productId
-    } = SUPPORTED_DEVICES[d];
-
-    const deviceInfo = {
-      vendorId,
-      productId
-    };
-
-    console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
-
-    chrome.hid.getDevices(deviceInfo, devices => {
-      let connected = false;
-      for (let i = 0; devices && devices.length && i < devices.length && !connected; i++) {
-        connected = okConnect(devices[i], 5);
-      }
-    });
-  }
-} else {
-  const AutoLaunch = require('auto-launch');
-  const autoLaunch = new AutoLaunch({
-    name: 'OnlyKey',
-    isHidden: true
-  });
-
-  // read localStorage setting or default to true if first time running app
-  const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
-
-  autoLaunch.isEnabled()
-    .then(isEnabled => {
-      if (isEnabled && !enableAutoLaunch) {
-        autoLaunch.disable();
-      } else if (!isEnabled && enableAutoLaunch) {
-        autoLaunch.enable();
-      }
-    })
-    .catch(console.error);
-
-  appInit();
-}
+console.log("Waiting 200ms for response");
+setTimeout( function() {
+    console.log("Done");
+    device.close();
+}, 200);
