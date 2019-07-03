@@ -6,7 +6,7 @@
   "description": "OnlyKey Configuration App",
   "main": "app.js",
   "dependencies": {
-    "@trustcrypto/onlykey_usb": "0.1.5",
+    "@trustcrypto/onlykey_usb": "0.1.6",
     "auto-launch": "5.0.5",
     "fs-jetpack": "1.3.1",
     "nw": "0.38.4-sdk",
