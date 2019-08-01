@@ -359,29 +359,6 @@
         <div id="pref-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
-                    <form id="sshchallengeModeForm" name="sshchallengeModeForm">
-                        <h3>SSH Challenge Mode</h3>
-                        Enable or disable challenge code for SSH
-                        <label>
-                            <input type="radio" checked name="okSSHChallengeMode" value=0 />
-                            <u>Enable Challenge Code for SSH</u>
-                        </label>
-                        <br />
-                        <label>
-                            <input type="radio" name="okSSHChallengeMode" value=1 />
-                            <u>Disable Challenge Code for SSH</u>
-                        </label>
-                        <br />
-                        <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
-                    </form>
-                    <form id="lockoutForm" name="lockoutForm">
-                        <h3>Inactivity Lockout Period</h3>
-                        Lockout time in minutes:
-                        <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255" style="width: 50px;" />
-                        <input type="button" id="lockoutSubmit" value="Set Lockout" />
-                        <br />
-                        (1 &ndash; 255 minutes; default = 30; 0 to disable)
-                    </form>
                     <form id="typeSpeedForm" name="typeSpeedForm">
                         <h3>Keyboard Type Speed</h3>
                         Choose a setting:
@@ -419,6 +396,7 @@
                             <option value=23>US_INTERNATIONAL</option>
                             <option value=24>CZECH</option>
                             <option value=25>SERBIAN_LATIN_ONLY</option>
+                            <option value=26>HUNGARIAN</option>
                         </select>
                         <br />
                         <input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
@@ -429,14 +407,46 @@
                         <input type="number" id="okLedBrightness" name="okLedBrightness" min=1 max=10 placeholder="1 - 10" style="width: 50px;" />
                         <input type="button" id="ledBrightnessSubmit" value="Set LED Brightness" />
                         <br />
-                        (1 = dimmest; 10 = brightest [8 = default])
+                        (1 = dimmest; 10 = brightest ; 8 = default)
+                    </form>
+                    <form id="lockButtonForm" name="lockButtonForm">
+                        <h3>Lock Button</h3>
+                        The OnlyKey and the computer are locked automatically when lock button is pressed.
+                        <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6" style="width: 50px;" />
+                        <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
+                        <br />
+                        (0 to disable)
+                    </form>
+                    <form id="lockoutForm" name="lockoutForm">
+                        <h3>Inactivity Lockout Period</h3>
+                        Lockout time in minutes:
+                        <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255" style="width: 50px;" />
+                        <input type="button" id="lockoutSubmit" value="Set Lockout" />
+                        <br />
+                        (1 &ndash; 255 minutes; default = 30; 0 to disable)
+                    </form>
+                    <form id="sshchallengeModeForm" name="sshchallengeModeForm">
+                        <h3>SSH Challenge Mode</h3>
+                        Enable or disable challenge code for SSH
+                        <br />
+                        <label>
+                            <input type="radio" checked name="okSSHChallengeMode" value=0 />
+                            <u>Enable Challenge Code for SSH</u>
+                        </label>
+                        <br />
+                        <label>
+                            <input type="radio" name="okSSHChallengeMode" value=1 />
+                            <u>Disable Challenge Code for SSH</u>
+                        </label>
+                        <br />
+                        <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
                     </form>
                 </div>
-
                 <div class="flex-item">
                     <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
                         <h3>PGP Challenge Mode</h3>
                         Enable or disable challenge code for PGP
+                        <br />
                         <label>
                             <input type="radio" checked name="okPGPChallengeMode" value=0 />
                             <u>Enable Challenge Code for PGP</u>
