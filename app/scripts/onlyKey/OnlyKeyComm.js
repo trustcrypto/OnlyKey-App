@@ -673,7 +673,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw Error(error);
               }
 
-              _this.setLastMessage('Backup file sent to OnlyKey.');
+              _this.setLastMessage('Backup file sent to OnlyKey, please wait...');
               cb();
             });
           } else {
@@ -700,7 +700,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
   }
 
-  OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
+  OnlyKey.prototype.setPrivateKey = async function (slot, type, key, callback) {
     var msg, contentType;
     if (Array.isArray(key) || key.constructor === Uint8Array) {
       // RSA private key is an array of DEC bytes
@@ -718,6 +718,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       fieldId: type,
       contentType: contentType
     };
+    await wait(10);
     this.sendMessage(options, callback);
   };
 
