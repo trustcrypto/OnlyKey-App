@@ -24,7 +24,7 @@
     "yargs": "^8.0.2"
   },
   "optionalDependencies": {
-    "appdmg": "^0.4.5"
+    "appdmg": "^0.6"
   },
   "scripts": {
     "build": "./node_modules/.bin/gulp build",
@@ -46,7 +46,7 @@
     "password"
   ],
   "author": "CryptoTrust",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/trustcrypto/OnlyKey-Chrome-App/issues"
   },

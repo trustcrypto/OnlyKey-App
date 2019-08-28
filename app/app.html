@@ -359,63 +359,8 @@
         <div id="pref-panel" class="hide panel">
             <div class="flex-container">
                 <div class="flex-item">
-                    <form id="sshchallengeModeForm" name="sshchallengeModeForm">
-                        <h2>SSH Challenge Mode</h2>
-                        <h4>Enable or disable challenge code for SSH</h4>
-                        <label>
-                            <input type="radio" checked name="okSSHChallengeMode" value=0 />
-                            <u>Enable Challenge Code for SSH</u>
-                        </label>
-                        <br />
-                        <label>
-                            <input type="radio" name="okSSHChallengeMode" value=1 />
-                            <u>Disable Challenge Code for SSH</u>
-                        </label>
-                        <br />
-                        <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
-                    </form>
-                    <form id="lockoutForm" name="lockoutForm">
-                        <h2>Inactivity Lockout Period</h2>
-                        Lockout time in minutes:
-                        <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255" style="width: 50px;" />
-                        <input type="button" id="lockoutSubmit" value="Set Lockout" />
-                        <br />
-                        (1 &ndash; 255 minutes; default = 30; 0 to disable)
-                    </form>
-                    <form id="wipeModeForm" name="wipeModeForm">
-                        <h2>Wipe Mode</h2>
-                        <h4>Configure how the OnlyKey responds to<br />a factory reset.</h4>
-                        <h4>Only sensitive data is wiped by default.</h4>
-                        <label>
-                            <input type="radio" checked name="okWipeMode" value=2 />
-                            <u>Full Wipe</u> &ndash; <em>Entire device is wiped. Firmware must be reloaded</em> (recommended for plausible deniability users).
-                        </label>
-                        <br />
-                        <span style="font-size: small; color: red;"><b>WARNING - Once set to "Full Wipe" this cannot be
-                                changed on this device.</b></span>
-                        <br /><br />
-                        <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
-                    </form>
-                </div>
-
-                <div class="flex-item">
-                    <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
-                        <h2>PGP Challenge Mode</h2>
-                        <h4>Enable or disable challenge code for PGP</h4>
-                        <label>
-                            <input type="radio" checked name="okPGPChallengeMode" value=0 />
-                            <u>Enable Challenge Code for PGP</u>
-                        </label>
-                        <br />
-                        <label>
-                            <input type="radio" name="okPGPChallengeMode" value=1 />
-                            <u>Disable Challenge Code for PGP</u>
-                        </label>
-                        <br />
-                        <input type="button" id="pgpchallengeModeSubmit" value="Set PGP Challenge Mode" />
-                    </form>
                     <form id="typeSpeedForm" name="typeSpeedForm">
-                        <h2>Keyboard Type Speed</h2>
+                        <h3>Keyboard Type Speed</h3>
                         Choose a setting:
                         <input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1 - 10" style="width: 50px;" />
                         <input type="button" id="typeSpeedSubmit" value="Set Type Speed" />
@@ -423,7 +368,7 @@
                         (1 = slowest; 10 = fastest [4 = default])
                     </form>
                     <form id="keyboardLayoutForm" name="keyboardLayoutForm">
-                        <h2>Keyboard Layout</h2>
+                        <h3>Keyboard Layout</h3>
                         Choose a keyboard layout:
                         <select id="okKeyboardLayout" name="okKeyboardLayout">
                             <option value=1>US_ENGLISH (default)</option>
@@ -451,13 +396,86 @@
                             <option value=23>US_INTERNATIONAL</option>
                             <option value=24>CZECH</option>
                             <option value=25>SERBIAN_LATIN_ONLY</option>
+                            <option value=26>HUNGARIAN</option>
                         </select>
                         <br />
                         <input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
                     </form>
+                    <form id="ledBrightnessForm" name="ledBrightnessForm">
+                        <h3>Indicator Light (LED) Brightness</h3>
+                        Choose a setting:
+                        <input type="number" id="okLedBrightness" name="okLedBrightness" min=1 max=10 placeholder="1 - 10" style="width: 50px;" />
+                        <input type="button" id="ledBrightnessSubmit" value="Set LED Brightness" />
+                        <br />
+                        (1 = dimmest; 10 = brightest ; 8 = default)
+                    </form>
+                    <form id="lockButtonForm" name="lockButtonForm">
+                        <h3>Lock Button</h3>
+                        The OnlyKey and the computer are locked automatically when lock button is pressed.
+                        <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6" style="width: 50px;" />
+                        <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
+                        <br />
+                        (0 to disable)
+                    </form>
+                    <form id="lockoutForm" name="lockoutForm">
+                        <h3>Inactivity Lockout Period</h3>
+                        Lockout time in minutes:
+                        <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255" style="width: 50px;" />
+                        <input type="button" id="lockoutSubmit" value="Set Lockout" />
+                        <br />
+                        (1 &ndash; 255 minutes; default = 30; 0 to disable)
+                    </form>
+                    <form id="sshchallengeModeForm" name="sshchallengeModeForm">
+                        <h3>SSH Challenge Mode</h3>
+                        Enable or disable challenge code for SSH
+                        <br />
+                        <label>
+                            <input type="radio" checked name="okSSHChallengeMode" value=0 />
+                            <u>Enable Challenge Code for SSH</u>
+                        </label>
+                        <br />
+                        <label>
+                            <input type="radio" name="okSSHChallengeMode" value=1 />
+                            <u>Disable Challenge Code for SSH</u>
+                        </label>
+                        <br />
+                        <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
+                    </form>
+                </div>
+                <div class="flex-item">
+                    <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
+                        <h3>PGP Challenge Mode</h3>
+                        Enable or disable challenge code for PGP
+                        <br />
+                        <label>
+                            <input type="radio" checked name="okPGPChallengeMode" value=0 />
+                            <u>Enable Challenge Code for PGP</u>
+                        </label>
+                        <br />
+                        <label>
+                            <input type="radio" name="okPGPChallengeMode" value=1 />
+                            <u>Disable Challenge Code for PGP</u>
+                        </label>
+                        <br />
+                        <input type="button" id="pgpchallengeModeSubmit" value="Set PGP Challenge Mode" />
+                    </form>
+                    <form id="wipeModeForm" name="wipeModeForm">
+                        <h3>Wipe Mode</h3>
+                        Configure how the OnlyKey responds to<br />a factory reset.
+                        Only sensitive data is wiped by default.
+                        <label>
+                            <input type="radio" checked name="okWipeMode" value=2 />
+                            <u>Full Wipe</u> &ndash; <em>Entire device is wiped. Firmware must be reloaded</em> (recommended for plausible deniability users).
+                        </label>
+                        <br />
+                        <span style="font-size: small; color: red;"><b>WARNING - Once set to "Full Wipe" this cannot be
+                                changed on this device.</b></span>
+                        <br /><br />
+                        <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
+                    </form>
                     <form id="backupModeForm" name="backupModeForm">
-                        <h2>Backup Key Mode</h2>
-                        <h4>Backup key may be changed by default.</h4>
+                        <h3>Backup Key Mode</h3>
+                        Backup key may be changed by default.
                         <label>
                             <input type="radio" checked name="okBackupMode" value=1 />
                             <u>Locked</u> - <em>Backup key may not be changed on device</em>

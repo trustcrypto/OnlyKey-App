@@ -207,6 +207,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       PGPCHALLENGEMODE: 22,
       SECPROFILEMODE: 23,
       TYPESPEED: 13,
+      LEDBRIGHTNESS: 24,
+      LOCKBUTTON: 25,
       KBDLAYOUT: 14
     };
 
@@ -671,7 +673,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 throw Error(error);
               }
 
-              _this.setLastMessage('Backup file sent to OnlyKey.');
+              _this.setLastMessage('Backup file sent to OnlyKey, please wait...');
               cb();
             });
           } else {
@@ -698,7 +700,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
   }
 
-  OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
+  OnlyKey.prototype.setPrivateKey = async function (slot, type, key, callback) {
     var msg, contentType;
     if (Array.isArray(key) || key.constructor === Uint8Array) {
       // RSA private key is an array of DEC bytes
@@ -716,6 +718,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       fieldId: type,
       contentType: contentType
     };
+    await wait(10);
     this.sendMessage(options, callback);
   };
 
@@ -786,6 +789,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
   OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
     this.setSlot('XX', 'TYPESPEED', typeSpeed, callback);
+  };
+
+  OnlyKey.prototype.setLedBrightness = function (ledBrightness, callback) {
+    this.setSlot('XX', 'LEDBRIGHTNESS', ledBrightness, callback);
+  };
+
+  OnlyKey.prototype.setLockButton = function (lockButton, callback) {
+    this.setSlot('XX', 'LOCKBUTTON', lockButton, callback);
   };
 
   OnlyKey.prototype.setKBDLayout = function (kbdLayout, callback) {
@@ -861,6 +872,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     ui.backupModeForm = document['backupModeForm'];
     ui.sshchallengeModeForm = document['sshchallengeModeForm'];
     ui.typeSpeedForm = document['typeSpeedForm'];
+    ui.ledBrightnessForm = document['ledBrightnessForm'];
+    ui.lockButtonForm = document['lockButtonForm'];
     ui.keyboardLayoutForm = document['keyboardLayoutForm'];
     ui.eccForm = document['eccForm'];
     ui.rsaForm = document['rsaForm'];
@@ -1299,6 +1312,12 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     var typeSpeedSubmit = document.getElementById('typeSpeedSubmit');
     typeSpeedSubmit.addEventListener('click', submitTypeSpeedForm);
+
+    var ledBrightnessSubmit = document.getElementById('ledBrightnessSubmit');
+    ledBrightnessSubmit.addEventListener('click', submitLedBrightnessForm);
+
+    var lockButtonSubmit = document.getElementById('lockButtonSubmit');
+    lockButtonSubmit.addEventListener('click', submitLockButtonForm);
 
     var kbdLayoutSubmit = document.getElementById('kbdLayoutSubmit');
     kbdLayoutSubmit.addEventListener('click', submitKBDLayoutForm);
@@ -1909,14 +1928,48 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
 
     if (typeof typeSpeed !== 'number' || typeSpeed < 1) {
-      typeSpeed = 1;
+      typeSpeed = 4; //Default type speed
     }
 
     typeSpeed = Math.min(typeSpeed, 10);
 
     myOnlyKey.setTypeSpeed(typeSpeed, function (err) {
-      myOnlyKey.setLastMessage('received', 'Type Speed mode set successfully');
+      myOnlyKey.setLastMessage('received', 'Type Speed set successfully');
       ui.typeSpeedForm.reset();
+    });
+
+    e && e.preventDefault && e.preventDefault();
+  }
+
+  function submitLedBrightnessForm(e) {
+    var ledBrightness = parseInt(ui.ledBrightnessForm.okLedBrightness.value, 10);
+
+    if (typeof ledBrightness !== 'number' || ledBrightness < 1) {
+      ledBrightness = 8; //Default led brightness
+    }
+
+    ledBrightness = Math.min(ledBrightness, 10);
+
+    myOnlyKey.setLedBrightness(ledBrightness, function (err) {
+      myOnlyKey.setLastMessage('received', 'LED Brightness set successfully');
+      ui.ledBrightnessForm.reset();
+    });
+
+    e && e.preventDefault && e.preventDefault();
+  }
+
+  function submitLockButtonForm(e) {
+    var lockButton = parseInt(ui.lockButtonForm.okLockButton.value, 10);
+
+    if (typeof lockButton !== 'number' || lockButton < 0 || lockButton > 6) {
+      return;
+    }
+
+    lockButton = Math.min(lockButton, 10);
+
+    myOnlyKey.setLockButton(lockButton, function (err) {
+      myOnlyKey.setLastMessage('received', 'Lock button set successfully');
+      ui.lockButtonForm.reset();
     });
 
     e && e.preventDefault && e.preventDefault();
