@@ -2,12 +2,13 @@
 /* eslint-disable no-plusplus */
 
 const Message = {
-  byteToHex: (value) => {
+  byteToHex: (val) => {
+    const value = Number(val);
     if (value < 16) return `0${value.toString(16)}`;
     return value.toString(16);
   },
 
-  hexStrToDec: (hexStr) => parseInt(hexStr, 16).toString(10),
+  hexStrToDec: (hexStr) => Number(parseInt(hexStr, 16).toString(10)),
 
   readBytes: (bytes) => {
     let msgStr = '';

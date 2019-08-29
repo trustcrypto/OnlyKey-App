@@ -2006,10 +2006,11 @@ function parseBackupData(contents) {
 }
 
 function hexStrToDec(hexStr) {
-  return new Number('0x' + hexStr).toString(10);
+  return Number('0x' + hexStr);
 }
 
-function byteToHex(value) {
+function byteToHex(val) {
+  const value = Number(val);
   if (value < 16) return '0' + value.toString(16);
   return value.toString(16);
 }

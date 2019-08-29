@@ -1,5 +1,6 @@
 /*jshint esnext: true */
 const HID = require('@trustcrypto/onlykey_usb');
+const OK = require('./scripts/onlyKey/ok');
 
 chrome.app.runtime.onLaunched.addListener(function () {
   chrome.app.window.create(
@@ -11,8 +12,9 @@ chrome.app.runtime.onLaunched.addListener(function () {
     });
 });
 
-device = new HID.HID(0);
-
+let device = new OK();
+/*
+let device = new HID.HID(0);
 const OKSETTIME = 228;
 var header = [0xFF, 0xFF, 0xFF, 0xFF, OKSETTIME];
 var time = [0x5C, 0xF7, 0x17, 0x44];
@@ -27,7 +29,7 @@ request = request.concat(cmd);
 
 //Max size for request is 65 bytes, 64 bytes + cmd
 
-console.log('Request is: ', JSON.stringify(request))
+console.log('Request is: ', request)
 var numsentA = device.write(request);
 
 console.log("Attaching receive 'data' handler");
@@ -39,3 +41,4 @@ device.on('error', function(err) {
     console.log("error:",err);
     device.close();
 });
+*/

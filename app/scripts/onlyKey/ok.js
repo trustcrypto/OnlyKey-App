@@ -25,36 +25,37 @@ class OK {
       received: [],
       sent: [],
     };
+
+    this.connect();
   }
 
-  connect(deviceInfo) {
-    const {
-      productId,
-      vendorId
-    } = deviceInfo;
-    const ok = new HID.HID(vendorId, productId);
+  connect() {
+    const ok = new HID.HID(0);
+    if (!ok) {
+      this.connectedDevice = null;
+      throw 'device connect failed';
+    }
 
-    console.dir({
-      ok
-    });
+    console.dir({ CONNECTED: ok });
 
     this.connectedDevice = ok;
-    this.setTime();
 
     ok.on('data', (data) => {
-      const msg = Message.readBytes(new Uint8Array(data));
-      console.dir({
-        msg
-      });
-      this.handleMessage(msg);
+      if (!data.length) return;
+
+      const msg = Message.readBytes(data);
+      console.dir(msg);
+      return this.handleMessage(msg);
     });
 
     ok.on('error', (data) => {
-      const msg = Message.readBytes(new Uint8Array(data));
-      const error = `[OK ERROR: ${msg}`;
+      const msg = data.length ? Message.readBytes(data) : 'UNKNOWN ERROR';
+      const error = `[OK ERROR: ${msg}]`;
       console.error(error);
+      return;
     });
 
+    this.setTime();
     return ok;
   }
 
@@ -204,13 +205,13 @@ class OK {
   }
 
   sendMessage(options) {
-    const bytesPerMessage = 64;
+    const bytesPerMessage = 65;
 
     const msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
     const slotId = typeof options.slotId === 'number' || typeof options.slotId === 'string' ? options.slotId : null;
     const fieldId = typeof options.fieldId === 'string' || typeof options.fieldId === 'number' ? options.fieldId : null;
     const contentType = (options.contentType && options.contentType.toUpperCase()) || 'HEX';
-    const bytes = new Uint8Array(bytesPerMessage);
+    const bytes = [];
 
     let contents = typeof options.contents === 'number' || (options.contents && options.contents.length) ? options.contents : '';
     let cursor = 0;
@@ -265,16 +266,14 @@ class OK {
     }
 
     const pad = 0;
-    for (; cursor < bytes.length;) {
+    for (; cursor < bytesPerMessage;) {
       bytes[cursor++] = pad;
     }
 
-    console.info(`SENDING ${msgId} to connectionId ${this.connectedDevice}:`, bytes);
+    console.info(`SENDING ${msgId}:`, bytes);
 
     const bytesWritten = this.connectedDevice.write(bytes);
-    console.dir({
-      bytesWritten
-    });
+    console.info('bytesWritten: %d', bytesWritten);
     this.setLastMessage('sent', msgId);
   }
 
@@ -308,7 +307,6 @@ class OK {
 
     this.sendMessage({
       contents: timeParts,
-      // contentType: 'HEX',
       msgId: 'OKSETTIME',
     });
   }
@@ -348,3 +346,32 @@ class OK {
 Object.freeze(OK);
 
 module.exports = OK;
+
+/*
+const OKSETTIME = 228;
+var header = [0xFF, 0xFF, 0xFF, 0xFF, OKSETTIME];
+var time = [0x5C, 0xF7, 0x17, 0x44];
+var fill = [];
+for (var i=0; i<55; i++){
+  fill[i] = 0;
+}
+var cmd = 0x00;
+request = header.concat(time);
+request = request.concat(fill);
+request = request.concat(cmd);
+
+//Max size for request is 65 bytes, 64 bytes + cmd
+
+console.log('Request is: ', JSON.stringify(request))
+var numsentA = device.write(request);
+
+console.log("Attaching receive 'data' handler");
+device.on('data', function(data) {
+    console.log("Response is: ", data.toString('ascii'));
+    device.close();
+});
+device.on('error', function(err) {
+    console.log("error:",err);
+    device.close();
+});
+*/
