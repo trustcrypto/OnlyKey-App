@@ -3,6 +3,7 @@
 
 <head>
     <title>OnlyKey App</title>
+    <link rel="stylesheet" href="/stylesheets/font-awesome.min.css">
     <link rel="stylesheet" href="/stylesheets/style.css">
 
     <!-- Scripts giving you few extra things in NW.js -->
@@ -31,7 +32,7 @@
     </div>
 
     <div id="main" class="hide">
-        <img src="/images/ok-logo.jpg" height="36" width="223">
+        <img src="/images/OnlyKey_Logo_360x.png" width="280">
 
         <nav>
             <a id="show-init-panel" href="">Setup</a>
@@ -296,14 +297,13 @@
         </form>
 
         <div id="slot-panel" class="hide panel">
+          <h2>Configure Slots</h2>
+          <p>Slots are where you store login information. There are 12 slots in your profile, and each slot
+              can
+              store a login URL, Username, Password, and two-factor. <br>See common use examples below:</p>
+          <hr />
             <div class="flex-container">
                 <div class="flex-item">
-                    <h2>Configure Slots</h2>
-                    <p>Slots are where you store login information. There are 12 slots in your profile, and each slot
-                        can
-                        store a login URL, Username, Password, and two-factor. More information on slots available <a
-                            href="https://docs.crp.to/usersguide.html#all-about-slots" class="external" target="_new">here</a>.</p>
-                    <hr />
                     <table id="slot-config-btns">
                         <tr>
                             <td align="right">
@@ -352,8 +352,49 @@
                             </td>
                         </tr>
                     </table>
+
                 </div>
-            </div>
+                <div class="flex-item">
+                  <b>Example #1</b> - Configure so that when button 1 is tapped (touched for less than 1 sec) password is automatically typed:<br>
+                  <img
+                  class="moveimage" src="/images/regular/caret-square-right.svg"
+                  width="13px" /> Click button [1a]
+                  <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" />
+                  check box next to [Password] and check [Return after Password] <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> enter/re-enter password and click submit.<br>
+                  <br><b>Example #2</b> - Configure so that when button 1 is held (for more than 1 sec), username and password are typed into a website login field:<br>
+                  <img
+                  class="moveimage" src="/images/regular/caret-square-right.svg"
+                  width="13px" /> Click button [1b] <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> configure password like in example #1 <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> check box next to [Username] and check [Tab after Username] <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> enter username and submit.<br>
+                  <br><b>Example #3</b> - Configure so that when button 2 is tapped URL is automatcally typed into browser to navigate to login page, then credentials are automatically entered:<br>
+                  <img
+                  class="moveimage" src="/images/regular/caret-square-right.svg"
+                  width="13px" /> Click button [2a] <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> configure password/username like in example #1 and #2 <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> check box next to [URL] and [Delay] after the URL <img
+                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
+                  width="13px" /> enter URL and delay (i.e. wait 5 seconds for the login page to load) and submit.
+                </div>
+              </div>
+              <hr />
+              <img
+              class="moveimage" src="/images/regular/lightbulb.svg"
+              width="12px" /> Set label on your slot and it will show up in the app above, a label just helps you remember. If unsure about slot settings test it out first by browsing to log in page and use keyboard only to login.
+              <br>More information on slots available <a
+                  href="https://docs.crp.to/usersguide.html#all-about-slots" class="external" target="_new">here <img
+                  class="moveimage" src="/images/solid/external-link-alt.svg"
+                  width="15px" /></a>.
         </div>
 
         <div id="pref-panel" class="hide panel">

@@ -246,6 +246,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         deviceInfo: this.deviceInfo
       });
       myOnlyKey.setInitialized(false);
+      // Message here to prompt win 10 1903 users to run as Admin
       dialog.open(ui.disconnectedDialog);
     } else {
       dialog.open(ui.workingDialog);
@@ -411,8 +412,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     this.sendMessage(options, callback);
   };
 
-  OnlyKey.prototype.getLabels = function (callback) {
+  OnlyKey.prototype.getLabels = async function (callback) {
     this.labels = 'GETTING';
+    await wait(1000);
     this.sendMessage({
       msgId: 'OKGETLABELS'
     }, handleGetLabels);
@@ -730,13 +732,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     this.sendMessage(options, callback);
   };
 
-  OnlyKey.prototype.restore = function (restoreData, packetHeader, callback) {
+  OnlyKey.prototype.restore = async function (restoreData, packetHeader, callback) {
     var msg = [packetHeader];
     msg = msg.concat(restoreData.match(/.{2}/g));
     var options = {
       contents: msg,
       msgId: 'OKRESTORE'
     };
+    await wait(100);
     this.sendMessage(options, callback);
   };
 

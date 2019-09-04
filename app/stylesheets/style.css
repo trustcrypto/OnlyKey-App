@@ -17,6 +17,12 @@ body > div {
     padding: 16px;
 }
 
+.moveimage
+{
+    position: relative;
+    top: 3px;
+}
+
 .panel {
 	border: 2px maroon solid;
     padding: 15px;
@@ -115,11 +121,11 @@ dialog a {
 
 /* configure onlykey photo background */
 td.ok-photo-cell {
-    background: transparent url(/images/onlykey-photo.jpg) no-repeat 50% 0%;
+    background: transparent url(/images/onlykey-photo.png) no-repeat 50% 0%;
     background-size: contain;
-    padding-top: 55px;
-    width: 80px;
-    height: 155px;
+    padding-top: 10px;
+    width: 210px;
+    height: 260px;
 }
 
 #slot-config-btns td {
