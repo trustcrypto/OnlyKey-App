@@ -1,7 +1,20 @@
 /*jshint esnext: true */
-const usbDetect = require('usb-detection');
+// let usbDetect = ()=>{};
+// try {
+//   usbDetect = require('usb-detection');
+// } catch (error) {
+//   console.dir(error);
+// }
+
 const OK = require('./scripts/onlyKey/ok');
 const retry = require('./scripts/utils/retry');
+
+
+// chrome.hid.onDeviceAdded.addListener(device => {
+//   console.dir(device);
+//   okConnect(device);
+// });
+
 
 chrome.app.runtime.onLaunched.addListener(function () {
   chrome.app.window.create(
@@ -15,7 +28,8 @@ chrome.app.runtime.onLaunched.addListener(function () {
 
 function okConnect(deviceInfo, retries = 40) {
   const ok = new OK();
-  return retry(ok.connect.bind(ok, deviceInfo), retries, 250);
+  // return retry(ok.connect.bind(ok, deviceInfo), retries, 250);
+  ok.connect(0);
 }
 
 function listen() {
@@ -25,7 +39,7 @@ function listen() {
 }
 
 function appInit() {
-  createWindow();
+  // createWindow();
 
   let connected = false;
   OK.SUPPORTED_DEVICES.forEach(deviceInfo => {

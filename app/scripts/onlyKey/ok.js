@@ -27,12 +27,12 @@ class OK {
     };
   }
 
-  connect(deviceInfo) {
-    const {
-      productId,
-      vendorId
-    } = deviceInfo;
-    const ok = new HID.HID(vendorId, productId);
+  connect() {
+    const ok = new HID.HID(0);
+    if (!ok) {
+      console.warn('Did not connect to an OnlyKey device.');
+      return false;
+    }
 
     console.dir({
       ok
