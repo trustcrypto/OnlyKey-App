@@ -12,6 +12,7 @@
     "nw": "0.38.4-sdk",
     "nw-autoupdater": "1.1.10",
     "q": "1.5.1",
+    "request": "2.88.0",
     "usb-detection": "4.3.0"
   },
   "devDependencies": {
@@ -34,7 +35,8 @@
     "pretest": "npm run-script build",
     "test": "mocha",
     "prechrome": "./node_modules/.bin/gulp build --env=chrome",
-    "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
+    "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\"",
+    "install:win:special": "install-special.bat"
   },
   "repository": {
     "type": "git",
