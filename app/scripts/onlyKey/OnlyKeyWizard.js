@@ -324,7 +324,7 @@ if (chrome.passwordsPrivate) {
     this.guided = !!guided && !this.checkInitialized(); // guided setup is only for uninitialized devices
   };
 
-  Wizard.prototype.initKeySelect = function (rawKey, cb) {
+  Wizard.prototype.initKeySelect = async function (rawKey, cb) {
     const keys = [{
       name: 'Primary Key',
       p: rawKey.primaryKey.mpi[3].data.toByteArray(),
@@ -351,7 +351,78 @@ if (chrome.passwordsPrivate) {
 
     pkDiv.appendChild(document.createElement("br"));
 
+    if (!auto) {
     this.dialog.open(this.selectPrivateKeyDialog, true);
+    } else {
+      // Set Keybase keys, we already know what goes where
+      // If there are two subkeys
+      // subkey 1 is set as decryption key
+      // subkey 2 is set as signature key
+      // else
+      // subkey 1 is set as decryption key
+      // primary key (there should only be 1) set as signing key
+
+
+      //e && e.preventDefault && e.preventDefault();
+
+
+
+
+/*
+      const signingKey = rawKey.primaryKey.mpi[4].data.toByteArray();
+      this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[signingKey], err => {
+          if (err) {
+              //   return ???
+          }
+
+          this.onlyKey.tempRsaKeys = null;
+          //this.dialog.closeAll();
+
+          //if (this.guided) {
+          //    this.setNewCurrentStep(this.steps[this.currentStep]['next'])
+          //  } else {
+              this.reset();
+            //}
+        });
+
+        //Wait for interval
+        await wait(1000);
+
+        const decryptionKey = subKey.subKey.mpi[4].data.toByteArray();
+        this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[decryptionKey], err => {
+            if (err) {
+                //   return ???
+            }
+
+            this.onlyKey.tempRsaKeys = null;
+            //this.dialog.closeAll();
+
+            //if (this.guided) {
+            //    this.setNewCurrentStep(this.steps[this.currentStep]['next'])
+            //  } else {
+                this.reset();
+              //}
+          });
+
+
+
+
+
+      this.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
+      this.selectPrivateKeyCancelBtn.onclick = e => {
+        e && e.preventDefault && e.preventDefault();
+        this.onlyKey.tempRsaKeys = null;
+        this.dialog.closeAll();
+      };
+      // END PRIVATE KEY SELECTOR
+
+      this.setActiveStepUI();
+
+
+
+    */
+  }
+
   };
 
 
