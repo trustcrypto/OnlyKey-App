@@ -43,15 +43,16 @@ class OK {
 
     ok.on('data', (data) => {
       const msg = Message.readBytes(new Uint8Array(data));
-      console.dir({
-        msg
-      });
+      
+      if (!msg) return;
+
+      console.log(`Received msg: ${msg}`);
       this.handleMessage(msg);
     });
 
     ok.on('error', (data) => {
       const msg = Message.readBytes(new Uint8Array(data));
-      const error = `[OK ERROR: ${msg}`;
+      const error = `[OK ERROR: ${msg}]`;
       console.error(error);
     });
 
@@ -204,13 +205,13 @@ class OK {
   }
 
   sendMessage(options) {
-    const bytesPerMessage = 64;
+    const bytesPerMessage = 65;
 
     const msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
     const slotId = typeof options.slotId === 'number' || typeof options.slotId === 'string' ? options.slotId : null;
     const fieldId = typeof options.fieldId === 'string' || typeof options.fieldId === 'number' ? options.fieldId : null;
     const contentType = (options.contentType && options.contentType.toUpperCase()) || 'HEX';
-    const bytes = new Uint8Array(bytesPerMessage);
+    const bytes = [];
 
     let contents = typeof options.contents === 'number' || (options.contents && options.contents.length) ? options.contents : '';
     let cursor = 0;
@@ -248,7 +249,7 @@ class OK {
             return String.fromCharCode(parseInt(capture, 16));
           });
 
-          for (let i = 0; i < contents.length && cursor < bytes.length; i++) {
+          for (let i = 0; i < contents.length && cursor < bytesPerMessage; i++) {
             if (contents.charCodeAt(i) > 255) {
               throw "I am not smart enough to decode non-ASCII data.";
             }
@@ -265,16 +266,13 @@ class OK {
     }
 
     const pad = 0;
-    for (; cursor < bytes.length;) {
+    for (; cursor < bytesPerMessage;) {
       bytes[cursor++] = pad;
     }
 
     console.info(`SENDING ${msgId} to connectionId ${this.connectedDevice}:`, bytes);
 
-    const bytesWritten = this.connectedDevice.write(bytes);
-    console.dir({
-      bytesWritten
-    });
+    this.connectedDevice.write(bytes);
     this.setLastMessage('sent', msgId);
   }
 
@@ -306,7 +304,7 @@ class OK {
     console.info('Setting current epoch time =', currentEpochTime);
     const timeParts = currentEpochTime.match(/.{2}/g);
 
-    this.sendMessage({
+    return this.sendMessage({
       contents: timeParts,
       // contentType: 'HEX',
       msgId: 'OKSETTIME',

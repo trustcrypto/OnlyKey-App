@@ -9,13 +9,6 @@
 const OK = require('./scripts/onlyKey/ok');
 const retry = require('./scripts/utils/retry');
 
-
-// chrome.hid.onDeviceAdded.addListener(device => {
-//   console.dir(device);
-//   okConnect(device);
-// });
-
-
 chrome.app.runtime.onLaunched.addListener(function () {
   chrome.app.window.create(
     "app.html", {
@@ -28,8 +21,7 @@ chrome.app.runtime.onLaunched.addListener(function () {
 
 function okConnect(deviceInfo, retries = 40) {
   const ok = new OK();
-  // return retry(ok.connect.bind(ok, deviceInfo), retries, 250);
-  ok.connect(0);
+  return retry(ok.connect.bind(ok, 0), retries, 250);
 }
 
 function listen() {
@@ -40,12 +32,7 @@ function listen() {
 
 function appInit() {
   // createWindow();
-
-  let connected = false;
-  OK.SUPPORTED_DEVICES.forEach(deviceInfo => {
-    connected = !!okConnect(deviceInfo, 5);
-  });
-
+  let connected = !!okConnect(0, 5);
   if (!connected) listen();
 }
 

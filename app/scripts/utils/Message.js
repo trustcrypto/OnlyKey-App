@@ -7,7 +7,7 @@ const Message = {
     return value.toString(16);
   },
 
-  hexStrToDec: (hexStr) => parseInt(hexStr, 16).toString(10),
+  hexStrToDec: (hexStr) => parseInt(parseInt(hexStr, 16).toString(10), 10),
 
   readBytes: (bytes) => {
     let msgStr = '';
