@@ -836,6 +836,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     showBackupPanel: null,
     showFirmwarePanel: null,
     showAdvancedPanel: null,
+    showToolsPanel: null,
     initPanel: null,
     slotPanel: null,
     prefPanel: null,
@@ -843,6 +844,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     backupPanel: null,
     firmwarePanel: null,
     advancedPanel: null,
+    toolsPanel: null,
     slotConfigBtns: null,
     slotConfigForm: null,
     slotConfigDialog: null,
@@ -916,12 +918,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.firmwarePanel.classList.remove('hide');
         ui.advancedPanel.classList.add('hide');
         ui.advancedPanel.classList.remove('active');
+        ui.toolsPanel.classList.add('hide');
+        ui.toolsPanel.classList.remove('active');
         ui.keysPanel.classList.add('hide');
         ui.keysPanel.classList.remove('active');
         ui.showBackupPanel.classList.remove('hide', 'active');
         ui.showFirmwarePanel.classList.remove('hide');
         ui.showFirmwarePanel.classList.add('active');
         ui.showAdvancedPanel.classList.remove('hide', 'active');
+        ui.showToolsPanel.classList.remove('hide', 'active');
         dialog.close(ui.lockedDialog);
       } else {
         ui.main.classList.remove('hide');
@@ -940,11 +945,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         ui.firmwarePanel.classList.remove('active');
         ui.advancedPanel.classList.add('hide');
         ui.advancedPanel.classList.remove('active');
+        ui.toolsPanel.classList.add('hide');
+        ui.toolsPanel.classList.remove('active');
         ui.keysPanel.classList.add('hide');
         ui.keysPanel.classList.remove('active');
         ui.showBackupPanel.classList.remove('hide', 'active');
         ui.showFirmwarePanel.classList.remove('hide', 'active');
         ui.showAdvancedPanel.classList.remove('hide', 'active');
+        ui.showToolsPanel.classList.remove('hide', 'active');
         dialog.close(ui.lockedDialog);
       }
     } else {
@@ -957,6 +965,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       ui.firmwarePanel.classList.remove('active');
       ui.advancedPanel.classList.add('hide');
       ui.advancedPanel.classList.remove('active');
+      ui.toolsPanel.classList.add('hide');
+      ui.toolsPanel.classList.remove('active');
       ui.keysPanel.classList.add('hide');
       ui.keysPanel.classList.remove('active');
       ui.prefPanel.classList.add('hide');
@@ -969,6 +979,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       ui.showKeysPanel.classList.add('hide');
       ui.showBackupPanel.classList.add('hide');
       ui.showAdvancedPanel.classList.add('hide');
+      ui.showToolsPanel.classList.add('hide');
       ui.showFirmwarePanel.classList.add('hide');
       dialog.close(ui.lockedDialog);
     }

@@ -48,7 +48,7 @@ chrome.app.runtime.onLaunched.addListener(function() {
       });
 });
 
-var onDevicesEnumerated = function (devices) {
+var onDevicesEnumerated = async function (devices) {
     if (chrome.runtime.lastError) {
         console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
         return;

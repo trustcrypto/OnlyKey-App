@@ -43,6 +43,7 @@
             <a id="show-firmware-panel" href="" class="hide">Firmware</a>
             <a id="show-pref-panel" href="" class="hide">Preferences</a>
             <a id="show-advanced-panel" href="" class="hide">Advanced</a>
+            <a id="show-tools-panel" href="" class="hide">Tools</a>
         </nav>
 
         <form id="init-panel" name="init-panel" class="hide panel">
@@ -554,6 +555,7 @@
                         <label>
                             Slot:
                             <select id="rsaSlot" name="rsaSlot">
+                                <option value=99>Auto (Keybase)</option>
                                 <option value=1>1</option>
                                 <option value=2>2</option>
                                 <option value=3>3</option>
@@ -855,6 +857,22 @@
                         <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
                         <div id="eccFormError" class="form-error"></div>
                     </form>
+                </div>
+            </div>
+        </div>
+        <div id="tools-panel" class="hide panel">
+            <div class="flex-container">
+                <div class="flex-item">
+                  <h2>Encrypt Files</h2>
+                    <hr />
+                  <h2>Decrypt Files</h2>
+                    <hr />
+                </div>
+                <div class="flex-item">
+                    <h2>Encrypt and Sign Messages</h2>
+                    <hr />
+                    <h2>Decrypt and Verify Messages</h2>
+                    <hr />
                 </div>
             </div>
         </div>
