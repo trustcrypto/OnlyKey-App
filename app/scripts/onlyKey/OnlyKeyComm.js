@@ -9,43 +9,43 @@ var fwchecked = false;
 var backupsigFlag = -1;
 
 /* jshint esnext:true */
-const SUPPORTED_DEVICES = [{
-    vendorId: 5824, //OnlyKey firmware before Beta 7
-    productId: 1158,
-    maxInputReportSize: 64,
-    maxOutputReportSize: 64,
-    maxFeatureReportSize: 0,
-  },
-  {
-    vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
-    productId: 24828,
-    maxInputReportSize: 64,
-    maxOutputReportSize: 64,
-    maxFeatureReportSize: 0,
-  },
-  {
-    vendorId: 0000, //Black Vault Labs Bootloaderv1
-    productId: 45057,
-    maxInputReportSize: 64,
-    maxOutputReportSize: 64,
-    maxFeatureReportSize: 0,
-  },
+const SUPPORTED_DEVICES = [
+    {
+        vendorId: 5824, //OnlyKey firmware before Beta 7
+        productId: 1158,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
+        productId: 24828,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
+    {
+        vendorId: 0000, //Black Vault Labs Bootloaderv1
+        productId: 45057,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+    },
 ];
 
 function getSupportedDevice(deviceInfo) {
-  let supportedDevice;
+    let supportedDevice;
 
-  for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
-    let device = SUPPORTED_DEVICES[d];
+    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+        let device = SUPPORTED_DEVICES[d];
 
-    const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
-    if (isMatch) {
-      supportedDevice = device;
-      break;
+        const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
+        if (isMatch) {
+            supportedDevice = device;
+            break;
+        }
     }
-  }
-
-  return supportedDevice;
+    return supportedDevice;
 }
 
 // A proxy for the Chrome HID service. Stored in a global variable so it is
@@ -246,7 +246,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         deviceInfo: this.deviceInfo
       });
       myOnlyKey.setInitialized(false);
-      // Message here to prompt win 10 1903 users to run as Admin
       dialog.open(ui.disconnectedDialog);
     } else {
       dialog.open(ui.workingDialog);
@@ -976,11 +975,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   };
 
   var enumerateDevices = function () {
+
     for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
       const {
         vendorId,
         productId
       } = SUPPORTED_DEVICES[d];
+
       const deviceInfo = {
         vendorId,
         productId
@@ -992,7 +993,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
   };
 
-  var onDevicesEnumerated = function (devices) {
+  var onDevicesEnumerated = async function (devices) {
     if (chrome.runtime.lastError) {
       console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
       return;
@@ -1001,14 +1002,31 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     if (devices && devices.length) {
       console.info("HID devices found:", devices);
       devices.forEach(onDeviceAdded);
+      if (myOnlyKey.connection === '-1') {
+        await wait(100);
+        console.info("Connection ID", myOnlyKey.connection);
+        console.info("Beta 8+ device not found, looking for old device");
+        devices.forEach(onDeviceAddedOld);
+      }
     }
   };
 
-  var onDeviceAdded = function (device) {
+  var onDeviceAdded = async function (device) {
     // auto connect desired device
-    const supportedDevice = getSupportedDevice(device);
+    var supportedDevice = getSupportedDevice(device);
+    console.info(device.collections[0].usage);
+    if (supportedDevice && device.collections[0].usagePage=='65451') {
+      connectDevice(device);
+      await wait(100);
+    }
+  };
+
+  var onDeviceAddedOld = async function (device) {
+    // auto connect desired device
+    var supportedDevice = getSupportedDevice(device);
     if (supportedDevice) {
       connectDevice(device);
+      await wait(100);
     }
   };
 

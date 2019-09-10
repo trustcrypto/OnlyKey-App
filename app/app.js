@@ -1,5 +1,28 @@
 /*jshint esnext: true */
-const SUPPORTED_DEVICES = [
+const SUPPORTED_DEVICES_NEW = [
+    {
+        vendorId: 5824, //OnlyKey firmware Beta 8+, support for Windows 10 1903
+        productId: 1158,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+        collections: {
+            usage: 2
+        },
+    },
+    {
+        vendorId: 7504, //OnlyKey firmware Beta 8+ dev
+        productId: 24828,
+        maxInputReportSize: 64,
+        maxOutputReportSize: 64,
+        maxFeatureReportSize: 0,
+        collections: {
+            usage: 2
+        },
+    },
+];
+
+const SUPPORTED_DEVICES_OLD = [
     {
         vendorId: 5824, //OnlyKey firmware before Beta 7
         productId: 1158,
@@ -26,14 +49,26 @@ const SUPPORTED_DEVICES = [
 function getSupportedDevice(deviceInfo) {
     let supportedDevice;
 
-    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
-        let device = SUPPORTED_DEVICES[d];
+    for (let d = 0; d < SUPPORTED_DEVICES_NEW.length; d++) {
+        let device = SUPPORTED_DEVICES_NEW[d];
 
         const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
         if (isMatch) {
             supportedDevice = device;
             break;
         }
+    }
+
+    if (typeof supportedDevice == 'undefined') {
+      for (let d = 0; d < SUPPORTED_DEVICES_OLD.length; d++) {
+          let device = SUPPORTED_DEVICES_OLD[d];
+
+          const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
+          if (isMatch) {
+              supportedDevice = device;
+              break;
+          }
+      }
     }
 
     return supportedDevice;
@@ -82,8 +117,8 @@ var onDeviceAdded = function (device) {
 if (typeof nw == 'undefined') {
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
 
-    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
-        const { vendorId, productId } = SUPPORTED_DEVICES[d];
+    for (let d = 0; d < SUPPORTED_DEVICES_OLD.length; d++) {
+        const { vendorId, productId } = SUPPORTED_DEVICES_OLD[d];
         const deviceInfo = { vendorId, productId };
 
         console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
