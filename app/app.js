@@ -1,28 +1,8 @@
 /*jshint esnext: true */
-const SUPPORTED_DEVICES_NEW = [
-    {
-        vendorId: 5824, //OnlyKey firmware Beta 8+, support for Windows 10 1903
-        productId: 1158,
-        maxInputReportSize: 64,
-        maxOutputReportSize: 64,
-        maxFeatureReportSize: 0,
-        collections: {
-            usage: 2
-        },
-    },
-    {
-        vendorId: 7504, //OnlyKey firmware Beta 8+ dev
-        productId: 24828,
-        maxInputReportSize: 64,
-        maxOutputReportSize: 64,
-        maxFeatureReportSize: 0,
-        collections: {
-            usage: 2
-        },
-    },
-];
 
-const SUPPORTED_DEVICES_OLD = [
+var connectedto = -1;
+
+const SUPPORTED_DEVICES = [
     {
         vendorId: 5824, //OnlyKey firmware before Beta 7
         productId: 1158,
@@ -49,8 +29,8 @@ const SUPPORTED_DEVICES_OLD = [
 function getSupportedDevice(deviceInfo) {
     let supportedDevice;
 
-    for (let d = 0; d < SUPPORTED_DEVICES_NEW.length; d++) {
-        let device = SUPPORTED_DEVICES_NEW[d];
+    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+        let device = SUPPORTED_DEVICES[d];
 
         const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
         if (isMatch) {
@@ -58,19 +38,6 @@ function getSupportedDevice(deviceInfo) {
             break;
         }
     }
-
-    if (typeof supportedDevice == 'undefined') {
-      for (let d = 0; d < SUPPORTED_DEVICES_OLD.length; d++) {
-          let device = SUPPORTED_DEVICES_OLD[d];
-
-          const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
-          if (isMatch) {
-              supportedDevice = device;
-              break;
-          }
-      }
-    }
-
     return supportedDevice;
 }
 
@@ -88,12 +55,35 @@ var onDevicesEnumerated = function (devices) {
     }
 
     if (devices && devices.length) {
-        console.info("HID devices found:", devices);
-        devices.forEach(onDeviceAdded);
+      console.info("HID devices found:", devices);
+      devices.forEach(onDeviceAdded);
+      console.info("Connection ID", connectedto);
+      await wait(100);
+      if (connectedto == '-1') {
+        console.info("Beta 8+ device not found, looking for old device");
+        devices.forEach(onDeviceAddedOld);
+      }
     }
 };
 
-var onDeviceAdded = function (device) {
+var onDeviceAdded = async function (device) {
+    // auto connect desired device
+    const supportedDevice = getSupportedDevice(device);
+    console.info(device.collections[0].usagePage);
+    if (supportedDevice && device.collections[0].usagePage=='65451') {
+        chrome.hid.connect(device.deviceId, function (connectInfo) {
+            if (chrome.runtime.lastError) {
+                console.error("ERROR CONNECTING:", chrome.runtime.lastError);
+            } else if (!connectInfo) {
+                console.warn("Unable to connect to device.");
+            }
+            setTime(connectInfo.connectionId);
+        });
+        await wait(100);
+    }
+};
+
+var onDeviceAddedOld = async function (device) {
     // auto connect desired device
     const supportedDevice = getSupportedDevice(device);
     if (supportedDevice) {
@@ -103,9 +93,9 @@ var onDeviceAdded = function (device) {
             } else if (!connectInfo) {
                 console.warn("Unable to connect to device.");
             }
-
             setTime(connectInfo.connectionId);
         });
+        await wait(100);
     }
 };
 
@@ -117,8 +107,8 @@ var onDeviceAdded = function (device) {
 if (typeof nw == 'undefined') {
     chrome.hid.onDeviceAdded.addListener(onDeviceAdded);
 
-    for (let d = 0; d < SUPPORTED_DEVICES_OLD.length; d++) {
-        const { vendorId, productId } = SUPPORTED_DEVICES_OLD[d];
+    for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
+        const { vendorId, productId } = SUPPORTED_DEVICES[d];
         const deviceInfo = { vendorId, productId };
 
         console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
@@ -183,6 +173,7 @@ function setTime(connectionId) {
             }
         } else {
             console.info("OKSETTIME complete");
+            connectedto=connectionId;
         }
     });
 }
@@ -190,3 +181,8 @@ function setTime(connectionId) {
 function hexStrToDec(hexStr) {
     return parseInt(hexStr, 16).toString(10);
 }
+
+/**
+ * Use promise and setTimeout to wait x seconds
+ */
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));

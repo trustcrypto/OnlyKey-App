@@ -1002,11 +1002,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     if (devices && devices.length) {
       console.info("HID devices found:", devices);
       devices.forEach(onDeviceAdded);
-      if (myOnlyKey.connection === '-1') {
-        await wait(100);
-        console.info("Connection ID", myOnlyKey.connection);
+      console.info("Connection ID", myOnlyKey.connection);
+      if (myOnlyKey.connection == '-1') {
         console.info("Beta 8+ device not found, looking for old device");
         devices.forEach(onDeviceAddedOld);
+      } if (myOnlyKey.connection == '-1') {
+        // Use onlykey_usb method
+        // If that works we are probably on Linux and need to prompt user to use UDEV rule
       }
     }
   };
