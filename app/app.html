@@ -50,12 +50,10 @@
             <div id="stepContent">
                 <div class="step" id="Step1">
                     <h3>OnlyKey Setup</h3>
-                    <p class="uninit-only">Begin the Guided Setup wizard at bottom by clicking [Next] or, if you would like to upgrade firmware on your device select [Load Firmware]:
-                      <br>Enable advanced setup options
+                    <p class="uninit-only">Begin the Guided Setup wizard at bottom by clicking [Next] or, if you would like to upgrade firmware on your device select [Load Firmware]. Advanced users may enable advanced setup options by checking this box:
                       <input type="checkbox" id="advancedSetup" />
                     </p>
-                    <p class="init-only">Your OnlyKey is ready to use! You can change the Backup Passphrase/Key,
-                        change profile PINs, or set a Self-Destruct PIN below at any time.</p>
+                    <p class="init-only">Your OnlyKey is ready to use! You can change the Backup Passphrase/Key or change PINs below at any time. <br><br><b>Before selecting an option below</b>, you must first put your OnlyKey into config mode. To do this hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your current primary PIN to enter config mode and notice the OnlyKey flashes red.</p>
                     <table>
                         <tr>
                             <td class="uninit-only">
@@ -71,36 +69,15 @@
                                 <button id="SetPIN2" type="button">Change Secondary PIN</button>
                             </td>
                             <td class="init-only">
-                                <button id="SetSDPIN" type="button">Set Self-Destruct PIN</button>
+                                <button id="SetSDPIN" type="button">Change Self-Destruct PIN</button>
                             </td>
                         </tr>
                     </table>
                 </div>
 
                 <div class="step" id="Step2">
-                    <h3>Enter PIN on OnlyKey Keypad</h3>
-                    <p>
-                        The first step in setting up OnlyKey is to set a PIN code using the six-button keypad on the
-                        OnlyKey. This PIN will be used to unlock your OnlyKey to access your accounts.
-                        <br />
-                        <br />
-                        Make sure to choose a PIN that you will not forget and that only you know. It may be easier to
-                        remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN
-                        somewhere just in case you forget.
-                    </p>
-                    <p>
-                        DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my
-                        PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive
-                        information.
-                    </p>
-                    <label>
-                        <input type="checkbox" name="passcode1Disclaimer" />
-                        I understand and accept the above risk.
-                    </label>
-                    <p>
-                        Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span
-                            class='nextTxt'>Next</span>] below.
-                    </p>
+                    <p id="step2-text"></p>
+
                 </div>
 
                 <div class="step" id="Step3">
@@ -112,34 +89,8 @@
                 </div>
 
                 <div class="step" id="Step4">
-                    <h3>Enter PIN for Second Profile on OnlyKey Keypad</h3>
-                    <p>
-                        Your OnlyKey is now set up to store 12 accounts and is ready to use! OnlyKey permits adding a
-                        second profile to store an additonal 12 accounts (24 total). Set a second PIN to access the
-                        second profile. Second profile must be configured during initial setup and cannot be set up
-                        later. <br />
-                        <br />
-                        <td>
-                            <button id="SkipPIN2" type="button"><b>I don't want a second profile, skip this step</b></button>
-                        </td>
-                        <br />
+                  <p id="step4-text"></p>
 
-                    </p>
-                    <p id="step4-text"></p>
-
-                    <p>
-                        DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my
-                        PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive
-                        information.
-                    </p>
-                    <label>
-                        <input type="checkbox" name="passcode3Disclaimer" />
-                        I understand and accept the above risk.
-                    </label>
-                    <p>
-                        Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span
-                            class='nextTxt'>Next</span>] below.
-                    </p>
                 </div>
 
                 <div class="step" id="Step5">
@@ -151,33 +102,8 @@
                 </div>
 
                 <div class="step" id="Step6">
-                    <h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3>
-                    <p>
-                        Your OnlyKey is now set up to store 24 accounts and is ready to use! OnlyKey permits adding a
-                        self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This
-                        is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes
-                        will wipe the OnlyKey.
-                    </p>
-                    <td>
-                        <button id="SkipSDPIN" type="button"><b>I don't want a self-destruct PIN, skip this step</b></button>
-                    </td>
-                    <br /><br />
-                    <p>
-                        WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this
-                        could result in unintentionally wiping your OnlyKey.
-                    </p>
-                    <p>
-                        DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory
-                        default which wipes all sensitive information.
-                    </p>
-                    <label>
-                        <input type="checkbox" name="passcode2Disclaimer" />
-                        I understand and accept the above risk.
-                    </label>
-                    <p>
-                        Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span
-                            class='nextTxt'>Next</span>] below.
-                    </p>
+                    <p id="step6-text"></p>
+
                 </div>
 
                 <div class="step" id="Step7">
@@ -528,17 +454,14 @@
         <div id="keys-panel" class="hide panel">
             <p>
                 Use the [Keys] tab to load OpenPGP keys onto your OnlyKey. OpenPGP keys can be used to encrypt OnlyKey
-                backups and are used for <a href="https://docs.crp.to/webcrypt.html" class="external" target="_new">secure messaging</a>.
+                backups and are used for <a href="https://docs.crp.to/webcrypt.html" class="external" target="_new">file encryption and secure messaging</a>.
             </p>
             <hr />
             <div class="flex-container">
                 <div class="flex-item">
                     <p>Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys" class="external" target="_new">here</a>
                         for generating an OpenPGP key with Keybase.</p>
-                    <p>To get started loading your OpenPGP key put your OnlyKey in config mode:</p>
-                    <p>Hold the #6 button down on your OnlyKey for 5 seconds or more and then release. Your OnlyKey
-                        light
-                        will turn off and you must re-enter your PIN to unlock the device into config mode.</p>
+                    <p><b>Before loading a key</b>, you must first put your OnlyKey into config mode. To do this hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your current primary PIN to enter config mode and notice the OnlyKey flashes red.</p>
                 </div>
                 <div class="flex-item">
                     <form id="rsaForm" name="rsaForm" class="auth-form">
@@ -573,21 +496,7 @@
                         </label>
                         <br />
                         <br />
-
-                        <label>
-                            <input type="checkbox" id="rsaSetAsSignature" name="rsaSetAsSignature" value="true" />
-                            Set as signature key - Use key to sign messages
-                        </label>
-
-                        <br />
-
-                        <label>
-                            <input type="checkbox" id="rsaSetAsDecryption" name="rsaSetAsDecryption" value="true" />
-                            Set as decryption key - Use key to decrypt messages
-                        </label>
-
-                        <br />
-
+                        <p id="rsaForm-text"></p>
                         <label>
                             <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true" />
                             Set as backup key - Only one backup key may be set. If you already have a backup passphrase

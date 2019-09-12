@@ -42,6 +42,10 @@ if (chrome.passwordsPrivate) {
         next: 'Step3',
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
+          if (this.checkInitialized()) {
+            var step2text = document.getElementById('step2-text');
+            step2text.innerHTML = "<h3>Change Primary Profile PIN</h3><br>Make sure to choose a new PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode1Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+          }
           this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
         },
@@ -58,9 +62,13 @@ if (chrome.passwordsPrivate) {
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
         enterFn: () => {
+          if (this.checkInitialized()) {
+            var step4text = document.getElementById('step4-text');
+            step4text.innerHTML = "<h3>Change Second Profile PIN</h3><br>Make sure to choose a new PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode3Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+          }
           if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
             var step4text = document.getElementById('step4-text');
-            step4text.innerHTML = "Select a second profile type:<br><br><label><input type='radio' checked name='secProfileMode' value=1 /><u>Standard Profile (recommended for most users)</u></label><br /><label><input type='radio' name='secProfileMode' value=2 /><u>Plausible Deniability Profile</u></label><br />Learn more about standard and plausible deniability profile <a href='https://docs.crp.to/features.html#self-destruct' class='external' target='_new'>here</a>.";
+            step4text.innerHTML = "<h3>Enter PIN for Second Profile on OnlyKey Keypad</h3><p>Your OnlyKey is now set up to store 12 accounts and is ready to use! OnlyKey permits adding a second profile to store an additonal 12 accounts (24 total). Set a second PIN to access the second profile. Second profile must be configured during initial setup and cannot be set up later. <br /><br /><td><button id='SkipPIN2' type='button'><b>I don't want a second profile, skip this step</b></button></td><br></p>Select a second profile type:<br><br><label><input type='radio' checked name='secProfileMode' value=1 /><u>Standard Profile (recommended for most users)</u></label><br /><label><input type='radio' name='secProfileMode' value=2 /><u>Plausible Deniability Profile</u></label><br />Learn more about standard and plausible deniability profile <a href='https://docs.crp.to/features.html#self-destruct' class='external' target='_new'>here</a>.<p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode3Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
           }
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
@@ -86,6 +94,10 @@ if (chrome.passwordsPrivate) {
         next: 'Step7',
         disclaimerTrigger: 'passcode2Disclaimer',
         enterFn: () => {
+          if (this.checkInitialized()) {
+          var step6text = document.getElementById('step6-text');
+          step6text.innerHTML = "<h3>Change Self-Destruct PIN</h3><p>OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.</p><br /><p>WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.</p><p>DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.</p><label><input type='checkbox' name='passcode2Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+          }
           this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
           this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
         },
@@ -180,6 +192,25 @@ if (chrome.passwordsPrivate) {
     this.initForm = document['init-panel'];
     this.step8_2text = document.getElementById('step8-2-text');
     this.step8_2text.innerHTML = "<label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes(Default)</u></label><br /><label><input type='radio' name='backupKeyMode' value=1 /><u>Lock backup key on this device</u></label><br /><td><button id='SetPGPKey' type='button'><b>Use PGP Key instead of passphrase</b></button></td><br />";
+    this.step2text = document.getElementById('step2-text');
+    this.step2text.innerHTML = "<h3>Enter PIN on OnlyKey Keypad</h3><p>The first step in setting up OnlyKey is to set a PIN code using the six-button keypad on the OnlyKey. This PIN will be used to unlock your OnlyKey to access your accounts.<br /><br />Make sure to choose a PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode1Disclaimer' >I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+    this.step4text = document.getElementById('step4-text');
+    this.step4text.innerHTML = "<h3>Enter PIN for Second Profile on OnlyKey Keypad</h3><p>Your OnlyKey is now set up to store 12 accounts and is ready to use! OnlyKey permits adding a second profile to store an additonal 12 accounts (24 total). Set a second PIN to access the second profile. Second profile must be configured during initial setup and cannot be set up later. <br /><br /><td><button id='SkipPIN2' type='button'><b>I don't want a second profile, skip this step</b></button></td><br></p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode3Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+    this.step6text = document.getElementById('step6-text');
+    this.step6text.innerHTML = "<h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3><p>Your OnlyKey is now set up to store 24 accounts and is ready to use! OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.</p><td><button id='SkipSDPIN' type='button'><b>I don't want a self-destruct PIN, skip this step</b></button></td><br /><br /><p>WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.</p><p>DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.</p><label><input type='checkbox' name='passcode2Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+
+    this.rsaForm_text = document.getElementById('rsaForm-text');
+    this.rsaForm_text.innerHTML = "";
+    this.rsaSlot_selection = document.getElementById('rsaSlot');
+
+    this.rsaSlot_selection.onchange= (e) => {
+      e && e.preventDefault && e.preventDefault();
+      if (document.getElementById('rsaSlot').value != 99) {
+        this.rsaForm_text.innerHTML = "<label><input type='checkbox' id='rsaSetAsSignature' name='rsaSetAsSignature' value='true' />Set as signature key - Use key to sign messages</label><br /><label><input type='checkbox' id='rsaSetAsDecryption' name='rsaSetAsDecryption' value='true' />Set as decryption key - Use key to decrypt messages</label><br />";
+      } else {
+        this.rsaForm_text.innerHTML = "";
+      }
+    };
 
     this.initConfigErrors = document.getElementById('initConfigErrors');
 
