@@ -58,19 +58,28 @@ if (chrome.passwordsPrivate) {
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
         enterFn: () => {
+          if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+            var step4text = document.getElementById('step4-text');
+            step4text.innerHTML = "Select a second profile type:<br><br><label><input type='radio' checked name='secProfileMode' value=1 /><u>Standard Profile (recommended for most users)</u></label><br /><label><input type='radio' name='secProfileMode' value=2 /><u>Plausible Deniability Profile</u></label><br />Learn more about standard and plausible deniability profile <a href='https://docs.crp.to/features.html#self-destruct' class='external' target='_new'>here</a>.";
+          }
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPDPin.bind(this.onlyKey));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
         },
         exitFn: (cb) => {
-          const setSecProfileMode = this.initForm.secProfileMode;
-          this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPDPin.bind(this.onlyKey, cb));
+          if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+            const setSecProfileMode = this.initForm.secProfileMode;
+            this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
+          } else {
+            // Check this below, its not going to next step, probably .bind or cb incorrect
+            this.onlyKey.sendSetPin2.bind(this.onlyKey, cb);
+          }
         },
       },
       Step5: {
         prev: 'Step4',
         next: 'Step6',
-        enterFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
-        exitFn: this.onlyKey.sendSetPDPin.bind(this.onlyKey),
+        enterFn: this.onlyKey.sendSetPin2.bind(this.onlyKey),
+        exitFn: this.onlyKey.sendSetPin2.bind(this.onlyKey),
       },
       Step6: {
         prev: 'Step5',
@@ -92,13 +101,22 @@ if (chrome.passwordsPrivate) {
         prev: 'Step7',
         next: 'Step10',
         enterFn: () => {
+          if (this.checkInitialized() || !document.getElementById("advancedSetup").checked) {
+            var step8_2text = document.getElementById('step8-2-text');
+            step8_2text.innerHTML = "";
+          }
           this.btnSubmitStep.disabled = false;
           this.steps.Step8.next = this.guided ? 'Step10' : 'Step1';
           this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
-          const backupKeyMode = this.initForm.backupKeyMode;
-          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+          if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+            const backupKeyMode = this.initForm.backupKeyMode;
+            this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+          } else {
+            // Check this below, its not going to next step, probably .bind or cb incorrect
+            this.submitBackupKey.bind(this, cb);
+          }
         }
       },
       Step9: { //Set PGP Key
@@ -160,15 +178,17 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.uiInit = function () {
     this.initForm = document['init-panel'];
+    this.step8_2text = document.getElementById('step8-2-text');
+    this.step8_2text.innerHTML = "<label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes(Default)</u></label><br /><label><input type='radio' name='backupKeyMode' value=1 /><u>Lock backup key on this device</u></label><br /><td><button id='SetPGPKey' type='button'><b>Use PGP Key instead of passphrase</b></button></td><br />";
 
     this.initConfigErrors = document.getElementById('initConfigErrors');
 
     this.setPIN = document.getElementById('SetPIN');
     this.setBackup = document.getElementById('SetBackup');
-    this.skipPDPIN = document.getElementById('SkipPDPIN');
+    this.skipPIN2 = document.getElementById('SkipPIN2');
     this.setSDPIN = document.getElementById('SetSDPIN');
     this.skipSDPIN = document.getElementById('SkipSDPIN');
-    this.setPDPIN = document.getElementById('SetPDPIN');
+    this.setPIN2 = document.getElementById('SetPIN2');
     this.setPassphrase = document.getElementById('SetPassphrase');
     this.setPGPKey = document.getElementById('SetPGPKey');
     this.restoreBackup = document.getElementById('RestoreBackup');
@@ -183,8 +203,10 @@ if (chrome.passwordsPrivate) {
 
     this.setBackup.onclick = this.setUnguidedStep.bind(this, 'Step8');
     this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
+    this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
+    this.setPIN2.onclick = this.setUnguidedStep.bind(this, 'Step4');
 
-    this.skipPDPIN.onclick = (e) => {
+    this.skipPIN2.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
       this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
     };
@@ -690,7 +712,7 @@ if (chrome.passwordsPrivate) {
         case 'OKSETPIN':
           this.setNewCurrentStep('Step2');
           break;
-        case 'OKSETPDPIN':
+        case 'OKSETPIN2':
           this.setNewCurrentStep('Step4');
           break;
         case 'OKSETSDPIN':

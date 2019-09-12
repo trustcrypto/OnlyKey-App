@@ -215,7 +215,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     this.messages = {
       OKSETPIN: 225, //0xE1
       OKSETSDPIN: 226, //0xE2
-      OKSETPDPIN: 227, //0xE3
+      OKSETPIN2: 227, //0xE3
       OKSETTIME: 228, //0xE4
       OKGETLABELS: 229, //0xE5
       OKSETSLOT: 230, //0xE6
@@ -469,9 +469,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }, callback);
   };
 
-  OnlyKey.prototype.sendSetPDPin = function (callback) {
+  OnlyKey.prototype.sendSetPin2 = function (callback) {
     this.sendPinMessage({
-      msgId: 'OKSETPDPIN'
+      msgId: 'OKSETPIN2'
     }, callback);
   };
 
@@ -1178,7 +1178,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         // special handling if last message sent was PIN-related
         switch (myOnlyKey.getLastMessage('sent')) {
           case 'OKSETPIN':
-          case 'OKSETPDPIN':
+          case 'OKSETPIN2':
           case 'OKSETSDPIN':
             return pollForInput();
         }
@@ -1579,6 +1579,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   }
 
   OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, cb) {
+
     var type = parseInt(keyObj.p.length / 64, 10);
 
     if ([1, 2, 3, 4].indexOf(type) < 0) {

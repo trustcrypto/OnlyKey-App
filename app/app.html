@@ -50,9 +50,12 @@
             <div id="stepContent">
                 <div class="step" id="Step1">
                     <h3>OnlyKey Setup</h3>
-                    <p class="uninit-only">Begin the Guided Setup wizard at bottom by clicking [Next] or, if you would like to upgrade firmware on your device select [Load Firmware]:</p>
-                    <p class="init-only">Your OnlyKey is ready to use! You can change the Backup Passphrase/Key
-                        or Self-Destruct PIN below at any time.</p>
+                    <p class="uninit-only">Begin the Guided Setup wizard at bottom by clicking [Next] or, if you would like to upgrade firmware on your device select [Load Firmware]:
+                      <br>Enable advanced setup options
+                      <input type="checkbox" id="advancedSetup" />
+                    </p>
+                    <p class="init-only">Your OnlyKey is ready to use! You can change the Backup Passphrase/Key,
+                        change profile PINs, or set a Self-Destruct PIN below at any time.</p>
                     <table>
                         <tr>
                             <td class="uninit-only">
@@ -60,6 +63,12 @@
                             </td>
                             <td class="init-only">
                                 <button id="SetBackup" type="button">Set Backup Passphrase or Key</button>
+                            </td>
+                            <td class="init-only">
+                                <button id="SetPIN" type="button">Change Primary PIN</button>
+                            </td>
+                            <td class="init-only">
+                                <button id="SetPIN2" type="button">Change Secondary PIN</button>
                             </td>
                             <td class="init-only">
                                 <button id="SetSDPIN" type="button">Set Self-Destruct PIN</button>
@@ -111,23 +120,13 @@
                         later. <br />
                         <br />
                         <td>
-                            <button id="SkipPDPIN" type="button"><b>I don't want a second profile, skip this step</b></button>
+                            <button id="SkipPIN2" type="button"><b>I don't want a second profile, skip this step</b></button>
                         </td>
-                        <br /><br />
-                        Select a second profile type:
+                        <br />
+
                     </p>
-                    <label>
-                        <input type="radio" checked name="secProfileMode" value=1 />
-                        <u>Standard Profile (recommended for most users)</u>
-                    </label>
-                    <br />
-                    <label>
-                        <input type="radio" name="secProfileMode" value=2 />
-                        <u>Plausible Deniability Profile</u>
-                    </label>
-                    <br />
-                    Learn more about standard and plausible deniability profile <a href="https://docs.crp.to/features.html#self-destruct"
-                        class="external" target="_new">here</a>.
+                    <p id="step4-text"></p>
+
                     <p>
                         DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my
                         PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive
@@ -201,15 +200,8 @@
                         <input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase
                         must be at least 25 characters</label><br /><br /><label><b>Re-Enter Passphrase:</b><input type='password'
                             id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br />
-                    <label>
-                        <input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes
-                            (Default)</u>
-                    </label><br />
-                    <label><input type='radio' name='backupKeyMode' value=1 /><u>Lock backup key on this device</u></label>
-                    <br />
-                    <td>
-                        <button id='SetPGPKey' type='button'>
-                            <b>Use PGP Key instead of passphrase</b></button></td><br /><br />Learn more about secure
+                   <p id="step8-2-text"></p>
+                    <br />Learn more about secure
                     backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere' class='external' target="_new">here</a>.
                 </div>
 
