@@ -115,7 +115,8 @@ class OK {
         this.handleGetLabels(msg);
         break;
       case 'UNLOCKED':
-        this.getLabels();
+        // this.getLabels();
+        this.setSlot(3, 'LABEL', 'abc' + Math.random());
         break;
       default:
         console.dir({
@@ -231,8 +232,8 @@ class OK {
     }
 
     if (fieldId !== null) {
-      if (this.messageFields[fieldId]) {
-        bytes[cursor] = Message.strPad(this.messageFields[fieldId], 2, 0);
+      if (OK.messageFields[fieldId]) {
+        bytes[cursor] = Message.strPad(OK.messageFields[fieldId], 2, 0);
       } else {
         bytes[cursor] = fieldId;
       }
@@ -310,6 +311,48 @@ class OK {
       msgId: 'OKSETTIME',
     });
   }
+
+  setSlot(slot, field, value) {
+    console.dir({ setSlot: arguments });
+    slot = slot || this.getSlotNum();
+
+    if (typeof slot !== 'number') slot = this.getSlotNum(slot);
+
+    const options = {
+      contents: value,
+      msgId: 'OKSETSLOT',
+      slotId: slot,
+      fieldId: field
+    };
+
+    return this.sendMessage(options);
+  }
+
+  wipeSlot(slot, field, callback) {
+    slot = slot || this.getSlotNum();
+
+    if (typeof slot !== 'number') slot = this.getSlotNum(slot);
+
+    if (!slot) throw `Invalid slot: ${slot}`;
+    
+    const options = {
+      msgId: 'OKWIPESLOT',
+      slotId: slot,
+      fieldId: field || null
+    };
+
+    return this.sendMessage(options, callback);
+  }
+
+  getSlotNum(slotId) {
+    slotId = slotId || this.currentSlotId;
+
+    if (!slotId) throw `Invalid slotId: ${slotId}`;
+
+    const parts = slotId.split('');
+    return parseInt(parts[0], 10) + (parts[1].toLowerCase() === 'a' ? 0 : 6);
+  }
+
 
   static logCurrentByte(byte) {
     console.dir({
