@@ -377,18 +377,21 @@ if (chrome.passwordsPrivate) {
     this.guided = !!guided && !this.checkInitialized(); // guided setup is only for uninitialized devices
   };
 
+
   Wizard.prototype.initKeySelect = async function (rawKey, cb) {
+    //console.info(rawKey.primaryKey);
     const keys = [{
       name: 'Primary Key',
-      p: rawKey.primaryKey.mpi[3].data.toByteArray(),
-      q: rawKey.primaryKey.mpi[4].data.toByteArray()
+      p: rawKey.primaryKey.params[3].data,
+      q: rawKey.primaryKey.params[4].data
     }];
 
     rawKey.subKeys.forEach((subKey, i) => {
+        //console.info(subKey.keyPacket);
       keys.push({
         name: 'Subkey ' + (i + 1),
-        p: subKey.subKey.mpi[3].data.toByteArray(),
-        q: subKey.subKey.mpi[4].data.toByteArray()
+        p: subKey.keyPacket.params[3].data,
+        q: subKey.keyPacket.params[4].data
       });
     });
 
@@ -404,7 +407,8 @@ if (chrome.passwordsPrivate) {
 
     pkDiv.appendChild(document.createElement("br"));
 
-    if (!auto) {
+    //if (!autokeyload) {
+    if (1==1) {
     this.dialog.open(this.selectPrivateKeyDialog, true);
     } else {
       // Set Keybase keys, we already know what goes where
@@ -422,7 +426,7 @@ if (chrome.passwordsPrivate) {
 
 
 /*
-      const signingKey = rawKey.primaryKey.mpi[4].data.toByteArray();
+      const signingKey = rawKey.keyPacket.params[4].data;
       this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[signingKey], err => {
           if (err) {
               //   return ???
@@ -441,7 +445,7 @@ if (chrome.passwordsPrivate) {
         //Wait for interval
         await wait(1000);
 
-        const decryptionKey = subKey.subKey.mpi[4].data.toByteArray();
+        const decryptionKey = subKey.keyPacket.params[4].data;
         this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[decryptionKey], err => {
             if (err) {
                 //   return ???

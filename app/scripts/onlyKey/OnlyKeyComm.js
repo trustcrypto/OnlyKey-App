@@ -548,13 +548,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   };
 
 
-  OnlyKey.prototype.setRSABackupKey = function (key, passcode, cb) {
+  OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
 
     var privKey;
     let error;
 
     try {
-      var privKeys = openpgp.key.readArmored(key);
+      var privKeys = await openpgp.key.readArmored(key);
       privKey = privKeys.keys[0];
 
       var success = privKey.decrypt(passcode);
@@ -571,7 +571,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         throw Error(error);
       }
 
-      if (!(privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6)) {
+      if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
         error = 'Private Key decryption was successful, but resulted in invalid mpi data.';
         this.setLastMessage('received', error);
         throw Error(error);
@@ -590,9 +590,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
   };
 
-  OnlyKey.prototype.setBackupPassphrase = function (passphrase, cb) {
+  OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
     // abcdefghijklmnopqrstuvwxyz
-    const key = Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
+    const key = await Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
     const type = 161; //Backup and Decryption key
     const slot = 131;
 
@@ -1014,6 +1014,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       console.info("HID devices found:", devices);
       devices.forEach(onDeviceAdded);
       console.info("Connection ID", myOnlyKey.connection);
+      await wait(500);
       if (myOnlyKey.connection == '-1') {
         console.info("Beta 8+ device not found, looking for old device");
         devices.forEach(onDeviceAddedOld);
@@ -1531,7 +1532,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     e && e.preventDefault && e.preventDefault();
   }
 
-  function submitRsaForm(e) {
+  async function submitRsaForm(e) {
     e && e.preventDefault && e.preventDefault();
     ui.rsaForm.setError('');
 
@@ -1552,7 +1553,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       retKey;
 
     try {
-      var privKeys = openpgp.key.readArmored(key);
+      var privKeys = await openpgp.key.readArmored(key);
       privKey = privKeys.keys[0];
 
       var success = privKey.decrypt(passcode);
@@ -1561,7 +1562,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         throw new Error("Private Key decryption failed. Did you forget your passcode?");
       }
 
-      if (!(privKey.primaryKey && privKey.primaryKey.mpi && privKey.primaryKey.mpi.length === 6)) {
+      //console.info(privKey.primaryKey);
+      //console.info(privKey.primaryKey.params);
+      //console.info(privKey.primaryKey.params.length);
+
+      if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
         throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
       }
     } catch (e) {
@@ -1586,7 +1591,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
     }
 
-    var retKey = keyObj.p.concat(keyObj.q);
+    var retKey = [...keyObj.p, ...keyObj.q];
     var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
 
     // set all type modifiers
