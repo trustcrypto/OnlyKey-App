@@ -6,11 +6,13 @@
 body {
     font-family: monospace;
     font-size: 10pt;
+    text-decoration: none;
 }
 
 h1,h2,h3,h4,h5,h6,a {
     font-family: AppFont, monospace;
     font-weight: bolder;
+    text-decoration: none;
 }
 
 body > div {

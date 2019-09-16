@@ -1262,7 +1262,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       keys: "Keys",
       backup: "Backup",
       firmware: "Firmware",
-      advanced: "Advanced"
+      advanced: "Advanced",
+      tools: "Tools"
     };
     var hiddenClass = 'hide';
     var activeClass = 'active';
