@@ -1013,15 +1013,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     if (devices && devices.length) {
       console.info("HID devices found:", devices);
       devices.forEach(onDeviceAdded);
+      await wait(100);
       console.info("Connection ID", myOnlyKey.connection);
-      await wait(500);
-      if (myOnlyKey.connection == '-1') {
-        console.info("Beta 8+ device not found, looking for old device");
-        devices.forEach(onDeviceAddedOld);
-      } if (myOnlyKey.connection == '-1') {
-        // Use onlykey_usb method
-        // If that works we are probably on Linux and need to prompt user to use UDEV rule
-      }
     }
   };
 
@@ -1029,18 +1022,16 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     // auto connect desired device
     var supportedDevice = getSupportedDevice(device);
     console.info(device.collections[0].usage);
-    if (supportedDevice && device.collections[0].usagePage=='65451') {
+    if (supportedDevice && device.collections[0].usagePage=='65451' && device.serialNumber == '1000000000') {
       connectDevice(device);
-      await wait(100);
+    } else if (supportedDevice && device.serialNumber == '4294967295') { //Before Beta 8 fw
+      console.info("Beta 8+ device not found, looking for old device");
+      connectDevice(device);
     }
-  };
 
-  var onDeviceAddedOld = async function (device) {
-    // auto connect desired device
-    var supportedDevice = getSupportedDevice(device);
-    if (supportedDevice) {
-      connectDevice(device);
-      await wait(100);
+    if (myOnlyKey.connection == '-1') {
+      // Use onlykey_usb method
+      // If that works we are probably on Linux and need to prompt user to use UDEV rule
     }
   };
 
