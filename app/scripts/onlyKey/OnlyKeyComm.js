@@ -1024,7 +1024,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     console.info(device.collections[0].usage);
     if (supportedDevice && device.collections[0].usagePage=='65451' && device.serialNumber == '1000000000') {
       connectDevice(device);
-    } else if (supportedDevice && device.serialNumber == '4294967295') { //Before Beta 8 fw
+    } else if (supportedDevice && device.serialNumber != '1000000000') { //Before Beta 8 fw
       console.info("Beta 8+ device not found, looking for old device");
       connectDevice(device);
     }
