@@ -13,6 +13,7 @@
     <!-- App dependencies -->
     <script src="/vendor/FileSaver.js"></script>
     <script src="/vendor/openpgp.min.js"></script>
+    <script src="/scripts/dialog-manager.js"></script>
 </head>
 
 <body style="overflow: hidden;">
@@ -218,9 +219,10 @@
 
         <div id="slot-panel" class="hide panel">
           <h2>Configure Slots</h2>
-          <p>Slots are where you store login information. There are 12 slots in your profile, and each slot
-              can
-              store a login URL, Username, Password, and two-factor. <br>See common use examples below:</p>
+          <p>
+              Slots are where you store login information. There are 12 slots in your profile, and each slot can store a login URL, Username, Password, and two-factor.
+             <a href="" data-dialog="slotExamples">Click here to see common use examples</a>.
+          </p>
           <hr />
             <div class="flex-container">
                 <div class="flex-item">
@@ -274,47 +276,10 @@
                     </table>
 
                 </div>
-                <div class="flex-item">
-                  <b>Example #1</b> - Configure so that when button 1 is tapped (touched for less than 1 sec) password is automatically typed:<br>
-                  <img
-                  class="moveimage" src="/images/regular/caret-square-right.svg"
-                  width="13px" /> Click button [1a]
-                  <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" />
-                  check box next to [Password] and check [Return after Password] <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> enter/re-enter password and click submit.<br>
-                  <br><b>Example #2</b> - Configure so that when button 1 is held (for more than 1 sec), username and password are typed into a website login field:<br>
-                  <img
-                  class="moveimage" src="/images/regular/caret-square-right.svg"
-                  width="13px" /> Click button [1b] <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> configure password like in example #1 <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> check box next to [Username] and check [Tab after Username] <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> enter username and submit.<br>
-                  <br><b>Example #3</b> - Configure so that when button 2 is tapped URL is automatcally typed into browser to navigate to login page, then credentials are automatically entered:<br>
-                  <img
-                  class="moveimage" src="/images/regular/caret-square-right.svg"
-                  width="13px" /> Click button [2a] <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> configure password/username like in example #1 and #2 <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> check box next to [URL] and [Delay] after the URL <img
-                  class="moveimage" src="/images/solid/arrow-circle-right.svg"
-                  width="13px" /> enter URL and delay (i.e. wait 5 seconds for the login page to load) and submit.
-                </div>
               </div>
               <hr />
-              <img
-              class="moveimage" src="/images/regular/lightbulb.svg"
-              width="12px" /> Set label on your slot and it will show up in the app above, a label just helps you remember. If unsure about slot settings test it out first by browsing to log in page and use keyboard only to login.
-              <br>More information on slots available <a
-                  href="https://docs.crp.to/usersguide.html#all-about-slots" class="external" target="_new">here <img
-                  class="moveimage" src="/images/solid/external-link-alt.svg"
-                  width="15px" /></a>.
+              Set a label on your slot and it will show up above to help you remember. If you are unsure about slot settings, test it out first by browsing to the login page and use a keyboard to login.
+              <a href="https://docs.crp.to/usersguide.html#all-about-slots" class="external" target="_new">Learn more about slots <img class="moveimage" src="/images/solid/external-link-alt.svg" style="margin-left: .5em;" /></a>.
         </div>
 
         <div id="pref-panel" class="hide panel">
@@ -1045,11 +1010,71 @@
         </form>
     </dialog>
 
+    <dialog id="slotExamples" class="white">
+        <a href="" class="dialog-close">cancel [x]</a>
+        <br>
+        <p>
+            <h2>Example #1</h2>
+            Configure button 1 tap (touch for less than 1 sec) to automatically type a password:
+            <br>
+            <img class="moveimage" src="/images/regular/caret-square-right.svg" /> Click button [1a]
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> check boxes next to [Password] and [Return after Password]
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> enter/re-enter password and click [Submit].
+        </p>
+
+        <p>
+            <h2>Example #2</h2>
+            Configure button 1 long-press (more than 1 sec) to type a username and password into a website login form:
+            <br>
+            <img class="moveimage" src="/images/regular/caret-square-right.svg" /> Click button [1b]
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> configure password as in example #1
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> check boxes next to [Username] and [Tab after Username]
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> enter a username and click [Submit].
+        </p>
+
+        <p>
+            <h2>Example #3</h2>
+            Configure button 2 tap to automatically type the URL of a login page into your browser, followed by a username and password:
+            <br>
+            <img class="moveimage" src="/images/regular/caret-square-right.svg" /> Click button [2a]
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> configure username/password as in examples #1 and #2
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> check boxes next to [URL] and [Delay]
+            <br>
+            <img class="moveimage" src="/images/solid/arrow-circle-right.svg" /> type a URL and a delay in seconds (time to wait for URL to load) and click [Submit].
+        </p>
+    </div>
+
+
     <script src="/scripts/onlyKey/OnlyKeyWizard.js"></script>
     <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
     <script src="/scripts/updater.js"></script>
     <script src="/scripts/menubar.js"></script>
     <script src="/scripts/external-links.js"></script>
+    <script>
+        (() => {
+            const dialogMgr = new DialogMgr();
+            (document.querySelectorAll('[data-dialog]') || []).forEach(trigger => {
+                trigger.addEventListener('click', e => {
+                    e && e.preventDefault && e.preventDefault();
+                    const dialog = document.getElementById(trigger.getAttribute('data-dialog'));
+                    dialogMgr.open(dialog);
+                });
+            });
+            (document.querySelectorAll('.dialog-close') || []).forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e && e.preventDefault && e.preventDefault();
+                    dialogMgr.close(btn.parentNode);
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>

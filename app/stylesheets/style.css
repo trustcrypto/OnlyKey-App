@@ -17,10 +17,14 @@ body > div {
     padding: 16px;
 }
 
-.moveimage
-{
+.moveimage {
     position: relative;
     top: 3px;
+    width: 13px;
+}
+
+dialog .moveimage {
+    margin-left: 1em;
 }
 
 .panel {
@@ -61,6 +65,7 @@ dialog {
     border-color: white;
     background-color: maroon;
     color: white;
+    max-width: 80%;
 }
 
 dialog::backdrop {
@@ -69,6 +74,20 @@ dialog::backdrop {
 
 dialog a {
     color: white;
+}
+
+dialog.white {
+    background-color: white;
+    color: black;
+}
+
+dialog.white a {
+    color: black;
+}
+
+.dialog-close {
+    position: absolute;
+    right: 1em;
 }
 
 #slot-config-dialog {
