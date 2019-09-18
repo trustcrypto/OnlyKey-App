@@ -78,8 +78,7 @@ if (chrome.passwordsPrivate) {
             const setSecProfileMode = this.initForm.secProfileMode;
             this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
           } else {
-            // Check this below, its not going to next step, probably .bind or cb incorrect
-            this.onlyKey.sendSetPin2.bind(this.onlyKey, cb);
+            this.onlyKey.sendSetPin2(cb);
           }
         },
       },
