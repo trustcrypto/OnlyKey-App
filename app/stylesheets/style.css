@@ -207,6 +207,10 @@ td.ok-photo-cell {
     margin-left: 1em;
 }
 
+.flex-item form + form {
+    margin-top: 1.5em;
+}
+
 nav {
     margin-top: 1em;
 }

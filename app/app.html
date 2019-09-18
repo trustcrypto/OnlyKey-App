@@ -299,7 +299,7 @@
     <div id="pref-panel" class="hide panel">
       <div class="flex-container">
         <div class="flex-item">
-          <form id="typeSpeedForm" name="typeSpeedForm" class="moveimage">
+          <form id="typeSpeedForm" name="typeSpeedForm">
             <h3>Keyboard Type Speed</h3>
             Choose a setting:
             <input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1 - 10"
@@ -369,6 +369,8 @@
             <br />
             (1 &ndash; 255 minutes; default = 30; 0 to disable)
           </form>
+        </div>
+        <div class="flex-item">
           <form id="sshchallengeModeForm" name="sshchallengeModeForm">
             <h3>SSH Challenge Mode</h3>
             Enable or disable challenge code for SSH
@@ -385,8 +387,6 @@
             <br />
             <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
           </form>
-        </div>
-        <div class="flex-item">
           <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
             <h3>PGP Challenge Mode</h3>
             Enable or disable challenge code for PGP
@@ -405,30 +405,32 @@
           </form>
           <form id="wipeModeForm" name="wipeModeForm">
             <h3>Wipe Mode</h3>
-            Configure how the OnlyKey responds to<br />a factory reset.
+            Configure how the OnlyKey responds to a factory reset.
             Only sensitive data is wiped by default.
+            <br />
             <label>
               <input type="radio" checked name="okWipeMode" value=2 />
               <u>Full Wipe</u> &ndash; <em>Entire device is wiped. Firmware must be reloaded</em> (recommended for
               plausible deniability users).
             </label>
             <br />
-            <span style="font-size: small; color: red;"><b>WARNING - Once set to "Full Wipe" this cannot be
+            <span style="font-size: small; color: red;"><b>WARNING - Setting to "Full Wipe" cannot be
                 changed on this device.</b></span>
-            <br /><br />
+            <br />
             <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
           </form>
           <form id="backupModeForm" name="backupModeForm">
             <h3>Backup Key Mode</h3>
             Backup key may be changed by default.
+            <br />
             <label>
               <input type="radio" checked name="okBackupMode" value=1 />
               <u>Locked</u> - <em>Backup key may not be changed on device</em>
             </label>
             <br />
-            <span style="font-size: small; color: red;"><b>WARNING - Once set to "Locked"
-                this cannot be changed on this device.</b></span>
-            <br /><br />
+            <span style="font-size: small; color: red;"><b>WARNING - Setting to "Locked" cannot be changed on this
+                device.</b></span>
+            <br />
             <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" />
           </form>
         </div>
