@@ -126,8 +126,7 @@ if (chrome.passwordsPrivate) {
             const backupKeyMode = this.initForm.backupKeyMode;
             this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
           } else {
-            // Check this below, its not going to next step, probably .bind or cb incorrect
-            this.submitBackupKey.bind(this, cb);
+            this.submitBackupKey(cb);
           }
         }
       },
