@@ -596,10 +596,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     const type = 161; //Backup and Decryption key
     const slot = 131;
 
-
-    this.setPrivateKey(slot, type, key, err => {
+    this.setPrivateKey(slot, type, key, async function (err) {
       onlyKeyConfigWizard.initForm.reset();
-      this.listen(cb);
+      await listenForMessageIncludes2('Error', 'Success', cb);
     });
 
   };
@@ -1856,6 +1855,43 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
           await listenForMessageIncludesAgain(resolve, reject);
         } else {
           reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+        }
+      });
+    })
+  }
+
+
+  async function listenForMessageIncludes(str) {
+    return new Promise(async function listenForMessageIncludesAgain(resolve, reject) {
+      console.info(`Listening for "${str}"...`);
+      myOnlyKey.listen(async (err, msg) => {
+        if (msg && msg.includes(str)) {
+          console.info(`Match received "${msg}"...`);
+          resolve();
+        } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
+          //Chrome app background page sends settime which results in unexpected unlocked response
+          console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
+          await listenForMessageIncludesAgain(resolve, reject);
+        } else {
+          reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+        }
+      });
+    })
+  }
+
+  async function listenForMessageIncludes2(str1, str2) {
+    return new Promise(async function listenForMessageIncludesAgain2(resolve, reject) {
+      console.info(`Listening for "${str1}" or "${str2}" `);
+      myOnlyKey.listen(async (err, msg) => {
+        if (msg && msg.includes(str1) || msg && msg.includes(str2)) {
+          console.info(`Match received "${msg}"...`);
+          resolve();
+        } else if (msg) {
+          //Chrome app background page sends settime which results in unexpected unlocked response
+          console.info(`Received unexpected message: ${msg}`);
+          await listenForMessageIncludesAgain2(resolve, reject);
+        } else {
+          reject(err || `Received unexpected message: ${msg}`);
         }
       });
     })
