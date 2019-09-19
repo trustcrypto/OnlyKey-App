@@ -15,14 +15,36 @@ h1,h2,h3,h4,h5,h6,a {
     text-decoration: none;
 }
 
+h1,.h1 {
+    font-size: 200%;
+    display: block;
+    margin: 1em 0;
+}
+
+h2,.h2 {
+    font-size: 150%;
+    display: block;
+    margin: .5em 0;
+}
+
+h3,.h3 {
+    font-size: 120%;
+    display: block;
+    margin: .25em 0;
+}
+
 body > div {
     padding: 16px;
 }
 
-.moveimage
-{
+.moveimage {
     position: relative;
     top: 3px;
+    width: 13px;
+}
+
+dialog .moveimage {
+    margin-left: 1em;
 }
 
 .panel {
@@ -63,6 +85,7 @@ dialog {
     border-color: white;
     background-color: maroon;
     color: white;
+    max-width: 80%;
 }
 
 dialog::backdrop {
@@ -71,6 +94,20 @@ dialog::backdrop {
 
 dialog a {
     color: white;
+}
+
+dialog.white {
+    background-color: white;
+    color: black;
+}
+
+dialog.white a {
+    color: black;
+}
+
+.dialog-close {
+    position: absolute;
+    right: 1em;
 }
 
 #slot-config-dialog {
@@ -168,6 +205,10 @@ td.ok-photo-cell {
 .flex-item + .flex-item > div {
     margin-right: 0;
     margin-left: 1em;
+}
+
+.flex-item form + form {
+    margin-top: 1.5em;
 }
 
 nav {

@@ -7,13 +7,14 @@
   "dependencies": {
     "auto-launch": "^5.0.5",
     "fs-jetpack": "^2.2.2",
-    "nw": "^0.36.4",
+    "nw": "^0.36.4-sdk",
     "nw-autoupdater": "^1.1.8",
     "q": "^1.5.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
+    "eslint": "^6.4.0",
     "gulp": "^4.0.0",
     "gulp-sourcemaps": "^2.6.4",
     "mocha": "^5.2.0",

@@ -667,14 +667,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
           }
 
           if (contents) {
-            ui.restoreForm.setError('Working...');
-            submitRestoreData(contents, function (err) {
+            var step10text = document.getElementById('step10-text');
+            step10text.innerHTML = "Restoring from backup please wait...<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
+            submitRestoreData(contents, async function (err) {
               if (err) {
                 _this.setLastMessage(error)
                 throw Error(error);
               }
 
               _this.setLastMessage('Backup file sent to OnlyKey, please wait...');
+              await wait(10000);
+              step10text.innerHTML = "";
               cb();
             });
           } else {
@@ -1678,11 +1681,13 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
           }
 
           if (contents) {
-            ui.restoreForm.setError('Working...');
-            submitRestoreData(contents, function (err) {
+            var restoretext = document.getElementById('restore-text');
+            restoretext.innerHTML = "Restoring from backup please wait...<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
+            submitRestoreData(contents, async function (err) {
               // TODO: check for success, then reset
+              await wait (10000);
               ui.restoreForm.reset();
-              ui.restoreForm.setError('Backup file sent to OnlyKey');
+              restoretext.innerHTML = "";
             });
           } else {
             return ui.restoreForm.setError('Incorrect backup data format.');

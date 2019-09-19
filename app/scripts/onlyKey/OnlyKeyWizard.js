@@ -78,8 +78,7 @@ if (chrome.passwordsPrivate) {
             const setSecProfileMode = this.initForm.secProfileMode;
             this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
           } else {
-            // Check this below, its not going to next step, probably .bind or cb incorrect
-            this.onlyKey.sendSetPin2.bind(this.onlyKey, cb);
+            this.onlyKey.sendSetPin2(cb);
           }
         },
       },
@@ -126,8 +125,7 @@ if (chrome.passwordsPrivate) {
             const backupKeyMode = this.initForm.backupKeyMode;
             this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
           } else {
-            // Check this below, its not going to next step, probably .bind or cb incorrect
-            this.submitBackupKey.bind(this, cb);
+            this.submitBackupKey(cb);
           }
         }
       },
@@ -875,31 +873,6 @@ if (chrome.passwordsPrivate) {
     OnlyKeyHID(onlyKeyConfigWizard);
   }, false);
 })();
-
-
-class DialogMgr {
-  open(el, keepOthersOpen) {
-    if (!keepOthersOpen) {
-      this.closeAll();
-    }
-    if (!el.open) {
-      el.showModal();
-    }
-  }
-
-  close(el) {
-    if (el.open) {
-      el.close();
-    }
-  }
-
-  closeAll() {
-    const allDialogs = document.getElementsByTagName('dialog');
-    for (let i = 0; i < allDialogs.length; i++) {
-      this.close(allDialogs[i]);
-    }
-  }
-}
 
 function clearRadios(name) {
   var btns = document.getElementsByName(name);
