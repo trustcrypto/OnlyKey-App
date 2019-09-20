@@ -598,7 +598,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     this.setPrivateKey(slot, type, key, async function (err) {
       onlyKeyConfigWizard.initForm.reset();
-      await listenForMessageIncludes2('Error', 'Success', cb);
+      await wait(300);
+      await listenForMessageIncludes2('Error', 'Success');
+      cb();
     });
 
   };
