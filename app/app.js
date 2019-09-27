@@ -49,28 +49,24 @@ chrome.app.runtime.onLaunched.addListener(function() {
 });
 
 var onDevicesEnumerated = async function (devices) {
-    if (chrome.runtime.lastError) {
-        console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
-        return;
-    }
+  if (chrome.runtime.lastError) {
+    console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
+    return;
+  }
 
-    if (devices && devices.length) {
-      console.info("HID devices found:", devices);
-      devices.forEach(onDeviceAdded);
-      console.info("Connection ID", connectedto);
-      await wait(100);
-      if (connectedto == '-1') {
-        console.info("Beta 8+ device not found, looking for old device");
-        devices.forEach(onDeviceAddedOld);
-      }
-    }
+  if (devices && devices.length) {
+    console.info("HID devices found:", devices);
+    devices.forEach(onDeviceAdded);
+    await wait(100);
+    console.info("Connection ID", myOnlyKey.connection);
+  }
 };
 
 var onDeviceAdded = async function (device) {
     // auto connect desired device
     const supportedDevice = getSupportedDevice(device);
     console.info(device.collections[0].usagePage);
-    if (supportedDevice && device.collections[0].usagePage=='65451') {
+    if (supportedDevice && device.collections[0].usagePage=='65451' && device.serialNumber == '1000000000') {
         chrome.hid.connect(device.deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
                 console.error("ERROR CONNECTING:", chrome.runtime.lastError);
@@ -79,14 +75,8 @@ var onDeviceAdded = async function (device) {
             }
             setTime(connectInfo.connectionId);
         });
-        await wait(100);
-    }
-};
-
-var onDeviceAddedOld = async function (device) {
-    // auto connect desired device
-    const supportedDevice = getSupportedDevice(device);
-    if (supportedDevice) {
+    } else if (supportedDevice && device.serialNumber != '1000000000') { //Before Beta 8 fw
+        console.info("Beta 8+ device not found, looking for old device");
         chrome.hid.connect(device.deviceId, function (connectInfo) {
             if (chrome.runtime.lastError) {
                 console.error("ERROR CONNECTING:", chrome.runtime.lastError);
@@ -95,7 +85,6 @@ var onDeviceAddedOld = async function (device) {
             }
             setTime(connectInfo.connectionId);
         });
-        await wait(100);
     }
 };
 
