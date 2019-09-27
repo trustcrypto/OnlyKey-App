@@ -9,7 +9,8 @@
     "fs-jetpack": "^2.2.2",
     "nw": "^0.36.4-sdk",
     "nw-autoupdater": "^1.1.8",
-    "q": "^1.5.1"
+    "q": "^1.5.1",
+    "request": "^2.88.0"
   },
   "devDependencies": {
     "chai": "^4.2.0",

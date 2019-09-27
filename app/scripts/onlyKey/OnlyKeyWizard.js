@@ -197,16 +197,27 @@ if (chrome.passwordsPrivate) {
     this.step6text = document.getElementById('step6-text');
     this.step6text.innerHTML = "<h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3><p>Your OnlyKey is now set up to store 24 accounts and is ready to use! OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.</p><td><button id='SkipSDPIN' type='button'><b>I don't want a self-destruct PIN, skip this step</b></button></td><br /><br /><p>WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.</p><p>DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.</p><label><input type='checkbox' name='passcode2Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
 
-    this.rsaForm_text = document.getElementById('rsaForm-text');
-    this.rsaForm_text.innerHTML = "";
+    this.rsaForm_additional_options = document.getElementById('rsaForm-additional-options');
+    this.rsaForm_additional_options.innerHTML = "";
     this.rsaSlot_selection = document.getElementById('rsaSlot');
 
-    this.rsaSlot_selection.onchange= (e) => {
+    this.rsaSlot_selection.onchange = (e) => {
       e && e.preventDefault && e.preventDefault();
-      if (document.getElementById('rsaSlot').value != 99) {
-        this.rsaForm_text.innerHTML = "<label><input type='checkbox' id='rsaSetAsSignature' name='rsaSetAsSignature' value='true' />Set as signature key - Use key to sign messages</label><br /><label><input type='checkbox' id='rsaSetAsDecryption' name='rsaSetAsDecryption' value='true' />Set as decryption key - Use key to decrypt messages</label><br />";
+      if (e && e.target && e.target.value == '99') {
+        this.rsaForm_additional_options.innerHTML = "";
       } else {
-        this.rsaForm_text.innerHTML = "";
+        this.rsaForm_additional_options.innerHTML = `
+          <label>
+            <input type='checkbox' id='rsaSetAsSignature' name='rsaSetAsSignature' value='true' />
+            Signature key (use to sign messages)
+          </label>
+          <br />
+          <label>
+            <input type='checkbox' id='rsaSetAsDecryption' name='rsaSetAsDecryption' value='true' />
+            Decryption key (use to decrypt messages)
+          </label>
+          <br />
+        `;
       }
     };
 
@@ -330,7 +341,7 @@ if (chrome.passwordsPrivate) {
     this.selectPrivateKeyConfirmBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
       const selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
-      this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey], err => {
+      this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey], null, err => {
           if (err) {
             //   return ???
           }
@@ -395,20 +406,8 @@ if (chrome.passwordsPrivate) {
 
     this.onlyKey.tempRsaKeys = keys;
 
-    const pkDiv = document.getElementById('private-key-options');
-    pkDiv.innerHTML = "";
-
-    keys.forEach((key, i) => {
-      pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
-      pkDiv.appendChild(document.createElement("br"));
-    });
-
-    pkDiv.appendChild(document.createElement("br"));
-
     //if (!autokeyload) {
-    if (1==1) {
-    this.dialog.open(this.selectPrivateKeyDialog, true);
-    } else {
+    if (this.rsaSlot_selection.value === '99') {
       // Set Keybase keys, we already know what goes where
       // If there are two subkeys
       // subkey 1 is set as decryption key
@@ -416,68 +415,32 @@ if (chrome.passwordsPrivate) {
       // else
       // subkey 1 is set as decryption key
       // primary key (there should only be 1) set as signing key
+      const decryptionKey = keys[1];
+      const signingKey = keys.length > 2 ? keys[2] : keys[0];
 
-
-      //e && e.preventDefault && e.preventDefault();
-
-
-
-
-/*
-      const signingKey = rawKey.keyPacket.params[4].data;
-      this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[signingKey], err => {
+      this.onlyKey.confirmRsaKeySelect(signingKey, 1, err => {
+        this.onlyKey.confirmRsaKeySelect(decryptionKey, 2, err => {
           if (err) {
               //   return ???
           }
 
           this.onlyKey.tempRsaKeys = null;
-          //this.dialog.closeAll();
-
-          //if (this.guided) {
-          //    this.setNewCurrentStep(this.steps[this.currentStep]['next'])
-          //  } else {
-              this.reset();
-            //}
+          this.reset();
         });
-
-        //Wait for interval
-        await wait(1000);
-
-        const decryptionKey = subKey.keyPacket.params[4].data;
-        this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[decryptionKey], err => {
-            if (err) {
-                //   return ???
-            }
-
-            this.onlyKey.tempRsaKeys = null;
-            //this.dialog.closeAll();
-
-            //if (this.guided) {
-            //    this.setNewCurrentStep(this.steps[this.currentStep]['next'])
-            //  } else {
-                this.reset();
-              //}
-          });
-
-
-
-
-
-      this.selectPrivateKeyCancelBtn = document.getElementById('selectPrivateKeyCancel');
-      this.selectPrivateKeyCancelBtn.onclick = e => {
-        e && e.preventDefault && e.preventDefault();
-        this.onlyKey.tempRsaKeys = null;
-        this.dialog.closeAll();
-      };
-      // END PRIVATE KEY SELECTOR
-
-      this.setActiveStepUI();
-
-
-
-    */
-  }
-
+      });
+    } else {
+      const pkDiv = document.getElementById('private-key-options');
+      pkDiv.innerHTML = "";
+  
+      keys.forEach((key, i) => {
+        pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
+        pkDiv.appendChild(document.createElement("br"));
+      });
+  
+      pkDiv.appendChild(document.createElement("br"));
+  
+      this.dialog.open(this.selectPrivateKeyDialog, true);
+    }
   };
 
 

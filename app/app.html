@@ -470,12 +470,11 @@
             </label>
 
             <br />
-            <br />
 
             <label>
               Key:
               <br />
-              <textarea id="rsaKey" name="rsaKey" cols="40" rows="8" placeholder="RSA Key -- paste PEM file contents"
+              <textarea id="rsaKey" name="rsaKey" cols="40" rows="6" placeholder="RSA Key -- paste PEM file contents"
                 required></textarea>
             </label>
 
@@ -486,15 +485,12 @@
               <input type="password" id="rsaPasscode" name="rsaPasscode" />
             </label>
             <br />
-            <br />
-            <p id="rsaForm-text"></p>
+            <span id="rsaForm-additional-options"></span>
             <label>
               <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true" />
-              Set as backup key - Only one backup key may be set. If you already have a backup passphrase
-              set
-              this will use PGP key for secure backup instead of passphrase.
+              Set as backup key.
+              (This setting uses the above key for secure backups instead of any backup passphrase you might have set earlier.)
             </label>
-
 
             <br />
             <br />
@@ -1056,10 +1052,10 @@
         </tr>
         <tr>
           <td>
-            <input type="button" id="slotWipe" name="slotWipe" value="Wipe" />
+            <input type="button" id="slotWipe" name="slotWipe" value="Wipe Slot" />
           </td>
           <td>
-            <input type="button" id="slotSubmit" name="slotSubmit" value="Submit" />
+            <input type="button" id="slotSubmit" name="slotSubmit" value="Set Slot" />
           </td>
         </tr>
       </table>
@@ -1078,7 +1074,7 @@
       <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [Password] and [Return
       after Password]
       <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter/re-enter password and click [Submit]
+      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter/re-enter password and click [Set Slot]
     </p>
 
     <p>
@@ -1092,7 +1088,7 @@
       <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [Username] and [Tab after
       Username]
       <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter a username and click [Submit]
+      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter a username and click [Set Slot]
     </p>
 
     <p>
@@ -1107,7 +1103,7 @@
       <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [URL] and [Delay]
       <br>
       <img class="moveimage" src="/images/regular/keyboard.svg" /> Type a URL and a delay in seconds (time to
-      wait for URL to load) and click [Submit]
+      wait for URL to load) and click [Set Slot]
     </p>
   </dialog>
 
