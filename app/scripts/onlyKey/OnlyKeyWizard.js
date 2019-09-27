@@ -418,8 +418,8 @@ if (chrome.passwordsPrivate) {
       const decryptionKey = keys[1];
       const signingKey = keys.length > 2 ? keys[2] : keys[0];
 
-      this.onlyKey.confirmRsaKeySelect(signingKey, 1, err => {
-        this.onlyKey.confirmRsaKeySelect(decryptionKey, 2, err => {
+      this.onlyKey.confirmRsaKeySelect(decryptionKey, 2, err => {
+        this.onlyKey.confirmRsaKeySelect(signingKey, 1, err => {
           if (err) {
               //   return ???
           }
