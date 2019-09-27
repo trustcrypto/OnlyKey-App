@@ -1,8 +1,9 @@
 const desktopApp = typeof nw !== 'undefined';
-let userPreferences;
+let userPreferences, request;
 
 if (desktopApp) {
   userPreferences = require('./scripts/userPreferences.js');
+  request = require('request');
 }
 
 var fwchecked = false;
@@ -583,7 +584,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       throw Error(error + '\n\n' + parseError);
     }
 
-    onlyKeyConfigWizard.initKeySelect(privKey, function (err) {
+    await onlyKeyConfigWizard.initKeySelect(privKey, function (err) {
       ui.rsaForm.setError(err);
       if (typeof cb === 'function') cb(err);
     });
@@ -1016,8 +1017,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     if (devices && devices.length) {
       console.info("HID devices found:", devices);
-      devices.forEach(onDeviceAdded);
-      await wait(100);
+      for (let i in devices) {
+        await onDeviceAdded(devices[i]);
+      }
       console.info("Connection ID", myOnlyKey.connection);
     }
   };
@@ -1027,7 +1029,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var supportedDevice = getSupportedDevice(device);
     console.info(device.collections[0].usage);
     if (supportedDevice && device.collections[0].usagePage=='65451' && device.serialNumber == '1000000000') {
-      connectDevice(device);
+      await connectDevice(device);
     } else if (supportedDevice && device.serialNumber != '1000000000') { //Before Beta 8 fw
       console.info("Beta 8+ device not found, looking for old device");
       connectDevice(device);
@@ -1039,7 +1041,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
   };
 
-  var connectDevice = function (device) {
+  var connectDevice = async function (device) {
     const deviceId = device.deviceId;
 
     console.info('CONNECTING device:', device);
@@ -1579,7 +1581,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     });
   }
 
-  OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, cb) {
+  OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
 
     var type = parseInt(keyObj.p.length / 64, 10);
 
@@ -1588,24 +1590,44 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     }
 
     var retKey = [...keyObj.p, ...keyObj.q];
-    var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
+    var slot = slot !== null ? slot : parseInt(ui.rsaForm.rsaSlot.value || '', 10);
 
     // set all type modifiers
     var typeModifier = 0;
 
     Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
-      if (ui.rsaForm['rsaSetAs' + modifier].checked) {
+      if (ui.rsaForm['rsaSetAs' + modifier] && ui.rsaForm['rsaSetAs' + modifier].checked) {
         typeModifier += myOnlyKey.keyTypeModifiers[modifier];
       }
     });
 
     type += typeModifier;
 
+    if (document.getElementById('rsaSlot').value === '99') {
+      if (slot==1) {
+        type += 32;
+        console.info("Slot 1 set as decryption key" + type);
+      }
+      if (slot==2) {
+        if (type>127) type -= 128; // Only set backup flag on decryption key
+        type += 64;
+        console.info("Slot 2 set as signature key" + type);
+      }
+    }
+
+
+
+    /*
+
     console.info("backupsigFlag" + backupsigFlag);
     if (backupsigFlag >= 0) {
-      type += 128 + 32 + (backupsigFlag*64); //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
+      type += 128; //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
       console.info("type" + type);
     }
+
+    */
+
+
 
     // console.info("retKey:", retKey);
 
@@ -1614,8 +1636,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       if (typeof cb === 'function') cb(err);
       ui.rsaForm.reset();
       if (backupsigFlag >= 0) {
-      backupsigFlag = -1;
-      //reset backup form
+        backupsigFlag = -1;
+        //reset backup form
       }
       this.listen(handleMessage);
     });
@@ -2147,7 +2169,6 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
     return new Promise(resolve => {
       fwchecked = true;
       if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
-        var request = require('request');
         var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
           console.log(r.uri.href);
           console.log(res.request.uri.href);
