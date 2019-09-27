@@ -1603,11 +1603,31 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     type += typeModifier;
 
+    if (document.getElementById('rsaSlot').value === '99') {
+      if (slot==1) {
+        type += 32;
+        console.info("Slot 1 set as decryption key" + type);
+      }
+      if (slot==2) {
+        if (type>127) type -= 128; // Only set backup flag on decryption key
+        type += 64;
+        console.info("Slot 2 set as signature key" + type);
+      }
+    }
+
+
+
+    /*
+
     console.info("backupsigFlag" + backupsigFlag);
     if (backupsigFlag >= 0) {
-      type += 128 + 32 + (backupsigFlag*64); //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
+      type += 128; //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
       console.info("type" + type);
     }
+
+    */
+
+
 
     // console.info("retKey:", retKey);
 
