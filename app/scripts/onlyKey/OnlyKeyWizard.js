@@ -418,8 +418,8 @@ if (chrome.passwordsPrivate) {
       const decryptionKey = keys[1];
       const signingKey = keys.length > 2 ? keys[2] : keys[0];
 
-      this.onlyKey.confirmRsaKeySelect(decryptionKey, 2, err => {
-        this.onlyKey.confirmRsaKeySelect(signingKey, 1, err => {
+      this.onlyKey.confirmRsaKeySelect(decryptionKey, 1, err => {
+        this.onlyKey.confirmRsaKeySelect(signingKey, 2, err => {
           if (err) {
               //   return ???
           }
@@ -431,14 +431,14 @@ if (chrome.passwordsPrivate) {
     } else {
       const pkDiv = document.getElementById('private-key-options');
       pkDiv.innerHTML = "";
-  
+
       keys.forEach((key, i) => {
         pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
         pkDiv.appendChild(document.createElement("br"));
       });
-  
+
       pkDiv.appendChild(document.createElement("br"));
-  
+
       this.dialog.open(this.selectPrivateKeyDialog, true);
     }
   };
