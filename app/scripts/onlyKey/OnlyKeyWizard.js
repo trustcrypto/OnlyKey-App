@@ -11,7 +11,7 @@ if (chrome.passwordsPrivate) {
 
 // Wizard
 (function () {
-  const STEP1 = 'Step1';
+  const STEP1 = 'Step1', NEXT = 'next', PREVIOUS = 'prev';
 
   let onlyKeyConfigWizard;
 
@@ -113,11 +113,16 @@ if (chrome.passwordsPrivate) {
           this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
-          if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
-            const backupKeyMode = this.initForm.backupKeyMode;
-            this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+          if (this.direction === NEXT) {
+            if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+              const backupKeyMode = this.initForm.backupKeyMode;
+              this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+            } else {
+              // not going to next step due to [Previous] click
+              this.submitBackupKey(cb);
+            }
           } else {
-            this.submitBackupKey(cb);
+            cb();
           }
         }
       },
@@ -662,6 +667,7 @@ if (chrome.passwordsPrivate) {
     // if a next/prev step exists, call current step-related exit function
     // and set new current step
     this.currentStep = this.currentStep || STEP1;
+    this.direction = direction;
 
     if (this.steps[this.currentStep][direction]) {
       if (this.steps[this.currentStep].exitFn) {
