@@ -63,7 +63,7 @@ if (chrome.passwordsPrivate) {
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
         enterFn: () => {
-          this.setSecondPINHtml();
+          this.setSecondPINHtml('step4-text');
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
         },
@@ -187,7 +187,7 @@ if (chrome.passwordsPrivate) {
     this.initForm = document['init-panel'];
     document.getElementById('step8-2-text').innerHTML = "<label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes(Default)</u></label><br /><label><input type='radio' name='backupKeyMode' value=1 /><u>Lock backup key on this device</u></label><br /><td><button id='SetPGPKey' type='button'><b>Use PGP Key instead of passphrase</b></button></td><br />";
     document.getElementById('step2-text').innerHTML = "<h3>Enter PIN on OnlyKey Keypad</h3><p>The first step in setting up OnlyKey is to set a PIN code using the six-button keypad on the OnlyKey. This PIN will be used to unlock your OnlyKey to access your accounts.<br /><br />Make sure to choose a PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode1Disclaimer' >I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
-    this.setSecondPINHtml();
+    this.setSecondPINHtml('step4-text');
     document.getElementById('step6-text').innerHTML = "<h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3><p>Your OnlyKey is now set up to store 24 accounts and is ready to use! OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.</p><td><button id='SkipSDPIN' type='button'><b>I don't want a self-destruct PIN, skip this step</b></button></td><br /><br /><p>WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.</p><p>DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.</p><label><input type='checkbox' name='passcode2Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
 
     this.rsaForm_additional_options = document.getElementById('rsaForm-additional-options');
@@ -351,6 +351,22 @@ if (chrome.passwordsPrivate) {
       this.dialog.closeAll();
     };
     // END PRIVATE KEY SELECTOR
+
+    document.addEventListener('click', evt => {
+      switch (true) {
+        case evt.target.matches('button'):
+          switch (evt.id) {
+            case 'SkipPIN2':
+              evt.preventDefault && evt.preventDefault();
+              this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+              break;
+            default:
+              break;
+          }
+        default:
+          break;
+      };
+    });
 
     this.setActiveStepUI();
   };
@@ -786,7 +802,7 @@ if (chrome.passwordsPrivate) {
     return false;
   };
 
-  Wizard.prototype.setSecondPINHtml = function () {
+  Wizard.prototype.setSecondPINHtml = function (id) {
     let html;
 
     if (this.checkInitialized()) {
@@ -881,11 +897,7 @@ if (chrome.passwordsPrivate) {
         </p>
     `;
     }
-    document.getElementById('step4-text').innerHTML = html;
-    document.getElementById('SkipPIN2').onclick = (e) => {
-      e && e.preventDefault && e.preventDefault();
-      this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
-    };
+    document.getElementById(id).innerHTML = html;
   };
 
   Wizard.prototype.setLastMessages = function (messages) {
