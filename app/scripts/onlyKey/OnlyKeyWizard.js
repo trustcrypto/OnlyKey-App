@@ -59,7 +59,7 @@ if (chrome.passwordsPrivate) {
         exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
       },
       Step4: {
-        prev: 'Step3',
+        prev: 'Step2',
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
         enterFn: () => {
@@ -353,19 +353,18 @@ if (chrome.passwordsPrivate) {
     // END PRIVATE KEY SELECTOR
 
     document.addEventListener('click', evt => {
-      switch (true) {
-        case evt.target.matches('button'):
-          switch (evt.id) {
-            case 'SkipPIN2':
-              evt.preventDefault && evt.preventDefault();
-              this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
-              break;
-            default:
-              break;
-          }
-        default:
-          break;
-      };
+      if (evt.onclick) return;
+
+      const targets = [{
+        id: '#SkipPIN2',
+        fn: (e) => {
+          e.preventDefault && e.preventDefault();
+          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+        }
+      }];
+
+      const target = targets.filter(t => evt.target.matches(t.id) || (evt.target.parentElement && evt.target.parentElement.matches(t.id)));
+      return target.length && target[0].fn.call(this, evt);
     });
 
     this.setActiveStepUI();
