@@ -243,6 +243,11 @@ if (chrome.passwordsPrivate) {
       this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step8'));
     };
 
+    this.skipPIN2.onclick = (e) => {
+      e.preventDefault && e.preventDefault();
+      this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+    };
+
     this.setPassphrase.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
       this.gotoStep('Step8');
@@ -352,23 +357,7 @@ if (chrome.passwordsPrivate) {
     };
     // END PRIVATE KEY SELECTOR
 
-    document.addEventListener('click', evt => {
-      if (evt.onclick) return;
 
-      const targets = [{
-        id: '#SkipPIN2',
-        fn: (e) => {
-          e.preventDefault && e.preventDefault();
-          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
-        }
-      }];
-
-      const target = targets.filter(t => evt.target.matches(t.id) || (evt.target.parentElement && evt.target.parentElement.matches(t.id)));
-      return target.length && target[0].fn.call(this, evt);
-    });
-
-    this.setActiveStepUI();
-  };
 
   Wizard.prototype.checkInitialized = function () {
     const isInitialized = this.onlyKey && this.onlyKey.isInitialized;
