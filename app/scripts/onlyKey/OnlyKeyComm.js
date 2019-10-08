@@ -363,6 +363,10 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     return this.lastMessages[type] && this.lastMessages[type][0] && this.lastMessages[type][0].hasOwnProperty('text') ? this.lastMessages[type][0].text : '';
   };
 
+  OnlyKey.prototype.getLastMessageIndex = function (type, index) {
+    return this.lastMessages[type] && this.lastMessages[type][index] && this.lastMessages[type][index].hasOwnProperty('text') ? this.lastMessages[type][index].text : '';
+  };
+
   OnlyKey.prototype.flushMessage = function (callback = () => {}) {
     const messageTypes = Object.keys(this.pendingMessages);
     const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
@@ -453,9 +457,20 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     this.pendingMessages[msgId] = !this.pendingMessages[msgId];
     const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
     console.info(`sendPinMessage ${msgId}`);
-    this.sendMessage({
-      msgId
-    }, cb);
+    if (myOnlyKey.getLastMessage('received') == 'Error PIN is not between 7 - 10 digits') {
+      this.setLastMessage('received', 'Canceled');
+      this.sendPinMessage({
+        msgId: 'OKSETPIN',
+        poll: false
+      }, cb);
+    } else {
+      this.sendMessage({
+        msgId
+      }, cb);
+    }
+    console.info('last messages');
+    console.info(myOnlyKey.getLastMessageIndex('received', 0));
+    console.info(myOnlyKey.getLastMessageIndex('received', 1));
   };
 
   OnlyKey.prototype.sendSetPin = function (callback) {
