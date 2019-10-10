@@ -1854,6 +1854,92 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
    */
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+  function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
+    if (!fwchecked) {
+      return new Promise(resolve => {
+        fwchecked = true;
+        if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
+          var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
+            console.log(r.uri.href);
+            console.log(this.uri.href);
+            var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
+            console.info(version);
+            console.info(latestver);
+            var thisver_maj = version.slice(1,2) * 100;
+            console.info(thisver_maj);
+            var thisver_min = version.slice(3,4) * 10;
+            console.info(thisver_min);
+            var thisver_pat = version.slice(10,11);
+            var thisver_mod = version.slice(11,12);
+            console.info(thisver_mod);
+            var latestver_maj = latestver.slice(1,2) * 100;
+            console.info(latestver_maj);
+            var latestver_min = latestver.slice(3,4) * 10;
+            console.info(latestver_min);
+            if (latestver_maj==0) {
+              var latestver_pat = latestver.slice(10,11);
+            } else {
+              var latestver_pat = latestver.slice(5,6);
+            }
+            console.info(latestver_pat);
+
+            if ( (thisver_maj+thisver_min+thisver_pat) < (latestver_maj+latestver_min+latestver_pat) ) {
+              if (version[9] != '.' || version[10] > 6) {
+                //if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.')) {
+                //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+                //};
+                if (thisver_mod == 'c') {
+
+                  if (window.confirm('A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?')) {
+                    // Download latest standard firmware for color from URL
+                    // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+                    var downloadurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/' + latestver + '/Signed_OnlyKey_';
+                    downloadurl = latestver_maj ? downloadurl + latestver_maj + '_' + latestver_min + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
+                    console.info(downloadurl);
+                    var req = request.get(downloadurl, async function (err, res, body) {
+
+                      console.info(myOnlyKey.getLastMessage('received'));
+                      if (myOnlyKey.getLastMessage('received').indexOf("UNINITIALIZEDv") >= 0 || window.confirm('To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware.')) {
+                        if (req.responseContent.body) {
+                            var contents = req.responseContent.body && req.responseContent.body.trim();
+                            try {
+                              console.info("unparsed contents", contents);
+                              contents = parseFirmwareData(contents);
+                              console.info("parsed contents", contents);
+                            } catch (parseError) {
+                              throw new Error('Could not parse firmware file.\n\n' + parseError);
+                            }
+                            console.info(contents);
+                            onlyKeyConfigWizard.newFirmware = contents;
+                              const temparray = "1234";
+                              await submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+                                console.info('Working...');
+                                console.info('Firmware file sent to OnlyKey');
+                                myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                              });
+                              resolve();
+                        } else {
+                            alert(`Firmware Download Failed`);
+                            resolve();
+                            return;
+                        }
+                      };
+                    });
+                  };
+                }
+              }
+            }
+          });
+        } else if (!fwUpdateSupport) {
+          if (window.confirm('This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page.')) {
+            window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+          };
+        }
+        resolve();
+      });
+    }
+  }
+
   function submitFirmwareData(firmwareData) {
     return new Promise(async function (resolve, reject) {
       // this function should recursively call itself until all bytes are sent in chunks
@@ -2177,88 +2263,6 @@ function hexStrToDec(hexStr) {
 function byteToHex(value) {
   if (value < 16) return '0' + value.toString(16);
   return value.toString(16);
-}
-
-function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
-  if (!fwchecked) {
-    return new Promise(resolve => {
-      fwchecked = true;
-      if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
-        var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
-          console.log(r.uri.href);
-          console.log(this.uri.href);
-          var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
-          console.info(version);
-          console.info(latestver);
-          var thisver_maj = version.slice(1,2) * 100;
-          console.info(thisver_maj);
-          var thisver_min = version.slice(3,4) * 10;
-          console.info(thisver_min);
-          var thisver_pat = version.slice(10,11);
-          var thisver_mod = version.slice(11,12);
-          console.info(thisver_mod);
-          var latestver_maj = latestver.slice(1,2) * 100;
-          console.info(latestver_maj);
-          var latestver_min = latestver.slice(3,4) * 10;
-          console.info(latestver_min);
-          if (latestver_maj==0) {
-            var latestver_pat = latestver.slice(10,11);
-          } else {
-            var latestver_pat = latestver.slice(5,6);
-          }
-          console.info(latestver_pat);
-
-          if ( (thisver_maj+thisver_min+thisver_pat) < (latestver_maj+latestver_min+latestver_pat) ) {
-            if (version[9] != '.' || version[10] > 6) {
-              //if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.')) {
-              //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-              //};
-              if (thisver_mod == 'c') {
-
-                if (window.confirm('A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?')) {
-                  // Download latest standard firmware for color from URL
-                  // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
-                  var downloadurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/' + latestver + '/Signed_OnlyKey_';
-                  downloadurl = latestver_maj ? downloadurl + latestver_maj + '_' + latestver_min + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
-                  console.info(downloadurl);
-                  var req = request.get(downloadurl, function (err, res, body) {
-                    console.info(req.responseContent.body);
-
-                    if (window.confirm('To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware.')) {
-                      console.info('1');
-                      if (req.responseContent.body) {
-                          console.info('2');
-                          onlyKeyConfigWizard.newFirmware = req.responseContent.body;
-                          console.info('3');
-                            const temparray = "1234";
-                            submitFirmwareData(temparray, async function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-                              console.info('4');
-                              console.info('Working...');
-                              console.info('Firmware file sent to OnlyKey');
-                              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
-                              await wait(1000);
-                              resolve();
-                            });
-                      } else {
-                          alert(`Firmware Download Failed`);
-                          resolve();
-                          return;
-                      }
-                    };
-                  });
-                };
-              }
-            }
-          }
-        });
-      } else if (!fwUpdateSupport) {
-        if (window.confirm('This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page.')) {
-          window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-        };
-      }
-      resolve();
-    });
-  }
 }
 
 
