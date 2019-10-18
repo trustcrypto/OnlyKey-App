@@ -58,7 +58,6 @@ var onDevicesEnumerated = async function (devices) {
     console.info("HID devices found:", devices);
     devices.forEach(onDeviceAdded);
     await wait(100);
-    console.info("Connection ID", myOnlyKey.connection);
   }
 };
 
