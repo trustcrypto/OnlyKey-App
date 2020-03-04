@@ -92,11 +92,25 @@ var cleanClutter = function () {
     return tmpDir.removeAsync('.');
 };
 
-module.exports = function () {
+module.exports = function (params={}) {
     return init()
+    .then(cleanClutter)
     .then(copyRuntime)
     .then(copyBuiltApp)
     .then(prepareOsSpecificThings)
-    .then(packToDmgFile)
-    .then(cleanClutter);
+    .then(() => {
+        if (params.noDmg) {
+            console.info('noDmg flag set -- skipping packToDmgFile')
+            return true;
+        }
+        return packToDmgFile();
+    })
+    .then(() => {
+        if (params.noClean) {
+            console.info('noClean flag set -- skipping cleanClutter');
+            console.info(`.app file ready in ${finalAppDir.path()}`);
+            return true;     
+        }
+        return cleanClutter();
+    });
 };

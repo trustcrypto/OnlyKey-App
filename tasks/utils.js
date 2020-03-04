@@ -2,7 +2,6 @@
 
 var argv = require('yargs').argv;
 var os = require('os');
-var jetpack = require('fs-jetpack');
 
 module.exports.os = function () {
     switch (os.platform()) {
@@ -27,3 +26,5 @@ module.exports.replace = function (str, patterns) {
 module.exports.getEnvName = function () {
     return argv.env || 'development';
 };
+
+module.exports.args = argv;
