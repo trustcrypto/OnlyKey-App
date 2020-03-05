@@ -2,6 +2,7 @@
 
 var argv = require('yargs').argv;
 var os = require('os');
+const child_process = require('child_process');
 
 module.exports.os = function () {
     switch (os.platform()) {
@@ -28,3 +29,13 @@ module.exports.getEnvName = function () {
 };
 
 module.exports.args = argv;
+
+module.exports.exec = function exec(cmd) {
+    console.log(`  ➣ ${cmd}`);
+    const result = child_process.spawnSync(cmd, {shell: true, stdio: 'inherit'});
+    if (result.status !== 0) {
+        console.log(`\n🚨 Command failed with status ${result.status}\n`);
+        if (result.error) console.log(result.error);
+        process.exit(1);
+    }
+}

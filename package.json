@@ -31,6 +31,7 @@
     "release": "./node_modules/.bin/gulp release --env=production",
     "start": "node ./tasks/start",
     "pre-release": "./node_modules/.bin/gulp release --env=production --noClean=true --noDmg=true",
+    "sign-mac-app": "node ./tasks/sign-mac-app2",
     "pre-release-BROKEN": "npm prune --production; gulp release --env=production --noClean=true --noDmg=true",
     "pretest": "npm run-script build",
     "test": "mocha",
