@@ -413,7 +413,8 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       contents: timeParts,
       msgId: 'OKSETTIME'
     };
-    this.sendMessage(options, callback);
+    // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
+    this.sendMessage(options, this.sendMessage(options, callback));
   };
 
   OnlyKey.prototype.getLabels = async function (callback) {
@@ -1869,7 +1870,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
             console.info(thisver_maj);
             var thisver_min = version.slice(3,4) * 10;
             console.info(thisver_min);
-            var thisver_pat = version.slice(10,11);
+            if (thisver_maj==0) {
+              var thisver_pat = version.slice(10,11);
+            } else {
+              var thisver_pat = version.slice(5,6);
+            }
             var thisver_mod = version.slice(11,12);
             console.info(thisver_mod);
             var latestver_maj = latestver.slice(1,2) * 100;
@@ -1889,12 +1894,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
                 //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
                 //};
                 if (thisver_mod == 'c') {
-
                   if (window.confirm('A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?')) {
                     // Download latest standard firmware for color from URL
                     // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
                     var downloadurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/' + latestver + '/Signed_OnlyKey_';
-                    downloadurl = latestver_maj ? downloadurl + latestver_maj + '_' + latestver_min + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
+                    downloadurl = latestver_maj ? downloadurl + (latestver_maj/100) + '_' + (latestver_min/10) + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
                     console.info(downloadurl);
                     var req = request.get(downloadurl, async function (err, res, body) {
 
