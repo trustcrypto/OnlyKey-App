@@ -1608,7 +1608,6 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     if (keyObj.s.length) { //ECC
       var type = myOnlyKey.tempEccCurve;
-      slot+=100;
 
       if (keyObj.s.length != 32) {
         return ui.rsaForm.setError("Selected key length should be 32 bytes.");
@@ -1639,17 +1638,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     type += typeModifier;
 
     if (document.getElementById('rsaSlot').value === '99') {
-      if (slot==1||slot==101) {
+      if (slot==1) {
         type += 32;
         console.info("Slot 1 set as decryption key" + type);
       }
-      if (slot==2||slot==102) {
+      if (slot==2) {
         if (type>127) type -= 128; // Only set backup flag on decryption key
         type += 64;
         console.info("Slot 2 set as signature key" + type);
       }
     }
     if (keyObj.s.length) { //ECC
+      if (slot<101) slot+=100;
       myOnlyKey.setPrivateKey(slot, type, retKey, err => {
         // TODO: check for success, then reset
         if (typeof cb === 'function') cb(err);

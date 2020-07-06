@@ -149,17 +149,33 @@
             for generating an OpenPGP key with Keybase.</p>
           <label>Slot:
             <select id='backupRSASlot' name='backupRSASlot'>
-              <option value=1>1</option>
-              <option value=2>2</option>
-              <option value=3>3</option>
-              <option value=4>4</option>
+              <option value=1>RSA 1</option>
+              <option value=2>RSA 2</option>
+              <option value=3>RSA 3</option>
+              <option value=4>RSA 4</option>
+              <option value=101>ECC 1</option>
+              <option value=102>ECC 2</option>
+              <option value=103>ECC 3</option>
+              <option value=104>ECC 4</option>
+              <option value=105>ECC 5</option>
+              <option value=106>ECC 6</option>
+              <option value=107>ECC 7</option>
+              <option value=108>ECC 8</option>
+              <option value=109>ECC 9</option>
+              <option value=110>ECC 10</option>
+              <option value=111>ECC 11</option>
+              <option value=112>ECC 12</option>
+              <option value=113>ECC 13</option>
+              <option value=114>ECC 14</option>
+              <option value=115>ECC 15</option>
+              <option value=116>ECC 16</option>
             </select>
           </label>
           <br />
           <br />
-          <label>Backup OpenPGP RSA Key:<br />
+          <label>Backup OpenPGP RSA/ECC Key:<br />
             <textarea id='backupRSAKey' name='backupRSAKey' cols='60' rows='3'
-              placeholder='RSA Key -- paste PEM file contents' required></textarea>
+              placeholder='OpenPGP Key -- paste PEM file contents' required></textarea>
           </label><br />
           <label>Passphrase:<input type='password' id='backupRSAPasscode' name='backupRSAPasscode' /></label>
           <br /><br />
@@ -456,16 +472,32 @@
         </div>
         <div class="flex-item">
           <form id="rsaForm" name="rsaForm" class="auth-form">
-            <h2>RSA Private Key (PEM Format)</h2>
+            <h2>OpenPGP Private Key (PEM Format)</h2>
 
             <label>
               Slot:
               <select id="rsaSlot" name="rsaSlot">
-                <option value=99>Auto (Keybase)</option>
-                <option value=1>1</option>
-                <option value=2>2</option>
-                <option value=3>3</option>
-                <option value=4>4</option>
+                <option value=99>Auto (Keybase/Protonmail)</option>
+                <option value=1>RSA 1</option>
+                <option value=2>RSA 2</option>
+                <option value=3>RSA 3</option>
+                <option value=4>RSA 4</option>
+                <option value=101>ECC 1</option>
+                <option value=102>ECC 2</option>
+                <option value=103>ECC 3</option>
+                <option value=104>ECC 4</option>
+                <option value=105>ECC 5</option>
+                <option value=106>ECC 6</option>
+                <option value=107>ECC 7</option>
+                <option value=108>ECC 8</option>
+                <option value=109>ECC 9</option>
+                <option value=110>ECC 10</option>
+                <option value=111>ECC 11</option>
+                <option value=112>ECC 12</option>
+                <option value=113>ECC 13</option>
+                <option value=114>ECC 14</option>
+                <option value=115>ECC 15</option>
+                <option value=116>ECC 16</option>
               </select>
             </label>
 
@@ -474,7 +506,7 @@
             <label>
               Key:
               <br />
-              <textarea id="rsaKey" name="rsaKey" cols="40" rows="6" placeholder="RSA Key -- paste PEM file contents"
+              <textarea id="rsaKey" name="rsaKey" cols="40" rows="6" placeholder="OpenPGP Key -- paste PEM file contents"
                 required></textarea>
             </label>
 
