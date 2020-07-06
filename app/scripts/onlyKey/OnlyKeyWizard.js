@@ -391,22 +391,59 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.initKeySelect = async function (rawKey, cb) {
     //console.info(rawKey.primaryKey);
-    const keys = [{
-      name: 'Primary Key',
-      p: rawKey.primaryKey.params[3].data,
-      q: rawKey.primaryKey.params[4].data
-    }];
 
-    rawKey.subKeys.forEach((subKey, i) => {
-        //console.info(subKey.keyPacket);
+    //Check if ECC or RSA
+    if (rawKey.primaryKey.params[0].oid) { //ECC
+      var curve;
+      var oid_ed25519 = Uint8Array.from([43, 6, 1, 4, 1, 218, 71, 15, 1]);
+      var oid_curve25519 = Uint8Array.from([43, 6, 1, 4, 1, 151, 85, 1, 5, 1]);
+      var oid_nist256p1 = Uint8Array.from([42, 134, 72, 206, 61, 3, 1, 7]);
+
+
+      console.info(oid_ed25519);
+      console.info(rawKey.primaryKey.params[0].oid);
+
+      if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
+        this.onlyKey.tempEccCurve = 1;
+      } else if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //curve25519
+        this.onlyKey.tempEccCurve = 1;
+      } else if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
+        this.onlyKey.tempEccCurve = 2;
+      }
+
+      const keys = [{
+        name: 'Primary Key',
+        s: rawKey.primaryKey.params[1].data.slice(1,rawKey.primaryKey.params[1].length)
+      }];
+
       keys.push({
-        name: 'Subkey ' + (i + 1),
-        p: subKey.keyPacket.params[3].data,
-        q: subKey.keyPacket.params[4].data
+        name: 'Subkey ' + 1,
+        s: rawKey.primaryKey.params[2].data
       });
-    });
 
-    this.onlyKey.tempRsaKeys = keys;
+      console.info(keys);
+      console.info(curve);
+
+      this.onlyKey.tempRsaKeys = keys;
+
+    } else { //RSA
+      const keys = [{
+        name: 'Primary Key',
+        p: rawKey.primaryKey.params[3].data,
+        q: rawKey.primaryKey.params[4].data
+      }];
+
+      rawKey.subKeys.forEach((subKey, i) => {
+          //console.info(subKey.keyPacket);
+        keys.push({
+          name: 'Subkey ' + (i + 1),
+          p: subKey.keyPacket.params[3].data,
+          q: subKey.keyPacket.params[4].data
+        });
+      });
+
+      this.onlyKey.tempRsaKeys = keys;
+    }
 
     //if (!autokeyload) {
     if (this.rsaSlot_selection.value === '99') {
@@ -417,8 +454,13 @@ if (chrome.passwordsPrivate) {
       // else
       // subkey 1 is set as decryption key
       // primary key (there should only be 1) set as signing key
-      const decryptionKey = keys[1];
-      const signingKey = keys.length > 2 ? keys[2] : keys[0];
+      //
+      // Protonmail X25519 keys format
+      // primary key is set as signature key
+      // subkey 1 is set as decryption key
+
+      const decryptionKey = this.onlyKey.tempRsaKeys[1];
+      const signingKey = this.onlyKey.tempRsaKeys.length > 2 ? this.onlyKey.tempRsaKeys[2] : this.onlyKey.tempRsaKeys[0];
 
       this.onlyKey.confirmRsaKeySelect(decryptionKey, 1, err => {
         this.onlyKey.confirmRsaKeySelect(signingKey, 2, err => {
@@ -434,7 +476,7 @@ if (chrome.passwordsPrivate) {
       const pkDiv = document.getElementById('private-key-options');
       pkDiv.innerHTML = "";
 
-      keys.forEach((key, i) => {
+      this.onlyKey.tempRsaKeys.forEach((key, i) => {
         pkDiv.appendChild(makeRadioButton('rsaKeySelect', i, key.name));
         pkDiv.appendChild(document.createElement("br"));
       });

@@ -1576,11 +1576,18 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         throw new Error("Private Key decryption failed. Did you forget your passcode?");
       }
 
-      //console.info(privKey.primaryKey);
-      //console.info(privKey.primaryKey.params);
-      //console.info(privKey.primaryKey.params.length);
+      console.info(privKey.primaryKey);
+      console.info(privKey.primaryKey.params);
+      console.info(privKey.primaryKey.params.length);
 
-      if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
+      console.info(privKey.primaryKey.params[0].oid);
+      console.info(privKey.primaryKey.params[0].oid.length);
+
+      console.info(privKey.subKeys);
+      console.info(privKey.subKeys.params);
+      //console.info(privKey.subKeys.params.length);
+
+      if (!(privKey.primaryKey && privKey.primaryKey.params)) {
         throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
       }
     } catch (e) {
@@ -1599,13 +1606,25 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
   OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
 
-    var type = parseInt(keyObj.p.length / 64, 10);
+    if (keyObj.s.length) { //ECC
+      var type = myOnlyKey.tempEccCurve;
+      slot+=100;
 
-    if ([1, 2, 3, 4].indexOf(type) < 0) {
-      return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
+      if (keyObj.s.length != 32) {
+        return ui.rsaForm.setError("Selected key length should be 32 bytes.");
+      }
+
+      var retKey = Array.from(keyObj.s)
+
+    } else { //RSA
+      var type = parseInt(keyObj.p.length / 64, 10);
+
+      if ([1, 2, 3, 4].indexOf(type) < 0) {
+        return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
+      }
+
+      var retKey = [...keyObj.p, ...keyObj.q];
     }
-
-    var retKey = [...keyObj.p, ...keyObj.q];
     var slot = slot !== null ? slot : parseInt(ui.rsaForm.rsaSlot.value || '', 10);
 
     // set all type modifiers
@@ -1620,43 +1639,39 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     type += typeModifier;
 
     if (document.getElementById('rsaSlot').value === '99') {
-      if (slot==1) {
+      if (slot==1||slot==101) {
         type += 32;
         console.info("Slot 1 set as decryption key" + type);
       }
-      if (slot==2) {
+      if (slot==2||slot==102) {
         if (type>127) type -= 128; // Only set backup flag on decryption key
         type += 64;
         console.info("Slot 2 set as signature key" + type);
       }
     }
-
-
-
-    /*
-
-    console.info("backupsigFlag" + backupsigFlag);
-    if (backupsigFlag >= 0) {
-      type += 128; //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
-      console.info("type" + type);
+    if (keyObj.s.length) { //ECC
+      myOnlyKey.setPrivateKey(slot, type, retKey, err => {
+        // TODO: check for success, then reset
+        if (typeof cb === 'function') cb(err);
+        ui.rsaForm.reset();
+        if (backupsigFlag >= 0) {
+          backupsigFlag = -1;
+          //reset backup form
+        }
+        this.listen(handleMessage);
+      });
+    } else {
+      submitRsaKey(slot, type, retKey, err => {
+        // TODO: check for success, then reset
+        if (typeof cb === 'function') cb(err);
+        ui.rsaForm.reset();
+        if (backupsigFlag >= 0) {
+          backupsigFlag = -1;
+          //reset backup form
+        }
+        this.listen(handleMessage);
+      });
     }
-
-    */
-
-
-
-    // console.info("retKey:", retKey);
-
-    submitRsaKey(slot, type, retKey, err => {
-      // TODO: check for success, then reset
-      if (typeof cb === 'function') cb(err);
-      ui.rsaForm.reset();
-      if (backupsigFlag >= 0) {
-        backupsigFlag = -1;
-        //reset backup form
-      }
-      this.listen(handleMessage);
-    });
 
   };
 
