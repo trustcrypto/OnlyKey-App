@@ -588,7 +588,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         throw Error(error);
       }
 
-      if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
+      if (!(privKey.primaryKey && privKey.primaryKey.params)) {
         error = 'Private Key decryption was successful, but resulted in invalid mpi data.';
         this.setLastMessage('received', error);
         throw Error(error);
@@ -1576,15 +1576,15 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         throw new Error("Private Key decryption failed. Did you forget your passcode?");
       }
 
-      console.info(privKey.primaryKey);
-      console.info(privKey.primaryKey.params);
-      console.info(privKey.primaryKey.params.length);
+      //console.info(privKey.primaryKey);
+      //console.info(privKey.primaryKey.params);
+      //console.info(privKey.primaryKey.params.length);
 
-      console.info(privKey.primaryKey.params[0].oid);
-      console.info(privKey.primaryKey.params[0].oid.length);
+      //console.info(privKey.primaryKey.params[0].oid);
+      //console.info(privKey.primaryKey.params[0].oid.length);
 
-      console.info(privKey.subKeys);
-      console.info(privKey.subKeys.params);
+      //console.info(privKey.subKeys);
+      //console.info(privKey.subKeys.params);
       //console.info(privKey.subKeys.params.length);
 
       if (!(privKey.primaryKey && privKey.primaryKey.params)) {
