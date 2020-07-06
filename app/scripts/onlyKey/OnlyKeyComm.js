@@ -1606,7 +1606,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
   OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
 
-    if (keyObj.s.length) { //ECC
+    if (typeof (keyObj.s) !== 'undefined') { //ECC
       var type = myOnlyKey.tempEccCurve;
 
       if (keyObj.s.length != 32) {
@@ -1648,7 +1648,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
         console.info("Slot 2 set as signature key" + type);
       }
     }
-    if (keyObj.s.length) { //ECC
+    if (typeof (keyObj.s) !== 'undefined') { //ECC
       if (slot<101) slot+=100;
       myOnlyKey.setPrivateKey(slot, type, retKey, err => {
         // TODO: check for success, then reset
