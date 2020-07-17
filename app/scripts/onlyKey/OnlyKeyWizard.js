@@ -414,7 +414,7 @@ if (chrome.passwordsPrivate) {
 
       const keys = [{
         name: 'Primary Key',
-        s: rawKey.primaryKey.params[2].data
+        s: rawKey.primaryKey.params[1].data.slice(1,rawKey.primaryKey.params[1].length)
       }];
 
       rawKey.subKeys.forEach((subKey, i) => {
