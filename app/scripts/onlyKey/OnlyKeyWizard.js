@@ -390,7 +390,7 @@ if (chrome.passwordsPrivate) {
 
 
   Wizard.prototype.initKeySelect = async function (rawKey, cb) {
-    //console.info(rawKey.primaryKey);
+    console.info(rawKey);
 
     //Check if ECC or RSA
     if (rawKey.primaryKey.params[0].oid) { //ECC
@@ -402,6 +402,7 @@ if (chrome.passwordsPrivate) {
 
       console.info(oid_ed25519);
       console.info(rawKey.primaryKey.params[0].oid);
+      
 
       if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
         this.onlyKey.tempEccCurve = 1;
@@ -416,9 +417,12 @@ if (chrome.passwordsPrivate) {
         s: rawKey.primaryKey.params[1].data.slice(1,rawKey.primaryKey.params[1].length)
       }];
 
+      rawKey.subKeys.forEach((subKey, i) => {
+        //console.info(subKey.keyPacket);
       keys.push({
-        name: 'Subkey ' + 1,
-        s: rawKey.primaryKey.params[2].data
+        name: 'Subkey ' + (i + 1),
+        s: rawKey.subKeys[i].keyPacket.params[3].data
+        });
       });
 
       console.info(keys);
