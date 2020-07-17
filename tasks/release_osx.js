@@ -54,8 +54,6 @@ var prepareOsSpecificThings = function () {
 var packToDmgFile = function () {
     var deferred = Q.defer();
 
-    var appdmg = require('appdmg');
-    var dmgName = manifest.name + '_' + manifest.version + '.dmg';
 
     // Prepare appdmg config
     var dmgManifest = projectDir.read('resources/osx/appdmg.json');
