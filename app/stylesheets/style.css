@@ -260,3 +260,21 @@ nav > a.active {
 .step-nav > * {
     margin-right: 1em;
 }
+
+.device-specific {
+    opacity: 0;
+    line-height: 0;
+    position: absolute;
+}
+
+#main.ok-classic .ok-classic {
+    position: relative;
+    opacity: 1;
+    line-height: normal;
+}
+
+#main.ok-go .ok-go {
+    position: relative;
+    opacity: 1;
+    line-height: normal;
+}

@@ -11,7 +11,7 @@ if (chrome.passwordsPrivate) {
 
 // Wizard
 (function () {
-  const STEP1 = 'Step1', NEXT = 'next', PREVIOUS = 'prev';
+  const STEP1 = 'Step1', NEXT = 'next';
 
   let onlyKeyConfigWizard;
 
@@ -25,6 +25,7 @@ if (chrome.passwordsPrivate) {
     // reset all forms
     document.querySelectorAll('form').forEach(form => form.reset());
 
+    this.setAdvancedSetup(false);
     this.onlyKey = myOnlyKey;
     this.initSteps();
     this.currentStep = null;
@@ -33,6 +34,134 @@ if (chrome.passwordsPrivate) {
   };
 
   Wizard.prototype.initSteps = function () {
+    const deviceType = this.onlyKey && this.onlyKey.getDeviceType();
+    switch (deviceType) {
+      case 'classic':
+        this.initClassicSteps();
+        break;
+      case 'go':
+      default:
+        this.initGoSteps();
+        break;
+    }
+    console.log(`Wizard.initSteps() called with ${deviceType}`);
+  };
+
+  Wizard.prototype.initGoSteps = function () {
+    this.steps = {
+      Step1: {
+        enterFn: this.setGuided.bind(this, true),
+        next: this.advancedSetup ? 'Step2' : 'Step8',
+        noExit: true,
+      },
+      Step2: {
+        prev: 'Step1',
+        next: 'Step3',
+        disclaimerTrigger: 'passcode1Disclaimer',
+        enterFn: (cb) => {
+          if (!this.checkInitialized()) {
+            document.getElementById('step2-text').innerHTML = `
+              <h3>Change Primary Profile PIN</h3>
+              <p>
+                Make sure to choose a new PIN that you will not forget and that only you know.
+                It is also good to keep a secure backup of your PIN somewhere just in case you forget.
+              </p>
+              <p>
+                DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and,
+                if I forget my PIN, the only way to recover my OnlyKey GO is to perform a
+                factory reset which wipes all sensitive information.
+              </p>
+              <label>
+                <input type='checkbox' name='passcode1Disclaimer' />
+                I understand and accept the above risk.
+              </label>
+              <p>
+                Enter a 7 - 10 digit PIN and click [<span class='nextTxt'>Next</span>] below:
+                <input type='number' name='goPrimaryPin' required min='100000' max='9999999999' />
+              </p>
+            `;
+          }
+          this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
+        },
+        exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+      },
+      Step3: {
+        prev: 'Step2',
+        next: 'Step4',
+        enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+        exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+      },
+      Step4: {
+        prev: 'Step2',
+        next: 'Step5',
+        disclaimerTrigger: 'passcode3Disclaimer',
+        enterFn: () => {
+          this.setSecondPINHtml('step4-text');
+          this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
+        },
+        exitFn: (cb) => {
+          if (!this.checkInitialized() && this.advancedSetup) {
+            const setSecProfileMode = this.initForm.secProfileMode;
+            this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
+          } else {
+            this.onlyKey.sendSetPin2(cb);
+          }
+        },
+      },
+      Step5: {
+        prev: 'Step4',
+        next: 'Step8',
+        enterFn: this.onlyKey.sendSetPin2.bind(this.onlyKey),
+        exitFn: this.onlyKey.sendSetPin2.bind(this.onlyKey),
+      },
+      Step8: { // backup passphrase
+        prev: 'Step4',
+        next: 'Step10',
+        enterFn: () => {
+          if (this.checkInitialized() || !this.advancedSetup) {
+            document.getElementById('step8-2-text').innerHTML = "";
+          }
+          this.btnSubmitStep.disabled = false;
+          this.steps.Step8.prev = this.advancedSetup ? 'Step4' : 'Step1';
+          this.steps.Step8.next = this.guided ? 'Step10' : 'Step1';
+          this.onlyKey.flushMessage();
+        },
+        exitFn: (cb) => {
+          if (this.direction === NEXT) {
+            if (!this.checkInitialized() && this.advancedSetup) {
+              const backupKeyMode = this.initForm.backupKeyMode;
+              this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+            } else {
+              // not going to next step due to [Previous] click
+              this.submitBackupKey(cb);
+            }
+          } else {
+            cb();
+          }
+        }
+      },
+      Step10: { //Restore from backup
+        prev: 'Step8',
+        next: 'Step1',
+        enterFn: () => {
+          this.btnSubmitStep.disabled = false;
+        },
+        exitFn: this.submitRestoreFile.bind(this),
+      },
+      Step11: { //Load Firmware
+        prev: 'Step1',
+        next: 'Step1',
+        enterFn: () => {
+          this.btnSubmitStep.disabled = false;
+        },
+        exitFn: this.submitFirmwareFile.bind(this),
+      },
+    };
+  };
+
+  Wizard.prototype.initClassicSteps = function () {
     this.steps = {
       Step1: {
         enterFn: this.setGuided.bind(this, true),
@@ -68,7 +197,7 @@ if (chrome.passwordsPrivate) {
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
         },
         exitFn: (cb) => {
-          if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+          if (!this.checkInitialized() && this.advancedSetup) {
             const setSecProfileMode = this.initForm.secProfileMode;
             this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
           } else {
@@ -105,7 +234,7 @@ if (chrome.passwordsPrivate) {
         prev: 'Step6',
         next: 'Step10',
         enterFn: () => {
-          if (this.checkInitialized() || !document.getElementById("advancedSetup").checked) {
+          if (this.checkInitialized() || !this.advancedSetup) {
             document.getElementById('step8-2-text').innerHTML = "";
           }
           this.btnSubmitStep.disabled = false;
@@ -114,7 +243,7 @@ if (chrome.passwordsPrivate) {
         },
         exitFn: (cb) => {
           if (this.direction === NEXT) {
-            if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+            if (!this.checkInitialized() && this.advancedSetup) {
               const backupKeyMode = this.initForm.backupKeyMode;
               this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
             } else {
@@ -183,12 +312,77 @@ if (chrome.passwordsPrivate) {
     this.setNewCurrentStep(newStep);
   };
 
+  Wizard.prototype.setAdvancedSetup = function (settingArg) {
+    let setting = settingArg;
+    if (typeof setting === undefined) {
+      setting = document.getElementById('advancedSetup').checked;
+    }
+    this.advancedSetup = Boolean(setting);
+  };
+
   Wizard.prototype.uiInit = function () {
+    const deviceType = this.onlyKey.getDeviceType();
+    const main = document.getElementById('main');
+    const deviceTypes = Object.values(DEVICE_TYPES);
+    // const deviceTypes = ['classic', 'go'];
+    deviceTypes.forEach(type => {
+      main.classList.remove(`ok-${type}`);
+    });
+    deviceType && main.classList.add(`ok-${deviceType}`);
+    
     this.initForm = document['init-panel'];
-    document.getElementById('step8-2-text').innerHTML = "<label><input type='radio' checked name='backupKeyMode' value=0 /><u>Permit future backup key changes(Default)</u></label><br /><label><input type='radio' name='backupKeyMode' value=1 /><u>Lock backup key on this device</u></label><br /><td><button id='SetPGPKey' type='button'><b>Use PGP Key instead of passphrase</b></button></td><br />";
-    document.getElementById('step2-text').innerHTML = "<h3>Enter PIN on OnlyKey Keypad</h3><p>The first step in setting up OnlyKey is to set a PIN code using the six-button keypad on the OnlyKey. This PIN will be used to unlock your OnlyKey to access your accounts.<br /><br />Make sure to choose a PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode1Disclaimer' >I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+    document.getElementById('step8-2-text').innerHTML = `
+      <label>
+        <input type='radio' checked name='backupKeyMode' value=0 />
+        <u>Permit future backup key changes(Default)</u>
+      </label>
+      <br />
+      <label>
+        <input type='radio' name='backupKeyMode' value=1 />
+        <u>Lock backup key on this device</u>
+      </label>
+      <br />
+      <td>
+        <button id='SetPGPKey' type='button'>
+          <b>Use PGP Key instead of passphrase</b>
+        </button>
+      </td>
+      <br />
+    `;
+    this.setPrimaryPINHtml('step2-text');
     this.setSecondPINHtml('step4-text');
-    document.getElementById('step6-text').innerHTML = "<h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3><p>Your OnlyKey is now set up to store 24 accounts and is ready to use! OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.</p><td><button id='SkipSDPIN' type='button'><b>I don't want a self-destruct PIN, skip this step</b></button></td><br /><br /><p>WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.</p><p>DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.</p><label><input type='checkbox' name='passcode2Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
+    document.getElementById('step6-text').innerHTML = `
+      <h3>Enter Self-Destruct PIN on OnlyKey Keypad</h3>
+      <p>
+        Your OnlyKey is now set up to store 24 accounts and is ready to use!
+        OnlyKey permits adding a self-destruct PIN that when entered will restore
+        the OnlyKey to factory default settings. This is a helpful way to quickly
+        wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe
+        the OnlyKey.
+      </p>
+      <td>
+        <button id='SkipSDPIN' type='button'>
+          <b>I don't want a self-destruct PIN, skip this step</b>
+        </button>
+      </td>
+      <br /><br />
+      <p>
+        WARNING &mdash; Make sure to choose a PIN that is not similar to your
+        profile PINs as this could result in unintentionally wiping your OnlyKey.
+      </p>
+      <p>
+        DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey
+        to perform a factory default which wipes all sensitive information.
+      </p>
+      <label>
+        <input type='checkbox' name='passcode2Disclaimer' />
+        I understand and accept the above risk.
+      </label>
+      <p>
+        Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are
+        finished, click [<span class='nextTxt'>Next</span>] below.
+      </p>
+    `;
 
     this.rsaForm_additional_options = document.getElementById('rsaForm-additional-options');
     this.rsaForm_additional_options.innerHTML = "";
@@ -254,7 +448,6 @@ if (chrome.passwordsPrivate) {
     };
 
     this.loadFirmware.onclick = this.setUnguidedStep.bind(this, 'Step11');
-
 
     this.btnNext.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
@@ -352,20 +545,13 @@ if (chrome.passwordsPrivate) {
     };
     // END PRIVATE KEY SELECTOR
 
-    document.addEventListener('click', evt => {
-      if (evt.onclick) return;
+    // toggle advanced setup mode and update wizard steps accordingly
+    document.getElementById("advancedSetup").removeEventListener('change', toggleAdvancedUI, false);
+    document.getElementById("advancedSetup").addEventListener('change', toggleAdvancedUI.bind(this), false);
 
-      const targets = [{
-        id: '#SkipPIN2',
-        fn: (e) => {
-          e.preventDefault && e.preventDefault();
-          this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
-        }
-      }];
-
-      const target = targets.filter(t => evt.target.matches(t.id) || (evt.target.parentElement && evt.target.parentElement.matches(t.id)));
-      return target.length && target[0].fn.call(this, evt);
-    });
+    // SPECIAL EVENT LISTENERS
+    document.removeEventListener('click', setupSpecialEventListeners);
+    document.addEventListener('click', setupSpecialEventListeners.bind(this));
 
     this.setActiveStepUI();
   };
@@ -801,6 +987,34 @@ if (chrome.passwordsPrivate) {
     return false;
   };
 
+  Wizard.prototype.setPrimaryPINHtml = function (id) {
+    document.getElementById('step2-text').innerHTML = `
+      <h3>Enter PIN on OnlyKey Keypad</h3>
+      <p>
+        The first step in setting up OnlyKey is to set a PIN code using the
+        six-button keypad on the OnlyKey. This PIN will be used to unlock
+        your OnlyKey to access your accounts.
+        <br /><br />
+        Make sure to choose a PIN that you will not forget and that only you know.
+        It may be easier to remember a pattern rather than numbers. It is also
+        good to keep a secure backup of your PIN somewhere just in case you forget.
+      </p>
+      <p>
+        DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and,
+        if I forget my PIN, the only way to recover my OnlyKey is to perform a
+        factory reset which wipes all sensitive information.
+      </p>
+      <label>
+        <input type='checkbox' name='passcode1Disclaimer' >
+        I understand and accept the above risk.
+      </label>
+      <p>
+        Enter a 7 - 10 digit PIN on your OnlyKey six button keypad. When you are
+        finished, click [<span class='nextTxt'>Next</span>] below.
+      </p>
+    `;
+  };
+
   Wizard.prototype.setSecondPINHtml = function (id) {
     let html;
 
@@ -826,7 +1040,7 @@ if (chrome.passwordsPrivate) {
           click [<span class='nextTxt'>Next</span>] below.
         </p>
       `;
-    } else if (!this.checkInitialized() && document.getElementById("advancedSetup").checked) {
+    } else if (!this.checkInitialized() && this.advancedSetup) {
       html = `
         <h3>Enter PIN for Second Profile on OnlyKey Keypad</h3>
         <p>
@@ -896,6 +1110,10 @@ if (chrome.passwordsPrivate) {
         </p>
     `;
     }
+    this.setElementHtml(id, html);
+  };
+
+  Wizard.prototype.setElementHtml = function (id, html) {
     document.getElementById(id).innerHTML = html;
   };
 
@@ -955,6 +1173,28 @@ function makeRadioButton(name, value, text) {
   label.appendChild(radio);
   label.appendChild(document.createTextNode(text));
   return label;
+}
+
+function toggleAdvancedUI(e) {
+  e && e.preventDefault && e.preventDefault();
+  this.advancedSetup = e.target.checked;
+  this.initSteps();
+}
+
+function setupSpecialEventListeners(evt) {
+  if (evt.onclick) return;
+
+  const targets = [{
+    // This handler lets users safely cancel a PIN confirmation step
+    id: '#SkipPIN2',
+    fn: (e) => {
+      e.preventDefault && e.preventDefault();
+      this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+    }
+  }];
+
+  const target = targets.filter(t => evt.target.matches(t.id) || (evt.target.parentElement && evt.target.parentElement.matches(t.id)));
+  return target.length && target[0].fn.call(this, evt);
 }
 
 // we owe russ a beer
