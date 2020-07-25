@@ -852,7 +852,11 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
       deviceType = DEVICE_TYPES.CLASSIC;
       break;
     default:
-      throw Error(`Unable to determine deviceType from version ${version}`);
+      if (version.includes('BOOTLOADER')) {
+        deviceType = 'UNINITIALIZED';
+      } else {
+        throw Error(`Unable to determine deviceType from version ${version}`);
+      }
   }
   console.info(`Setting deviceType to ${deviceType}`);
   this.deviceType = deviceType;
