@@ -2218,9 +2218,15 @@ function handleVersion(version) {
 }
 
 function setOkVersionStr() {
-  var version = myOnlyKey.getVersion();
+  const version = myOnlyKey.getVersion();
+  const deviceType = myOnlyKey.getDeviceType();
+  let typeStr = 'OnlyKey';
+  if (deviceType !== DEVICE_TYPES.CLASSIC) {
+    typeStr += ` ${deviceType.toUpperCase()}`;
+  }
+
   if (version) {
-    document.getElementById("fwVersion").innerText = `Firmware ${version}`;
+    document.getElementById("fwVersion").innerText = `${typeStr} ${version}`;
   }
 }
 
