@@ -56,7 +56,7 @@ if (chrome.passwordsPrivate) {
       },
       Step2: {
         prev: 'Step1',
-        next: 'Step3',
+        next: 'Step4',
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
           if (!this.checkInitialized()) {
@@ -77,20 +77,16 @@ if (chrome.passwordsPrivate) {
               </label>
               <p>
                 Enter a 7 - 10 digit PIN and click [<span class='nextTxt'>Next</span>] below:
-                <input type='number' name='goPrimaryPin' required min='100000' max='9999999999' />
+                <input type='text' name='goPrimaryPin' required minlength='7' maxlength='10' />
               </p>
             `;
           }
-          this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
+          this.onlyKey.flushMessage(cb);
         },
-        exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
-      },
-      Step3: {
-        prev: 'Step2',
-        next: 'Step4',
-        enterFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
-        exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
+        exitFn: (cb) => {
+          const pinField = this.initForm['goPrimaryPin'];
+          this.onlyKey.sendSetPin_GO(pinField.value, cb);
+        }
       },
       Step4: {
         prev: 'Step2',
@@ -98,17 +94,13 @@ if (chrome.passwordsPrivate) {
         disclaimerTrigger: 'passcode3Disclaimer',
         enterFn: () => {
           this.setSecondPINHtml('step4-text');
-          this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
+          this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
-          if (!this.checkInitialized() && this.advancedSetup) {
-            const setSecProfileMode = this.initForm.secProfileMode;
-            this.onlyKey.setSecProfileMode(setSecProfileMode.value, this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
-          } else {
-            this.onlyKey.sendSetPin2(cb);
-          }
-        },
+          const pinField = this.initForm['goPrimaryPin'];
+          throw Error('NOT YET IMPLEMENTED');
+          this.onlyKey.sendSetPin2_GO(pinField.value, cb);
+        }
       },
       Step5: {
         prev: 'Step4',

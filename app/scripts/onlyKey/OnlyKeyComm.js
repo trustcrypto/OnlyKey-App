@@ -459,22 +459,28 @@ function handleGetLabels(err, msg) {
 
 OnlyKey.prototype.sendPinMessage = function ({
   msgId = '',
+  pin = '',
   poll = true
 }, callback = () => {}) {
   this.pendingMessages[msgId] = !this.pendingMessages[msgId];
   const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
   console.info(`sendPinMessage ${msgId}`);
+  const messageParams = {
+    msgId,
+  };
+
   if (myOnlyKey.getLastMessage('received') == 'Error PIN is not between 7 - 10 digits') {
     this.setLastMessage('received', 'Canceled');
-    this.sendPinMessage({
-      msgId: 'OKSETPIN',
-      poll: false
-    }, cb);
-  } else {
-    this.sendMessage({
-      msgId
-    }, cb);
+    messageParams.msgId = 'OKSETPIN';
+    messageParams.poll = false;
   }
+
+  if (myOnlyKey.getDeviceType() === DEVICE_TYPES.GO) {
+    console.info(`sending PIN as ${pin}`);
+    messageParams.contents = pin;
+  }
+
+  this.sendMessage(messageParams, cb);
   console.info('last messages');
   console.info(myOnlyKey.getLastMessageIndex('received', 0));
   console.info(myOnlyKey.getLastMessageIndex('received', 1));
@@ -498,8 +504,23 @@ OnlyKey.prototype.sendSetPin2 = function (callback) {
   }, callback);
 };
 
-OnlyKey.prototype.setSlot = function (slot, field, value, callback) {
-  slot = slot || this.getSlotNum();
+OnlyKey.prototype.sendSetPin_GO = function (pin, callback) {
+  this.sendPinMessage({
+    msgId: 'OKSETPIN',
+    pin
+  }, callback);
+};
+
+OnlyKey.prototype.sendSetPin2_GO = function (pin, callback) {
+  this.sendPinMessage({
+    msgId: 'OKSETPIN2',
+    pin
+  }, callback);
+};
+
+
+OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
+  let slot = slotArg || this.getSlotNum();
   if (typeof slot !== 'number') slot = this.getSlotNum(slot);
   var options = {
     contents: value,
