@@ -1630,6 +1630,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     if (typeof (keyObj.s) !== 'undefined') { //ECC
       var type = myOnlyKey.tempEccCurve;
+      if (type == 0) {
+        return ui.rsaForm.setError("Unsupported ECC key type, key is not X25519 or NIST256p1.");
+      }
 
       if (keyObj.s.length != 32) {
         return ui.rsaForm.setError("Selected key length should be 32 bytes.");
