@@ -61,14 +61,14 @@ if (chrome.passwordsPrivate) {
         enterFn: (cb) => {
           if (!this.checkInitialized()) {
             document.getElementById('step2-text').innerHTML = `
-              <h3>Change Primary Profile PIN</h3>
+              <h3>Change PINs</h3>
               <p>
-                Make sure to choose a new PIN that you will not forget and that only you know.
-                It is also good to keep a secure backup of your PIN somewhere just in case you forget.
+                Make sure to choose PINs that you will not forget and that only you know.
+                It is also good to keep a secure backup of your PINs somewhere in case you forget.
               </p>
               <p>
-                DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and,
-                if I forget my PIN, the only way to recover my OnlyKey GO is to perform a
+                DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and,
+                if I forget my PINs, the only way to recover my OnlyKey GO is to perform a
                 factory reset which wipes all sensitive information.
               </p>
               <label>
@@ -76,16 +76,44 @@ if (chrome.passwordsPrivate) {
                 I understand and accept the above risk.
               </label>
               <p>
-                Enter a 7 - 10 digit PIN and click [<span class='nextTxt'>Next</span>] below:
-                <input type='text' name='goPrimaryPin' required minlength='7' maxlength='10' />
+                <strong>Enter up to 16 digits for each PIN:</strong>
               </p>
+              <div class='flex-container'>
+                <div class='flex-item col-3'>
+                  <p class='center'>
+                    <u>Primary Profile</u><br/>
+                    <input type='password' id='goPrimaryPin' name='goPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
+                    <input type='password' id='goPrimaryPinConfirm' name='goPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                    [required]
+                  </p>
+                  <p id='goPrimaryPinErrors' class='form-error'></p>
+                </div>
+                <div class='flex-item col-3'>
+                  <p class='center'>
+                    <u>Secondary Profile</u><br/>
+                    <input type='password' id='goSecondaryPin' name='goSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
+                    <input type='password' id='goSecondaryPinConfirm' name='goSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                    [optional]
+                  </p>
+                  <p id='goSecondaryPinErrors' class='form-error'></p>
+                </div>
+                <div class='flex-item col-3'>
+                  <p class='center'>
+                    <u>Self-Destruct</u><br/>
+                    <input type='password' id='goSDPin' name='goSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
+                    <input type='password' id='goSDPinConfirm' name='goSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                    [optional]
+                  </p>
+                  <p id='goSdPinErrors' class='form-error'></p>
+                </div>
+              </div>
             `;
           }
           this.onlyKey.flushMessage(cb);
         },
         exitFn: (cb) => {
-          const pinField = this.initForm['goPrimaryPin'];
-          this.onlyKey.sendSetPin_GO(pinField.value, cb);
+          const pins = this.validateGoPins()
+          pins && this.onlyKey.sendPin_GO(pins, cb);
         }
       },
       Step4: {
@@ -507,6 +535,22 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
+    this.unlockOkGoPinInput = document.getElementById('unlockOkGoPin');
+    this.unlockOkGoSubmitBtn = document.getElementById('unlockOkGoSubmit');
+    this.unlockOkGoSubmitBtn.onclick = e => {
+      e && e.preventDefault && e.preventDefault();
+      this.onlyKey.sendPin_GO(this.unlockOkGoPinInput.value, (err, msg) => {
+        // this.onlyKey.listen(function (err, msg) {
+          if (err) {
+            console.dir({
+              UNLOCK_ERR: err
+            });
+            throw Error('shit');
+          }
+        // });
+      });
+    };
+
     // BEGIN PRIVATE KEY SELECTOR
     this.selectPrivateKeyDialog = document.getElementById('select-private-key-dialog');
     this.selectPrivateKeyConfirmBtn = document.getElementById('selectPrivateKeyConfirm');
@@ -638,7 +682,6 @@ if (chrome.passwordsPrivate) {
   };
 
   Wizard.prototype.submitBackupKey = function (cb) {
-
     const key1Input = document.getElementById('backupPassphrase');
     const key2Input = document.getElementById('backupPassphrasec');
     const formErrors = [];
@@ -1134,6 +1177,76 @@ if (chrome.passwordsPrivate) {
     } else {
       slotLabel.classList.remove('empty');
     }
+  };
+
+  Wizard.prototype.validateGoPins = function () {
+    const pin1 = document.getElementById('goPrimaryPin').value;
+    const pin1Confirm = document.getElementById('goPrimaryPinConfirm').value;
+    const pin1Errors = [];
+    const pin2 = document.getElementById('goSecondaryPin').value;
+    const pin2Confirm = document.getElementById('goSecondaryPinConfirm').value;
+    const pin2Errors = [];
+    const pin3 = document.getElementById('goSDPin').value;
+    const pin3Confirm = document.getElementById('goSDPinConfirm').value;
+    const pin3Errors = [];
+
+    const mismatchErrorStr = 'Fields do not match.';
+    const numeralErrorStr = 'PIN must be all numerals.';
+
+    pin1ErrorsHtml = "";
+    if (!pin1) {
+      pin1Errors.push('Primary PIN cannot be empty.');
+    }
+    if (pin1 !== pin1Confirm) {
+      pin1Errors.push(mismatchErrorStr);
+    }
+    // check all numeric
+    if (pin1.match(/\D/g)) {
+      pin1Errors.push(numeralErrorStr);
+    }
+
+    pin2ErrorsHtml = "";
+    if (pin2 && pin2 !== pin2Confirm) {
+      pin2Errors.push(mismatchErrorStr);
+    }
+    // check all numeric
+    if (pin2.match(/\D/g)) {
+      pin2Errors.push(numeralErrorStr);
+    }
+    // check no match to pin1
+    if (pin2 && pin2 == pin1) {
+      pin2Errors.push('Secondary PIN cannot match Primary.');
+    }
+
+    pin3ErrorsHtml = "";
+    if (pin3 && pin3 !== pin3Confirm) {
+      pin3Errors.push(mismatchErrorStr);
+    }
+    // check all numeric
+    if (pin3.match(/\D/g)) {
+      pin3Errors.push(numeralErrorStr);
+    }
+    // check no match to pin1 or pin2
+    if (pin3 && (pin3 == pin1 || pin3 == pin2)) {
+      pin3Errors.push('SD PIN cannot match others.');
+    }
+
+    let errorsFound = false;
+    [
+      { errors: pin1Errors, containerId: 'goPrimaryPinErrors' },
+      { errors: pin2Errors, containerId: 'goSecondaryPinErrors' },
+      { errors: pin3Errors, containerId: 'goSdPinErrors' }
+    ].forEach(pinForm => {
+      document.getElementById(pinForm.containerId).innerHTML = '';
+      if (pinForm.errors.length) {
+        errorsFound = true;
+        for (let i = 0; i < pinForm.errors.length; i++) {
+          document.getElementById(pinForm.containerId).innerHTML += (i > 0 ? '<br/>' : '') + pinForm.errors[i];
+        }
+      }
+    });
+
+    return !errorsFound && [pin1, pin2, pin3];
   };
 
   Wizard.prototype.reset = function () {

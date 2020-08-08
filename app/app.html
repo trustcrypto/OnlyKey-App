@@ -250,8 +250,7 @@
               <td class="ok-photo-cell" rowspan="3"></td>
               <td>
                 <input type="button" id="slot2aConfig" value="2a" />
-                <span class="slotLabel" id="slotLabel2a">empty</span>
-                <br />
+                <span class="slotLabel" id="slotLabel2a">empty</span><br />
                 <input type="button" id="slot2bConfig" value="2b" />
                 <span class="slotLabel" id="slotLabel2b">empty</span>
               </td>
@@ -265,8 +264,7 @@
               </td>
               <td>
                 <input type="button" id="slot4aConfig" value="4a" />
-                <span class="slotLabel" id="slotLabel4a">empty</span>
-                <br />
+                <span class="slotLabel" id="slotLabel4a">empty</span><br />
                 <input type="button" id="slot4bConfig" value="4b" />
                 <span class="slotLabel" id="slotLabel4b">empty</span>
               </td>
@@ -280,8 +278,7 @@
               </td>
               <td>
                 <input type="button" id="slot6aConfig" value="6a" />
-                <span class="slotLabel" id="slotLabel6a">empty</span>
-                <br />
+                <span class="slotLabel" id="slotLabel6a">empty</span><br />
                 <input type="button" id="slot6bConfig" value="6b" />
                 <span class="slotLabel" id="slotLabel6b">empty</span>
               </td>
@@ -812,6 +809,15 @@
   <dialog id="locked-dialog">
     <h1>Your OnlyKey is locked</h1>
     <h3>Please enter your PIN</h3>
+  </dialog>
+
+  <dialog id="locked-dialog-go">
+    <h1>Your OnlyKey Go is locked</h1>
+    <h3>Please enter your PIN</h3>
+    <form name="unlockOkGoForm" id="unlockOkGoForm">
+      <input type="text" name="unlockOkGoPin" id="unlockOkGoPin" />
+      <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
+    </form>
   </dialog>
 
   <dialog id="slot-wipe-confirm">

@@ -504,20 +504,20 @@ OnlyKey.prototype.sendSetPin2 = function (callback) {
   }, callback);
 };
 
-OnlyKey.prototype.sendSetPin_GO = function (pin, callback) {
+OnlyKey.prototype.sendPin_GO = function (pins, callback) {
+  // concatenate all 3 PINs and fill with null (hex 0)
+  let pinBytes = new Array(48).fill(0);
+  pins.forEach((pin, i) => {
+    if (typeof pin !== 'string') pin = '';
+    // PIN chars should only be ascii 0-9
+    // add 48 to send as DEC
+    pin.split('').forEach((char, j) => pinBytes[(i*16)+j] = Number(48 + char));
+  });
   this.sendPinMessage({
     msgId: 'OKSETPIN',
-    pin
+    pin: pinBytes
   }, callback);
 };
-
-OnlyKey.prototype.sendSetPin2_GO = function (pin, callback) {
-  this.sendPinMessage({
-    msgId: 'OKSETPIN2',
-    pin
-  }, callback);
-};
-
 
 OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
   let slot = slotArg || this.getSlotNum();
@@ -926,6 +926,7 @@ var ui = {
   slotConfigForm: null,
   slotConfigDialog: null,
   lockedDialog: null,
+  lockedDialogGo: null,
   workingDialog: null,
   disconnectedDialog: null,
   main: null
@@ -962,6 +963,8 @@ var initializeWindow = function () {
   ui.restoreForm = document['restoreForm'];
   ui.firmwareForm = document['firmwareForm'];
 
+  ui.getLockedDialog = (ok) => ok.getDeviceType() === DEVICE_TYPES.GO ? ui.lockedDialogGo : ui.lockedDialog;
+
   enableIOControls(false);
   enableAuthForms();
   enumerateDevices();
@@ -979,7 +982,7 @@ var enableIOControls = function (ioEnabled) {
 
   if (myOnlyKey.isInitialized) {
     if (myOnlyKey.isLocked) {
-      dialog.open(ui.lockedDialog);
+      dialog.open(ui.getLockedDialog(myOnlyKey));
     } else if (myOnlyKey.isBootloader) {
       ui.main.classList.remove('hide');
       ui.initPanel.classList.add('hide');
@@ -1004,7 +1007,7 @@ var enableIOControls = function (ioEnabled) {
       ui.showFirmwarePanel.classList.add('active');
       ui.showAdvancedPanel.classList.remove('hide', 'active');
       ui.showToolsPanel.classList.remove('hide', 'active');
-      dialog.close(ui.lockedDialog);
+      dialog.close(ui.getLockedDialog(myOnlyKey));
     } else {
       ui.main.classList.remove('hide');
       ui.initPanel.classList.add('hide');
@@ -1030,7 +1033,7 @@ var enableIOControls = function (ioEnabled) {
       ui.showFirmwarePanel.classList.remove('hide', 'active');
       ui.showAdvancedPanel.classList.remove('hide', 'active');
       ui.showToolsPanel.classList.remove('hide', 'active');
-      dialog.close(ui.lockedDialog);
+      dialog.close(ui.getLockedDialog(myOnlyKey));
     }
   } else {
     ui.main.classList.remove('hide');
@@ -1058,7 +1061,7 @@ var enableIOControls = function (ioEnabled) {
     ui.showAdvancedPanel.classList.add('hide');
     ui.showToolsPanel.classList.add('hide');
     ui.showFirmwarePanel.classList.add('hide');
-    dialog.close(ui.lockedDialog);
+    dialog.close(ui.getLockedDialog(myOnlyKey));
   }
 };
 
@@ -2023,7 +2026,6 @@ async function listenForMessageIncludes(str) {
     });
   })
 }
-
 
 async function listenForMessageIncludes(str) {
   return new Promise(async function listenForMessageIncludesAgain(resolve, reject) {

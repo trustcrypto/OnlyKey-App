@@ -194,6 +194,14 @@ td.ok-photo-cell {
     flex: 1 45%;
 }
 
+.flex-item.col-3 {
+    flex: 1 32%;
+}
+
+.flex-item {
+    text-align: center;
+}
+
 .flex-item > p,
 .flex-item > form,
 .flex-item > div {
@@ -277,4 +285,8 @@ nav > a.active {
     position: relative;
     opacity: 1;
     line-height: normal;
+}
+
+.center {
+    text-align: center;
 }
