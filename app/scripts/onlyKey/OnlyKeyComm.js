@@ -2245,7 +2245,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       kbdLayout = 1;
     }
 
-    kbdLayout = Math.min(kbdLayout, 25);
+    kbdLayout = Math.min(kbdLayout, 26);
 
     myOnlyKey.setKBDLayout(kbdLayout, function (err) {
       myOnlyKey.setLastMessage('received', 'Keyboard Layout set successfully');
