@@ -204,12 +204,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       LOCKOUT: 11,
       WIPEMODE: 12,
       BACKUPKEYMODE: 20,
-      SSHCHALLENGEMODE: 21,
-      PGPCHALLENGEMODE: 22,
+      derivedchallengeMode: 21,
+      storedchallengeMode: 22,
       SECPROFILEMODE: 23,
       TYPESPEED: 13,
       LEDBRIGHTNESS: 24,
       LOCKBUTTON: 25,
+      hmacchallengeMode: 26,
+      modkeyMode: 27,
       KBDLAYOUT: 14
     };
 
@@ -405,6 +407,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     pollForInput({}, callback);
   };
 
+
   OnlyKey.prototype.setTime = function (callback) {
     var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
     console.info("Setting current epoch time =", currentEpochTime);
@@ -418,7 +421,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
   };
 
   OnlyKey.prototype.getLabels = async function (callback) {
-    this.labels = 'GETTING';
+    this.labels = '';
     await wait(1000);
     this.sendMessage({
       msgId: 'OKGETLABELS'
@@ -432,7 +435,7 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
       return;
     }
 
-    if (myOnlyKey.labels === 'GETTING') {
+    if (myOnlyKey.labels === '') {
       myOnlyKey.labels = [];
       return myOnlyKey.listen(handleGetLabels);
     }
@@ -440,12 +443,14 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     // if second char of response is a pipe, theses are labels
     var msgParts = msg.split('|');
     var slotNum = parseInt(msgParts[0], 10);
-    if (msg.indexOf('|') !== 2 || typeof slotNum !== 'number' || slotNum < 1 || slotNum > 12) {
+    if (msg.includes('Error not in config mode') || myOnlyKey.getLastMessage('received') == 'Error not in config mode, hold button 6 down for 5 sec') {
+      this.setLastMessage('received', 'Error not in config mode, hold button 6 down for 5 sec');
+    } else if (msg.indexOf('|') !== 2 || typeof slotNum !== 'number' || slotNum < 1 || slotNum > 12) {
       myOnlyKey.listen(handleGetLabels);
     } else {
       myOnlyKey.labels[slotNum - 1] = msgParts[1];
       initSlotConfigForm();
-      if (slotNum < 12) {
+      if (slotNum < 12 && msg.indexOf('|') == 2) {
         myOnlyKey.listen(handleGetLabels);
       }
     }
@@ -794,13 +799,22 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     this.sendMessage(options, callback);
   };
 
-  OnlyKey.prototype.setSSHChallengeMode = function (sshchallengeMode, callback) {
-    this.setSlot('XX', 'SSHCHALLENGEMODE', sshchallengeMode, callback);
+  OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode, callback) {
+    this.setSlot('XX', 'derivedchallengeMode', derivedchallengeMode, callback);
   };
 
-  OnlyKey.prototype.setPGPChallengeMode = function (pgpchallengeMode, callback) {
-    this.setSlot('XX', 'PGPCHALLENGEMODE', pgpchallengeMode, callback);
+  OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode, callback) {
+    this.setSlot('XX', 'storedchallengeMode', storedchallengeMode, callback);
   };
+
+  OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode, callback) {
+    this.setSlot('XX', 'hmacchallengeMode', hmacchallengeMode, callback);
+  };
+
+  OnlyKey.prototype.setmodkeyMode = function (modkeyMode, callback) {
+    this.setSlot('XX', 'modkeyMode', modkeyMode, callback);
+  };
+
 
   OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
     backupKeyMode = parseInt(backupKeyMode, 10);
@@ -893,9 +907,11 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     ui.u2fAuthForm = document['u2fAuthForm'];
     ui.lockoutForm = document['lockoutForm'];
     ui.wipeModeForm = document['wipeModeForm'];
-    ui.pgpchallengeModeForm = document['pgpchallengeModeForm'];
+    ui.storedchallengeModeForm = document['storedchallengeModeForm'];
     ui.backupModeForm = document['backupModeForm'];
-    ui.sshchallengeModeForm = document['sshchallengeModeForm'];
+    ui.derivedchallengeModeForm = document['derivedchallengeModeForm'];
+    ui.hmacchallengeModeForm = document['hmacchallengeModeForm'];
+    ui.modkeyModeForm = document['modkeyModeForm'];
     ui.typeSpeedForm = document['typeSpeedForm'];
     ui.ledBrightnessForm = document['ledBrightnessForm'];
     ui.lockButtonForm = document['lockButtonForm'];
@@ -1353,11 +1369,17 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     var backupModeSubmit = document.getElementById('backupModeSubmit');
     backupModeSubmit.addEventListener('click', submitBackupModeForm);
 
-    var pgpchallengeModeSubmit = document.getElementById('pgpchallengeModeSubmit');
-    pgpchallengeModeSubmit.addEventListener('click', submitpgpchallengeModeForm);
+    var storedchallengeModeSubmit = document.getElementById('storedchallengeModeSubmit');
+    storedchallengeModeSubmit.addEventListener('click', submitstoredchallengeModeForm);
 
-    var sshchallengeModeSubmit = document.getElementById('sshchallengeModeSubmit');
-    sshchallengeModeSubmit.addEventListener('click', submitsshchallengeModeForm);
+    var derivedchallengeModeSubmit = document.getElementById('derivedchallengeModeSubmit');
+    derivedchallengeModeSubmit.addEventListener('click', submitderivedchallengeModeForm);
+
+    var modkeyModeSubmit = document.getElementById('modkeyModeSubmit');
+    modkeyModeSubmit.addEventListener('click', submitmodkeyModeForm);
+    
+    var hmacchallengeModeSubmit = document.getElementById('hmacchallengeModeSubmit');
+    hmacchallengeModeSubmit.addEventListener('click', submithmacchallengeModeForm);
 
     var typeSpeedSubmit = document.getElementById('typeSpeedSubmit');
     typeSpeedSubmit.addEventListener('click', submitTypeSpeedForm);
@@ -1608,6 +1630,9 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     if (typeof (keyObj.s) !== 'undefined') { //ECC
       var type = myOnlyKey.tempEccCurve;
+      if (type == 0) {
+        return ui.rsaForm.setError("Unsupported ECC key type, key is not X25519 or NIST256p1.");
+      }
 
       if (keyObj.s.length != 32) {
         return ui.rsaForm.setError("Selected key length should be 32 bytes.");
@@ -2088,28 +2113,49 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
     e && e.preventDefault && e.preventDefault();
   }
 
-  function submitpgpchallengeModeForm(e) {
-    var pgpchallengeMode = parseInt(ui.pgpchallengeModeForm.okPGPChallengeMode.value, 10);
+  function submitstoredchallengeModeForm(e) {
+    var storedchallengeMode = parseInt(ui.storedchallengeModeForm.okStoredChallengeMode.value, 10);
 
-    myOnlyKey.setPGPChallengeMode(pgpchallengeMode, function (err) {
+    myOnlyKey.setstoredchallengeMode(storedchallengeMode, function (err) {
       myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
-      ui.pgpchallengeModeForm.reset();
+      ui.storedchallengeModeForm.reset();
     });
 
     e && e.preventDefault && e.preventDefault();
   }
 
-  function submitsshchallengeModeForm(e) {
-    var sshchallengeMode = parseInt(ui.sshchallengeModeForm.okSSHChallengeMode.value, 10);
+  function submitderivedchallengeModeForm(e) {
+    var derivedchallengeMode = parseInt(ui.derivedchallengeModeForm.okderivedchallengeMode.value, 10);
 
-    myOnlyKey.setSSHChallengeMode(sshchallengeMode, function (err) {
+    myOnlyKey.setderivedchallengeMode(derivedchallengeMode, function (err) {
       myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
-      ui.sshchallengeModeForm.reset();
+      ui.derivedchallengeModeForm.reset();
     });
 
     e && e.preventDefault && e.preventDefault();
   }
 
+  function submithmacchallengeModeForm(e) {
+    var hmacchallengeMode = parseInt(ui.hmacchallengeModeForm.okhmacchallengeMode.value, 10);
+
+    myOnlyKey.sethmacchallengeMode(hmacchallengeMode, function (err) {
+      myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+      ui.hmacchallengeModeForm.reset();
+    });
+
+    e && e.preventDefault && e.preventDefault();
+  }
+
+  function submitmodkeyModeForm(e) {
+    var modkeyMode = parseInt(ui.modkeyModeForm.okmodkeyMode.value, 10);
+
+    myOnlyKey.setmodkeyMode(modkeyMode, function (err) {
+      myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+      ui.modkeyModeForm.reset();
+    });
+
+    e && e.preventDefault && e.preventDefault();
+  }
 
   function submitSecProfileModeForm(e) {
     var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);

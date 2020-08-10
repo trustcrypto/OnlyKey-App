@@ -399,17 +399,16 @@ if (chrome.passwordsPrivate) {
       var oid_curve25519 = Uint8Array.from([43, 6, 1, 4, 1, 151, 85, 1, 5, 1]);
       var oid_nist256p1 = Uint8Array.from([42, 134, 72, 206, 61, 3, 1, 7]);
 
-
-      console.info(oid_ed25519);
       console.info(rawKey.primaryKey.params[0].oid);
       
-
       if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
         this.onlyKey.tempEccCurve = 1;
       } else if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //curve25519
         this.onlyKey.tempEccCurve = 1;
-      } else if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
+      } else if (oid_nist256p1.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
         this.onlyKey.tempEccCurve = 2;
+      } else {
+        this.onlyKey.tempEccCurve = 0;
       }
 
       const keys = [{
