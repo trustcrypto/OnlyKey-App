@@ -478,6 +478,7 @@ OnlyKey.prototype.sendPinMessage = function ({
   if (myOnlyKey.getDeviceType() === DEVICE_TYPES.GO) {
     console.info(`sending PIN as ${pin}`);
     messageParams.contents = pin;
+    messageParams.contentType = 'DEC';
   }
 
   this.sendMessage(messageParams, cb);
@@ -511,7 +512,7 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
     if (typeof pin !== 'string') pin = '';
     // PIN chars should only be ascii 0-9
     // add 48 to send as DEC
-    pin.split('').forEach((char, j) => pinBytes[(i*16)+j] = Number(48 + char));
+    pin.split('').forEach((char, j) => pinBytes[(i*16)+j] = 48 + Number(char));
   });
   this.sendPinMessage({
     msgId: 'OKSETPIN',
