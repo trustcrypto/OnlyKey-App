@@ -891,7 +891,7 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
 };
 
 OnlyKey.prototype.getDeviceType = function () {
-  return this.deviceType;
+  return this.deviceType || DEVICE_TYPES.GO;
 };
 
 OnlyKey.prototype.initBootloaderMode = function () {
