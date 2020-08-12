@@ -56,7 +56,7 @@ if (chrome.passwordsPrivate) {
       },
       Step2: {
         prev: 'Step1',
-        next: 'Step4',
+        next: 'Step8',
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
           if (!this.checkInitialized()) {
@@ -116,28 +116,8 @@ if (chrome.passwordsPrivate) {
           pins && this.onlyKey.sendPin_GO(pins, cb);
         }
       },
-      Step4: {
-        prev: 'Step2',
-        next: 'Step5',
-        disclaimerTrigger: 'passcode3Disclaimer',
-        enterFn: () => {
-          this.setSecondPINHtml('step4-text');
-          this.onlyKey.flushMessage();
-        },
-        exitFn: (cb) => {
-          const pinField = this.initForm['goPrimaryPin'];
-          throw Error('NOT YET IMPLEMENTED');
-          this.onlyKey.sendSetPin2_GO(pinField.value, cb);
-        }
-      },
-      Step5: {
-        prev: 'Step4',
-        next: 'Step8',
-        enterFn: this.onlyKey.sendSetPin2.bind(this.onlyKey),
-        exitFn: this.onlyKey.sendSetPin2.bind(this.onlyKey),
-      },
       Step8: { // backup passphrase
-        prev: 'Step4',
+        prev: 'Step2',
         next: 'Step10',
         enterFn: () => {
           if (this.checkInitialized() || !this.advancedSetup) {
@@ -146,7 +126,6 @@ if (chrome.passwordsPrivate) {
           this.btnSubmitStep.disabled = false;
           this.steps.Step8.prev = this.advancedSetup ? 'Step4' : 'Step1';
           this.steps.Step8.next = this.guided ? 'Step10' : 'Step1';
-          this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
           if (this.direction === NEXT) {
@@ -539,7 +518,7 @@ if (chrome.passwordsPrivate) {
     this.unlockOkGoSubmitBtn = document.getElementById('unlockOkGoSubmit');
     this.unlockOkGoSubmitBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      this.onlyKey.sendPin_GO(this.unlockOkGoPinInput.value, (err, msg) => {
+      this.onlyKey.sendPin_GO([ this.unlockOkGoPinInput.value ], (err, msg) => {
         // this.onlyKey.listen(function (err, msg) {
           if (err) {
             console.dir({

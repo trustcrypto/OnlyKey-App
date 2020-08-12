@@ -475,8 +475,8 @@ OnlyKey.prototype.sendPinMessage = function ({
     messageParams.poll = false;
   }
 
-  if (myOnlyKey.getDeviceType() === DEVICE_TYPES.GO) {
-    console.info(`sending PIN as ${pin}`);
+  const deviceType = myOnlyKey.getDeviceType();
+  if (deviceType === DEVICE_TYPES.GO) {
     messageParams.contents = pin;
     messageParams.contentType = 'DEC';
   }
@@ -506,8 +506,12 @@ OnlyKey.prototype.sendSetPin2 = function (callback) {
 };
 
 OnlyKey.prototype.sendPin_GO = function (pins, callback) {
-  // concatenate all 3 PINs and fill with null (hex 0)
-  let pinBytes = new Array(48).fill(0);
+  // if only 1 pin is sent, just send those pin chars as a login attempt
+  // otherwise, concatenate all PINs sent and fill with null (hex 0)
+  const pinCount = pins.length;
+  const bytesPerPin = 16;
+  const pinBytesLength = pinCount === 1 ? pins[0].length : pinCount * bytesPerPin;
+  let pinBytes = new Array(pinBytesLength).fill(0);
   pins.forEach((pin, i) => {
     if (typeof pin !== 'string') pin = '';
     // PIN chars should only be ascii 0-9
@@ -515,6 +519,7 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
     pin.split('').forEach((char, j) => pinBytes[(i*16)+j] = 48 + Number(char));
   });
   this.sendPinMessage({
+    // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
     msgId: 'OKSETPIN',
     pin: pinBytes
   }, callback);
