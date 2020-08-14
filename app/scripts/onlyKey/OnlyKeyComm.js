@@ -1526,14 +1526,21 @@ var OnlyKeyHID = function (onlyKeyConfigWizard) {
 
     var maxKeyLength = 64; // 32 hex pairs
 
+    var priv_type  = 'ECC';
+
+    if (type == 0) {
+      maxKeyLength = 40 // 20 hex pairs
+      priv_type = 'HMAC';
+    }
+
     key = key.toString().replace(/\s/g, '').slice(0, maxKeyLength);
 
     if (!key) {
-      return ui.eccForm.setError('ECC Key cannot be empty. Use [Wipe] to clear a key.');
+      return ui.eccForm.setError(priv_type + ' Key cannot be empty. Use [Wipe] to clear a key.');
     }
 
     if (key.length !== maxKeyLength) {
-      return ui.eccForm.setError('ECC Key must be ' + maxKeyLength + ' characters.');
+      return ui.eccForm.setError(priv_type + ' Key must be ' + maxKeyLength + ' characters.');
     }
 
     // set all type modifiers
