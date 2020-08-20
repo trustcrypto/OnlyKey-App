@@ -869,7 +869,7 @@ OnlyKey.prototype.getVersion = function () {
 
 OnlyKey.prototype.setDeviceType = function (version = '') {
   console.log(`version: ${version}`);
-  const lastChar = version[version.length - 1];
+  const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
   switch(lastChar) {
     case 'g':
@@ -888,6 +888,7 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
   console.info(`Setting deviceType to ${deviceType}`);
   this.deviceType = deviceType;
   onlyKeyConfigWizard.init(this);
+  return deviceType;
 };
 
 OnlyKey.prototype.getDeviceType = function () {
@@ -1246,7 +1247,6 @@ var handleMessage = async function (err, msg) {
         case 'OKSETSDPIN':
           return pollForInput();
       }
-
       break;
     default:
       break;
