@@ -904,7 +904,6 @@ OnlyKey.prototype.initBootloaderMode = function () {
 
 OnlyKey.prototype.setInitialized = function (initializedArg) {
   const initialized = initializedArg;
-  // const initialized = false;
   if (initialized !== this.isInitialized) {
     this.isInitialized = initialized;
     onlyKeyConfigWizard.init(this);
@@ -1233,10 +1232,11 @@ var handleMessage = async function (err, msg) {
   var version;
   dialog.close(ui.workingDialog);
 
-  switch (msg) {
-    case "UNINITIALIZED":
-    case "INITIALIZED":
-      myOnlyKey.setInitialized(msg === "INITIALIZED");
+  const indexOfInitialized = msg.indexOf('INITIALIZED');
+
+  switch (true) {
+    case indexOfInitialized >= 0:
+      myOnlyKey.setInitialized(indexOfInitialized === 0);
       updateUI = true;
 
       // special handling if last message sent was PIN-related
@@ -1252,17 +1252,17 @@ var handleMessage = async function (err, msg) {
       break;
   }
 
-  if (msg === "INITIALIZED") { // OK should still be locked
+  if (indexOfInitialized === 0) { // OK should still be locked
     pollForInput();
   }
 
-  if (msg.indexOf("UNINITIALIZED v") > 0) {
+  if (msg.replace(/\s/g, '').indexOf("UNINITIALIZEDv") >= 0) {
     myOnlyKey.fwUpdateSupport = true;
     version = msg.split("UNINITIALIZED").pop();
     handleVersion(version);
     updateUI = true;
     myOnlyKey.fwUpdateSupport = true;
-  } else if (msg.indexOf("BOOTLOADER") > 0) {
+  } else if (msg.indexOf("BOOTLOADER") >= 0) {
     myOnlyKey.setInitialized(true);
     myOnlyKey.isBootloader = true;
     myOnlyKey.isLocked = false;
@@ -1278,8 +1278,6 @@ var handleMessage = async function (err, msg) {
       myOnlyKey.setInitialized(true);
       version = msg.split("UNLOCKED").pop();
       handleVersion(version);
-      console.info(version[9]);
-      console.info(version[10]);
       if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
         myOnlyKey.fwUpdateSupport = true;
       }
