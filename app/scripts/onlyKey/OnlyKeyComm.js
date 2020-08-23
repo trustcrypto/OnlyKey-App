@@ -1241,11 +1241,13 @@ var handleMessage = async function (err, msg) {
       updateUI = true;
 
       // special handling if last message sent was PIN-related
-      switch (myOnlyKey.getLastMessage('sent')) {
-        case 'OKSETPIN':
-        case 'OKSETPIN2':
-        case 'OKSETSDPIN':
-          return pollForInput();
+      if (myOnlyKey.getDeviceType === DEVICE_TYPES.CLASSIC) {
+        switch (myOnlyKey.getLastMessage('sent')) {
+          case 'OKSETPIN':
+          case 'OKSETPIN2':
+          case 'OKSETSDPIN':
+            return pollForInput();
+        }
       }
       break;
     default:

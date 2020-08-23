@@ -198,10 +198,6 @@ td.ok-photo-cell {
     flex: 1 32%;
 }
 
-.flex-item {
-    text-align: center;
-}
-
 .flex-item > p,
 .flex-item > form,
 .flex-item > div {

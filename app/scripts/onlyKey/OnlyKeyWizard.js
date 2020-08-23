@@ -76,7 +76,7 @@ if (chrome.passwordsPrivate) {
                 I understand and accept the above risk.
               </label>
               <p>
-                <strong>Enter up to 16 digits for each PIN:</strong>
+                <strong>Enter 7-16 digits for each PIN:</strong>
               </p>
               <div class='flex-container'>
                 <div class='flex-item col-3'>
@@ -1169,46 +1169,26 @@ if (chrome.passwordsPrivate) {
     const pin3Confirm = document.getElementById('goSDPinConfirm').value;
     const pin3Errors = [];
 
+    const minPinLength = 7;
+
     const mismatchErrorStr = 'Fields do not match.';
     const numeralErrorStr = 'PIN must be all numerals.';
+    const lengthErrorStr = `PIN must be at least ${minPinLength} numbers.`;
 
-    pin1ErrorsHtml = "";
-    if (!pin1) {
-      pin1Errors.push('Primary PIN cannot be empty.');
-    }
-    if (pin1 !== pin1Confirm) {
-      pin1Errors.push(mismatchErrorStr);
-    }
-    // check all numeric
-    if (pin1.match(/\D/g)) {
-      pin1Errors.push(numeralErrorStr);
-    }
+    !pin1 && pin1Errors.push('Primary PIN cannot be empty.');
+    pin1 !== pin1Confirm && pin1Errors.push(mismatchErrorStr);
+    pin1.match(/\D/g) && pin1Errors.push(numeralErrorStr);
+    pin1.length < minPinLength && pin1Errors.push(lengthErrorStr);
 
-    pin2ErrorsHtml = "";
-    if (pin2 && pin2 !== pin2Confirm) {
-      pin2Errors.push(mismatchErrorStr);
-    }
-    // check all numeric
-    if (pin2.match(/\D/g)) {
-      pin2Errors.push(numeralErrorStr);
-    }
-    // check no match to pin1
-    if (pin2 && pin2 == pin1) {
-      pin2Errors.push('Secondary PIN cannot match Primary.');
-    }
+    pin2 && pin2 !== pin2Confirm && pin2Errors.push(mismatchErrorStr);
+    pin2.match(/\D/g) && pin2Errors.push(numeralErrorStr);
+    pin2 && pin2.length < minPinLength && pin2Errors.push(lengthErrorStr);
+    pin2 && pin2 == pin1 && pin2Errors.push('Secondary PIN cannot match Primary.');
 
-    pin3ErrorsHtml = "";
-    if (pin3 && pin3 !== pin3Confirm) {
-      pin3Errors.push(mismatchErrorStr);
-    }
-    // check all numeric
-    if (pin3.match(/\D/g)) {
-      pin3Errors.push(numeralErrorStr);
-    }
-    // check no match to pin1 or pin2
-    if (pin3 && (pin3 == pin1 || pin3 == pin2)) {
-      pin3Errors.push('SD PIN cannot match others.');
-    }
+    pin3 && pin3 !== pin3Confirm && pin3Errors.push(mismatchErrorStr);
+    pin3.match(/\D/g) && pin3Errors.push(numeralErrorStr);
+    pin3 && pin3.length < minPinLength && pin3Errors.push(lengthErrorStr);
+    pin3 && (pin3 == pin1 || pin3 == pin2) && pin3Errors.push('SD PIN cannot match others.');
 
     let errorsFound = false;
     [
