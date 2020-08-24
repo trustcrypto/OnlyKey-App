@@ -868,7 +868,6 @@ OnlyKey.prototype.getVersion = function () {
 };
 
 OnlyKey.prototype.setDeviceType = function (version = '') {
-  console.log(`version: ${version}`);
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
   switch(lastChar) {
@@ -876,23 +875,24 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
       deviceType = DEVICE_TYPES.GO;
       break;
     case 'c':
-      deviceType = DEVICE_TYPES.CLASSIC;
-      break;
     default:
       if (version.includes('BOOTLOADER')) {
         deviceType = 'UNINITIALIZED';
       } else {
-        throw Error(`Unable to determine deviceType from version ${version}`);
+        deviceType = DEVICE_TYPES.CLASSIC;
+        // throw Error(`Unable to determine deviceType from version ${version}`);
       }
   }
-  console.info(`Setting deviceType to ${deviceType}`);
-  this.deviceType = deviceType;
-  onlyKeyConfigWizard.init(this);
+  if (this.getDeviceType() !== deviceType) {
+    console.info(`Setting deviceType to ${deviceType}`);
+    this.deviceType = deviceType;
+    onlyKeyConfigWizard.init(this);
+  }
   return deviceType;
 };
 
 OnlyKey.prototype.getDeviceType = function () {
-  return this.deviceType || DEVICE_TYPES.GO;
+  return this.deviceType;
 };
 
 OnlyKey.prototype.initBootloaderMode = function () {
@@ -1173,6 +1173,7 @@ var pollForInput = function (optionsParam, callbackParam) {
     }
 
     console.info("RECEIVED:", msg);
+    myOnlyKey.setDeviceType(msg);
 
     if (msg.length > 1 && msg !== 'OK' && !options.flush) {
       myOnlyKey.setLastMessage('received', msg);
