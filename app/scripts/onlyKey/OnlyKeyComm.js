@@ -868,6 +868,7 @@ OnlyKey.prototype.getVersion = function () {
 };
 
 OnlyKey.prototype.setDeviceType = function (version = '') {
+  if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
   switch(lastChar) {
@@ -883,11 +884,9 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
         // throw Error(`Unable to determine deviceType from version ${version}`);
       }
   }
-  if (this.getDeviceType() !== deviceType) {
-    console.info(`Setting deviceType to ${deviceType}`);
-    this.deviceType = deviceType;
-    onlyKeyConfigWizard.init(this);
-  }
+  console.info(`Setting deviceType to ${deviceType}`);
+  this.deviceType = deviceType;
+  onlyKeyConfigWizard.init(this);
   return deviceType;
 };
 
@@ -1151,6 +1150,7 @@ var onDeviceRemoved = function () {
 
 function handleDisconnect() {
   myOnlyKey.setConnection(-1);
+  delete myOnlyKey.deviceType;
   myOnlyKey.setLastMessage('received', 'Disconnected');
   onlyKeyConfigWizard.initForm.reset();
   enableIOControls(false);
