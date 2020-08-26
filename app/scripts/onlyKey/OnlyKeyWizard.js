@@ -109,10 +109,9 @@ if (chrome.passwordsPrivate) {
               </div>
             `;
           }
-          this.onlyKey.flushMessage(cb);
         },
         exitFn: (cb) => {
-          const pins = this.validateGoPins()
+          const pins = this.validateGoPins();
           pins && this.onlyKey.sendPin_GO(pins, cb);
         }
       },
