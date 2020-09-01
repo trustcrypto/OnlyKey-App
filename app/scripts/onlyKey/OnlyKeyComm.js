@@ -211,12 +211,14 @@ function OnlyKey(params = {}) {
     LOCKOUT: 11,
     WIPEMODE: 12,
     BACKUPKEYMODE: 20,
-    SSHCHALLENGEMODE: 21,
-    PGPCHALLENGEMODE: 22,
+    derivedchallengeMode: 21,
+    storedchallengeMode: 22,
     SECPROFILEMODE: 23,
     TYPESPEED: 13,
     LEDBRIGHTNESS: 24,
     LOCKBUTTON: 25,
+    hmacchallengeMode: 26,
+    modkeyMode: 27,
     KBDLAYOUT: 14
   };
 
@@ -408,9 +410,15 @@ OnlyKey.prototype.listenfor = async function (msg, callback) {
   await listenForMessageIncludes(msg);
 };
 
+OnlyKey.prototype.listenfor2 = async function (succeed_msg, callback) {
+  await wait(300);
+  await listenForMessageIncludes2('Error', succeed_msg);
+};
+
 OnlyKey.prototype.listen = function (callback) {
   pollForInput({}, callback);
 };
+
 
 OnlyKey.prototype.setTime = function (callback) {
   var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -420,11 +428,12 @@ OnlyKey.prototype.setTime = function (callback) {
     contents: timeParts,
     msgId: 'OKSETTIME'
   };
-  this.sendMessage(options, callback);
+  // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
+  this.sendMessage(options, this.sendMessage(options, callback));
 };
 
 OnlyKey.prototype.getLabels = async function (callback) {
-  this.labels = 'GETTING';
+  this.labels = '';
   await wait(1000);
   this.sendMessage({
     msgId: 'OKGETLABELS'
@@ -438,7 +447,7 @@ function handleGetLabels(err, msg) {
     return;
   }
 
-  if (myOnlyKey.labels === 'GETTING') {
+  if (myOnlyKey.labels === '') {
     myOnlyKey.labels = [];
     return myOnlyKey.listen(handleGetLabels);
   }
@@ -446,16 +455,19 @@ function handleGetLabels(err, msg) {
   // if second char of response is a pipe, theses are labels
   var msgParts = msg.split('|');
   var slotNum = parseInt(msgParts[0], 10);
-  if (msg.indexOf('|') !== 2 || typeof slotNum !== 'number' || slotNum < 1 || slotNum > 12) {
+  if (msg.includes('Error not in config mode') || myOnlyKey.getLastMessage('received') == 'Error not in config mode, hold button 6 down for 5 sec') {
+    this.setLastMessage('received', 'Error not in config mode, hold button 6 down for 5 sec');
+  } else if (msg.indexOf('|') !== 2 || typeof slotNum !== 'number' || slotNum < 1 || slotNum > 12) {
     myOnlyKey.listen(handleGetLabels);
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 12) {
+    if (slotNum < 12 && msg.indexOf('|') == 2) {
       myOnlyKey.listen(handleGetLabels);
     }
   }
 }
+
 
 OnlyKey.prototype.sendPinMessage = function ({
   msgId = '',
@@ -522,7 +534,10 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
     // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
     msgId: 'OKSETPIN',
     pin: pinBytes
-  }, callback);
+  }, async () => {
+    await this.listenfor2('set PIN', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
@@ -555,11 +570,17 @@ OnlyKey.prototype.getSlotNum = function (slotId) {
 };
 
 OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey, callback) {
-  this.setSlot('XX', 'YUBIAUTH', (publicId + privateId + secretKey).match(/.{2}/g), callback);
+  this.setSlot('XX', 'YUBIAUTH', (publicId + privateId + secretKey).match(/.{2}/g), async () => {
+    await this.listenfor2('set AES Key', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.wipeYubiAuth = function (callback) {
-  this.wipeSlot('XX', 'YUBIAUTH', callback);
+  this.wipeSlot('XX', 'YUBIAUTH', async () => {
+    await this.listenfor2('wiped AES Key', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
@@ -615,11 +636,11 @@ OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
       throw Error(error);
     }
 
-    if (!privKey.primaryKey || !privKey.subKeys) {
-      error = 'Invalid keys.';
-      this.setLastMessage('received', error);
-      throw Error(error);
-    }
+      if (!(privKey.primaryKey && privKey.primaryKey.params)) {
+        error = 'Private Key decryption was successful, but resulted in invalid mpi data.';
+        this.setLastMessage('received', error);
+        throw Error(error);
+      }
 
     if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
       error = 'Private Key decryption was successful, but resulted in invalid mpi data.';
@@ -809,11 +830,17 @@ OnlyKey.prototype.firmware = async function (firmwareData, packetHeader, callbac
 };
 
 OnlyKey.prototype.setLockout = function (lockout, callback) {
-  this.setSlot('XX', 'LOCKOUT', lockout, callback);
+  this.setSlot('XX', 'LOCKOUT', lockout, async () => {
+    await this.listenfor2('set idle timeout', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setWipeMode = function (wipeMode, callback) {
-  this.setSlot('XX', 'WIPEMODE', wipeMode, callback);
+  this.setSlot('XX', 'WIPEMODE', wipeMode, async () => {
+    await this.listenfor2('set Wipe Mode', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
@@ -827,36 +854,69 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.setSSHChallengeMode = function (sshchallengeMode, callback) {
-  this.setSlot('XX', 'SSHCHALLENGEMODE', sshchallengeMode, callback);
-};
+  OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode, callback) {
+    this.setSlot('XX', 'derivedchallengeMode', derivedchallengeMode, async () => {
+      await this.listenfor2('challenge mode', callback);
+      return callback();
+    });
+  };
 
-OnlyKey.prototype.setPGPChallengeMode = function (pgpchallengeMode, callback) {
-  this.setSlot('XX', 'PGPCHALLENGEMODE', pgpchallengeMode, callback);
-};
+  OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode, callback) {
+    this.setSlot('XX', 'storedchallengeMode', storedchallengeMode, async () => {
+      await this.listenfor2('challenge mode', callback);
+      return callback();
+    });
+  };
 
-OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
-  backupKeyMode = parseInt(backupKeyMode, 10);
-  this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, async () => {
-    await this.listenfor('Backup Key Mode', callback);
+  OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode, callback) {
+    this.setSlot('XX', 'hmacchallengeMode', hmacchallengeMode, async () => {
+      await this.listenfor2('HMAC Challenge Mode', callback);
+      return callback();
+    });
+  };
+
+  OnlyKey.prototype.setmodkeyMode = function (modkeyMode, callback) {
+    this.setSlot('XX', 'modkeyMode', modkeyMode, async () => {
+      await this.listenfor2('Sysadmin Mode', callback);
+      return callback();
+    });
+  };
+
+
+  OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
+    backupKeyMode = parseInt(backupKeyMode, 10);
+    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, async () => {
+      await this.listenfor2('Backup Key Mode', callback);
+      return callback();
+    });
+  };
+
+OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
+  this.setSlot('XX', 'TYPESPEED', typeSpeed, async () => {
+    await this.listenfor2('set keyboard typespeed', callback);
     return callback();
   });
 };
 
-OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
-  this.setSlot('XX', 'TYPESPEED', typeSpeed, callback);
-};
-
 OnlyKey.prototype.setLedBrightness = function (ledBrightness, callback) {
-  this.setSlot('XX', 'LEDBRIGHTNESS', ledBrightness, callback);
+  this.setSlot('XX', 'LEDBRIGHTNESS', ledBrightness, async () => {
+    await this.listenfor2('set LED brightness', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setLockButton = function (lockButton, callback) {
-  this.setSlot('XX', 'LOCKBUTTON', lockButton, callback);
+  this.setSlot('XX', 'LOCKBUTTON', lockButton, async () => {
+    await this.listenfor2('set lock button', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setKBDLayout = function (kbdLayout, callback) {
-  this.setSlot('XX', 'KBDLAYOUT', kbdLayout, callback);
+  this.setSlot('XX', 'KBDLAYOUT', kbdLayout, async () => {
+    await this.listenfor2('set keyboard layout', callback);
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setVersion = function (version) {
@@ -955,9 +1015,11 @@ var initializeWindow = function () {
   ui.u2fAuthForm = document['u2fAuthForm'];
   ui.lockoutForm = document['lockoutForm'];
   ui.wipeModeForm = document['wipeModeForm'];
-  ui.pgpchallengeModeForm = document['pgpchallengeModeForm'];
+  ui.storedchallengeModeForm = document['storedchallengeModeForm'];
   ui.backupModeForm = document['backupModeForm'];
-  ui.sshchallengeModeForm = document['sshchallengeModeForm'];
+  ui.derivedchallengeModeForm = document['derivedchallengeModeForm'];
+  ui.hmacchallengeModeForm = document['hmacchallengeModeForm'];
+  ui.modkeyModeForm = document['modkeyModeForm'];
   ui.typeSpeedForm = document['typeSpeedForm'];
   ui.ledBrightnessForm = document['ledBrightnessForm'];
   ui.lockButtonForm = document['lockButtonForm'];
@@ -1401,11 +1463,17 @@ function enableAuthForms() {
   var backupModeSubmit = document.getElementById('backupModeSubmit');
   backupModeSubmit.addEventListener('click', submitBackupModeForm);
 
-  var pgpchallengeModeSubmit = document.getElementById('pgpchallengeModeSubmit');
-  pgpchallengeModeSubmit.addEventListener('click', submitpgpchallengeModeForm);
+  var storedchallengeModeSubmit = document.getElementById('storedchallengeModeSubmit');
+  storedchallengeModeSubmit.addEventListener('click', submitstoredchallengeModeForm);
 
-  var sshchallengeModeSubmit = document.getElementById('sshchallengeModeSubmit');
-  sshchallengeModeSubmit.addEventListener('click', submitsshchallengeModeForm);
+  var derivedchallengeModeSubmit = document.getElementById('derivedchallengeModeSubmit');
+  derivedchallengeModeSubmit.addEventListener('click', submitderivedchallengeModeForm);
+
+  var modkeyModeSubmit = document.getElementById('modkeyModeSubmit');
+  modkeyModeSubmit.addEventListener('click', submitmodkeyModeForm);
+  
+  var hmacchallengeModeSubmit = document.getElementById('hmacchallengeModeSubmit');
+  hmacchallengeModeSubmit.addEventListener('click', submithmacchallengeModeForm);
 
   var typeSpeedSubmit = document.getElementById('typeSpeedSubmit');
   typeSpeedSubmit.addEventListener('click', submitTypeSpeedForm);
@@ -1552,14 +1620,21 @@ function submitEccForm(e) {
 
   var maxKeyLength = 64; // 32 hex pairs
 
+  var priv_type  = 'ECC';
+
+  if (type == 0) {
+    maxKeyLength = 40 // 20 hex pairs
+    priv_type = 'HMAC';
+  }
+
   key = key.toString().replace(/\s/g, '').slice(0, maxKeyLength);
 
   if (!key) {
-    return ui.eccForm.setError('ECC Key cannot be empty. Use [Wipe] to clear a key.');
+    return ui.eccForm.setError(priv_type + ' Key cannot be empty. Use [Wipe] to clear a key.');
   }
 
   if (key.length !== maxKeyLength) {
-    return ui.eccForm.setError('ECC Key must be ' + maxKeyLength + ' characters.');
+    return ui.eccForm.setError(priv_type + ' Key must be ' + maxKeyLength + ' characters.');
   }
 
   // set all type modifiers
@@ -1573,15 +1648,14 @@ function submitEccForm(e) {
 
   type += typeModifier;
 
-  // TODO: validation
   myOnlyKey.setPrivateKey(slot, type, key, function (err) {
-    // TODO: check for success, then reset
     myOnlyKey.listen(handleMessage);
     ui.eccForm.reset();
   });
 
   e && e.preventDefault && e.preventDefault();
 }
+
 
 function wipeEccKeyForm(e) {
   ui.eccForm.setError('');
@@ -1647,13 +1721,27 @@ async function submitRsaForm(e) {
 
 OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
 
-  var type = parseInt(keyObj.p.length / 64, 10);
+  if (typeof (keyObj.s) !== 'undefined') { //ECC
+    var type = myOnlyKey.tempEccCurve;
+    if (type == 0) {
+      return ui.rsaForm.setError("Unsupported ECC key type, key is not X25519 or NIST256p1.");
+    }
 
-  if ([1, 2, 3, 4].indexOf(type) < 0) {
-    return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
+    if (keyObj.s.length != 32) {
+      return ui.rsaForm.setError("Selected key length should be 32 bytes.");
+    }
+
+    var retKey = Array.from(keyObj.s)
+
+  } else { //RSA
+    var type = parseInt(keyObj.p.length / 64, 10);
+
+    if ([1, 2, 3, 4].indexOf(type) < 0) {
+      return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
+    }
+
+    var retKey = [...keyObj.p, ...keyObj.q];
   }
-
-  var retKey = [...keyObj.p, ...keyObj.q];
   var slot = slot !== null ? slot : parseInt(ui.rsaForm.rsaSlot.value || '', 10);
 
   // set all type modifiers
@@ -1678,33 +1766,30 @@ OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
       console.info("Slot 2 set as signature key" + type);
     }
   }
-
-
-
-  /*
-
-  console.info("backupsigFlag" + backupsigFlag);
-  if (backupsigFlag >= 0) {
-    type += 128; //Backup(128), Decrypt(32), and Signature(64) if backupsigFlag is 1
-    console.info("type" + type);
+  if (typeof (keyObj.s) !== 'undefined') { //ECC
+    if (slot<101) slot+=100;
+    myOnlyKey.setPrivateKey(slot, type, retKey, err => {
+      // TODO: check for success, then reset
+      if (typeof cb === 'function') cb(err);
+      ui.rsaForm.reset();
+      if (backupsigFlag >= 0) {
+        backupsigFlag = -1;
+        //reset backup form
+      }
+      this.listen(handleMessage);
+    });
+  } else {
+    submitRsaKey(slot, type, retKey, err => {
+      // TODO: check for success, then reset
+      if (typeof cb === 'function') cb(err);
+      ui.rsaForm.reset();
+      if (backupsigFlag >= 0) {
+        backupsigFlag = -1;
+        //reset backup form
+      }
+      this.listen(handleMessage);
+    });
   }
-
-  */
-
-
-
-  // console.info("retKey:", retKey);
-
-  submitRsaKey(slot, type, retKey, err => {
-    // TODO: check for success, then reset
-    if (typeof cb === 'function') cb(err);
-    ui.rsaForm.reset();
-    if (backupsigFlag >= 0) {
-      backupsigFlag = -1;
-      //reset backup form
-    }
-    this.listen(handleMessage);
-  });
 
 };
 
@@ -1918,7 +2003,11 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
           console.info(thisver_maj);
           var thisver_min = version.slice(3,4) * 10;
           console.info(thisver_min);
-          var thisver_pat = version.slice(10,11);
+          if (thisver_maj==0) {
+            var thisver_pat = version.slice(10,11);
+          } else {
+            var thisver_pat = version.slice(5,6);
+          }
           var thisver_mod = version.slice(11,12);
           console.info(thisver_mod);
           var latestver_maj = latestver.slice(1,2) * 100;
@@ -1938,12 +2027,11 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
               //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
               //};
               if (thisver_mod == 'c') {
-
                 if (window.confirm('A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?')) {
                   // Download latest standard firmware for color from URL
                   // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
                   var downloadurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/' + latestver + '/Signed_OnlyKey_';
-                  downloadurl = latestver_maj ? downloadurl + latestver_maj + '_' + latestver_min + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
+                  downloadurl = latestver_maj ? downloadurl + (latestver_maj/100) + '_' + (latestver_min/10) + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
                   console.info(downloadurl);
                   var req = request.get(downloadurl, async function (err, res, body) {
 
@@ -2046,7 +2134,7 @@ async function listenForMessageIncludes(str) {
         console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
         await listenForMessageIncludesAgain(resolve, reject);
       } else {
-        reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+        reject(err || `No response from OnlyKey: ${msg}`);
       }
     });
   })
@@ -2057,11 +2145,10 @@ async function listenForMessageIncludes2(str1, str2) {
     console.info(`Listening for "${str1}" or "${str2}" `);
     myOnlyKey.listen(async (err, msg) => {
       let match;
-      if (err && ((err.includes(str1) || err.includes(str2)))) {
-        match = err;
-      }
       if (msg && ((msg.includes(str1) || msg.includes(str2)))) {
         match = msg;
+      } else if (err) {
+        match = err;
       }
       if (match) {
         console.info(`Match received "${match}"...`);
@@ -2071,7 +2158,7 @@ async function listenForMessageIncludes2(str1, str2) {
         console.info(`Received unexpected message: ${msg}`);
         await listenForMessageIncludesAgain2(resolve, reject);
       } else {
-        reject(err || `Received unexpected message: ${msg}`);
+        reject(err || `No response from OnlyKey: ${msg}`);
       }
     });
   })
@@ -2124,28 +2211,49 @@ function submitLockoutForm(e) {
   e && e.preventDefault && e.preventDefault();
 }
 
-function submitpgpchallengeModeForm(e) {
-  var pgpchallengeMode = parseInt(ui.pgpchallengeModeForm.okPGPChallengeMode.value, 10);
+function submitstoredchallengeModeForm(e) {
+  var storedchallengeMode = parseInt(ui.storedchallengeModeForm.okStoredChallengeMode.value, 10);
 
-  myOnlyKey.setPGPChallengeMode(pgpchallengeMode, function (err) {
+  myOnlyKey.setstoredchallengeMode(storedchallengeMode, function (err) {
     myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
-    ui.pgpchallengeModeForm.reset();
+    ui.storedchallengeModeForm.reset();
   });
 
   e && e.preventDefault && e.preventDefault();
 }
 
-function submitsshchallengeModeForm(e) {
-  var sshchallengeMode = parseInt(ui.sshchallengeModeForm.okSSHChallengeMode.value, 10);
+function submitderivedchallengeModeForm(e) {
+  var derivedchallengeMode = parseInt(ui.derivedchallengeModeForm.okderivedchallengeMode.value, 10);
 
-  myOnlyKey.setSSHChallengeMode(sshchallengeMode, function (err) {
+  myOnlyKey.setderivedchallengeMode(derivedchallengeMode, function (err) {
     myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
-    ui.sshchallengeModeForm.reset();
+    ui.derivedchallengeModeForm.reset();
   });
 
   e && e.preventDefault && e.preventDefault();
 }
 
+function submithmacchallengeModeForm(e) {
+  var hmacchallengeMode = parseInt(ui.hmacchallengeModeForm.okhmacchallengeMode.value, 10);
+
+  myOnlyKey.sethmacchallengeMode(hmacchallengeMode, function (err) {
+    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    ui.hmacchallengeModeForm.reset();
+  });
+
+  e && e.preventDefault && e.preventDefault();
+}
+
+function submitmodkeyModeForm(e) {
+  var modkeyMode = parseInt(ui.modkeyModeForm.okmodkeyMode.value, 10);
+
+  myOnlyKey.setmodkeyMode(modkeyMode, function (err) {
+    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    ui.modkeyModeForm.reset();
+  });
+
+  e && e.preventDefault && e.preventDefault();
+}
 
 function submitSecProfileModeForm(e) {
   var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
@@ -2159,7 +2267,6 @@ function submitBackupModeForm(e) {
   var backupKeyMode = parseInt(ui.backupModeForm.okBackupMode.value, 10);
 
   myOnlyKey.setbackupKeyMode(backupKeyMode, function (err) {
-    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
     ui.backupModeForm.reset();
   });
 

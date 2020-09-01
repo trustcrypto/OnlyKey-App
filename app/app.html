@@ -149,17 +149,33 @@
             for generating an OpenPGP key with Keybase.</p>
           <label>Slot:
             <select id='backupRSASlot' name='backupRSASlot'>
-              <option value=1>1</option>
-              <option value=2>2</option>
-              <option value=3>3</option>
-              <option value=4>4</option>
+              <option value=1>RSA 1</option>
+              <option value=2>RSA 2</option>
+              <option value=3>RSA 3</option>
+              <option value=4>RSA 4</option>
+              <option value=101>ECC 1</option>
+              <option value=102>ECC 2</option>
+              <option value=103>ECC 3</option>
+              <option value=104>ECC 4</option>
+              <option value=105>ECC 5</option>
+              <option value=106>ECC 6</option>
+              <option value=107>ECC 7</option>
+              <option value=108>ECC 8</option>
+              <option value=109>ECC 9</option>
+              <option value=110>ECC 10</option>
+              <option value=111>ECC 11</option>
+              <option value=112>ECC 12</option>
+              <option value=113>ECC 13</option>
+              <option value=114>ECC 14</option>
+              <option value=115>ECC 15</option>
+              <option value=116>ECC 16</option>
             </select>
           </label>
           <br />
           <br />
-          <label>Backup OpenPGP RSA Key:<br />
+          <label>Backup OpenPGP RSA/ECC Key:<br />
             <textarea id='backupRSAKey' name='backupRSAKey' cols='60' rows='3'
-              placeholder='RSA Key -- paste PEM file contents' required></textarea>
+              placeholder='OpenPGP Key -- paste PEM file contents' required></textarea>
           </label><br />
           <label>Passphrase:<input type='password' id='backupRSAPasscode' name='backupRSAPasscode' /></label>
           <br /><br />
@@ -217,7 +233,6 @@
 
         <b>Guided Setup</b>
 
-        <button id="btnPrevious" type="button" disabled="disabled">Previous</button>
         <button id="btnNext" type="button">Next</button>
         <button id="btnExit" type="button" class="hide">Exit</button>
       </div>
@@ -298,17 +313,15 @@
       <div class="flex-container">
         <div class="flex-item">
           <form id="typeSpeedForm" name="typeSpeedForm">
-            <h3>Keyboard Type Speed</h3>
-            Choose a setting:
+            <b>Keyboard Type Speed </b><a href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
             <input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1 - 10"
               style="width: 50px;" />
             <input type="button" id="typeSpeedSubmit" value="Set Type Speed" />
             <br />
-            (1 = slowest; 10 = fastest [4 = default])
+            (1 = slowest, 10 = fastest, 4 = default)
           </form>
           <form id="keyboardLayoutForm" name="keyboardLayoutForm">
-            <h3>Keyboard Layout</h3>
-            Choose a keyboard layout:
+            <b>Keyboard Layout </b><a href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             <select id="okKeyboardLayout" name="okKeyboardLayout">
               <option value=1>US_ENGLISH (default)</option>
               <option value=2>CANADIAN_FRENCH</option>
@@ -341,84 +354,109 @@
             <input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
           </form>
           <form id="ledBrightnessForm" name="ledBrightnessForm">
-            <h3>Indicator Light (LED) Brightness</h3>
-            Choose a setting:
+            <b>Indicator Light (LED) Brightness </b><a href="https://docs.crp.to/usersguide.html#configurable-led-brightness" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             <input type="number" id="okLedBrightness" name="okLedBrightness" min=1 max=10 placeholder="1 - 10"
               style="width: 50px;" />
             <input type="button" id="ledBrightnessSubmit" value="Set LED Brightness" />
             <br />
-            (1 = dimmest; 10 = brightest ; 8 = default)
+            (1 = dimmest, 10 = brightest, 8 = default)
           </form>
           <form id="lockButtonForm" name="lockButtonForm">
-            <h3>Lock Button</h3>
-            The OnlyKey and the computer are locked automatically when lock button is pressed.
+            <b>Lock Button</b> <a href="https://docs.crp.to/usersguide.html#configurable-lock-button" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
+            The OnlyKey and the computer are locked automatically when this lock button is pressed (0 to disable).
             <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6"
               style="width: 50px;" />
             <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
-            <br />
-            (0 to disable)
           </form>
           <form id="lockoutForm" name="lockoutForm">
-            <h3>Inactivity Lockout Period</h3>
-            Lockout time in minutes:
-            <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255"
+            <b>Inactivity Lockout Timer </b><a href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
+            <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255 Minutes"
               style="width: 50px;" />
             <input type="button" id="lockoutSubmit" value="Set Lockout" />
             <br />
-            (1 &ndash; 255 minutes; default = 30; 0 to disable)
+            (1 &ndash; 255 Minutes, 30 = default, 0 to disable)
+          </form>
+          <form id="modkeyModeForm" name="modkeyModeForm">
+            <b>Sysadmin Mode </b><a href="https://docs.crp.to/usersguide.html#sysadmin-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
+            <label>
+              <input type="radio" checked name="okmodkeyMode" value=0 />
+              <u>Disable Sysadmin Mode</u>
+            </label>
+            <br />
+            <label>
+              <input type="radio" name="okmodkeyMode" value=1 />
+              <u>Enable Sysadmin Mode</u>
+            </label>
+            <br />
+            <input type="button" id="modkeyModeSubmit" value="Set Modifier Key Mode" />
+          </form>
+          <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
+            <b>HMAC Key Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
+            Enable or disable user input required 
+            <br />
+            <label>
+              <input type="radio" checked name="okhmacchallengeMode" value=0 />
+              <u>Button Press Required</u>
+            </label>
+            <br />
+            <label>
+              <input type="radio" name="okhmacchallengeMode" value=1 />
+              <u>Button Press Not Required</u>
+            </label>
+            <br />
+            <input type="button" id="hmacchallengeModeSubmit" value="Set HMAC Challenge Mode" />
           </form>
         </div>
         <div class="flex-item">
-          <form id="sshchallengeModeForm" name="sshchallengeModeForm">
-            <h3>SSH Challenge Mode</h3>
-            Enable or disable challenge code for SSH
+          <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
+            <b>Derived Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#derived-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
+            Enable or disable challenge for derived keys (SSH/PGP)
             <br />
             <label>
-              <input type="radio" checked name="okSSHChallengeMode" value=0 />
-              <u>Enable Challenge Code for SSH</u>
+              <input type="radio" checked name="okderivedchallengeMode" value=0 />
+              <u>Challenge Code Required</u>
             </label>
             <br />
             <label>
-              <input type="radio" name="okSSHChallengeMode" value=1 />
-              <u>Disable Challenge Code for SSH</u>
+              <input type="radio" name="okderivedchallengeMode" value=1 />
+              <u>Button Press Required</u>
             </label>
             <br />
-            <input type="button" id="sshchallengeModeSubmit" value="Set SSH Challenge Mode" />
+            <input type="button" id="derivedchallengeModeSubmit" value="Set SSH Challenge Mode" />
           </form>
-          <form id="pgpchallengeModeForm" name="pgpchallengeModeForm">
-            <h3>PGP Challenge Mode</h3>
-            Enable or disable challenge code for PGP
+          <form id="storedchallengeModeForm" name="storedchallengeModeForm">
+            <b>Stored Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#stored-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
+            Enable or disable challenge for stored keys (SSH/PGP)
             <br />
             <label>
-              <input type="radio" checked name="okPGPChallengeMode" value=0 />
-              <u>Enable Challenge Code for PGP</u>
+              <input type="radio" checked name="okStoredChallengeMode" value=0 />
+              <u>Challenge Code Required</u>
             </label>
             <br />
             <label>
-              <input type="radio" name="okPGPChallengeMode" value=1 />
-              <u>Disable Challenge Code for PGP</u>
+              <input type="radio" name="okStoredChallengeMode" value=1 />
+              <u>Button Press Required</u>
             </label>
             <br />
-            <input type="button" id="pgpchallengeModeSubmit" value="Set PGP Challenge Mode" />
+            <input type="button" id="storedchallengeModeSubmit" value="Set Stored Challenge Mode" />
           </form>
           <form id="wipeModeForm" name="wipeModeForm">
-            <h3>Wipe Mode</h3>
+            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             Configure how the OnlyKey responds to a factory reset.
             Only sensitive data is wiped by default.
             <br />
             <label>
               <input type="radio" checked name="okWipeMode" value=2 />
-              <u>Full Wipe</u> &ndash; <em>Entire device is wiped. Firmware must be reloaded</em> (recommended for
-              plausible deniability users).
+              <u>Full Wipe</u> &ndash; <em>Entire device is wiped and firmware must be reloaded.</em>
             </label>
             <br />
-            <span style="font-size: small; color: red;"><b>WARNING - Setting to "Full Wipe" cannot be
-                changed on this device.</b></span>
+            <span style="font-size: small; color: red;"><b>WARNING - Once set to "Full Wipe" this cannot be
+                changed.</b></span>
             <br />
             <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
           </form>
           <form id="backupModeForm" name="backupModeForm">
-            <h3>Backup Key Mode</h3>
+            <b>Backup Key Mode </b><a href="https://docs.crp.to/usersguide.html#backup-key-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             Backup key may be changed by default.
             <br />
             <label>
@@ -426,8 +464,7 @@
               <u>Locked</u> - <em>Backup key may not be changed on device</em>
             </label>
             <br />
-            <span style="font-size: small; color: red;"><b>WARNING - Setting to "Locked" cannot be changed on this
-                device.</b></span>
+            <span style="font-size: small; color: red;"><b>WARNING - Once set to "Locked" this cannot be changed.</b></span>
             <br />
             <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" />
           </form>
@@ -453,16 +490,32 @@
         </div>
         <div class="flex-item">
           <form id="rsaForm" name="rsaForm" class="auth-form">
-            <h2>RSA Private Key (PEM Format)</h2>
+            <h2>OpenPGP Private Key (PEM Format)</h2>
 
             <label>
               Slot:
               <select id="rsaSlot" name="rsaSlot">
-                <option value=99>Auto (Keybase)</option>
-                <option value=1>1</option>
-                <option value=2>2</option>
-                <option value=3>3</option>
-                <option value=4>4</option>
+                <option value=99>Auto Load</option>
+                <option value=1>RSA 1</option>
+                <option value=2>RSA 2</option>
+                <option value=3>RSA 3</option>
+                <option value=4>RSA 4</option>
+                <option value=101>ECC 1</option>
+                <option value=102>ECC 2</option>
+                <option value=103>ECC 3</option>
+                <option value=104>ECC 4</option>
+                <option value=105>ECC 5</option>
+                <option value=106>ECC 6</option>
+                <option value=107>ECC 7</option>
+                <option value=108>ECC 8</option>
+                <option value=109>ECC 9</option>
+                <option value=110>ECC 10</option>
+                <option value=111>ECC 11</option>
+                <option value=112>ECC 12</option>
+                <option value=113>ECC 13</option>
+                <option value=114>ECC 14</option>
+                <option value=115>ECC 15</option>
+                <option value=116>ECC 16</option>
               </select>
             </label>
 
@@ -471,7 +524,7 @@
             <label>
               Key:
               <br />
-              <textarea id="rsaKey" name="rsaKey" cols="40" rows="6" placeholder="RSA Key -- paste PEM file contents"
+              <textarea id="rsaKey" name="rsaKey" cols="40" rows="6" placeholder="OpenPGP Key -- paste PEM file contents"
                 required></textarea>
             </label>
 
@@ -655,14 +708,15 @@
         </div>
         <div class="flex-item">
           <form id="eccForm" name="eccForm" class="auth-form">
-            <h2>Add ECC Private Key</h2>
+            <h2>Add Private Key</h2>
 
             <label>
               Type:
               <select id="eccType" name="eccType">
                 <option value=1>Curve25519/Ed25519</option>
-                <option value=2>NIST P256</option>
-                <option value=3>secp256k1</option>
+                <option value=2>NIST256P1</option>
+                <option value=3>SECP256K1</option>
+                <option value=0>HMACSHA1</option>
               </select>
             </label>
 
@@ -712,7 +766,7 @@
               Key:
               <br />
               <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="2"
-                placeholder="ECC Key (32 bytes hex)" required></textarea>
+                placeholder="Private Key (ECC - 32 bytes hex, HMACSHA1 - 20 bytes hex)" required></textarea>
             </label>
 
             <br />
