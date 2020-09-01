@@ -2,7 +2,6 @@
 
 var argv = require('yargs').argv;
 var os = require('os');
-var jetpack = require('fs-jetpack');
 
 module.exports.os = function () {
     switch (os.platform()) {
