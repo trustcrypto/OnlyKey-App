@@ -380,7 +380,7 @@ OnlyKey.prototype.listenfor = async function (msg, callback) {
   await listenForMessageIncludes(msg);
 };
 
-OnlyKey.prototype.listenfor2 = async function (succeed_msg, callback) {
+OnlyKey.prototype.listenforvalue = async function (succeed_msg, callback) {
   await wait(300);
   await listenForMessageIncludes2('Error', succeed_msg);
 };
@@ -464,7 +464,7 @@ OnlyKey.prototype.sendPinMessage = function ({
   }
 
   this.sendMessage(messageParams, async () => {
-    await this.listenfor2('Success', cb);
+    await wait(300);
     return cb();
   });
   console.info('last messages');
@@ -508,9 +508,22 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
     msgId: 'OKSETPIN',
     pin: pinBytes
   }, async () => {
-    await this.listenfor2('set PIN', callback);
+    // Check if PIN attempts exceeded
+    if (myOnlyKey.getLastMessage('received').indexOf("Error password attempts for this session exceeded") === 0) {
+      document.getElementById('locked-text-go').innerHTML = "To prevent lockout OnlyKey only permits 3 failed PIN attempts at a time, please remove and reinsert OnlyKey to try again.";
+      console.info("PIN attempts exeeded");
+    } else {
+      document.getElementById('locked-text-go').innerHTML = `
+      <h3>Please enter your PIN</h3>
+      <form name="unlockOkGoForm" id="unlockOkGoForm">
+        <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
+        <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
+      </form>
+      `;
+    }
     return callback();
   });
+  
 };
 
 OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
@@ -544,14 +557,14 @@ OnlyKey.prototype.getSlotNum = function (slotId) {
 
 OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey, callback) {
   this.setSlot('XX', 'YUBIAUTH', (publicId + privateId + secretKey).match(/.{2}/g), async () => {
-    await this.listenfor2('set AES Key', callback);
+    await this.listenforvalue('set AES Key', callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.wipeYubiAuth = function (callback) {
   this.wipeSlot('XX', 'YUBIAUTH', async () => {
-    await this.listenfor2('wiped AES Key', callback);
+    await this.listenforvalue('wiped AES Key', callback);
     return callback();
   });
 };
@@ -804,14 +817,14 @@ OnlyKey.prototype.firmware = async function (firmwareData, packetHeader, callbac
 
 OnlyKey.prototype.setLockout = function (lockout, callback) {
   this.setSlot('XX', 'LOCKOUT', lockout, async () => {
-    await this.listenfor2('set idle timeout', callback);
+    await this.listenforvalue('set idle timeout', callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setWipeMode = function (wipeMode, callback) {
   this.setSlot('XX', 'WIPEMODE', wipeMode, async () => {
-    await this.listenfor2('set Wipe Mode', callback);
+    await this.listenforvalue('set Wipe Mode', callback);
     return callback();
   });
 };
@@ -829,28 +842,28 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
 
   OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode, callback) {
     this.setSlot('XX', 'derivedchallengeMode', derivedchallengeMode, async () => {
-      await this.listenfor2('challenge mode', callback);
+      await this.listenforvalue('challenge mode', callback);
       return callback();
     });
   };
 
   OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode, callback) {
     this.setSlot('XX', 'storedchallengeMode', storedchallengeMode, async () => {
-      await this.listenfor2('challenge mode', callback);
+      await this.listenforvalue('challenge mode', callback);
       return callback();
     });
   };
 
   OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode, callback) {
     this.setSlot('XX', 'hmacchallengeMode', hmacchallengeMode, async () => {
-      await this.listenfor2('HMAC Challenge Mode', callback);
+      await this.listenforvalue('HMAC Challenge Mode', callback);
       return callback();
     });
   };
 
   OnlyKey.prototype.setmodkeyMode = function (modkeyMode, callback) {
     this.setSlot('XX', 'modkeyMode', modkeyMode, async () => {
-      await this.listenfor2('Sysadmin Mode', callback);
+      await this.listenforvalue('Sysadmin Mode', callback);
       return callback();
     });
   };
@@ -859,35 +872,36 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
   OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
     backupKeyMode = parseInt(backupKeyMode, 10);
     this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, async () => {
-      await this.listenfor2('Backup Key Mode', callback);
+      await wait(10); 
+      await this.listenforvalue('Backup Key Mode', callback);
       return callback();
     });
   };
 
 OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
   this.setSlot('XX', 'TYPESPEED', typeSpeed, async () => {
-    await this.listenfor2('set keyboard typespeed', callback);
+    await this.listenforvalue('set keyboard typespeed', callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setLedBrightness = function (ledBrightness, callback) {
   this.setSlot('XX', 'LEDBRIGHTNESS', ledBrightness, async () => {
-    await this.listenfor2('set LED brightness', callback);
+    await this.listenforvalue('set LED brightness', callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setLockButton = function (lockButton, callback) {
   this.setSlot('XX', 'LOCKBUTTON', lockButton, async () => {
-    await this.listenfor2('set lock button', callback);
+    await this.listenforvalue('set lock button', callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setKBDLayout = function (kbdLayout, callback) {
   this.setSlot('XX', 'KBDLAYOUT', kbdLayout, async () => {
-    await this.listenfor2('set keyboard layout', callback);
+    await this.listenforvalue('set keyboard layout', callback);
     return callback();
   });
 };
@@ -907,6 +921,60 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
   switch(lastChar) {
     case 'g':
       deviceType = DEVICE_TYPES.GO;
+      document.getElementById('slot-config-btns').innerHTML = `
+      <tr>
+        <td>
+          <span class="slotLabel" id="slotLabel1a">empty</span>
+          <input type="button" id="slot1aConfig" value="1a" /><br />
+          <span class="slotLabel" id="slotLabel1b">empty</span>
+          <input type="button" id="slot1bConfig" value="1b" />
+        </td>
+        <td class="okgo-photo-cell"></td>
+        <td>
+          <input type="button" id="slot2aConfig" value="2a" />
+          <span class="slotLabel" id="slotLabel2a">empty</span><br />
+          <input type="button" id="slot2bConfig" value="2b" />
+          <span class="slotLabel" id="slotLabel2b">empty</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" align="center">
+          <input type="button" id="slot3aConfig" value="3a" />
+          <span class="slotLabel" id="slotLabel3a">empty</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" align="center">
+          <input type="button" id="slot3bConfig" value="3b" />
+          <span class="slotLabel" id="slotLabel3b">empty</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" align="center">
+        <input type="button" id="show_additional_slots" value="Show Additional Slots (below slots should be hidden by default)" />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <input type="button" id="slot4aConfig" value="1c" />
+          <span class="slotLabel" id="slotLabel4a">empty</span><br />
+          <input type="button" id="slot4bConfig" value="1d" />
+          <span class="slotLabel" id="slotLabel4b">empty</span>
+        </td>
+        <td align="center">
+          <input type="button" id="slot6aConfig" value="3c" />
+          <span class="slotLabel" id="slotLabel6a">empty</span><br />
+          <input type="button" id="slot6bConfig" value="3d" />
+          <span class="slotLabel" id="slotLabel6b">empty</span>
+        </td>
+        <td>
+          <span class="slotLabel" id="slotLabel5a">empty</span>
+          <input type="button" id="slot5aConfig" value="2c" /><br />
+          <span class="slotLabel" id="slotLabel5b">empty</span>
+          <input type="button" id="slot5bConfig" value="2d" />
+        </td>
+      </tr>
+    `
       break;
     case 'c':
     default:
@@ -914,6 +982,51 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
         deviceType = 'UNINITIALIZED';
       } else {
         deviceType = DEVICE_TYPES.CLASSIC;
+        document.getElementById('slot-config-btns').innerHTML = `
+        <tr>
+          <td align="right">
+            <span class="slotLabel" id="slotLabel1a">empty</span>
+            <input type="button" id="slot1aConfig" value="1a" /><br />
+            <span class="slotLabel" id="slotLabel1b">empty</span>
+            <input type="button" id="slot1bConfig" value="1b" />
+          </td>
+          <td class="ok-photo-cell" rowspan="3"></td>
+          <td>
+            <input type="button" id="slot2aConfig" value="2a" />
+            <span class="slotLabel" id="slotLabel2a">empty</span><br />
+            <input type="button" id="slot2bConfig" value="2b" />
+            <span class="slotLabel" id="slotLabel2b">empty</span>
+          </td>
+        </tr>
+        <tr>
+          <td align="right">
+            <span class="slotLabel" id="slotLabel3a">empty</span>
+            <input type="button" id="slot3aConfig" value="3a" /><br />
+            <span class="slotLabel" id="slotLabel3b">empty</span>
+            <input type="button" id="slot3bConfig" value="3b" />
+          </td>
+          <td>
+            <input type="button" id="slot4aConfig" value="4a" />
+            <span class="slotLabel" id="slotLabel4a">empty</span><br />
+            <input type="button" id="slot4bConfig" value="4b" />
+            <span class="slotLabel" id="slotLabel4b">empty</span>
+          </td>
+        </tr>
+        <tr>
+          <td align="right">
+            <span class="slotLabel" id="slotLabel5a">empty</span>
+            <input type="button" id="slot5aConfig" value="5a" /><br />
+            <span class="slotLabel" id="slotLabel5b">empty</span>
+            <input type="button" id="slot5bConfig" value="5b" />
+          </td>
+          <td>
+            <input type="button" id="slot6aConfig" value="6a" />
+            <span class="slotLabel" id="slotLabel6a">empty</span><br />
+            <input type="button" id="slot6bConfig" value="6b" />
+            <span class="slotLabel" id="slotLabel6b">empty</span>
+          </td>
+        </tr>
+      `
         // throw Error(`Unable to determine deviceType from version ${version}`);
       }
   }
@@ -2113,25 +2226,28 @@ async function listenForMessageIncludes(str) {
   })
 }
 
-async function listenForMessageIncludes2(str1, str2) {
+async function listenForMessageIncludes2(...args) {
   return new Promise(async function listenForMessageIncludesAgain2(resolve, reject) {
-    console.info(`Listening for "${str1}" or "${str2}" `);
     myOnlyKey.listen(async (err, msg) => {
       let match;
-      if (msg && ((msg.includes(str1) || msg.includes(str2)))) {
-        match = msg;
-      } else if (err) {
-        match = err;
-      }
-      if (match) {
-        console.info(`Match received "${match}"...`);
-        resolve();
-      } else if (msg) {
-        //Chrome app background page sends settime which results in unexpected unlocked response
-        console.info(`Received unexpected message: ${msg}`);
-        await listenForMessageIncludesAgain2(resolve, reject);
-      } else {
-        reject(err || `No response from OnlyKey: ${msg}`);
+      for (let i=0; i<args.length; i++) {
+        var str = args[i];
+        console.info(`Listening for "${str}"`);
+        if (msg && (msg.includes(str))) {
+          match = msg;
+        } else if (err) {
+          match = err;
+        }
+        if (match) {
+          console.info(`Match received "${match}"...`);
+          resolve();
+        } else if (msg) {
+          //Chrome app background page sends settime which results in unexpected unlocked response
+          console.info(`Received ${msg}`);
+          await listenForMessageIncludesAgain2(resolve, reject);
+        } else {
+          reject(err || `No response from OnlyKey ${msg}`);
+        }
       }
     });
   })

@@ -118,6 +118,7 @@ if (chrome.passwordsPrivate) {
       Step8: { // backup passphrase
         prev: 'Step2',
         next: 'Step10',
+        noExit: true,
         enterFn: () => {
           if (this.checkInitialized() || !this.advancedSetup) {
             document.getElementById('step8-2-text').innerHTML = "";
@@ -509,6 +510,16 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
+    document.getElementById('locked-text-go').innerHTML = `
+    <h3>Please enter your PIN</h3>
+    <form name="unlockOkGoForm" id="unlockOkGoForm">
+      <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
+      <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
+    </form>
+    `;
+    document.getElementById('locked-text').innerHTML = `
+    <h3>Please enter your PIN</h3>
+    `;
     this.unlockOkGoPinInput = document.getElementById('unlockOkGoPin');
     this.unlockOkGoSubmitBtn = document.getElementById('unlockOkGoSubmit');
     this.unlockOkGoSubmitBtn.onclick = e => {
@@ -519,7 +530,7 @@ if (chrome.passwordsPrivate) {
             console.dir({
               UNLOCK_ERR: err
             });
-            throw Error('shit');
+            throw Error('error');
           }
         // });
       });
@@ -857,7 +868,13 @@ if (chrome.passwordsPrivate) {
         case 'checkbox':
           if (form[field].checked) {
             isChecked = true;
-            formValue = ('' + (fieldMap[field].input).value).trim();
+            if ((fieldMap[field].input).name == 'txtSlotUrl' || (fieldMap[field].input).name == 'txtPassword' || (fieldMap[field].input).name == 'txtUserName') {
+              formValue = ('' + (fieldMap[field].input).value);
+            } else {
+              formValue = ('' + (fieldMap[field].input).value).trim();
+            }
+            console.info(formValue);
+            console.info((fieldMap[field].input).name)
             form[field].checked = false;
           }
           break;
@@ -895,7 +912,7 @@ if (chrome.passwordsPrivate) {
             }
             break;
         }
-
+        
         this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
           if (!err) {
             this.setSlot();

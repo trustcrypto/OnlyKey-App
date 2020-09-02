@@ -167,6 +167,15 @@ td.ok-photo-cell {
     height: 260px;
 }
 
+/* configure onlykey go photo background */
+td.okgo-photo-cell {
+    background: transparent url(/images/placeholder-go-photo.png) no-repeat 50% 0%;
+    background-size: contain;
+    padding-top: 10px;
+    width: 175px;
+    height: 240px;
+}
+
 #slot-config-btns td {
     vertical-align: bottom;
 }
