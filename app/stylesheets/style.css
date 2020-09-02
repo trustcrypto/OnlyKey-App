@@ -1,33 +1,41 @@
 @font-face {
-    font-family: 'AppFont';
-    src: url('Ubuntu-Medium.ttf') format('truetype');
+    font-family: 'HFont';
+    src: url('Roboto-Medium.ttf');
 }
 
 @font-face {
     font-family: 'BodyFont';
-    src: url('Ubuntu-Regular.ttf') format('truetype');
+    src: url('Ubuntu-Regular.ttf');
 }
 
 @font-face {
     font-family: 'TxFont';
-    src: url('Roboto-Medium.ttf') format('truetype');
+    src: url('Roboto-Regular.ttf');
 }
 
 body {
-    font-family: BodyFont, monospace;
+    font-family: BodyFont;
     font-size: 11pt;
     text-decoration: none;
 }
 
-h4,h5,h6,a {
-    font-family: TxFont, monospace;
-    font-weight: bolder;
+button {
+    font-family: BodyFont;
+    font-size: 110%;
+}
+
+input[type="button"]{
+    font-family: BodyFont;
+    font-size: 110%;
+}
+
+a,p {
+    font-family: TxFont;
     text-decoration: none;
 }
 
-h1,h2,h3 {
-    font-family: AppFont, monospace;
-    font-weight: bolder;
+h1,h2,h3,h4,h5,h6 {
+    font-family: HFont;
     text-decoration: none;
 }
 

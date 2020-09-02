@@ -468,6 +468,8 @@ if (chrome.passwordsPrivate) {
 
     this.btnCancelStep.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
+      console.info("Cancel button pressed");
+      this.gotoStep('Step1');
       this.reset();
     };
 
