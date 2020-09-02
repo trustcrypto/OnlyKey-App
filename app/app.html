@@ -388,7 +388,7 @@
               <u>Enable Sysadmin Mode</u>
             </label>
             <br />
-            <input type="button" id="modkeyModeSubmit" value="Set Modifier Key Mode" />
+            <input type="button" id="modkeyModeSubmit" value="Set Modifier Key Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
             <b>HMAC Key Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
@@ -404,7 +404,7 @@
               <u>Button Press Not Required</u>
             </label>
             <br />
-            <input type="button" id="hmacchallengeModeSubmit" value="Set HMAC Challenge Mode" />
+            <input type="button" id="hmacchallengeModeSubmit" value="Set HMAC Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
         </div>
         <div class="flex-item">
@@ -422,7 +422,7 @@
               <u>Button Press Required</u>
             </label>
             <br />
-            <input type="button" id="derivedchallengeModeSubmit" value="Set SSH Challenge Mode" />
+            <input type="button" id="derivedchallengeModeSubmit" value="Set SSH Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="storedchallengeModeForm" name="storedchallengeModeForm">
             <b>Stored Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#stored-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
@@ -438,11 +438,10 @@
               <u>Button Press Required</u>
             </label>
             <br />
-            <input type="button" id="storedchallengeModeSubmit" value="Set Stored Challenge Mode" />
+            <input type="button" id="storedchallengeModeSubmit" value="Set Stored Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="wipeModeForm" name="wipeModeForm">
-            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
-            Configure how the OnlyKey responds to a factory reset.
+            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
             Only sensitive data is wiped by default.
             <br />
             <label>
@@ -450,10 +449,10 @@
               <u>Full Wipe</u> &ndash; <em>Entire device is wiped and firmware must be reloaded.</em>
             </label>
             <br />
-            <span style="font-size: small; color: red;"><b>WARNING - Once set to "Full Wipe" this cannot be
-                changed.</b></span>
+            <span style="font-size: small; background-color: yellow;"><b> WARNING - Once set to "Full Wipe" this cannot be
+                changed. </b></span>
             <br />
-            <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" />
+            <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="backupModeForm" name="backupModeForm">
             <b>Backup Key Mode </b><a href="https://docs.crp.to/usersguide.html#backup-key-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
@@ -464,9 +463,9 @@
               <u>Locked</u> - <em>Backup key may not be changed on device</em>
             </label>
             <br />
-            <span style="font-size: small; color: red;"><b>WARNING - Once set to "Locked" this cannot be changed.</b></span>
+            <span style="font-size: small; background-color: yellow;"><b> WARNING - Once set to "Locked" this cannot be changed. </b></span>
             <br />
-            <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" />
+            <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
         </div>
       </div>

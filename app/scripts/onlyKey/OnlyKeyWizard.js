@@ -175,7 +175,7 @@ if (chrome.passwordsPrivate) {
             document.getElementById('step2-text').innerHTML = "<h3>Change Primary Profile PIN</h3><br>Make sure to choose a new PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode1Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
           }
           this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
+          this.onlyKey.sendSetPin.bind(this.onlyKey, cb);
         },
         exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
       },
@@ -192,7 +192,7 @@ if (chrome.passwordsPrivate) {
         enterFn: () => {
           this.setSecondPINHtml('step4-text');
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
+          this.onlyKey.sendSetPin2.bind(this.onlyKey);
         },
         exitFn: (cb) => {
           if (!this.checkInitialized() && this.advancedSetup) {
@@ -218,7 +218,7 @@ if (chrome.passwordsPrivate) {
             document.getElementById('step6-text').innerHTML = "<h3>Change Self-Destruct PIN</h3><p>OnlyKey permits adding a self-destruct PIN that when entered will restore the OnlyKey to factory default settings. This is a helpful way to quickly wipe the OnlyKey. Alternatively, entering 10 incorrect PIN codes will wipe the OnlyKey.</p><br /><p>WARNING &mdash; Make sure to choose a PIN that is not similar to your profile PINs as this could result in unintentionally wiping your OnlyKey.</p><p>DISCLAIMER &mdash; I understand that entering this PIN will cause OnlyKey to perform a factory default which wipes all sensitive information.</p><label><input type='checkbox' name='passcode2Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
           }
           this.steps.Step7.next = this.guided ? 'Step8' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetSDPin.bind(this.onlyKey));
+          this.onlyKey.sendSetSDPin.bind(this.onlyKey);
         },
         exitFn: this.onlyKey.sendSetSDPin.bind(this.onlyKey),
       },
@@ -237,7 +237,6 @@ if (chrome.passwordsPrivate) {
           }
           this.btnSubmitStep.disabled = false;
           this.steps.Step8.next = this.guided ? 'Step10' : 'Step1';
-          this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
           if (this.direction === NEXT) {
@@ -259,7 +258,6 @@ if (chrome.passwordsPrivate) {
         enterFn: () => {
           this.btnSubmitStep.disabled = false;
           this.steps.Step9.next = this.guided ? 'Step10' : 'Step1';
-          this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
           const backupKeyMode = this.initForm.backupKeyMode;
@@ -431,7 +429,7 @@ if (chrome.passwordsPrivate) {
 
     this.skipSDPIN.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
-      this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step8'));
+      this.onlyKey, this.gotoStep.bind(this, 'Step8');
     };
 
     this.setPassphrase.onclick = (e) => {
@@ -454,6 +452,11 @@ if (chrome.passwordsPrivate) {
 
     this.btnExit.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
+      console.info("Exit button pressed");
+      if (this.currentStep == 'Step10') {
+        console.info("Reboot Requested");
+        this.submitRestoreFile();
+      }
       this.reset();
     };
 
@@ -1241,7 +1244,7 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.reset = function () {
     this.setGuided(true);
-    this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, null));
+    this.onlyKey, this.setNewCurrentStep.bind(this, null);
   };
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -1284,7 +1287,7 @@ function setupSpecialEventListeners(evt) {
     id: '#SkipPIN2',
     fn: (e) => {
       e.preventDefault && e.preventDefault();
-      this.onlyKey.flushMessage.call(this.onlyKey, this.gotoStep.bind(this, 'Step6'));
+      this.onlyKey, this.gotoStep.bind(this, 'Step6');
     }
   }];
 

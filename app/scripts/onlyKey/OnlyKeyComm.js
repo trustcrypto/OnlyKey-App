@@ -376,36 +376,6 @@ OnlyKey.prototype.getLastMessageIndex = function (type, index) {
   return this.lastMessages[type] && this.lastMessages[type][index] && this.lastMessages[type][index].hasOwnProperty('text') ? this.lastMessages[type][index].text : '';
 };
 
-OnlyKey.prototype.flushMessage = function (callback = () => {}) {
-  const messageTypes = Object.keys(this.pendingMessages);
-  const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
-  if (!pendingMessagesTypes.length) {
-    console.info("No pending messages to flush.");
-    return callback();
-  }
-
-  const msgId = pendingMessagesTypes[0];
-
-  console.info(`Flushing pending ${msgId}.`);
-  this.sendPinMessage({
-    msgId,
-    poll: false
-  }, () => {
-    pollForInput({
-      flush: true
-    }, (err, msg) => {
-      this.setLastMessage('received', 'Canceled');
-
-      if (msg) {
-        console.info("Flushed previous message.");
-        return this.flushMessage(callback);
-      } else {
-        return callback();
-      }
-    });
-  });
-};
-
 OnlyKey.prototype.listenfor = async function (msg, callback) {
   await listenForMessageIncludes(msg);
 };
@@ -493,7 +463,10 @@ OnlyKey.prototype.sendPinMessage = function ({
     messageParams.contentType = 'DEC';
   }
 
-  this.sendMessage(messageParams, cb);
+  this.sendMessage(messageParams, async () => {
+    await this.listenfor2('Success', cb);
+    return cb();
+  });
   console.info('last messages');
   console.info(myOnlyKey.getLastMessageIndex('received', 0));
   console.info(myOnlyKey.getLastMessageIndex('received', 1));
@@ -2215,7 +2188,7 @@ function submitstoredchallengeModeForm(e) {
   var storedchallengeMode = parseInt(ui.storedchallengeModeForm.okStoredChallengeMode.value, 10);
 
   myOnlyKey.setstoredchallengeMode(storedchallengeMode, function (err) {
-    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    myOnlyKey.listen(handleMessage);
     ui.storedchallengeModeForm.reset();
   });
 
@@ -2226,7 +2199,7 @@ function submitderivedchallengeModeForm(e) {
   var derivedchallengeMode = parseInt(ui.derivedchallengeModeForm.okderivedchallengeMode.value, 10);
 
   myOnlyKey.setderivedchallengeMode(derivedchallengeMode, function (err) {
-    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    myOnlyKey.listen(handleMessage);
     ui.derivedchallengeModeForm.reset();
   });
 
@@ -2237,7 +2210,7 @@ function submithmacchallengeModeForm(e) {
   var hmacchallengeMode = parseInt(ui.hmacchallengeModeForm.okhmacchallengeMode.value, 10);
 
   myOnlyKey.sethmacchallengeMode(hmacchallengeMode, function (err) {
-    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    myOnlyKey.listen(handleMessage);
     ui.hmacchallengeModeForm.reset();
   });
 
@@ -2248,7 +2221,7 @@ function submitmodkeyModeForm(e) {
   var modkeyMode = parseInt(ui.modkeyModeForm.okmodkeyMode.value, 10);
 
   myOnlyKey.setmodkeyMode(modkeyMode, function (err) {
-    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    myOnlyKey.listen(handleMessage);
     ui.modkeyModeForm.reset();
   });
 
@@ -2277,7 +2250,7 @@ function submitWipeModeForm(e) {
   var wipeMode = parseInt(ui.wipeModeForm.okWipeMode.value, 10);
 
   myOnlyKey.setWipeMode(wipeMode, function (err) {
-    myOnlyKey.flushMessage(myOnlyKey.listen(handleMessage));
+    myOnlyKey.listen(handleMessage);
     ui.wipeModeForm.reset();
   });
 
