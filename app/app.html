@@ -69,14 +69,17 @@
               <td class="init-only device-specific ok-classic ok-go">
                 <button id="SetBackup" type="button">Set Backup Passphrase or Key</button>
               </td>
-              <td class="init-only device-specific ok-classic ok-go">
+              <td class="init-only device-specific ok-classic">
                 <button id="SetPIN" type="button">Change Primary PIN</button>
               </td>
-              <td class="init-only device-specific ok-classic ok-go">
+              <td class="init-only device-specific ok-classic">
                 <button id="SetPIN2" type="button">Change Secondary PIN</button>
               </td>
               <td class="init-only device-specific ok-classic">
                 <button id="SetSDPIN" type="button">Change Self-Destruct PIN</button>
+              </td>
+              <td class="init-only device-specific ok-go">
+                <button id="SetPINS" type="button">Change OnlyKey Go PINs</button>
               </td>
             </tr>
           </table>
@@ -360,21 +363,6 @@
             <br />
             (1 = dimmest, 10 = brightest, 8 = default)
           </form>
-          <form id="lockButtonForm" name="lockButtonForm">
-            <b>Lock Button</b> <a href="https://docs.crp.to/usersguide.html#configurable-lock-button" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
-            The OnlyKey and the computer are locked automatically when this lock button is pressed (0 to disable).
-            <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6"
-              style="width: 50px;" />
-            <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
-          </form>
-          <form id="lockoutForm" name="lockoutForm">
-            <b>Inactivity Lockout Timer </b><a href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
-            <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255 Minutes"
-              style="width: 50px;" />
-            <input type="button" id="lockoutSubmit" value="Set Lockout" />
-            <br />
-            (1 &ndash; 255 Minutes, 30 = default, 0 to disable)
-          </form>
           <form id="modkeyModeForm" name="modkeyModeForm">
             <b>Sysadmin Mode </b><a href="https://docs.crp.to/usersguide.html#sysadmin-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
             <label>
@@ -390,9 +378,7 @@
             <input type="button" id="modkeyModeSubmit" value="Set Modifier Key Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
-            <b>HMAC Key Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
-            Enable or disable user input required 
-            <br />
+            <b>HMAC Challenge-Response Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
             <label>
               <input type="radio" checked name="okhmacchallengeMode" value=0 />
               <u>Button Press Required</u>
@@ -405,8 +391,37 @@
             <br />
             <input type="button" id="hmacchallengeModeSubmit" value="Set HMAC Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
+          <form id="wipeModeForm" name="wipeModeForm">
+            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a>
+            Only sensitive data is wiped by default.
+            <br />
+            <label>
+              <input type="radio" checked name="okWipeMode" value=2 />
+              <u>Full Wipe</u> &ndash; <em>Entire device is wiped and firmware must be reloaded.</em>
+            </label>
+            <br />
+            <span style="font-size: small; background-color: yellow;"><b> WARNING - Once set to "Full Wipe" this cannot be
+                changed. </b></span>
+            <br />
+            <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
+          </form>
         </div>
         <div class="flex-item">
+          <form id="lockoutForm" name="lockoutForm">
+            <b>Inactivity Lockout Timer </b><a href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255 Minutes"
+              style="width: 50px;" />
+            <input type="button" id="lockoutSubmit" value="Set Lockout" />
+            <br />
+            (1 &ndash; 255 Minutes, 30 = default, 0 to disable)
+          </form>
+          <form id="lockButtonForm" name="lockButtonForm">
+            <b>Lock Button</b> <a href="https://docs.crp.to/usersguide.html#configurable-lock-button" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            The OnlyKey and the computer are locked automatically when this lock button is pressed (0 to disable).
+            <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6"
+              style="width: 50px;" />
+            <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
+          </form>
           <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
             <b>Derived Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#derived-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
             Enable or disable challenge for derived keys (SSH/PGP)
@@ -438,20 +453,6 @@
             </label>
             <br />
             <input type="button" id="storedchallengeModeSubmit" value="Set Stored Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
-          <form id="wipeModeForm" name="wipeModeForm">
-            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a>
-            Only sensitive data is wiped by default.
-            <br />
-            <label>
-              <input type="radio" checked name="okWipeMode" value=2 />
-              <u>Full Wipe</u> &ndash; <em>Entire device is wiped and firmware must be reloaded.</em>
-            </label>
-            <br />
-            <span style="font-size: small; background-color: yellow;"><b> WARNING - Once set to "Full Wipe" this cannot be
-                changed. </b></span>
-            <br />
-            <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="backupModeForm" name="backupModeForm">
             <b>Backup Key Mode </b><a href="https://docs.crp.to/usersguide.html#backup-key-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 

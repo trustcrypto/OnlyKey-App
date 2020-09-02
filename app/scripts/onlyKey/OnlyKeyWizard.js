@@ -59,56 +59,54 @@ if (chrome.passwordsPrivate) {
         next: 'Step8',
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
-          if (!this.checkInitialized()) {
             document.getElementById('step2-text').innerHTML = `
-              <h3>Change PINs</h3>
-              <p>
-                Make sure to choose PINs that you will not forget and that only you know.
-                It is also good to keep a secure backup of your PINs somewhere in case you forget.
-              </p>
-              <p>
-                DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and,
-                if I forget my PINs, the only way to recover my OnlyKey GO is to perform a
-                factory reset which wipes all sensitive information.
-              </p>
-              <label>
-                <input type='checkbox' name='passcode1Disclaimer' />
-                I understand and accept the above risk.
-              </label>
-              <p>
-                <strong>Enter 7-16 digits for each PIN:</strong>
-              </p>
-              <div class='flex-container'>
-                <div class='flex-item col-3'>
-                  <p class='center'>
-                    <u>Primary Profile</u><br/>
-                    <input type='password' id='goPrimaryPin' name='goPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
-                    <input type='password' id='goPrimaryPinConfirm' name='goPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                    [required]
-                  </p>
-                  <p id='goPrimaryPinErrors' class='form-error'></p>
-                </div>
-                <div class='flex-item col-3'>
-                  <p class='center'>
-                    <u>Secondary Profile</u><br/>
-                    <input type='password' id='goSecondaryPin' name='goSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
-                    <input type='password' id='goSecondaryPinConfirm' name='goSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                    [optional]
-                  </p>
-                  <p id='goSecondaryPinErrors' class='form-error'></p>
-                </div>
-                <div class='flex-item col-3'>
-                  <p class='center'>
-                    <u>Self-Destruct</u><br/>
-                    <input type='password' id='goSDPin' name='goSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
-                    <input type='password' id='goSDPinConfirm' name='goSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                    [optional]
-                  </p>
-                  <p id='goSdPinErrors' class='form-error'></p>
-                </div>
+            <h3>Change PINs</h3>
+            <p>
+              Make sure to choose PINs that you will not forget and that only you know.
+              It is also good to keep a secure backup of your PINs somewhere in case you forget.
+            </p>
+            <p>
+              DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and,
+              if I forget my PINs, the only way to recover my OnlyKey GO is to perform a
+              factory reset which wipes all sensitive information.
+            </p>
+            <label>
+              <input type='checkbox' name='passcode1Disclaimer' />
+              I understand and accept the above risk.
+            </label>
+            <p>
+              <strong>Enter 7-16 digits for each PIN:</strong>
+            </p>
+            <div class='flex-container'>
+              <div class='flex-item col-3'>
+                <p class='center'>
+                  <u>Primary Profile</u><br/>
+                  <input type='password' id='goPrimaryPin' name='goPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
+                  <input type='password' id='goPrimaryPinConfirm' name='goPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  [required]
+                </p>
+                <p id='goPrimaryPinErrors' class='form-error'></p>
               </div>
-            `;
-          }
+              <div class='flex-item col-3'>
+                <p class='center'>
+                  <u>Secondary Profile</u><br/>
+                  <input type='password' id='goSecondaryPin' name='goSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
+                  <input type='password' id='goSecondaryPinConfirm' name='goSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  [optional]
+                </p>
+                <p id='goSecondaryPinErrors' class='form-error'></p>
+              </div>
+              <div class='flex-item col-3'>
+                <p class='center'>
+                  <u>Self-Destruct</u><br/>
+                  <input type='password' id='goSDPin' name='goSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
+                  <input type='password' id='goSDPinConfirm' name='goSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  [optional]
+                </p>
+                <p id='goSdPinErrors' class='form-error'></p>
+              </div>
+            </div>
+          `;
         },
         exitFn: (cb) => {
           const pins = this.validateGoPins();
@@ -408,6 +406,7 @@ if (chrome.passwordsPrivate) {
     this.initConfigErrors = document.getElementById('initConfigErrors');
 
     this.setPIN = document.getElementById('SetPIN');
+    this.setPINS = document.getElementById('SetPINS');
     this.setBackup = document.getElementById('SetBackup');
     this.setSDPIN = document.getElementById('SetSDPIN');
     this.skipSDPIN = document.getElementById('SkipSDPIN');
@@ -427,6 +426,7 @@ if (chrome.passwordsPrivate) {
     this.setSDPIN.onclick = this.setUnguidedStep.bind(this, 'Step6');
     this.setPIN.onclick = this.setUnguidedStep.bind(this, 'Step2');
     this.setPIN2.onclick = this.setUnguidedStep.bind(this, 'Step4');
+    this.setPINS.onclick = this.setUnguidedStep.bind(this, 'Step2');
 
     this.skipSDPIN.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
@@ -458,6 +458,7 @@ if (chrome.passwordsPrivate) {
         console.info("Reboot Requested");
         this.submitRestoreFile();
       }
+      this.gotoStep('Step1');
       this.reset();
     };
 
@@ -982,10 +983,9 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.setNewCurrentStep = function (stepId) {
     this.currentStep = stepId;
-
     if (this.currentStep) {
-
       // call new current step-related enter function
+      console.info(this.steps[stepId].enterFn);
       if (this.steps[stepId].enterFn) {
         console.info(`Calling ${stepId} enterFn.`);
         this.steps[stepId].enterFn((err, res) => {
