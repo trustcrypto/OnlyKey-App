@@ -951,15 +951,16 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
       </tr>
       <tr>
         <td colspan="3" align="center">
-        <input type="button" id="show_additional_slots" value="Show Additional Slots (below slots should be hidden by default)" />
+        <input type="button" id="show_additional_slots" value="Show Additional Slots TODO hide below by default" />
+        <br>Hold 7 sec for "c", hold 10 sec for "d"
         </td>
       </tr>
       <tr>
         <td>
-          <input type="button" id="slot4aConfig" value="1c" />
-          <span class="slotLabel" id="slotLabel4a">empty</span><br />
-          <input type="button" id="slot4bConfig" value="1d" />
+          <span class="slotLabel" id="slotLabel4a">empty</span>
+          <input type="button" id="slot4aConfig" value="1c" /><br />
           <span class="slotLabel" id="slotLabel4b">empty</span>
+          <input type="button" id="slot4bConfig" value="1d" />
         </td>
         <td align="center">
           <input type="button" id="slot6aConfig" value="3c" />

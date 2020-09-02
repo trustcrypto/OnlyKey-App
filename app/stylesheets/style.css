@@ -1,15 +1,31 @@
 @font-face {
-  font-family: 'AppFont';
-  src: url('ShareTechMono-Regular.ttf') format('truetype');
+    font-family: 'AppFont';
+    src: url('Ubuntu-Medium.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'BodyFont';
+    src: url('Ubuntu-Regular.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'TxFont';
+    src: url('Roboto-Medium.ttf') format('truetype');
 }
 
 body {
-    font-family: monospace;
-    font-size: 10pt;
+    font-family: BodyFont, monospace;
+    font-size: 11pt;
     text-decoration: none;
 }
 
-h1,h2,h3,h4,h5,h6,a {
+h4,h5,h6,a {
+    font-family: TxFont, monospace;
+    font-weight: bolder;
+    text-decoration: none;
+}
+
+h1,h2,h3 {
     font-family: AppFont, monospace;
     font-weight: bolder;
     text-decoration: none;
@@ -172,8 +188,8 @@ td.okgo-photo-cell {
     background: transparent url(/images/placeholder-go-photo.png) no-repeat 50% 0%;
     background-size: contain;
     padding-top: 10px;
-    width: 175px;
-    height: 240px;
+    width: 120px;
+    height: 180px;
 }
 
 #slot-config-btns td {
