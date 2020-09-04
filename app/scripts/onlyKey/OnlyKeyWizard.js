@@ -174,6 +174,9 @@ if (chrome.passwordsPrivate) {
             document.getElementById('step2-text').innerHTML = "<h3>Change Primary Profile PIN</h3><br>Make sure to choose a new PIN that you will not forget and that only you know. It may be easier to remember a pattern rather than numbers. It is also good to keep a secure backup of your PIN somewhere just in case you forget.</p><p>DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.</p><label><input type='checkbox' name='passcode1Disclaimer' />I understand and accept the above risk.</label><p>Enter a 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span class='nextTxt'>Next</span>] below.</p>";
           }
           this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
+          //if (!myOnlyKey.getLastMessage('received').includes('PIN')) {
+          //  myOnlyKey.listenforvalue('PIN');
+          //}
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
         },
         exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
@@ -460,7 +463,7 @@ if (chrome.passwordsPrivate) {
         console.info("Reboot Requested");
         this.submitRestoreFile();
       }
-      this.gotoStep('Step1');
+      //this.gotoStep('Step1');
       this.reset();
     };
 

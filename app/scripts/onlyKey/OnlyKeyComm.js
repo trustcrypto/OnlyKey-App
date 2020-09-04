@@ -263,8 +263,7 @@ OnlyKey.prototype.setConnection = function (connectionId) {
   }
 };
 
-OnlyKey.prototype.sendMessage = async function (options, callback) {
-
+OnlyKey.prototype.sendMessage =  function (options, callback) {
   var bytesPerMessage = 64;
 
   var msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
@@ -381,6 +380,7 @@ OnlyKey.prototype.getLastMessageIndex = function (type, index) {
 OnlyKey.prototype.flushMessage = async function (callback = () => {}) {
   const messageTypes = Object.keys(this.pendingMessages);
   const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
+
   if (!pendingMessagesTypes.length) {
     console.info("No pending messages to flush.");
     return callback();
@@ -389,12 +389,14 @@ OnlyKey.prototype.flushMessage = async function (callback = () => {}) {
   const msgId = pendingMessagesTypes[0];
 
   console.info(`Flushing pending ${msgId}.`);
-  this.sendPinMessage({ msgId, poll: false }, () => {
+  this.sendPinMessage({
+    msgId,
+    poll: false
+  }, () => {
     pollForInput({
       flush: true
     }, (err, msg) => {
       this.setLastMessage('received', 'Canceled');
-
       if (msg) {
         console.info("Flushed previous message.");
         return this.flushMessage(callback);
@@ -427,7 +429,8 @@ OnlyKey.prototype.setTime = async function (callback) {
     msgId: 'OKSETTIME'
   };
   // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
-  this.sendMessage(options, this.sendMessage(options, callback));
+  //this.sendMessage(options, this.sendMessage(options, callback));
+  this.sendMessage(options, callback);
   //await listenForMessageIncludes2('UNINITIALIZED', 'UNLOCKED', 'INITIALIZED');
 };
 
@@ -461,7 +464,7 @@ function handleGetLabels(err, msg) {
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 12 && msg.indexOf('|') == 2) {
+    if (slotNum < 12 && (msg.indexOf('|') == 2 || msg.indexOf('|') == 3)) {
       myOnlyKey.listen(handleGetLabels);
     }
   }
@@ -491,24 +494,17 @@ OnlyKey.prototype.sendPinMessage = function ({
     messageParams.contents = pin;
     messageParams.contentType = 'DEC';
   }
-
-  this.sendMessage(messageParams, async () => {
+  this.sendMessage(messageParams, cb);
     console.info('last messages');
     console.info(myOnlyKey.getLastMessageIndex('received', 0));
     console.info(myOnlyKey.getLastMessageIndex('received', 1));
-    return cb();
-  });
 };
 
 OnlyKey.prototype.sendSetPin = function (callback) {
   console.info("sendSetPin");
   this.sendPinMessage({
     msgId: 'OKSETPIN'
-  }, async () => {
-    if (!myOnlyKey.getLastMessage('received').includes('PIN')) {
-      await this.listenforvalue('PIN', callback);
-    }
-  });
+  }, callback);
 };
 
 OnlyKey.prototype.sendSetSDPin = function (callback) {
