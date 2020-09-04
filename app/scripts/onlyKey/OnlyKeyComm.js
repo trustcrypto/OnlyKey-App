@@ -263,7 +263,7 @@ OnlyKey.prototype.setConnection = function (connectionId) {
   }
 };
 
-OnlyKey.prototype.sendMessage = function (options, callback) {
+OnlyKey.prototype.sendMessage =  function (options, callback) {
   var bytesPerMessage = 64;
 
   var msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
@@ -336,7 +336,8 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
 
   console.info("SENDING " + msgId + " to connectionId " + this.connection + ":", bytes);
 
-  chromeHid.send(this.connection, reportId, bytes.buffer, () => {
+  chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
+    await wait(300);
     if (chrome.runtime.lastError) {
       console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, {
         connectionId: this.connection
@@ -376,12 +377,41 @@ OnlyKey.prototype.getLastMessageIndex = function (type, index) {
   return this.lastMessages[type] && this.lastMessages[type][index] && this.lastMessages[type][index].hasOwnProperty('text') ? this.lastMessages[type][index].text : '';
 };
 
+OnlyKey.prototype.flushMessage = async function (callback = () => {}) {
+  const messageTypes = Object.keys(this.pendingMessages);
+  const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
+
+  if (!pendingMessagesTypes.length) {
+    console.info("No pending messages to flush.");
+    return callback();
+  }
+
+  const msgId = pendingMessagesTypes[0];
+
+  console.info(`Flushing pending ${msgId}.`);
+  this.sendPinMessage({
+    msgId,
+    poll: false
+  }, () => {
+    pollForInput({
+      flush: true
+    }, (err, msg) => {
+      this.setLastMessage('received', 'Canceled');
+      if (msg) {
+        console.info("Flushed previous message.");
+        return this.flushMessage(callback);
+      } else {
+        return callback();
+      }
+    });
+  });
+};
+
 OnlyKey.prototype.listenfor = async function (msg, callback) {
   await listenForMessageIncludes(msg);
 };
 
 OnlyKey.prototype.listenforvalue = async function (succeed_msg, callback) {
-  await wait(300);
   await listenForMessageIncludes2('Error', succeed_msg);
 };
 
@@ -390,7 +420,7 @@ OnlyKey.prototype.listen = function (callback) {
 };
 
 
-OnlyKey.prototype.setTime = function (callback) {
+OnlyKey.prototype.setTime = async function (callback) {
   var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
   console.info("Setting current epoch time =", currentEpochTime);
   var timeParts = currentEpochTime.match(/.{2}/g);
@@ -399,12 +429,14 @@ OnlyKey.prototype.setTime = function (callback) {
     msgId: 'OKSETTIME'
   };
   // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
-  this.sendMessage(options, this.sendMessage(options, callback));
+  await this.sendMessage(options);
+  await listenForMessageIncludes2('UNINITIALIZED', 'UNLOCKED', 'INITIALIZED');
+  this.sendMessage(options, callback);
 };
 
 OnlyKey.prototype.getLabels = async function (callback) {
   this.labels = '';
-  await wait(1000);
+  await wait(700);
   this.sendMessage({
     msgId: 'OKGETLABELS'
   }, handleGetLabels);
@@ -432,7 +464,7 @@ function handleGetLabels(err, msg) {
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 12 && msg.indexOf('|') == 2) {
+    if (slotNum < 12 && (msg.indexOf('|') == 2 || msg.indexOf('|') == 3)) {
       myOnlyKey.listen(handleGetLabels);
     }
   }
@@ -462,17 +494,14 @@ OnlyKey.prototype.sendPinMessage = function ({
     messageParams.contents = pin;
     messageParams.contentType = 'DEC';
   }
-
-  this.sendMessage(messageParams, async () => {
-    await wait(300);
-    return cb();
-  });
-  console.info('last messages');
-  console.info(myOnlyKey.getLastMessageIndex('received', 0));
-  console.info(myOnlyKey.getLastMessageIndex('received', 1));
+  this.sendMessage(messageParams, cb);
+    console.info('last messages');
+    console.info(myOnlyKey.getLastMessageIndex('received', 0));
+    console.info(myOnlyKey.getLastMessageIndex('received', 1));
 };
 
 OnlyKey.prototype.sendSetPin = function (callback) {
+  console.info("sendSetPin");
   this.sendPinMessage({
     msgId: 'OKSETPIN'
   }, callback);
@@ -780,7 +809,6 @@ OnlyKey.prototype.setPrivateKey = async function (slot, type, key, callback) {
     fieldId: type,
     contentType: contentType
   };
-  await wait(10);
   this.sendMessage(options, callback);
 };
 
@@ -799,7 +827,6 @@ OnlyKey.prototype.restore = async function (restoreData, packetHeader, callback)
     contents: msg,
     msgId: 'OKRESTORE'
   };
-  await wait(100);
   this.sendMessage(options, callback);
 };
 
@@ -1271,7 +1298,7 @@ var connectDevice = async function (device) {
   dialog.close(ui.disconnectedDialog);
   dialog.open(ui.workingDialog);
 
-  chromeHid.connect(deviceId, function (connectInfo) {
+  chromeHid.connect(deviceId, async function (connectInfo) {
     if (chrome.runtime.lastError) {
       console.error("ERROR CONNECTING:", chrome.runtime.lastError);
     } else if (!connectInfo) {
