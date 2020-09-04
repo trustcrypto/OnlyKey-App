@@ -429,9 +429,9 @@ OnlyKey.prototype.setTime = async function (callback) {
     msgId: 'OKSETTIME'
   };
   // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
-  //this.sendMessage(options, this.sendMessage(options, callback));
+  await this.sendMessage(options);
+  await listenForMessageIncludes2('UNINITIALIZED', 'UNLOCKED', 'INITIALIZED');
   this.sendMessage(options, callback);
-  //await listenForMessageIncludes2('UNINITIALIZED', 'UNLOCKED', 'INITIALIZED');
 };
 
 OnlyKey.prototype.getLabels = async function (callback) {
