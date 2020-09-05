@@ -424,14 +424,23 @@ OnlyKey.prototype.setTime = async function (callback) {
   var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
   console.info("Setting current epoch time =", currentEpochTime);
   var timeParts = currentEpochTime.match(/.{2}/g);
+  // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
+  // Also clear out any rogue messages from other apps
   var options = {
     contents: timeParts,
     msgId: 'OKSETTIME'
   };
-  // Send OKSETTIME Twice, fixes issue where when attaching OnlyKey to a VM response is not received
-  await this.sendMessage(options);
-  await listenForMessageIncludes2('UNINITIALIZED', 'UNLOCKED', 'INITIALIZED');
-  this.sendMessage(options, callback);
+  await this.sendMessage(options, this.sendMessage(options));
+  await listenForSetTime('UNLOCKED', 'INITIALIZED');
+  callback();
+  /*myOnlyKey.listen(async (err, msg) => {
+      if (msg && (msg.includes('INITIALIZED') || msg.includes('UNLOCKED'))) {
+        console.info("connection success");
+        await listenForMessageIncludes2('UNLOCKED', 'INITIALIZED', callback);
+      } else {
+        await listenForMessageIncludes2('UNLOCKED', 'INITIALIZED', callback);
+      }
+  });*/
 };
 
 OnlyKey.prototype.getLabels = async function (callback) {
@@ -1306,7 +1315,7 @@ var connectDevice = async function (device) {
     }
 
     myOnlyKey.setConnection(connectInfo.connectionId);
-    myOnlyKey.setTime(pollForInput);
+    await myOnlyKey.setTime(pollForInput);
     enableIOControls(true);
   });
 };
@@ -2236,20 +2245,18 @@ async function listenForMessageIncludes(str) {
   })
 }
 
-async function listenForMessageIncludes(str) {
-  return new Promise(async function listenForMessageIncludesAgain(resolve, reject) {
-    console.info(`Listening for "${str}"...`);
+async function listenForSetTime(str1, str2) {
+  return new Promise(resolve => {
+    console.info(`Listening for "${str1}"...`);
     myOnlyKey.listen(async (err, msg) => {
-      if (msg && msg.includes(str)) {
+      if (msg && (msg.includes(str1) || msg.includes(str1))) {
         console.info(`Match received "${msg}"...`);
         resolve();
-      } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
+      } else if (msg) {
         //Chrome app background page sends settime which results in unexpected unlocked response
-        console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
-        await listenForMessageIncludesAgain(resolve, reject);
-      } else {
-        reject(err || `No response from OnlyKey: ${msg}`);
-      }
+        console.info(`While waiting for "${str1}" "${str2}", received unexpected message: ${msg}`);
+        await listenForSetTime(resolve);
+      } 
     });
   })
 }
