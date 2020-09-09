@@ -430,17 +430,7 @@ OnlyKey.prototype.setTime = async function (callback) {
     contents: timeParts,
     msgId: 'OKSETTIME'
   };
-  await this.sendMessage(options, this.sendMessage(options));
-  await listenForSetTime('UNLOCKED', 'INITIALIZED');
-  callback();
-  /*myOnlyKey.listen(async (err, msg) => {
-      if (msg && (msg.includes('INITIALIZED') || msg.includes('UNLOCKED'))) {
-        console.info("connection success");
-        await listenForMessageIncludes2('UNLOCKED', 'INITIALIZED', callback);
-      } else {
-        await listenForMessageIncludes2('UNLOCKED', 'INITIALIZED', callback);
-      }
-  });*/
+  this.sendMessage(options, this.sendMessage(options, callback));
 };
 
 OnlyKey.prototype.getLabels = async function (callback) {
@@ -486,7 +476,7 @@ OnlyKey.prototype.sendPinMessage = function ({
   poll = true
 }, callback = () => {}) {
   this.pendingMessages[msgId] = !this.pendingMessages[msgId];
-  const cb = poll ? pollForInput.bind(this, {}, callback) : callback;
+  var cb = poll ? pollForInput.bind(this, {}, callback) : callback;
   console.info(`sendPinMessage ${msgId}`);
   const messageParams = {
     msgId,
@@ -497,6 +487,12 @@ OnlyKey.prototype.sendPinMessage = function ({
     messageParams.msgId = 'OKSETPIN';
     messageParams.poll = false;
   }
+
+  if (myOnlyKey.getLastMessage('received').includes("UNLOCKED") || myOnlyKey.getLastMessage('received').includes("INITIALIZED")) {
+    var cb2 = cb();
+    cb = listenForPinMsg(cb2);
+  }
+
 
   const deviceType = myOnlyKey.getDeviceType();
   if (deviceType === DEVICE_TYPES.GO) {
@@ -2245,17 +2241,18 @@ async function listenForMessageIncludes(str) {
   })
 }
 
-async function listenForSetTime(str1, str2) {
+async function listenForPinMsg() {
+  var str1 = 'PIN';
   return new Promise(resolve => {
-    console.info(`Listening for "${str1}"...`);
+    console.info(`Listening for "${str1}" ...`);
     myOnlyKey.listen(async (err, msg) => {
-      if (msg && (msg.includes(str1) || msg.includes(str1))) {
+      if (msg && msg.includes(str1)) {
         console.info(`Match received "${msg}"...`);
         resolve();
       } else if (msg) {
         //Chrome app background page sends settime which results in unexpected unlocked response
-        console.info(`While waiting for "${str1}" "${str2}", received unexpected message: ${msg}`);
-        await listenForSetTime(resolve);
+        console.info(`While waiting for "${str1}", received unexpected message: ${msg}`);
+        await listenForPinMsg();
       } 
     });
   })
