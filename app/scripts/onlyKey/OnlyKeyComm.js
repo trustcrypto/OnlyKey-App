@@ -337,7 +337,7 @@ OnlyKey.prototype.sendMessage =  function (options, callback) {
   console.info("SENDING " + msgId + " to connectionId " + this.connection + ":", bytes);
 
   chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
-    await wait(300);
+    await wait(100);
     if (chrome.runtime.lastError) {
       console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, {
         connectionId: this.connection
@@ -435,7 +435,7 @@ OnlyKey.prototype.setTime = async function (callback) {
 
 OnlyKey.prototype.getLabels = async function (callback) {
   this.labels = '';
-  await wait(700);
+  await wait(900);
   this.sendMessage({
     msgId: 'OKGETLABELS'
   }, handleGetLabels);
