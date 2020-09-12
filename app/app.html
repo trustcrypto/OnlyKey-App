@@ -235,11 +235,16 @@
         <hr />
 
         <b>Guided Setup</b>
-
-        <button id="btnNext" type="button">Next</button>
+        <span class="hide" id="guidedModeSelectWrapper">
+          <br/><br/>
+          <input type="radio" name="guidedMode" value=0 checked /> Standard<br/>
+          <input type="radio" name="guidedMode" value=1 /> Advanced
+          <br/><br/>
+        </span>
+        <button id="btnNext" type="button">Begin</button>
         <button id="btnExit" type="button" class="hide">Exit</button>
       </div>
-
+      
       <div id="unguided" class="step-nav hide">
         <button id="btnSubmitStep" type="button">Submit</button>
         <button id="btnCancelStep" type="button">Cancel</button>

@@ -313,7 +313,7 @@ if (chrome.passwordsPrivate) {
   Wizard.prototype.setAdvancedSetup = function (settingArg) {
     let setting = settingArg;
     if (typeof setting === undefined) {
-      setting = document.getElementById('advancedSetup').checked;
+      setting = document.querySelector('[name="guidedMode"][value=1]').checked;
     }
     this.advancedSetup = Boolean(setting);
   };
@@ -573,8 +573,8 @@ if (chrome.passwordsPrivate) {
     // END PRIVATE KEY SELECTOR
 
     // toggle advanced setup mode and update wizard steps accordingly
-    document.getElementById("advancedSetup").removeEventListener('change', toggleAdvancedUI, false);
-    document.getElementById("advancedSetup").addEventListener('change', toggleAdvancedUI.bind(this), false);
+    document.querySelectorAll('[name="guidedMode]').forEach(el => el.removeEventListener('change', toggleAdvancedUI, false));
+    document.querySelectorAll('[name="guidedMode]').forEach(el => el.addEventListener('change', toggleAdvancedUI.bind(this), false));
 
     // SPECIAL EVENT LISTENERS
     document.removeEventListener('click', setupSpecialEventListeners);
@@ -1297,7 +1297,7 @@ function makeRadioButton(name, value, text) {
 
 function toggleAdvancedUI(e) {
   e && e.preventDefault && e.preventDefault();
-  this.advancedSetup = e.target.checked;
+  this.advancedSetup = e.target.checked && e.target.value === 1;
   this.initSteps();
 }
 
