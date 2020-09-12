@@ -1199,13 +1199,15 @@ if (chrome.passwordsPrivate) {
   Wizard.prototype.setSlotLabel = function (slot, label) {
     var slotLabel;
     if (typeof slot === 'number') {
-      slot = slot;
       var slotLabels = Array.from(document.getElementsByClassName('slotLabel'));
       slotLabel = slotLabels[slot];
     } else {
       slot = slot.toLowerCase();
       slotLabel = document.getElementById('slotLabel' + slot);
     }
+    
+    if (!slotLabel) return;
+    
     slotLabel.innerText = label;
     if (label === 'empty') {
       slotLabel.classList.add('empty');
