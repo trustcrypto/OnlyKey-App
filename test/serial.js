@@ -1,4 +1,5 @@
 const nodeHID = require('node-hid');
+const chalk = require('chalk');
 
 var bytes2string = function bytes2string(bytes) {
 	if (!bytes) return;
@@ -9,26 +10,6 @@ var bytes2string = function bytes2string(bytes) {
 };
 
 var $hids = {};
-
-var color = {};
-
-(function(){
-	var colorRGB = function(c) { return '\x1b[38;2;' + c + 'm'; };
-	var colorSwatch = {
-		"red": "255;0;0",
-		"orange": "255;165;0",
-		"yellow": "255;255;0",
-		"green": "50;205;50",
-		"teal": "0;128;128",
-		"blue": "0;0;255",
-		"purple": "128;0;128",
-		"white": "255;255;255",
-	};
-	for (var i in colorSwatch) {
-		color[i] = colorRGB(colorSwatch[i]);
-	}
-})();
-
 
 function findHID(hid_interface) {
 	var hids = nodeHID.devices();
@@ -56,22 +37,18 @@ function findHID(hid_interface) {
 	if (!$hids[hid_interface].com && $hids[hid_interface].device) {
 		try {
 			$hids[hid_interface].com = new nodeHID.HID($hids[hid_interface].device.path);
-			process.stdout.write(color.yellow + "Connected onlykey interface " + hid_interface + "\r\n" + color.white);
+			process.stdout.write(chalk.yellow('Connected onlykey interface ' + hid_interface + '\r\n'));
 			$hids[hid_interface].com.on('data', function(data) {
 				var bfrstr = bytes2string(data);
-				var $color = color.white;
 				if (bfrstr) {
-					$color = (bfrstr.includes("Error") ? color.red : color.white);
-					$color = (bfrstr.includes("Success") ? color.green : color.white);
-					var addNewLines = (hid_interface == 2 ? true : false);
-					process.stdout.write($color);
-					process.stdout.write(bfrstr);
-					process.stdout.write(color.white);
+					if (bfrstr.includes('Error') || bfrstr.includes('error') || bfrstr.includes('Fail') || bfrstr.includes('fail')) process.stdout.write(chalk.red(bfrstr));
+					else if (bfrstr.includes('success') || bfrstr.includes('Success')) process.stdout.write(chalk.green(bfrstr));
+					else process.stdout.write(chalk.white(bfrstr));
 				}
 			});
 			$hids[hid_interface].com.on('error', function(error) {
 				$hids[hid_interface] = false;
-				process.stdout.write(color.yellow + "Disconnected onlykey interface " + hid_interface + "\r\n" + color.white);
+				process.stdout.write(chalk.yellow('Disconnected onlykey interface ' + hid_interface + '\r\n' ));
 			});
 		}
 		catch (e) {}
@@ -104,32 +81,3 @@ function loadInterface(hid_interface) {
 		return findHID(hid_interface);
 }
 
-var readline = require('readline'),
-	rl = readline.createInterface(process.stdin, process.stdout),
-	prefix = '';
-
-rl.on('line', function(line) {
-	switch (line.trim()) {
-		default: if (line.length) {
-			var inter = 3;
-			if ($hids[inter] && $hids[inter].com) {
-				var messageA = [];
-				for (var i = 0; i < line.length; i++) {
-					messageA.push(line.charCodeAt(i));
-				}
-				messageA.push("\n".charCodeAt(0));
-				if (process.platform.indexOf("win") > -1)
-					process.stdout.write("\n");
-				messageA.unshift(0x00);
-				$hids[inter].com.write(messageA);
-			}
-		}
-		break;
-	}
-	rl.setPrompt(prefix, prefix.length);
-	rl.prompt();
-}).on('close', function() {
-	process.exit(0);
-});
-rl.setPrompt(prefix, prefix.length);
-rl.prompt();
