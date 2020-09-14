@@ -490,7 +490,7 @@ OnlyKey.prototype.sendPinMessage = function ({
 
   if (myOnlyKey.getLastMessage('received').includes("UNLOCKED") || myOnlyKey.getLastMessage('received').includes("INITIALIZED")) {
     var cb2 = cb();
-    cb = listenForPinMsg(cb2);
+    cb = pollForInput.bind(this, {}, cb2)
   }
 
 
@@ -903,11 +903,7 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
 
   OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
     backupKeyMode = parseInt(backupKeyMode, 10);
-    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, async () => {
-      await wait(10); 
-      await this.listenforvalue('Backup Key Mode', callback);
-      return callback();
-    });
+    this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, callback);
   };
 
 OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
@@ -2241,23 +2237,6 @@ async function listenForMessageIncludes(str) {
   })
 }
 
-async function listenForPinMsg() {
-  var str1 = 'PIN';
-  return new Promise(resolve => {
-    console.info(`Listening for "${str1}" ...`);
-    myOnlyKey.listen(async (err, msg) => {
-      if (msg && msg.includes(str1)) {
-        console.info(`Match received "${msg}"...`);
-        resolve();
-      } else if (msg) {
-        //Chrome app background page sends settime which results in unexpected unlocked response
-        console.info(`While waiting for "${str1}", received unexpected message: ${msg}`);
-        await listenForPinMsg();
-      } 
-    });
-  })
-}
-
 async function listenForMessageIncludes2(...args) {
   return new Promise(async function listenForMessageIncludesAgain2(resolve, reject) {
     myOnlyKey.listen(async (err, msg) => {
@@ -2265,11 +2244,13 @@ async function listenForMessageIncludes2(...args) {
       for (let i=0; i<args.length; i++) {
         var str = args[i];
         console.info(`Listening for "${str}"`);
+
         if (msg && (msg.includes(str))) {
           match = msg;
         } else if (err) {
           match = err;
         }
+
         if (match) {
           console.info(`Match received "${match}"...`);
           resolve();
