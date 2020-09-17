@@ -1817,7 +1817,7 @@ async function submitRsaForm(e) {
     //console.info(privKey.primaryKey.params);
     //console.info(privKey.primaryKey.params.length);
 
-    if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
+    if (!(privKey.primaryKey && privKey.primaryKey.params)) {
       throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
     }
   } catch (e) {
