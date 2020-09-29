@@ -189,10 +189,10 @@ if (chrome.passwordsPrivate) {
         prev: 'Step2',
         next: 'Step5',
         disclaimerTrigger: 'passcode3Disclaimer',
-        enterFn: () => {
+        enterFn: (cb) => {
           this.setSecondPINHtml('step4-text');
           this.steps.Step5.next = this.guided ? 'Step6' : 'Step1';
-          this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey));
+          this.onlyKey.flushMessage(this.onlyKey.sendSetPin2.bind(this.onlyKey, cb));
         },
         exitFn: (cb) => {
           if (!this.checkInitialized() && this.advancedSetup) {
@@ -571,14 +571,6 @@ if (chrome.passwordsPrivate) {
       this.dialog.closeAll();
     };
     // END PRIVATE KEY SELECTOR
-
-    // toggle advanced setup mode and update wizard steps accordingly
-    document.getElementById("advancedSetup").removeEventListener('change', toggleAdvancedUI, false);
-    document.getElementById("advancedSetup").addEventListener('change', toggleAdvancedUI.bind(this), false);
-
-    // SPECIAL EVENT LISTENERS
-    document.removeEventListener('click', setupSpecialEventListeners);
-    document.addEventListener('click', setupSpecialEventListeners.bind(this));
 
     this.setActiveStepUI();
   };
@@ -1275,6 +1267,12 @@ if (chrome.passwordsPrivate) {
     console.info("Creating wizard instance...");
     onlyKeyConfigWizard = new Wizard();
     OnlyKeyHID(onlyKeyConfigWizard);
+
+    // toggle advanced setup mode and update wizard steps accordingly
+    document.getElementById("advancedSetup").addEventListener('change', toggleAdvancedUI.bind(onlyKeyConfigWizard));
+
+    // SPECIAL EVENT LISTENERS
+    document.addEventListener('click', setupSpecialEventListeners.bind(onlyKeyConfigWizard));
   }, false);
 })();
 
