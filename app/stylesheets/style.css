@@ -287,11 +287,13 @@ nav > a.active {
 
 .slotLabel {
     font-weight: bold;
+    color: black;
 }
 
 .empty {
     font-style: italic;
     font-weight: normal;
+    color: darkgray;
 }
 
 .step-nav > * {
