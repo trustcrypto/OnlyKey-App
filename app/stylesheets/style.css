@@ -286,11 +286,13 @@ nav > a.active {
 #tools-panel h2 { margin-top: 0; }
 
 .slotLabel {
+    font-family: HFont, monospace;
     font-weight: bold;
     color: black;
 }
 
 .empty {
+    font-family: TxFont, monospace;
     font-style: italic;
     font-weight: normal;
     color: darkgray;
