@@ -63,12 +63,15 @@ body > div {
 
 .moveimage {
     position: relative;
-    top: 3px;
-    width: 13px;
+    top: 1px;
+    width: .875em;
+    /* filter values computed on https://codepen.io/sosuke/pen/Pjoqqp */
+    filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
 }
 
-dialog .moveimage {
-    margin-left: 1em;
+h2 > img {
+    /* filter values computed on https://codepen.io/sosuke/pen/Pjoqqp */
+    filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
 }
 
 .panel {
@@ -322,4 +325,17 @@ nav > a.active {
 
 .center {
     text-align: center;
+}
+
+.tooltip {
+    display: none;
+    /* display: block; */
+    width: 18em;
+    background: #666;
+    box-shadow: 0px 1px 8px 2px #888888;
+    position: absolute;
+    padding: .5em 1em;
+    color: white;
+    border-radius: 4px;
+    z-index: 1000;
 }

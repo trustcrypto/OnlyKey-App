@@ -50,7 +50,7 @@
     <form id="init-panel" name="init-panel" class="hide panel">
       <div id="stepContent">
         <div class="step" id="Step1">
-          <h2>OnlyKey Setup <img src="/images/solid/rocket.svg" style="filter: contrast(25%);" width="15px"/></h2>
+          <h2>OnlyKey Setup <img src="/images/solid/rocket.svg" width="15px"/></h2>
           <p class="uninit-only">Begin the Guided Setup wizard by clicking [Next] at bottom. Or, if you would like to
             upgrade firmware on your device, select [Load Firmware]. Advanced users may enable advanced setup options by
             checking this box:
@@ -248,7 +248,7 @@
     </form>
 
     <div id="slot-panel" class="hide panel">
-      <h2>Configure Slots <img src="/images/solid/cogs.svg" style="filter: contrast(25%);" width="19px"/></h2>
+      <h2>Configure Slots <img src="/images/solid/cogs.svg" width="19px"/></h2>
       <p>
         Slots are where you store login information. There are 12 slots in your profile, and each slot can store a login
         URL, Username, Password, and two-factor.
@@ -308,14 +308,23 @@
       Set a label on your slot and it will show up above to help you remember. If you are unsure about slot settings,
       test it out first by browsing to the login page and use a keyboard to login.
       <a href="https://docs.crp.to/usersguide.html#all-about-slots" class="external">Learn more about
-        slots <img class="moveimage" src="/images/solid/external-link-alt.svg" style="filter: contrast(25%);" style="margin-left: .5em;" /></a>.
+        slots <img class="moveimage" src="/images/solid/external-link-alt.svg" style="margin-left: .5em;" /></a>.
     </div>
 
     <div id="pref-panel" class="hide panel">
       <div class="flex-container">
         <div class="flex-item">
           <form id="typeSpeedForm" name="typeSpeedForm">
-            <b>Keyboard Type Speed </b><a href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a>
+            <b>Keyboard Type Speed </b>
+            <a href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed" class="external">
+              <img class="moveimage" src="/images/solid/question-circle.svg" />
+              <span class="tooltip">
+                This is my tooltip!
+                <br/>
+                <br/>
+                Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 
+              </span>
+            </a>
             <input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1 - 10"
               style="width: 50px;" />
             <input type="button" id="typeSpeedSubmit" value="Set Type Speed" />
@@ -323,7 +332,7 @@
             (1 = slowest, 10 = fastest, 4 = default)
           </form>
           <form id="keyboardLayoutForm" name="keyboardLayoutForm">
-            <b>Keyboard Layout </b><a href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            <b>Keyboard Layout </b><a href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             <select id="okKeyboardLayout" name="okKeyboardLayout">
               <option value=1>US_ENGLISH (default)</option>
               <option value=2>CANADIAN_FRENCH</option>
@@ -356,7 +365,7 @@
             <input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
           </form>
           <form id="ledBrightnessForm" name="ledBrightnessForm">
-            <b>Indicator Light (LED) Brightness </b><a href="https://docs.crp.to/usersguide.html#configurable-led-brightness" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            <b>Indicator Light (LED) Brightness </b><a href="https://docs.crp.to/usersguide.html#configurable-led-brightness" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             <input type="number" id="okLedBrightness" name="okLedBrightness" min=1 max=10 placeholder="1 - 10"
               style="width: 50px;" />
             <input type="button" id="ledBrightnessSubmit" value="Set LED Brightness" />
@@ -364,7 +373,7 @@
             (1 = dimmest, 10 = brightest, 8 = default)
           </form>
           <form id="modkeyModeForm" name="modkeyModeForm">
-            <b>Sysadmin Mode </b><a href="https://docs.crp.to/usersguide.html#sysadmin-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
+            <b>Sysadmin Mode </b><a href="https://docs.crp.to/usersguide.html#sysadmin-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
             <label>
               <input type="radio" checked name="okmodkeyMode" value=0 />
               <u>Disable Sysadmin Mode</u>
@@ -378,7 +387,7 @@
             <input type="button" id="modkeyModeSubmit" value="Set Modifier Key Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
-            <b>HMAC Challenge-Response Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
+            <b>HMAC Challenge-Response Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
             <label>
               <input type="radio" checked name="okhmacchallengeMode" value=0 />
               <u>Button Press Required</u>
@@ -392,7 +401,7 @@
             <input type="button" id="hmacchallengeModeSubmit" value="Set HMAC Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="wipeModeForm" name="wipeModeForm">
-            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a>
+            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
             Only sensitive data is wiped by default.
             <br />
             <label>
@@ -408,7 +417,16 @@
         </div>
         <div class="flex-item">
           <form id="lockoutForm" name="lockoutForm">
-            <b>Inactivity Lockout Timer </b><a href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            <b>Inactivity Lockout Timer </b>
+            <a href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period" class="external">
+              <img class="moveimage" src="/images/solid/question-circle.svg" />
+              <span class="tooltip">
+                This is my tooltip!
+                <br/>
+                <br/>
+                Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 
+              </span>
+            </a> 
             <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255 Minutes"
               style="width: 50px;" />
             <input type="button" id="lockoutSubmit" value="Set Lockout" />
@@ -416,14 +434,14 @@
             (1 &ndash; 255 Minutes, 30 = default, 0 to disable)
           </form>
           <form id="lockButtonForm" name="lockButtonForm">
-            <b>Lock Button</b> <a href="https://docs.crp.to/usersguide.html#configurable-lock-button" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            <b>Lock Button</b> <a href="https://docs.crp.to/usersguide.html#configurable-lock-button" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             The OnlyKey and the computer are locked automatically when this lock button is pressed (0 to disable).
             <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6"
               style="width: 50px;" />
             <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
           </form>
           <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
-            <b>Derived Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#derived-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
+            <b>Derived Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#derived-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
             Enable or disable challenge for derived keys (SSH/PGP)
             <br />
             <label>
@@ -439,7 +457,7 @@
             <input type="button" id="derivedchallengeModeSubmit" value="Set SSH Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="storedchallengeModeForm" name="storedchallengeModeForm">
-            <b>Stored Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#stored-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> <br />
+            <b>Stored Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#stored-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
             Enable or disable challenge for stored keys (SSH/PGP)
             <br />
             <label>
@@ -455,7 +473,7 @@
             <input type="button" id="storedchallengeModeSubmit" value="Set Stored Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
           </form>
           <form id="backupModeForm" name="backupModeForm">
-            <b>Backup Key Mode </b><a href="https://docs.crp.to/usersguide.html#backup-key-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" style="filter: contrast(25%);" /></a> 
+            <b>Backup Key Mode </b><a href="https://docs.crp.to/usersguide.html#backup-key-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
             Backup key may be changed by default.
             <br />
             <label>
@@ -537,9 +555,10 @@
             <span id="rsaForm-additional-options"></span>
             <label>
               <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true" />
-              Set as backup key.
-              (This setting uses the above key for secure backups instead of any backup passphrase you might have set earlier.)
+              Set as backup key
             </label>
+            <br/>
+            (This setting uses the above key for secure backups instead of any backup passphrase you might have set earlier.)
 
             <br />
             <br />
@@ -555,7 +574,7 @@
       <div class="flex-container">
         <div class="flex-item">
           <form id="backupForm" name="backupForm" class="auth-form">
-            <h2>Backup <img src="/images/solid/upload.svg" style="filter: contrast(25%);" width="15px"/></h2>
+            <h2>Backup <img src="/images/solid/upload.svg" width="15px"/></h2>
 
             <fieldset>
               <p>
@@ -596,7 +615,7 @@
 
         <div class="flex-item">
           <form id="restoreForm" name="restoreForm" class="auth-form">
-            <h2>Restore <img src="/images/solid/user-plus.svg" style="filter: contrast(25%);" width="15px"/></h2>
+            <h2>Restore <img src="/images/solid/user-plus.svg" width="15px"/></h2>
 
             <fieldset>
               <p>
@@ -635,7 +654,7 @@
       <div class="flex-container">
         <div class="flex-item">
           <form id="firmwareForm" name="firmwareForm" class="auth-form">
-            <h2>Load Firmware <img src="/images/solid/link.svg" style="filter: contrast(25%);" width="19px"/></h2>
+            <h2>Load Firmware <img src="/images/solid/link.svg" width="19px"/></h2>
 
             <fieldset>
               <p id="firmware-text"></p>
@@ -804,36 +823,36 @@
       <div class="flex-container">
         <div class="flex-item">
           <a href="https://apps.crp.to/encrypt.html" class="external">
-            <img src="/images/solid/paper-plane.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/lock.svg" style="filter: contrast(25%);" width="50px" />
+            <img src="/images/solid/paper-plane.svg" width="50px" />
+            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+            <img src="/images/solid/lock.svg" width="50px" />
             <br>
             <span class="h1">Encrypt Messages</span>
           </a>
         </div>
         <div class="flex-item">
           <a href="https://apps.crp.to/decrypt.html" class="external">
-            <img src="/images/solid/lock.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/paper-plane.svg" style="filter: contrast(25%);" width="50px" />
+            <img src="/images/solid/lock.svg" width="50px" />
+            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+            <img src="/images/solid/paper-plane.svg" width="50px" />
             <br>
             <span class="h1">Decrypt Messages</span>
           </a>
         </div>
         <div class="flex-item">
           <a href="https://apps.crp.to/encrypt-files.html" class="external">
-            <img src="/images/solid/file-alt.svg" style="filter: contrast(25%);" width="40px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/lock.svg" style="filter: contrast(25%);" width="50px" />
+            <img src="/images/solid/file-alt.svg" width="40px" />
+            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+            <img src="/images/solid/lock.svg" width="50px" />
             <br>
             <span class="h1">Encrypt Files</span>
           </a>
         </div>
         <div class="flex-item">
           <a href="https://apps.crp.to/decrypt-files.html" class="external">
-            <img src="/images/solid/lock.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" style="filter: contrast(25%);" width="50px" />
-            <img src="/images/solid/file-alt.svg" style="filter: contrast(25%);" width="40px" />
+            <img src="/images/solid/lock.svg" width="50px" />
+            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+            <img src="/images/solid/file-alt.svg" width="40px" />
             <br>
             <span class="h1">Decrypt Files</span>
           </a>
@@ -892,7 +911,7 @@
     <a href="" class="slot-config-close">cancel [x]</a>
     <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
     Check the box next to the fields you want to save to OnlyKey<br>
-    <img class="moveimage" style="right: 8px;" src="/images/solid/arrow-down.svg" style="filter: contrast(25%);" />
+    <img class="moveimage" style="right: 8px;" src="/images/solid/arrow-down.svg" />
     <form name="slot-config-form" id="slot-config-form">
       <table>
         <!--                 <tr>
@@ -1068,7 +1087,7 @@
               Return after OTP
             </label>
             <label>
-              <input type="radio" name="tabReturn3" value=0 checked />
+              <input type="radio" name="tabReturn3" value=0 />
               None
             </label>
           </td>
@@ -1124,26 +1143,26 @@
       <h2>Example #1</h2>
       Configure button 1 tap (touch for less than 1 sec) to automatically type a password:
       <br>
-      <img class="moveimage" src="/images/solid/mouse-pointer.svg" style="filter: contrast(25%);" /> Click button [1a]
+      <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click button [1a]
       <br>
-      <img class="moveimage" src="/images/regular/check-square.svg" style="filter: contrast(25%);" /> Check boxes next to [Password] and [Return
+      <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [Password] and [Return
       after Password]
       <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" style="filter: contrast(25%);" /> Enter/re-enter password and click [Set Slot]
+      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter/re-enter password and click [Set Slot]
     </p>
 
     <p>
       <h2>Example #2</h2>
       Configure button 1 long-press (touch more than 1 sec) to type a username and password into a login form:
       <br>
-      <img class="moveimage" src="/images/solid/mouse-pointer.svg" style="filter: contrast(25%);" /> Click button [1b]
+      <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click button [1b]
       <br>
-      <img class="moveimage" src="/images/regular/thumbs-up.svg" style="filter: contrast(25%);" /> Configure a password as in example #1 for 1b
+      <img class="moveimage" src="/images/regular/thumbs-up.svg" /> Configure a password as in example #1 for 1b
       <br>
-      <img class="moveimage" src="/images/regular/check-square.svg" style="filter: contrast(25%);" /> Check boxes next to [Username] and [Tab after
+      <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [Username] and [Tab after
       Username]
       <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" style="filter: contrast(25%);" /> Enter a username and click [Set Slot]
+      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter a username and click [Set Slot]
     </p>
 
     <p>
@@ -1151,13 +1170,13 @@
       Configure button 2 tap to automatically type the URL of a login page into your browser, followed by a username and
       password:
       <br>
-      <img class="moveimage" src="/images/solid/mouse-pointer.svg" style="filter: contrast(25%);" /> Click button [2a]
+      <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click button [2a]
       <br>
-      <img class="moveimage" src="/images/regular/thumbs-up.svg" style="filter: contrast(25%);" /> Configure username/password as in example #2 for 2a
+      <img class="moveimage" src="/images/regular/thumbs-up.svg" /> Configure username/password as in example #2 for 2a
       <br>
-      <img class="moveimage" src="/images/regular/check-square.svg" style="filter: contrast(25%);" /> Check boxes next to [URL] and [Delay]
+      <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [URL] and [Delay]
       <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" style="filter: contrast(25%);" /> Type a URL and a delay in seconds (time to
+      <img class="moveimage" src="/images/regular/keyboard.svg" /> Type a URL and a delay in seconds (time to
       wait for URL to load) and click [Set Slot]
     </p>
   </dialog>
