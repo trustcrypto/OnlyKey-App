@@ -1,262 +1,354 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>OnlyKey App</title>
+    <link rel="stylesheet" href="/stylesheets/style.css" />
 
-<head>
-  <title>OnlyKey App</title>
-  <link rel="stylesheet" href="/stylesheets/style.css">
+    <!-- Scripts giving you few extra things in NW.js -->
+    <script src="/vendor/nw-boilerplate/env_config.js"></script>
+    <script src="/vendor/nw-boilerplate/external_links.js"></script>
+    <script src="/vendor/nw-boilerplate/window_state.js"></script>
 
-  <!-- Scripts giving you few extra things in NW.js -->
-  <script src="/vendor/nw-boilerplate/env_config.js"></script>
-  <script src="/vendor/nw-boilerplate/external_links.js"></script>
-  <script src="/vendor/nw-boilerplate/window_state.js"></script>
+    <!-- App dependencies -->
+    <script src="/vendor/FileSaver.js"></script>
+    <script src="/vendor/openpgp.min.js"></script>
+    <script src="/scripts/dialog-manager.js"></script>
+  </head>
 
-  <!-- App dependencies -->
-  <script src="/vendor/FileSaver.js"></script>
-  <script src="/vendor/openpgp.min.js"></script>
-  <script src="/scripts/dialog-manager.js"></script>
-</head>
+  <body style="overflow: hidden">
+    <div id="versions">
+      <i id="appVersion"></i>
+      <i id="appUpdater"></i>
+      <i id="fwVersion"></i>
+    </div>
 
-<body style="overflow: hidden;">
-  <div id="versions">
-    <i id="appVersion"></i>
-    <i id="appUpdater"></i>
-    <i id="fwVersion"></i>
-  </div>
+    <div id="lastMessage">
+      Last message received: <span></span>
+      <ul>
+        <li></li>
+        <li></li>
+      </ul>
+    </div>
 
-  <div id="lastMessage">
-    Last message received: <span></span>
-    <ul>
-      <li></li>
-      <li></li>
-    </ul>
-  </div>
-
-  <div id="main" class="hide">
-    <br>
-    <img src="/images/OnlyKey_Logo_360x.png" width="280">
-    <br><br>
-
-    <nav>
-      <a id="show-init-panel" href="">Setup</a>
-      <a id="show-slot-panel" href="" class="hide">Slots</a>
-      <a id="show-keys-panel" href="" class="hide">Keys</a>
-      <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
-      <a id="show-firmware-panel" href="" class="hide">Firmware</a>
-      <a id="show-pref-panel" href="" class="hide">Preferences</a>
-      <a id="show-advanced-panel" href="" class="hide">Advanced</a>
-      <a id="show-tools-panel" href="" class="hide">Tools</a>
-    </nav>
-
-    <form id="init-panel" name="init-panel" class="hide panel">
-      <div id="stepContent">
-        <div class="step" id="Step1">
-          <h2>OnlyKey Setup <img src="/images/solid/rocket.svg" width="15px"/></h2>
-          <p class="uninit-only">Begin the Guided Setup wizard by clicking [Next] at bottom. Or, if you would like to
-            upgrade firmware on your device, select [Load Firmware]. Advanced users may enable advanced setup options by
-            checking this box:
-            <input type="checkbox" id="advancedSetup" />
-          </p>
-          <p class="init-only">Your OnlyKey is ready to use! You can change the Backup Passphrase/Key or change PINs
-            below at any time. <br><br><b>Before selecting an option below</b>, you must first put your OnlyKey into
-            config mode. To do this hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey
-            light will turn off. Re-enter your current primary PIN to enter config mode and notice the OnlyKey flashes
-            red.</p>
-          <table>
-            <tr>
-              <td class="uninit-only device-specific ok-classic ok-go">
-                <button id="LoadFirmware" type="button">Load Firmware</button>
-              </td>
-              <td class="init-only device-specific ok-classic ok-go">
-                <button id="SetBackup" type="button">Set Backup Passphrase or Key</button>
-              </td>
-              <td class="init-only device-specific ok-classic">
-                <button id="SetPIN" type="button">Change Primary PIN</button>
-              </td>
-              <td class="init-only device-specific ok-classic">
-                <button id="SetPIN2" type="button">Change Secondary PIN</button>
-              </td>
-              <td class="init-only device-specific ok-classic">
-                <button id="SetSDPIN" type="button">Change Self-Destruct PIN</button>
-              </td>
-              <td class="init-only device-specific ok-go">
-                <button id="SetPINS" type="button">Change OnlyKey Go PINs</button>
-              </td>
-            </tr>
-          </table>
-        </div>
-
-        <div class="step" id="Step2">
-          <p id="step2-text"></p>
-
-        </div>
-
-        <div class="step" id="Step3">
-          <h3>Re-enter PIN on OnlyKey Keypad</h3>
-          <p>
-            Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span
-              class='nextTxt'>Next</span>] below.
-          </p>
-        </div>
-
-        <div class="step" id="Step4">
-          <p id="step4-text"></p>
-
-        </div>
-
-        <div class="step" id="Step5">
-          <h3>Re-enter PIN for Second Profile on OnlyKey Keypad</h3>
-          <p>
-            Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span
-              class='nextTxt'>Next</span>] below.
-          </p>
-        </div>
-
-        <div class="step" id="Step6">
-          <p id="step6-text"></p>
-
-        </div>
-
-        <div class="step" id="Step7">
-          <h3>Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
-          <p>
-            Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad. When you are finished, click [<span
-              class='nextTxt'>Next</span>] below.
-          </p>
-        </div>
-
-        <div class="step" id="Step8">
-          <h3>Enter a Backup Passphrase </h3>
-          <p id="step8-text"></p>
-          <p>Your passphrase will be used for secure backup and restore of your OnlyKey so make sure to
-            choose a good one, write it down, and store it in a secure location.</p>
-          <p>Example of a <em>good</em> passphrase: 'this passphrase is not complex but it is long and it is
-            not a common phrase'</p>
-          <p>Example of a <em>bad</em> passphrase: 'the only thing we have to fear is fear itself'</p>
-          <br /><label><b>Enter Passphrase:</b>
-            <input type='password' id='backupPassphrase' name='backupPassphrase' size=50 /><br>Passphrase
-            must be at least 25 characters</label><br /><br /><label><b>Re-Enter Passphrase:</b><input type='password'
-              id='backupPassphrasec' name='backupPassphrasec' size=50 /></label><br />
-          <p id="step8-2-text"></p>
-          <br />Learn more about secure
-          backup <a href='https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere'
-            class='external'>here</a>.
-        </div>
-
-        <div class="step" id="Step9">
-          <h3>Set a Backup Key</h3>
-          <p id="step9-text"></p>
-          <p>Your OpenPGP key will be used for secure backup and restore of your OnlyKey, make sure to store
-            it in a secure location.</p>
-          <p>Need a key? Follow our guide <a href='https://docs.crp.to/usersguide.html#generating-keys'
-              class='external'>here</a>
-            for generating an OpenPGP key with Keybase.</p>
-          <label>Slot:
-            <select id='backupRSASlot' name='backupRSASlot'>
-              <option value=1>RSA 1</option>
-              <option value=2>RSA 2</option>
-              <option value=3>RSA 3</option>
-              <option value=4>RSA 4</option>
-              <option value=101>ECC 1</option>
-              <option value=102>ECC 2</option>
-              <option value=103>ECC 3</option>
-              <option value=104>ECC 4</option>
-              <option value=105>ECC 5</option>
-              <option value=106>ECC 6</option>
-              <option value=107>ECC 7</option>
-              <option value=108>ECC 8</option>
-              <option value=109>ECC 9</option>
-              <option value=110>ECC 10</option>
-              <option value=111>ECC 11</option>
-              <option value=112>ECC 12</option>
-              <option value=113>ECC 13</option>
-              <option value=114>ECC 14</option>
-              <option value=115>ECC 15</option>
-              <option value=116>ECC 16</option>
-            </select>
-          </label>
-          <br />
-          <br />
-          <label>Backup OpenPGP RSA/ECC Key:<br />
-            <textarea id='backupRSAKey' name='backupRSAKey' cols='60' rows='3'
-              placeholder='OpenPGP Key -- paste PEM file contents' required></textarea>
-          </label><br />
-          <label>Passphrase:<input type='password' id='backupRSAPasscode' name='backupRSAPasscode' /></label>
-          <br /><br />
-          <label>
-            <input type='checkbox' id='backupRSASetAsSignature' name='backupRSASetAsSignature' value='true' />Set
-            as signature key - Use key to sign messages
-          </label>
-          <br />
-          <br />
-          <label>
-            <input type='radio' checked name='backupKeyModePGP' value=0 /><u>Permit future backup key
-              changes (Default)</u>
-          </label><br />
-          <label><input type='radio' name='backupKeyModePGP' value=1 /><u>Lock backup key on this device</u></label>
-          <br />
-          <td>
-            <br />
-            <button id='SetPassphrase' type='button'>
-              <b>Use passphrase instead of PGP key</b>
-            </button>
-          </td>
-        </div>
-
-        <div class="step" id="Step10">
-          <h3>Restore from Backup </h3>
-          <fieldset>To restore a backup file to your OnlyKey, ensure you have loaded the same backup
-            passphrase or backup key you used to create the backup.<p>Click [Choose File], select your
-              backup file, then click [Submit].</p>
-            <p>Your OnlyKey will light up amber while restoring the backup file and automatically reboot
-              when restoring is complete.</p>
-            <p>If you do not have a backup file to restore then setup is complete, you may remove and reinsert your
-              OnlyKey now.</p>
-          </fieldset>
-          <br /><br /><input type='file' id='restoreSelectFile' name='restoreSelectFile'
-            value='Select File' /><br /><br />
-            <p id="step10-text"></p>
-        </div>
-
-        <div class="step" id="Step11">
-          <h2>Load Firmware</h2>
-          To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then
-          click [Load Firmware to OnlyKey].</p>
-          <p> The OnlyKey will restart automatically when firmware load is complete.
-            <br /><br />
-            <input type="file" id="firmwareSelectFile" name="firmwareSelectFile" value="Select File" />
-          </p>
-        </div>
-
-      </div>
-
+    <div id="main" class="hide">
       <br />
+      <img src="/images/OnlyKey_Logo_360x.png" width="280" />
+      <br /><br />
 
-      <div id="guided" class="step-nav hide uninit-only">
+      <nav>
+        <a id="show-init-panel" href="">Setup</a>
+        <a id="show-slot-panel" href="" class="hide">Slots</a>
+        <a id="show-keys-panel" href="" class="hide">Keys</a>
+        <a id="show-backup-panel" href="" class="hide">Backup/Restore</a>
+        <a id="show-firmware-panel" href="" class="hide">Firmware</a>
+        <a id="show-pref-panel" href="" class="hide">Preferences</a>
+        <a id="show-advanced-panel" href="" class="hide">Advanced</a>
+        <a id="show-tools-panel" href="" class="hide">Tools</a>
+      </nav>
+
+      <form id="init-panel" name="init-panel" class="hide panel">
+        <div id="stepContent">
+          <div class="step" id="Step1">
+            <h2>
+              OnlyKey Setup <img src="/images/solid/rocket.svg" width="15px" />
+            </h2>
+            <p class="uninit-only">
+              Begin the Guided Setup wizard by clicking [Next] at bottom. Or, if
+              you would like to upgrade firmware on your device, select [Load
+              Firmware]. Advanced users may enable advanced setup options by
+              checking this box:
+              <input type="checkbox" id="advancedSetup" />
+            </p>
+            <p class="init-only">
+              Your OnlyKey is ready to use! You can change the Backup
+              Passphrase/Key or change PINs below at any time. <br /><br /><b
+                >Before selecting an option below</b
+              >, you must first put your OnlyKey into config mode. To do this
+              hold down the #6 button on your OnlyKey for 5+ seconds and
+              release. The OnlyKey light will turn off. Re-enter your current
+              primary PIN to enter config mode and notice the OnlyKey flashes
+              red.
+            </p>
+            <table>
+              <tr>
+                <td class="uninit-only device-specific ok-classic ok-go">
+                  <button id="LoadFirmware" type="button">Load Firmware</button>
+                </td>
+                <td class="init-only device-specific ok-classic ok-go">
+                  <button id="SetBackup" type="button">
+                    Set Backup Passphrase or Key
+                  </button>
+                </td>
+                <td class="init-only device-specific ok-classic">
+                  <button id="SetPIN" type="button">Change Primary PIN</button>
+                </td>
+                <td class="init-only device-specific ok-classic">
+                  <button id="SetPIN2" type="button">
+                    Change Secondary PIN
+                  </button>
+                </td>
+                <td class="init-only device-specific ok-classic">
+                  <button id="SetSDPIN" type="button">
+                    Change Self-Destruct PIN
+                  </button>
+                </td>
+                <td class="init-only device-specific ok-go">
+                  <button id="SetPINS" type="button">
+                    Change OnlyKey Go PINs
+                  </button>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="step" id="Step2">
+            <p id="step2-text"></p>
+          </div>
+
+          <div class="step" id="Step3">
+            <h3>Re-enter PIN on OnlyKey Keypad</h3>
+            <p>
+              Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad.
+              When you are finished, click [<span class="nextTxt">Next</span>]
+              below.
+            </p>
+          </div>
+
+          <div class="step" id="Step4">
+            <p id="step4-text"></p>
+          </div>
+
+          <div class="step" id="Step5">
+            <h3>Re-enter PIN for Second Profile on OnlyKey Keypad</h3>
+            <p>
+              Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad.
+              When you are finished, click [<span class="nextTxt">Next</span>]
+              below.
+            </p>
+          </div>
+
+          <div class="step" id="Step6">
+            <p id="step6-text"></p>
+          </div>
+
+          <div class="step" id="Step7">
+            <h3>Re-enter Self-Destruct PIN on OnlyKey Keypad</h3>
+            <p>
+              Re-enter the 7 - 10 digit PIN on your OnlyKey six-button keypad.
+              When you are finished, click [<span class="nextTxt">Next</span>]
+              below.
+            </p>
+          </div>
+
+          <div class="step" id="Step8">
+            <h3>Enter a Backup Passphrase</h3>
+            <p id="step8-text"></p>
+            <p>
+              Your passphrase will be used for secure backup and restore of your
+              OnlyKey so make sure to choose a good one, write it down, and
+              store it in a secure location.
+            </p>
+            <p>
+              Example of a <em>good</em> passphrase: 'this passphrase is not
+              complex but it is long and it is not a common phrase'
+            </p>
+            <p>
+              Example of a <em>bad</em> passphrase: 'the only thing we have to
+              fear is fear itself'
+            </p>
+            <br /><label
+              ><b>Enter Passphrase:</b>
+              <input
+                type="password"
+                id="backupPassphrase"
+                name="backupPassphrase"
+                size="50"
+              /><br />Passphrase must be at least 25 characters</label
+            ><br /><br /><label
+              ><b>Re-Enter Passphrase:</b
+              ><input
+                type="password"
+                id="backupPassphrasec"
+                name="backupPassphrasec"
+                size="50" /></label
+            ><br />
+            <p id="step8-2-text"></p>
+            <br />Learn more about secure backup
+            <a
+              href="https://docs.crp.to/usersguide.html#secure-encrypted-backup-anywhere"
+              class="external"
+              >here</a
+            >.
+          </div>
+
+          <div class="step" id="Step9">
+            <h3>Set a Backup Key</h3>
+            <p id="step9-text"></p>
+            <p>
+              Your OpenPGP key will be used for secure backup and restore of
+              your OnlyKey, make sure to store it in a secure location.
+            </p>
+            <p>
+              Need a key? Follow our guide
+              <a
+                href="https://docs.crp.to/usersguide.html#generating-keys"
+                class="external"
+                >here</a
+              >
+              for generating an OpenPGP key with Keybase.
+            </p>
+            <label
+              >Slot:
+              <select id="backupRSASlot" name="backupRSASlot">
+                <option value="1">RSA 1</option>
+                <option value="2">RSA 2</option>
+                <option value="3">RSA 3</option>
+                <option value="4">RSA 4</option>
+                <option value="101">ECC 1</option>
+                <option value="102">ECC 2</option>
+                <option value="103">ECC 3</option>
+                <option value="104">ECC 4</option>
+                <option value="105">ECC 5</option>
+                <option value="106">ECC 6</option>
+                <option value="107">ECC 7</option>
+                <option value="108">ECC 8</option>
+                <option value="109">ECC 9</option>
+                <option value="110">ECC 10</option>
+                <option value="111">ECC 11</option>
+                <option value="112">ECC 12</option>
+                <option value="113">ECC 13</option>
+                <option value="114">ECC 14</option>
+                <option value="115">ECC 15</option>
+                <option value="116">ECC 16</option>
+              </select>
+            </label>
+            <br />
+            <br />
+            <label
+              >Backup OpenPGP RSA/ECC Key:<br />
+              <textarea
+                id="backupRSAKey"
+                name="backupRSAKey"
+                cols="60"
+                rows="3"
+                placeholder="OpenPGP Key -- paste PEM file contents"
+                required
+              ></textarea></label
+            ><br />
+            <label
+              >Passphrase:<input
+                type="password"
+                id="backupRSAPasscode"
+                name="backupRSAPasscode"
+            /></label>
+            <br /><br />
+            <label>
+              <input
+                type="checkbox"
+                id="backupRSASetAsSignature"
+                name="backupRSASetAsSignature"
+                value="true"
+              />Set as signature key - Use key to sign messages
+            </label>
+            <br />
+            <br />
+            <label>
+              <input type="radio" checked name="backupKeyModePGP" value="0" /><u
+                >Permit future backup key changes (Default)</u
+              > </label
+            ><br />
+            <label
+              ><input type="radio" name="backupKeyModePGP" value="1" /><u
+                >Lock backup key on this device</u
+              ></label
+            >
+            <br />
+            <td>
+              <br />
+              <button id="SetPassphrase" type="button">
+                <b>Use passphrase instead of PGP key</b>
+              </button>
+            </td>
+          </div>
+
+          <div class="step" id="Step10">
+            <h3>Restore from Backup</h3>
+            <fieldset>
+              To restore a backup file to your OnlyKey, ensure you have loaded
+              the same backup passphrase or backup key you used to create the
+              backup.
+              <p>
+                Click [Choose File], select your backup file, then click
+                [Submit].
+              </p>
+              <p>
+                Your OnlyKey will light up amber while restoring the backup file
+                and automatically reboot when restoring is complete.
+              </p>
+              <p>
+                If you do not have a backup file to restore then setup is
+                complete, you may remove and reinsert your OnlyKey now.
+              </p>
+            </fieldset>
+            <br /><br /><input
+              type="file"
+              id="restoreSelectFile"
+              name="restoreSelectFile"
+              value="Select File"
+            /><br /><br />
+            <p id="step10-text"></p>
+          </div>
+
+          <div class="step" id="Step11">
+            <h2>Load Firmware</h2>
+            To load new firmware file to your OnlyKey, click [Choose File],
+            select your firmware file, then click [Load Firmware to OnlyKey].
+            <p>
+              The OnlyKey will restart automatically when firmware load is
+              complete. <br /><br />
+              <input
+                type="file"
+                id="firmwareSelectFile"
+                name="firmwareSelectFile"
+                value="Select File"
+              />
+            </p>
+          </div>
+        </div>
+
+        <br />
+
+        <div id="guided" class="step-nav hide uninit-only">
+          <hr />
+
+          <b>Guided Setup</b>
+
+          <button id="btnNext" type="button">Next</button>
+          <button id="btnExit" type="button" class="hide">Exit</button>
+        </div>
+
+        <div id="unguided" class="step-nav hide">
+          <button id="btnSubmitStep" type="button">Submit</button>
+          <button id="btnCancelStep" type="button">Cancel</button>
+        </div>
+        <p class="error" id="initConfigErrors"></p>
+      </form>
+
+      <div id="slot-panel" class="hide panel">
+        <h2>
+          Configure Slots <img src="/images/solid/cogs.svg" width="19px" />
+        </h2>
+        <p>
+          Slots are where you store login information. There are 12 slots in
+          your profile, and each slot can store a login URL, Username, Password,
+          and two-factor.
+          <a href="" data-dialog="slotExamples"
+            >Click here to see common use examples</a
+          >.
+        </p>
         <hr />
-
-        <b>Guided Setup</b>
-
-        <button id="btnNext" type="button">Next</button>
-        <button id="btnExit" type="button" class="hide">Exit</button>
-      </div>
-
-      <div id="unguided" class="step-nav hide">
-        <button id="btnSubmitStep" type="button">Submit</button>
-        <button id="btnCancelStep" type="button">Cancel</button>
-      </div>
-      <p class="error" id="initConfigErrors"></p>
-    </form>
-
-    <div id="slot-panel" class="hide panel">
-      <h2>Configure Slots <img src="/images/solid/cogs.svg" width="19px"/></h2>
-      <p>
-        Slots are where you store login information. There are 12 slots in your profile, and each slot can store a login
-        URL, Username, Password, and two-factor.
-        <a href="" data-dialog="slotExamples">Click here to see common use examples</a>.
-      </p>
-      <hr />
-      <div class="flex-container">
-        <div class="flex-item">
+        <div class="flex-container">
+          <div class="flex-item">
             <table id="slot-config-btns">
               <tr>
                 <td align="right">
@@ -301,620 +393,973 @@
                   <span class="slotLabel" id="slotLabel6b">empty</span>
                 </td>
               </tr>
-            </table>  
+            </table>
+          </div>
+        </div>
+        <hr />
+        Set a label on your slot and it will show up above to help you remember.
+        If you are unsure about slot settings, test it out first by browsing to
+        the login page and use a keyboard to login.
+        <a
+          href="https://docs.crp.to/usersguide.html#all-about-slots"
+          class="external"
+          >Learn more about slots
+          <img
+            class="moveimage"
+            src="/images/solid/external-link-alt.svg"
+            style="margin-left: 0.5em" /></a
+        >.
+      </div>
+
+      <div id="pref-panel" class="hide panel">
+        <div class="flex-container">
+          <div class="flex-item">
+            <form id="typeSpeedForm" name="typeSpeedForm">
+              <b>Keyboard Type Speed </b>
+              <a
+                href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed"
+                class="external"
+              >
+                <img
+                  class="moveimage"
+                  src="/images/solid/question-circle.svg"
+                />
+              </a>
+              <input
+                type="number"
+                id="okTypeSpeed"
+                name="okTypeSpeed"
+                min="1"
+                max="10"
+                placeholder="1 - 10"
+                style="width: 50px"
+              />
+              <input
+                type="button"
+                id="typeSpeedSubmit"
+                value="Set Type Speed"
+              />
+              <br />
+              (1 = slowest, 10 = fastest, 4 = default)
+            </form>
+            <form id="keyboardLayoutForm" name="keyboardLayoutForm">
+              <b>Keyboard Layout </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              <select id="okKeyboardLayout" name="okKeyboardLayout">
+                <option value="1">US_ENGLISH (default)</option>
+                <option value="2">CANADIAN_FRENCH</option>
+                <option value="3">CANADIAN_MULTILINGUAL</option>
+                <option value="4">DANISH</option>
+                <option value="5">FINNISH</option>
+                <option value="6">FRENCH</option>
+                <option value="7">FRENCH_BELGIAN</option>
+                <option value="8">FRENCH_SWISS</option>
+                <option value="9">GERMAN</option>
+                <option value="10">GERMAN_MAC</option>
+                <option value="11">GERMAN_SWISS</option>
+                <option value="12">ICELANDIC</option>
+                <option value="13">IRISH</option>
+                <option value="14">ITALIAN</option>
+                <option value="15">NORWEGIAN</option>
+                <option value="16">PORTUGUESE</option>
+                <option value="17">PORTUGUESE_BRAZILIAN</option>
+                <option value="18">SPANISH</option>
+                <option value="19">SPANISH_LATIN_AMERICA</option>
+                <option value="20">SWEDISH</option>
+                <option value="21">TURKISH</option>
+                <option value="22">UNITED_KINGDOM</option>
+                <option value="23">US_INTERNATIONAL</option>
+                <option value="24">CZECH</option>
+                <option value="25">SERBIAN_LATIN_ONLY</option>
+                <option value="26">HUNGARIAN</option>
+              </select>
+              <br />
+              <input
+                type="button"
+                id="kbdLayoutSubmit"
+                value="Set Keyboard Layout"
+              />
+            </form>
+            <form id="ledBrightnessForm" name="ledBrightnessForm">
+              <b>Indicator Light (LED) Brightness </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#configurable-led-brightness"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              <input
+                type="number"
+                id="okLedBrightness"
+                name="okLedBrightness"
+                min="1"
+                max="10"
+                placeholder="1 - 10"
+                style="width: 50px"
+              />
+              <input
+                type="button"
+                id="ledBrightnessSubmit"
+                value="Set LED Brightness"
+              />
+              <br />
+              (1 = dimmest, 10 = brightest, 8 = default)
+            </form>
+            <form id="modkeyModeForm" name="modkeyModeForm">
+              <b>Sysadmin Mode </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#sysadmin-mode"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              <br />
+              <label>
+                <input type="radio" checked name="okmodkeyMode" value="0" />
+                <u>Disable Sysadmin Mode</u>
+              </label>
+              <br />
+              <label>
+                <input type="radio" name="okmodkeyMode" value="1" />
+                <u>Enable Sysadmin Mode</u>
+              </label>
+              <br />
+              <input
+                type="button"
+                id="modkeyModeSubmit"
+                value="Set Modifier Key Mode"
+              /><span style="font-size: 90%; color: red"
+                ><b> Config Mode Required</b></span
+              ><br />
+            </form>
+            <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
+              <b>HMAC Challenge-Response Mode </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#hmac-mode"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              <br />
+              <label>
+                <input
+                  type="radio"
+                  checked
+                  name="okhmacchallengeMode"
+                  value="0"
+                />
+                <u>Button Press Required</u>
+              </label>
+              <br />
+              <label>
+                <input type="radio" name="okhmacchallengeMode" value="1" />
+                <u>Button Press Not Required</u>
+              </label>
+              <br />
+              <input
+                type="button"
+                id="hmacchallengeModeSubmit"
+                value="Set HMAC Challenge Mode"
+              /><span style="font-size: 90%; color: red"
+                ><b> Config Mode Required</b></span
+              ><br />
+            </form>
+            <form id="wipeModeForm" name="wipeModeForm">
+              <b>Wipe Mode </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#configurable-wipe-mode"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              Only sensitive data is wiped by default.
+              <br />
+              <label>
+                <input type="radio" checked name="okWipeMode" value="2" />
+                <u>Full Wipe</u> &ndash;
+                <em>Entire device is wiped and firmware must be reloaded.</em>
+              </label>
+              <br />
+              <span style="font-size: small; background-color: yellow"
+                ><b>
+                  WARNING - Once set to "Full Wipe" this cannot be changed.
+                </b></span
+              >
+              <br />
+              <input
+                type="button"
+                id="wipeModeSubmit"
+                value="Set Wipe Mode"
+              /><span style="font-size: 90%; color: red"
+                ><b> Config Mode Required</b></span
+              ><br />
+            </form>
+          </div>
+          <div class="flex-item">
+            <form id="lockoutForm" name="lockoutForm">
+              <b>Inactivity Lockout Timer </b>
+              <a
+                class="external"
+                href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period"
+              >
+                <img
+                  class="moveimage"
+                  src="/images/solid/question-circle.svg"
+                />
+              </a>
+              <input
+                type="number"
+                id="okLockout"
+                name="okLockout"
+                min="1"
+                max="255"
+                placeholder="1 - 255 Minutes"
+                style="width: 50px"
+              />
+              <input type="button" id="lockoutSubmit" value="Set Lockout" />
+              <br />
+              (1 &ndash; 255 Minutes, 30 = default, 0 to disable)
+            </form>
+            <form id="lockButtonForm" name="lockButtonForm">
+              <b>Lock Button</b>
+              <a
+                href="https://docs.crp.to/usersguide.html#configurable-lock-button"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              The OnlyKey and the computer are locked automatically when this
+              lock button is pressed (0 to disable).
+              <input
+                type="number"
+                id="okLockButton"
+                name="okLockButton"
+                min="0"
+                max="6"
+                placeholder="1 - 6"
+                style="width: 50px"
+              />
+              <input
+                type="button"
+                id="lockButtonSubmit"
+                value="Set as Lock Button"
+              />
+            </form>
+            <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
+              <b>Derived Key Challenge Mode </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#derived-challenge-mode"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              <br />
+              Enable or disable challenge for derived keys (SSH/PGP)
+              <br />
+              <label>
+                <input
+                  type="radio"
+                  checked
+                  name="okderivedchallengeMode"
+                  value="0"
+                />
+                <u>Challenge Code Required</u>
+              </label>
+              <br />
+              <label>
+                <input type="radio" name="okderivedchallengeMode" value="1" />
+                <u>Button Press Required</u>
+              </label>
+              <br />
+              <input
+                type="button"
+                id="derivedchallengeModeSubmit"
+                value="Set SSH Challenge Mode"
+              /><span style="font-size: 90%; color: red"
+                ><b> Config Mode Required</b></span
+              ><br />
+            </form>
+            <form id="storedchallengeModeForm" name="storedchallengeModeForm">
+              <b>Stored Key Challenge Mode </b
+              ><a
+                href="https://docs.crp.to/usersguide.html#stored-challenge-mode"
+                class="external"
+                ><img class="moveimage" src="/images/solid/question-circle.svg"
+              /></a>
+              <br />
+              Enable or disable challenge for stored keys (SSH/PGP)
+              <br />
+              <label>
+                <input
+                  type="radio"
+                  checked
+                  name="okStoredChallengeMode"
+                  value="0"
+                />
+                <u>Challenge Code Required</u>
+              </label>
+              <br />
+              <label>
+                <input type="radio" name="okStoredChallengeMode" value="1" />
+                <u>Button Press Required</u>
+              </label>
+              <br />
+              <input
+                type="button"
+                id="storedchallengeModeSubmit"
+                value="Set Stored Challenge Mode"
+              /><span style="font-size: 90%; color: red"
+                ><b> Config Mode Required</b></span
+              ><br />
+            </form>
+            <form id="backupModeForm" name="backupModeForm">
+              <b>Backup Key Mode </b>
+              <a
+                class="tooltip fade external"
+                data-tooltip="If a backup key is set, this prevents any changes to the backup key. If no backup key is set, backup functionality will be disabled on this device until a factory default is completed."
+                href="https://docs.crp.to/usersguide.html#backup-key-mode"
+              >
+                <img
+                  class="moveimage"
+                  src="/images/solid/question-circle.svg"
+                />
+              </a>
+
+              Backup key may be changed by default.
+              <br />
+              <label>
+                <input type="radio" checked name="okBackupMode" value="1" />
+                <u>Locked</u> - <em>Backup key may not be changed on device</em>
+              </label>
+              <br />
+              <span style="font-size: small; background-color: yellow"
+                ><b>
+                  WARNING - Once set to "Locked" this cannot be changed.
+                </b></span
+              >
+              <br />
+              <input
+                type="button"
+                id="backupModeSubmit"
+                value="Set Backup Key Mode"
+              /><span style="font-size: 90%; color: red"
+                ><b> Config Mode Required</b></span
+              ><br />
+            </form>
+          </div>
         </div>
       </div>
-      <hr />
-      Set a label on your slot and it will show up above to help you remember. If you are unsure about slot settings,
-      test it out first by browsing to the login page and use a keyboard to login.
-      <a href="https://docs.crp.to/usersguide.html#all-about-slots" class="external">Learn more about
-        slots <img class="moveimage" src="/images/solid/external-link-alt.svg" style="margin-left: .5em;" /></a>.
-    </div>
 
-    <div id="pref-panel" class="hide panel">
-      <div class="flex-container">
-        <div class="flex-item">
-          <form id="typeSpeedForm" name="typeSpeedForm">
-            <b>Keyboard Type Speed </b>
-            <a href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed" class="external">
-              <img class="moveimage" src="/images/solid/question-circle.svg" />
-              <span class="tooltip">
-                This is my tooltip!
-                <br/>
-                <br/>
-                Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 
-              </span>
+      <div id="keys-panel" class="hide panel">
+        <p>
+          Use the [Keys] tab to load OpenPGP keys onto your OnlyKey. OpenPGP
+          keys can be used to encrypt OnlyKey backups and are used for
+          <a href="https://docs.crp.to/webcrypt.html" class="external"
+            >file encryption and secure messaging</a
+          >.
+        </p>
+        <hr />
+        <div class="flex-container">
+          <div class="flex-item">
+            <p>
+              Need a key? Follow our guide
+              <a
+                href="https://docs.crp.to/usersguide.html#generating-keys"
+                class="external"
+                >here</a
+              >
+              for generating an OpenPGP key with Keybase.
+            </p>
+            <p>
+              <b>Before loading a key</b>, you must first put your OnlyKey into
+              config mode. To do this hold down the #6 button on your OnlyKey
+              for 5+ seconds and release. The OnlyKey light will turn off.
+              Re-enter your current primary PIN to enter config mode and notice
+              the OnlyKey flashes red.
+            </p>
+          </div>
+          <div class="flex-item">
+            <form id="rsaForm" name="rsaForm" class="auth-form">
+              <h2>OpenPGP Private Key (PEM Format)</h2>
+
+              <label>
+                Slot:
+                <select id="rsaSlot" name="rsaSlot">
+                  <option value="99">Auto Load</option>
+                  <option value="1">RSA 1</option>
+                  <option value="2">RSA 2</option>
+                  <option value="3">RSA 3</option>
+                  <option value="4">RSA 4</option>
+                  <option value="101">ECC 1</option>
+                  <option value="102">ECC 2</option>
+                  <option value="103">ECC 3</option>
+                  <option value="104">ECC 4</option>
+                  <option value="105">ECC 5</option>
+                  <option value="106">ECC 6</option>
+                  <option value="107">ECC 7</option>
+                  <option value="108">ECC 8</option>
+                  <option value="109">ECC 9</option>
+                  <option value="110">ECC 10</option>
+                  <option value="111">ECC 11</option>
+                  <option value="112">ECC 12</option>
+                  <option value="113">ECC 13</option>
+                  <option value="114">ECC 14</option>
+                  <option value="115">ECC 15</option>
+                  <option value="116">ECC 16</option>
+                </select>
+              </label>
+
+              <br />
+
+              <label>
+                Key:
+                <br />
+                <textarea
+                  id="rsaKey"
+                  name="rsaKey"
+                  cols="40"
+                  rows="6"
+                  placeholder="OpenPGP Key -- paste PEM file contents"
+                  required
+                ></textarea>
+              </label>
+
+              <br />
+
+              <label>
+                Passphrase:
+                <input type="password" id="rsaPasscode" name="rsaPasscode" />
+              </label>
+              <br />
+              <span id="rsaForm-additional-options"></span>
+              <label>
+                <input
+                  type="checkbox"
+                  id="rsaSetAsBackup"
+                  name="rsaSetAsBackup"
+                  value="true"
+                />
+                Set as backup key
+              </label>
+              <br />
+              (This setting uses the above key for secure backups instead of any
+              backup passphrase you might have set earlier.)
+
+              <br />
+              <br />
+
+              <input
+                type="button"
+                id="rsaSubmit"
+                name="rsaSubmit"
+                value="Save to OnlyKey"
+              />
+              <input
+                type="button"
+                id="rsaWipe"
+                name="rsaWipe"
+                value="Wipe from OnlyKey"
+              />
+              <div id="rsaFormError" class="form-error"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div id="backup-panel" class="hide panel">
+        <div class="flex-container">
+          <div class="flex-item">
+            <form id="backupForm" name="backupForm" class="auth-form">
+              <h2>
+                Backup <img src="/images/solid/upload.svg" width="15px" />
+              </h2>
+
+              <fieldset>
+                <p>
+                  <u>Step 1</u>. To begin backup ensure that you have a backup
+                  passphrase or key set and that you have an offline copy of
+                  this backup key. The same key that you use to backup your
+                  OnlyKey will be required to restore your OnlyKey.
+                </p>
+                <p>
+                  <u>Step 2</u>. Click inside the text area below with your
+                  mouse. Hold the #1 button down on your OnlyKey for 5+ seconds
+                  and release. This will type out an encrypted backup of your
+                  OnlyKey into the box.
+                </p>
+                <p>
+                  <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----" the
+                  backup of the OnlyKey slots and keys is complete. Select [Save
+                  file] to save your encrypted backup.
+                </p>
+              </fieldset>
+
+              <br />
+
+              <label>
+                Backup data:
+                <br />
+                <textarea
+                  id="backupData"
+                  name="backupData"
+                  cols="40"
+                  rows="6"
+                  placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."
+                ></textarea>
+              </label>
+
+              <br /><br />
+
+              <input
+                type="button"
+                id="backupSave"
+                name="backupSave"
+                value="Save file"
+              />
+              <span id="lastBackupFilename"
+                >onlykey-backup-[timestamp].txt</span
+              >
+              <div id="backupFormError" class="form-error"></div>
+            </form>
+          </div>
+
+          <div class="flex-item">
+            <form id="restoreForm" name="restoreForm" class="auth-form">
+              <h2>
+                Restore <img src="/images/solid/user-plus.svg" width="15px" />
+              </h2>
+
+              <fieldset>
+                <p>
+                  <u>Step 1</u>. To restore a backup file to your OnlyKey,
+                  ensure you have loaded the same backup passphrase or backup
+                  key you used to create the backup. Also make sure your OnlyKey
+                  is unlocked.
+                </p>
+                <p>
+                  <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+
+                  seconds and release. The OnlyKey light will turn off. Re-enter
+                  your PIN to enter config mode. Click [Choose File], select
+                  your backup file, then click [Restore to OnlyKey].
+                </p>
+                <p>
+                  <u>Step 3</u>. The OnlyKey light will be yellow while
+                  restoring your backup, then will automatically reboot when
+                  restoring is complete.
+                </p>
+              </fieldset>
+
+              <br /><br />
+
+              <input
+                type="file"
+                id="restoreSelectFile"
+                name="restoreSelectFile"
+                value="Select File"
+              />
+              <br />
+              <br />
+              <input
+                type="button"
+                id="doRestore"
+                name="doRestore"
+                value="Restore to OnlyKey"
+              />
+              <div id="restoreFormError" class="form-error"></div>
+            </form>
+            <p id="restore-text"></p>
+          </div>
+        </div>
+      </div>
+
+      <div id="firmware-panel" class="hide panel">
+        <div class="flex-container">
+          <div class="flex-item">
+            <form id="firmwareForm" name="firmwareForm" class="auth-form">
+              <h2>
+                Load Firmware <img src="/images/solid/link.svg" width="19px" />
+              </h2>
+
+              <fieldset>
+                <p id="firmware-text"></p>
+              </fieldset>
+
+              <br /><br />
+
+              <input
+                type="file"
+                id="firmwareSelectFile"
+                name="firmwareSelectFile"
+                value="Select File"
+              />
+              <br />
+              <br />
+              <input
+                type="button"
+                id="doFirmware"
+                name="doFirmware"
+                value="Load Firmware to OnlyKey"
+              />
+              <div id="firmwareFormError" class="form-error"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div id="advanced-panel" class="hide panel">
+        <div class="flex-container">
+          <div class="flex-item">
+            <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
+              <h2>Add Yubikey Security Info</h2>
+              <label>
+                Public Identity (6 bytes modhex)
+                <br />
+                <input
+                  type="text"
+                  id="yubiPublicId"
+                  name="yubiPublicId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="public id"
+                  required
+                />
+              </label>
+              <br />
+              <label>
+                Private Identity (6 bytes hex)
+                <br />
+                <input
+                  type="text"
+                  id="yubiPrivateId"
+                  name="yubiPrivateId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="private id"
+                  required
+                />
+              </label>
+              <br />
+              <label>
+                Secret Key (16 bytes hex)
+                <br />
+                <input
+                  type="text"
+                  id="yubiSecretKey"
+                  name="yubiSecretKey"
+                  maxlength="47"
+                  minlength="32"
+                  placeholder="secret aes key"
+                  required
+                />
+              </label>
+              <br /><br />
+              <input
+                type="button"
+                id="yubiSubmit"
+                name="yubiSubmit"
+                value="Save to OnlyKey"
+              />
+              <input
+                type="button"
+                id="yubiWipe"
+                name="yubiWipe"
+                value="Wipe from OnlyKey"
+              />
+              <div id="yubiError" class="form-error"></div>
+            </form>
+            <hr />
+            <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
+              <h2>Add U2F Security Info</h2>
+              <label>
+                Private Identity (32 bytes hex)
+                <br />
+                <textarea
+                  id="u2fPrivateId"
+                  name="u2fPrivateId"
+                  maxlength="64"
+                  minlength="64"
+                  cols="40"
+                  rows="2"
+                  placeholder="ECC Private Key"
+                  required
+                ></textarea>
+              </label>
+              <br />
+              <label>
+                U2F Certificate (up to 768 bytes hex)
+                <br />
+                <textarea
+                  id="u2fCert"
+                  name="u2fCert"
+                  maxlength="3071"
+                  minlength="2"
+                  cols="40"
+                  rows="4"
+                  placeholder="certificate"
+                  required
+                ></textarea>
+              </label>
+              <br /><br />
+              <input
+                type="button"
+                id="u2fSubmit"
+                name="u2fSubmit"
+                value="Save to OnlyKey"
+              />
+              <input
+                type="button"
+                id="u2fWipe"
+                name="u2fWipe"
+                value="Wipe from OnlyKey"
+              />
+              <div id="u2fError" class="form-error"></div>
+            </form>
+          </div>
+          <div class="flex-item">
+            <form id="eccForm" name="eccForm" class="auth-form">
+              <h2>Add Private Key</h2>
+
+              <label>
+                Type:
+                <select id="eccType" name="eccType">
+                  <option value="1">Curve25519/Ed25519</option>
+                  <option value="2">NIST256P1</option>
+                  <option value="3">SECP256K1</option>
+                  <option value="0">HMACSHA1</option>
+                </select>
+              </label>
+
+              <br />
+              <br />
+
+              <label>
+                Slot:
+                <select id="eccSlot" name="eccSlot">
+                  <option value="101">1</option>
+                  <option value="102">2</option>
+                  <option value="103">3</option>
+                  <option value="104">4</option>
+                  <option value="105">5</option>
+                  <option value="106">6</option>
+                  <option value="107">7</option>
+                  <option value="108">8</option>
+                  <option value="109">9</option>
+                  <option value="110">10</option>
+                  <option value="111">11</option>
+                  <option value="112">12</option>
+                  <option value="113">13</option>
+                  <option value="114">14</option>
+                  <option value="115">15</option>
+                  <option value="116">16</option>
+                  <option value="117">17</option>
+                  <option value="118">18</option>
+                  <option value="119">19</option>
+                  <option value="120">20</option>
+                  <option value="121">21</option>
+                  <option value="122">22</option>
+                  <option value="123">23</option>
+                  <option value="124">24</option>
+                  <option value="125">25</option>
+                  <option value="126">26</option>
+                  <option value="127">27</option>
+                  <option value="128">28</option>
+                  <option value="129">29</option>
+                  <option value="130">30</option>
+                </select>
+              </label>
+
+              <br />
+              <br />
+
+              <label>
+                Key:
+                <br />
+                <textarea
+                  id="eccKey"
+                  name="eccKey"
+                  maxlength="64"
+                  minlength="64"
+                  cols="40"
+                  rows="2"
+                  placeholder="Private Key (ECC - 32 bytes hex, HMACSHA1 - 20 bytes hex)"
+                  required
+                ></textarea>
+              </label>
+
+              <br />
+              <br />
+
+              <label>
+                <input
+                  type="checkbox"
+                  id="eccSetAsBackup"
+                  name="eccSetAsBackup"
+                  value="true"
+                />
+                Set as backup key (only one backup may be set)
+              </label>
+
+              <br />
+
+              <label>
+                <input
+                  type="checkbox"
+                  id="eccSetAsSignature"
+                  name="eccSetAsSignature"
+                  value="true"
+                />
+                Set as signature key
+              </label>
+
+              <br />
+
+              <label>
+                <input
+                  type="checkbox"
+                  id="eccSetAsDecryption"
+                  name="eccSetAsDecryption"
+                  value="true"
+                />
+                Set as decryption key
+              </label>
+
+              <br />
+              <br />
+
+              <input
+                type="button"
+                id="eccSubmit"
+                name="eccSubmit"
+                value="Save to OnlyKey"
+              />
+              <input
+                type="button"
+                id="eccWipe"
+                name="eccWipe"
+                value="Wipe from OnlyKey"
+              />
+              <div id="eccFormError" class="form-error"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div id="tools-panel" class="hide panel">
+        <div class="flex-container">
+          <div class="flex-item">
+            <a href="https://apps.crp.to/encrypt.html" class="external">
+              <img src="/images/solid/paper-plane.svg" width="50px" />
+              <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+              <img src="/images/solid/lock.svg" width="50px" />
+              <br />
+              <span class="h1">Encrypt Messages</span>
             </a>
-            <input type="number" id="okTypeSpeed" name="okTypeSpeed" min=1 max=10 placeholder="1 - 10"
-              style="width: 50px;" />
-            <input type="button" id="typeSpeedSubmit" value="Set Type Speed" />
-            <br />
-            (1 = slowest, 10 = fastest, 4 = default)
-          </form>
-          <form id="keyboardLayoutForm" name="keyboardLayoutForm">
-            <b>Keyboard Layout </b><a href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
-            <select id="okKeyboardLayout" name="okKeyboardLayout">
-              <option value=1>US_ENGLISH (default)</option>
-              <option value=2>CANADIAN_FRENCH</option>
-              <option value=3>CANADIAN_MULTILINGUAL</option>
-              <option value=4>DANISH</option>
-              <option value=5>FINNISH</option>
-              <option value=6>FRENCH</option>
-              <option value=7>FRENCH_BELGIAN</option>
-              <option value=8>FRENCH_SWISS</option>
-              <option value=9>GERMAN</option>
-              <option value=10>GERMAN_MAC</option>
-              <option value=11>GERMAN_SWISS</option>
-              <option value=12>ICELANDIC</option>
-              <option value=13>IRISH</option>
-              <option value=14>ITALIAN</option>
-              <option value=15>NORWEGIAN</option>
-              <option value=16>PORTUGUESE</option>
-              <option value=17>PORTUGUESE_BRAZILIAN</option>
-              <option value=18>SPANISH</option>
-              <option value=19>SPANISH_LATIN_AMERICA</option>
-              <option value=20>SWEDISH</option>
-              <option value=21>TURKISH</option>
-              <option value=22>UNITED_KINGDOM</option>
-              <option value=23>US_INTERNATIONAL</option>
-              <option value=24>CZECH</option>
-              <option value=25>SERBIAN_LATIN_ONLY</option>
-              <option value=26>HUNGARIAN</option>
-            </select>
-            <br />
-            <input type="button" id="kbdLayoutSubmit" value="Set Keyboard Layout" />
-          </form>
-          <form id="ledBrightnessForm" name="ledBrightnessForm">
-            <b>Indicator Light (LED) Brightness </b><a href="https://docs.crp.to/usersguide.html#configurable-led-brightness" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
-            <input type="number" id="okLedBrightness" name="okLedBrightness" min=1 max=10 placeholder="1 - 10"
-              style="width: 50px;" />
-            <input type="button" id="ledBrightnessSubmit" value="Set LED Brightness" />
-            <br />
-            (1 = dimmest, 10 = brightest, 8 = default)
-          </form>
-          <form id="modkeyModeForm" name="modkeyModeForm">
-            <b>Sysadmin Mode </b><a href="https://docs.crp.to/usersguide.html#sysadmin-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
-            <label>
-              <input type="radio" checked name="okmodkeyMode" value=0 />
-              <u>Disable Sysadmin Mode</u>
-            </label>
-            <br />
-            <label>
-              <input type="radio" name="okmodkeyMode" value=1 />
-              <u>Enable Sysadmin Mode</u>
-            </label>
-            <br />
-            <input type="button" id="modkeyModeSubmit" value="Set Modifier Key Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
-          <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
-            <b>HMAC Challenge-Response Mode </b><a href="https://docs.crp.to/usersguide.html#hmac-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
-            <label>
-              <input type="radio" checked name="okhmacchallengeMode" value=0 />
-              <u>Button Press Required</u>
-            </label>
-            <br />
-            <label>
-              <input type="radio" name="okhmacchallengeMode" value=1 />
-              <u>Button Press Not Required</u>
-            </label>
-            <br />
-            <input type="button" id="hmacchallengeModeSubmit" value="Set HMAC Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
-          <form id="wipeModeForm" name="wipeModeForm">
-            <b>Wipe Mode </b><a href="https://docs.crp.to/usersguide.html#configurable-wipe-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
-            Only sensitive data is wiped by default.
-            <br />
-            <label>
-              <input type="radio" checked name="okWipeMode" value=2 />
-              <u>Full Wipe</u> &ndash; <em>Entire device is wiped and firmware must be reloaded.</em>
-            </label>
-            <br />
-            <span style="font-size: small; background-color: yellow;"><b> WARNING - Once set to "Full Wipe" this cannot be
-                changed. </b></span>
-            <br />
-            <input type="button" id="wipeModeSubmit" value="Set Wipe Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
-        </div>
-        <div class="flex-item">
-          <form id="lockoutForm" name="lockoutForm">
-            <b>Inactivity Lockout Timer </b>
-            <a href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period" class="external">
-              <img class="moveimage" src="/images/solid/question-circle.svg" />
-              <span class="tooltip">
-                This is my tooltip!
-                <br/>
-                <br/>
-                Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 Line 2 
-              </span>
-            </a> 
-            <input type="number" id="okLockout" name="okLockout" min=1 max=255 placeholder="1 - 255 Minutes"
-              style="width: 50px;" />
-            <input type="button" id="lockoutSubmit" value="Set Lockout" />
-            <br />
-            (1 &ndash; 255 Minutes, 30 = default, 0 to disable)
-          </form>
-          <form id="lockButtonForm" name="lockButtonForm">
-            <b>Lock Button</b> <a href="https://docs.crp.to/usersguide.html#configurable-lock-button" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
-            The OnlyKey and the computer are locked automatically when this lock button is pressed (0 to disable).
-            <input type="number" id="okLockButton" name="okLockButton" min=0 max=6 placeholder="1 - 6"
-              style="width: 50px;" />
-            <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
-          </form>
-          <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
-            <b>Derived Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#derived-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
-            Enable or disable challenge for derived keys (SSH/PGP)
-            <br />
-            <label>
-              <input type="radio" checked name="okderivedchallengeMode" value=0 />
-              <u>Challenge Code Required</u>
-            </label>
-            <br />
-            <label>
-              <input type="radio" name="okderivedchallengeMode" value=1 />
-              <u>Button Press Required</u>
-            </label>
-            <br />
-            <input type="button" id="derivedchallengeModeSubmit" value="Set SSH Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
-          <form id="storedchallengeModeForm" name="storedchallengeModeForm">
-            <b>Stored Key Challenge Mode </b><a href="https://docs.crp.to/usersguide.html#stored-challenge-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> <br />
-            Enable or disable challenge for stored keys (SSH/PGP)
-            <br />
-            <label>
-              <input type="radio" checked name="okStoredChallengeMode" value=0 />
-              <u>Challenge Code Required</u>
-            </label>
-            <br />
-            <label>
-              <input type="radio" name="okStoredChallengeMode" value=1 />
-              <u>Button Press Required</u>
-            </label>
-            <br />
-            <input type="button" id="storedchallengeModeSubmit" value="Set Stored Challenge Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
-          <form id="backupModeForm" name="backupModeForm">
-            <b>Backup Key Mode </b><a href="https://docs.crp.to/usersguide.html#backup-key-mode" class="external"><img class="moveimage" src="/images/solid/question-circle.svg" /></a> 
-            Backup key may be changed by default.
-            <br />
-            <label>
-              <input type="radio" checked name="okBackupMode" value=1 />
-              <u>Locked</u> - <em>Backup key may not be changed on device</em>
-            </label>
-            <br />
-            <span style="font-size: small; background-color: yellow;"><b> WARNING - Once set to "Locked" this cannot be changed. </b></span>
-            <br />
-            <input type="button" id="backupModeSubmit" value="Set Backup Key Mode" /><span style="font-size: 90%; color: red;"><b> Config Mode Required</b></span><br> 
-          </form>
+          </div>
+          <div class="flex-item">
+            <a href="https://apps.crp.to/decrypt.html" class="external">
+              <img src="/images/solid/lock.svg" width="50px" />
+              <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+              <img src="/images/solid/paper-plane.svg" width="50px" />
+              <br />
+              <span class="h1">Decrypt Messages</span>
+            </a>
+          </div>
+          <div class="flex-item">
+            <a href="https://apps.crp.to/encrypt-files.html" class="external">
+              <img src="/images/solid/file-alt.svg" width="40px" />
+              <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+              <img src="/images/solid/lock.svg" width="50px" />
+              <br />
+              <span class="h1">Encrypt Files</span>
+            </a>
+          </div>
+          <div class="flex-item">
+            <a href="https://apps.crp.to/decrypt-files.html" class="external">
+              <img src="/images/solid/lock.svg" width="50px" />
+              <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
+              <img src="/images/solid/file-alt.svg" width="40px" />
+              <br />
+              <span class="h1">Decrypt Files</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
-    <div id="keys-panel" class="hide panel">
-      <p>
-        Use the [Keys] tab to load OpenPGP keys onto your OnlyKey. OpenPGP keys can be used to encrypt OnlyKey
-        backups and are used for <a href="https://docs.crp.to/webcrypt.html" class="external">file
-          encryption and secure messaging</a>.
-      </p>
-      <hr />
-      <div class="flex-container">
-        <div class="flex-item">
-          <p>Need a key? Follow our guide <a href="https://docs.crp.to/usersguide.html#generating-keys"
-              class="external">here</a>
-            for generating an OpenPGP key with Keybase.</p>
-          <p><b>Before loading a key</b>, you must first put your OnlyKey into config mode. To do this hold down the #6
-            button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your current
-            primary PIN to enter config mode and notice the OnlyKey flashes red.</p>
-        </div>
-        <div class="flex-item">
-          <form id="rsaForm" name="rsaForm" class="auth-form">
-            <h2>OpenPGP Private Key (PEM Format)</h2>
+    <dialog id="finalStep-dialog">
+      <h2>Your OnlyKey has been successfully configured.</h2>
+      <h3>
+        Please unplug and reinsert your OnlyKey to continue setting up your
+        slots.
+      </h3>
+    </dialog>
 
-            <label>
-              Slot:
-              <select id="rsaSlot" name="rsaSlot">
-                <option value=99>Auto Load</option>
-                <option value=1>RSA 1</option>
-                <option value=2>RSA 2</option>
-                <option value=3>RSA 3</option>
-                <option value=4>RSA 4</option>
-                <option value=101>ECC 1</option>
-                <option value=102>ECC 2</option>
-                <option value=103>ECC 3</option>
-                <option value=104>ECC 4</option>
-                <option value=105>ECC 5</option>
-                <option value=106>ECC 6</option>
-                <option value=107>ECC 7</option>
-                <option value=108>ECC 8</option>
-                <option value=109>ECC 9</option>
-                <option value=110>ECC 10</option>
-                <option value=111>ECC 11</option>
-                <option value=112>ECC 12</option>
-                <option value=113>ECC 13</option>
-                <option value=114>ECC 14</option>
-                <option value=115>ECC 15</option>
-                <option value=116>ECC 16</option>
-              </select>
-            </label>
+    <dialog id="disconnected-dialog">
+      <h1>Please connect your OnlyKey</h1>
+    </dialog>
 
-            <br />
+    <dialog id="working-dialog">
+      <h1>Working...</h1>
+      <h2>Please wait</h2>
+      <p id="upgrade-text"></p>
+    </dialog>
 
-            <label>
-              Key:
-              <br />
-              <textarea id="rsaKey" name="rsaKey" cols="40" rows="6" placeholder="OpenPGP Key -- paste PEM file contents"
-                required></textarea>
-            </label>
+    <dialog id="locked-dialog">
+      <h1>Your OnlyKey is locked</h1>
+      <p id="locked-text"></p>
+    </dialog>
 
-            <br />
+    <dialog id="locked-dialog-go">
+      <h1>Your OnlyKey Go is locked</h1>
+      <p id="locked-text-go"></p>
+    </dialog>
 
-            <label>
-              Passphrase:
-              <input type="password" id="rsaPasscode" name="rsaPasscode" />
-            </label>
-            <br />
-            <span id="rsaForm-additional-options"></span>
-            <label>
-              <input type="checkbox" id="rsaSetAsBackup" name="rsaSetAsBackup" value="true" />
-              Set as backup key
-            </label>
-            <br/>
-            (This setting uses the above key for secure backups instead of any backup passphrase you might have set earlier.)
+    <dialog id="slot-wipe-confirm">
+      <h2>WIPE OnlyKey Slot <span id="wipeCurrentSlotId">1a</span>??</h2>
+      <input
+        type="button"
+        id="slotWipeConfirm"
+        name="slotWipeConfirm"
+        value="Wipe"
+      />
+      <input
+        type="button"
+        id="slotWipeCancel"
+        name="slotWipeCancel"
+        value="Cancel"
+      />
+    </dialog>
 
-            <br />
-            <br />
+    <dialog id="select-private-key-dialog">
+      <h2>Please choose a key</h2>
 
-            <input type="button" id="rsaSubmit" name="rsaSubmit" value="Save to OnlyKey" />
-            <input type="button" id="rsaWipe" name="rsaWipe" value="Wipe from OnlyKey" />
-            <div id="rsaFormError" class="form-error"></div>
-          </form>
-        </div>
-      </div>
-    </div>
-    <div id="backup-panel" class="hide panel">
-      <div class="flex-container">
-        <div class="flex-item">
-          <form id="backupForm" name="backupForm" class="auth-form">
-            <h2>Backup <img src="/images/solid/upload.svg" width="15px"/></h2>
+      <p>Multiple keys were extracted. Please choose which one to save.</p>
 
-            <fieldset>
-              <p>
-                <u>Step 1</u>. To begin backup ensure that you have a backup passphrase or key set and
-                that
-                you have an offline copy of this backup key. The same key that you use to backup your
-                OnlyKey will be required to restore your OnlyKey.
-              </p>
-              <p>
-                <u>Step 2</u>. Click inside the text area below with your mouse. Hold the #1 button
-                down on
-                your OnlyKey for 5+ seconds and release. This will type out an encrypted backup of your
-                OnlyKey into the box.
-              </p>
-              <p>
-                <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----" the backup of the OnlyKey
-                slots
-                and keys is complete. Select [Save file] to save your encrypted backup.
-              </p>
-            </fieldset>
+      <div id="private-key-options"></div>
 
-            <br />
+      <input
+        type="button"
+        id="selectPrivateKeyConfirm"
+        name="selectPrivateKeyConfirm"
+        value="Save"
+      />
+      <input
+        type="button"
+        id="selectPrivateKeyCancel"
+        name="selectPrivateKeyCancel"
+        value="Cancel"
+      />
+      <div id="selectPrivateKeyError" class="form-error"></div>
+    </dialog>
 
-            <label>
-              Backup data:
-              <br />
-              <textarea id="backupData" name="backupData" cols="40" rows="6"
-                placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."></textarea>
-            </label>
-
-            <br /><br />
-
-            <input type="button" id="backupSave" name="backupSave" value="Save file" />
-            <span id="lastBackupFilename">onlykey-backup-[timestamp].txt</span>
-            <div id="backupFormError" class="form-error"></div>
-          </form>
-        </div>
-
-        <div class="flex-item">
-          <form id="restoreForm" name="restoreForm" class="auth-form">
-            <h2>Restore <img src="/images/solid/user-plus.svg" width="15px"/></h2>
-
-            <fieldset>
-              <p>
-                <u>Step 1</u>. To restore a backup file to your OnlyKey, ensure you have loaded the
-                same
-                backup passphrase or backup key you used to create the backup. Also make sure your
-                OnlyKey
-                is unlocked.
-              </p>
-              <p>
-                <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The
-                OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose
-                File],
-                select your backup file, then click [Restore to OnlyKey].
-              </p>
-              <p>
-                <u>Step 3</u>. The OnlyKey light will be yellow while restoring your backup, then will
-                automatically reboot when restoring is complete.
-              </p>
-            </fieldset>
-
-            <br /><br />
-
-            <input type="file" id="restoreSelectFile" name="restoreSelectFile" value="Select File" />
-            <br />
-            <br />
-            <input type="button" id="doRestore" name="doRestore" value="Restore to OnlyKey" />
-            <div id="restoreFormError" class="form-error"></div>
-          </form>
-          <p id="restore-text"></p>
-        </div>
-      </div>
-    </div>
-
-    <div id="firmware-panel" class="hide panel">
-      <div class="flex-container">
-        <div class="flex-item">
-          <form id="firmwareForm" name="firmwareForm" class="auth-form">
-            <h2>Load Firmware <img src="/images/solid/link.svg" width="19px"/></h2>
-
-            <fieldset>
-              <p id="firmware-text"></p>
-            </fieldset>
-
-            <br /><br />
-
-            <input type="file" id="firmwareSelectFile" name="firmwareSelectFile" value="Select File" />
-            <br />
-            <br />
-            <input type="button" id="doFirmware" name="doFirmware" value="Load Firmware to OnlyKey" />
-            <div id="firmwareFormError" class="form-error"></div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <div id="advanced-panel" class="hide panel">
-      <div class="flex-container">
-        <div class="flex-item">
-          <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
-            <h2>Add Yubikey Security Info</h2>
-            <label>
-              Public Identity (6 bytes modhex)
-              <br />
-              <input type="text" id="yubiPublicId" name="yubiPublicId" maxlength="17" minlength="12"
-                placeholder="public id" required />
-            </label>
-            <br />
-            <label>
-              Private Identity (6 bytes hex)
-              <br />
-              <input type="text" id="yubiPrivateId" name="yubiPrivateId" maxlength="17" minlength="12"
-                placeholder="private id" required />
-            </label>
-            <br />
-            <label>
-              Secret Key (16 bytes hex)
-              <br />
-              <input type="text" id="yubiSecretKey" name="yubiSecretKey" maxlength="47" minlength="32"
-                placeholder="secret aes key" required />
-            </label>
-            <br /><br />
-            <input type="button" id="yubiSubmit" name="yubiSubmit" value="Save to OnlyKey" />
-            <input type="button" id="yubiWipe" name="yubiWipe" value="Wipe from OnlyKey" />
-            <div id="yubiError" class="form-error"></div>
-          </form>
-          <hr />
-          <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
-            <h2>Add U2F Security Info</h2>
-            <label>
-              Private Identity (32 bytes hex)
-              <br />
-              <textarea id="u2fPrivateId" name="u2fPrivateId" maxlength="64" minlength="64" cols="40" rows="2"
-                placeholder="ECC Private Key" required></textarea>
-            </label>
-            <br />
-            <label>
-              U2F Certificate (up to 768 bytes hex)
-              <br />
-              <textarea id="u2fCert" name="u2fCert" maxlength="3071" minlength="2" cols="40" rows="4"
-                placeholder="certificate" required></textarea>
-            </label>
-            <br /><br />
-            <input type="button" id="u2fSubmit" name="u2fSubmit" value="Save to OnlyKey" />
-            <input type="button" id="u2fWipe" name="u2fWipe" value="Wipe from OnlyKey" />
-            <div id="u2fError" class="form-error"></div>
-          </form>
-        </div>
-        <div class="flex-item">
-          <form id="eccForm" name="eccForm" class="auth-form">
-            <h2>Add Private Key</h2>
-
-            <label>
-              Type:
-              <select id="eccType" name="eccType">
-                <option value=1>Curve25519/Ed25519</option>
-                <option value=2>NIST256P1</option>
-                <option value=3>SECP256K1</option>
-                <option value=0>HMACSHA1</option>
-              </select>
-            </label>
-
-            <br />
-            <br />
-
-            <label>
-              Slot:
-              <select id="eccSlot" name="eccSlot">
-                <option value=101>1</option>
-                <option value=102>2</option>
-                <option value=103>3</option>
-                <option value=104>4</option>
-                <option value=105>5</option>
-                <option value=106>6</option>
-                <option value=107>7</option>
-                <option value=108>8</option>
-                <option value=109>9</option>
-                <option value=110>10</option>
-                <option value=111>11</option>
-                <option value=112>12</option>
-                <option value=113>13</option>
-                <option value=114>14</option>
-                <option value=115>15</option>
-                <option value=116>16</option>
-                <option value=117>17</option>
-                <option value=118>18</option>
-                <option value=119>19</option>
-                <option value=120>20</option>
-                <option value=121>21</option>
-                <option value=122>22</option>
-                <option value=123>23</option>
-                <option value=124>24</option>
-                <option value=125>25</option>
-                <option value=126>26</option>
-                <option value=127>27</option>
-                <option value=128>28</option>
-                <option value=129>29</option>
-                <option value=130>30</option>
-              </select>
-            </label>
-
-            <br />
-            <br />
-
-            <label>
-              Key:
-              <br />
-              <textarea id="eccKey" name="eccKey" maxlength="64" minlength="64" cols="40" rows="2"
-                placeholder="Private Key (ECC - 32 bytes hex, HMACSHA1 - 20 bytes hex)" required></textarea>
-            </label>
-
-            <br />
-            <br />
-
-            <label>
-              <input type="checkbox" id="eccSetAsBackup" name="eccSetAsBackup" value="true" />
-              Set as backup key (only one backup may be set)
-            </label>
-
-            <br />
-
-            <label>
-              <input type="checkbox" id="eccSetAsSignature" name="eccSetAsSignature" value="true" />
-              Set as signature key
-            </label>
-
-            <br />
-
-            <label>
-              <input type="checkbox" id="eccSetAsDecryption" name="eccSetAsDecryption" value="true" />
-              Set as decryption key
-            </label>
-
-            <br />
-            <br />
-
-            <input type="button" id="eccSubmit" name="eccSubmit" value="Save to OnlyKey" />
-            <input type="button" id="eccWipe" name="eccWipe" value="Wipe from OnlyKey" />
-            <div id="eccFormError" class="form-error"></div>
-          </form>
-        </div>
-      </div>
-    </div>
-    <div id="tools-panel" class="hide panel">
-      <div class="flex-container">
-        <div class="flex-item">
-          <a href="https://apps.crp.to/encrypt.html" class="external">
-            <img src="/images/solid/paper-plane.svg" width="50px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
-            <img src="/images/solid/lock.svg" width="50px" />
-            <br>
-            <span class="h1">Encrypt Messages</span>
-          </a>
-        </div>
-        <div class="flex-item">
-          <a href="https://apps.crp.to/decrypt.html" class="external">
-            <img src="/images/solid/lock.svg" width="50px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
-            <img src="/images/solid/paper-plane.svg" width="50px" />
-            <br>
-            <span class="h1">Decrypt Messages</span>
-          </a>
-        </div>
-        <div class="flex-item">
-          <a href="https://apps.crp.to/encrypt-files.html" class="external">
-            <img src="/images/solid/file-alt.svg" width="40px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
-            <img src="/images/solid/lock.svg" width="50px" />
-            <br>
-            <span class="h1">Encrypt Files</span>
-          </a>
-        </div>
-        <div class="flex-item">
-          <a href="https://apps.crp.to/decrypt-files.html" class="external">
-            <img src="/images/solid/lock.svg" width="50px" />
-            <img src="/images/solid/long-arrow-alt-right.svg" width="50px" />
-            <img src="/images/solid/file-alt.svg" width="40px" />
-            <br>
-            <span class="h1">Decrypt Files</span>
-          </a>
-        </div>
-
-
-      </div>
-    </div>
-  </div>
-
-  <dialog id="finalStep-dialog">
-    <h2>Your OnlyKey has been successfully configured.</h2>
-    <h3>Please unplug and reinsert your OnlyKey to continue setting up your slots.</h3>
-  </dialog>
-
-  <dialog id="disconnected-dialog">
-    <h1>Please connect your OnlyKey</h1>
-  </dialog>
-
-  <dialog id="working-dialog">
-    <h1>Working...</h1>
-    <h2>Please wait</h2>
-    <p id="upgrade-text"></p>
-  </dialog>
-
-  <dialog id="locked-dialog">
-    <h1>Your OnlyKey is locked</h1>
-    <p id="locked-text"></p>
-  </dialog>
-
-  <dialog id="locked-dialog-go">
-    <h1>Your OnlyKey Go is locked</h1>
-    <p id="locked-text-go"></p>
-  </dialog>
-
-  <dialog id="slot-wipe-confirm">
-    <h2>WIPE OnlyKey Slot <span id="wipeCurrentSlotId">1a</span>??</h2>
-    <input type="button" id="slotWipeConfirm" name="slotWipeConfirm" value="Wipe" />
-    <input type="button" id="slotWipeCancel" name="slotWipeCancel" value="Cancel" />
-  </dialog>
-
-  <dialog id="select-private-key-dialog">
-    <h2>Please choose a key</h2>
-
-    <p>Multiple keys were extracted. Please choose which one to save.</p>
-
-    <div id="private-key-options">
-    </div>
-
-    <input type="button" id="selectPrivateKeyConfirm" name="selectPrivateKeyConfirm" value="Save" />
-    <input type="button" id="selectPrivateKeyCancel" name="selectPrivateKeyCancel" value="Cancel" />
-    <div id="selectPrivateKeyError" class="form-error"></div>
-  </dialog>
-
-  <dialog id="slot-config-dialog">
-    <a href="" class="slot-config-close">cancel [x]</a>
-    <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
-    Check the box next to the fields you want to save to OnlyKey<br>
-    <img class="moveimage" style="right: 8px;" src="/images/solid/arrow-down.svg" />
-    <form name="slot-config-form" id="slot-config-form">
-      <table>
-        <!--                 <tr>
+    <dialog id="slot-config-dialog">
+      <a href="" class="slot-config-close">cancel [x]</a>
+      <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
+      Check the box next to the fields you want to save to OnlyKey<br />
+      <img
+        class="moveimage"
+        style="right: 8px"
+        src="/images/solid/arrow-down.svg"
+      />
+      <form name="slot-config-form" id="slot-config-form">
+        <table>
+          <!--                 <tr>
                     <td>Load Defaults From Template</td>
                     <td>
                         <select id="templates" name="templates">
@@ -922,272 +1367,377 @@
                         </select>
                     </td>
                 </tr> -->
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkSlotLabel" name="chkSlotLabel" value="true" />
-              Label (up to 16 chars)
-            </label>
-          </td>
-          <td>
-            <input type="text" id="txtSlotLabel" name="txtSlotLabel" value="" maxlength="16" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkSlotUrl" name="chkSlotUrl" value="true" />
-              URL (up to 56 chars)
-            </label>
-          </td>
-          <td>
-            <input type="text" id="txtSlotUrl" name="txtSlotUrl" value="" maxlength="56" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkDelay1" name="chkDelay1" value="true" />
-              Delay (0-9 seconds)
-            </label>
-          </td>
-          <td>
-            <input type="text" name="numDelay1" value="" maxlength="1" style="width:1em;" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn4" value=1 />
-              Tab before UserName
-            </label>
-            <label>
-              <input type="radio" name="tabReturn4" value=0 />
-              None
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkUserName" name="chkUserName" value="true" />
-              UserName (up to 56 chars)
-            </label>
-          </td>
-          <td>
-            <input type="text" id="txtUserName" name="txtUserName" value="" maxlength="56" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn1" value=1 />
-              Tab after UserName
-            </label>
-            <label>
-              <input type="radio" name="tabReturn1" value=2 />
-              Return after UserName
-            </label>
-            <label>
-              <input type="radio" name="tabReturn1" value=0 />
-              None
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkDelay2" name="chkDelay2" value="true" />
-              Delay (0-9 seconds)
-            </label>
-          </td>
-          <td>
-            <input type="text" name="numDelay2" value="" maxlength="1" style="width:1em;" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkPassword" name="chkPassword" value="true" />
-              Password (up to 56 chars)
-            </label>
-          </td>
-          <td>
-            <input type="password" id="txtPassword" name="txtPassword" value="" maxlength="56" />
-          </td>
-        </tr>
-        <tr>
-          <td>Re-enter Password</td>
-          <td>
-            <input type="password" id="txtPasswordConfirm" name="txtPasswordConfirm" value="" maxlength="56" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn2" value=2 />
-              Return after Password
-            </label>
-            <label>
-              <input type="radio" name="tabReturn2" value=0 />
-              None
-            </label>
-          </td>
-        </tr>
-        <tr>
-        <tr>
-          <td><br />Options below are for two-factor authentication:</td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn2" value=1 />
-              Tab after Password
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="checkbox" id="chkDelay3" name="chkDelay3" value="true" />
-              Delay (0-9 seconds)
-            </label>
-          </td>
-          <td>
-            <input type="text" name="numDelay3" value="" maxlength="1" style="width:1em;" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn5" value=1 />
-              Tab before OTP
-            </label>
-            <label>
-              <input type="radio" name="tabReturn5" value=0 />
-              None
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="mode" value="googleAuthOtp" />
-              Google Authenticator OTP (TOTP)
-            </label>
-          </td>
-          <td>
-            <input type="text" id="txt2FAUserName" name="txt2FAUserName" value="" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn3" value=2 />
-              Return after OTP
-            </label>
-            <label>
-              <input type="radio" name="tabReturn3" value=0 />
-              None
-            </label>
-          </td>
-        </tr>
-        <tr>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="mode" value="yubikeyOtp" />
-              Yubikey OTP
-            </label>
-            <br />
-            <label>
-              <input type="radio" name="mode" value="u2f" />
-              U2F
-            </label>
-            <br />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label>
-              <input type="radio" name="tabReturn3" value=2 />
-              Return after OTP
-            </label>
-            <label>
-              <input type="radio" name="tabReturn3" value=0 />
-              None
-            </label>
-          </td>
-        </tr>
-        <tr>
-          <td colspan="2" id="slotConfigErrors">
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <input type="button" id="slotWipe" name="slotWipe" value="Wipe Slot" />
-          </td>
-          <td>
-            <input type="button" id="slotSubmit" name="slotSubmit" value="Set Slot" />
-          </td>
-        </tr>
-      </table>
-    </form>
-  </dialog>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkSlotLabel"
+                  name="chkSlotLabel"
+                  value="true"
+                />
+                Label (up to 16 chars)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                id="txtSlotLabel"
+                name="txtSlotLabel"
+                value=""
+                maxlength="16"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkSlotUrl"
+                  name="chkSlotUrl"
+                  value="true"
+                />
+                URL (up to 56 chars)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                id="txtSlotUrl"
+                name="txtSlotUrl"
+                value=""
+                maxlength="56"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkDelay1"
+                  name="chkDelay1"
+                  value="true"
+                />
+                Delay (0-9 seconds)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                name="numDelay1"
+                value=""
+                maxlength="1"
+                style="width: 1em"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn4" value="1" />
+                Tab before UserName
+              </label>
+              <label>
+                <input type="radio" name="tabReturn4" value="0" />
+                None
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkUserName"
+                  name="chkUserName"
+                  value="true"
+                />
+                UserName (up to 56 chars)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                id="txtUserName"
+                name="txtUserName"
+                value=""
+                maxlength="56"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn1" value="1" />
+                Tab after UserName
+              </label>
+              <label>
+                <input type="radio" name="tabReturn1" value="2" />
+                Return after UserName
+              </label>
+              <label>
+                <input type="radio" name="tabReturn1" value="0" />
+                None
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkDelay2"
+                  name="chkDelay2"
+                  value="true"
+                />
+                Delay (0-9 seconds)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                name="numDelay2"
+                value=""
+                maxlength="1"
+                style="width: 1em"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassword"
+                  name="chkPassword"
+                  value="true"
+                />
+                Password (up to 56 chars)
+              </label>
+            </td>
+            <td>
+              <input
+                type="password"
+                id="txtPassword"
+                name="txtPassword"
+                value=""
+                maxlength="56"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>Re-enter Password</td>
+            <td>
+              <input
+                type="password"
+                id="txtPasswordConfirm"
+                name="txtPasswordConfirm"
+                value=""
+                maxlength="56"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn2" value="2" />
+                Return after Password
+              </label>
+              <label>
+                <input type="radio" name="tabReturn2" value="0" />
+                None
+              </label>
+            </td>
+          </tr>
+          <tr></tr>
+          <tr>
+            <td><br />Options below are for two-factor authentication:</td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn2" value="1" />
+                Tab after Password
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkDelay3"
+                  name="chkDelay3"
+                  value="true"
+                />
+                Delay (0-9 seconds)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                name="numDelay3"
+                value=""
+                maxlength="1"
+                style="width: 1em"
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn5" value="1" />
+                Tab before OTP
+              </label>
+              <label>
+                <input type="radio" name="tabReturn5" value="0" />
+                None
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="mode" value="googleAuthOtp" />
+                Google Authenticator OTP (TOTP)
+              </label>
+            </td>
+            <td>
+              <input
+                type="text"
+                id="txt2FAUserName"
+                name="txt2FAUserName"
+                value=""
+              />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn3" value="2" />
+                Return after OTP
+              </label>
+              <label>
+                <input type="radio" name="tabReturn3" value="0" />
+                None
+              </label>
+            </td>
+          </tr>
+          <tr></tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="mode" value="yubikeyOtp" />
+                Yubikey OTP
+              </label>
+              <br />
+              <label>
+                <input type="radio" name="mode" value="u2f" />
+                U2F
+              </label>
+              <br />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label>
+                <input type="radio" name="tabReturn3" value="2" />
+                Return after OTP
+              </label>
+              <label>
+                <input type="radio" name="tabReturn3" value="0" />
+                None
+              </label>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2" id="slotConfigErrors"></td>
+          </tr>
+          <tr>
+            <td>
+              <input
+                type="button"
+                id="slotWipe"
+                name="slotWipe"
+                value="Wipe Slot"
+              />
+            </td>
+            <td>
+              <input
+                type="button"
+                id="slotSubmit"
+                name="slotSubmit"
+                value="Set Slot"
+              />
+            </td>
+          </tr>
+        </table>
+      </form>
+    </dialog>
 
-  <dialog id="slotExamples" class="white">
-    <a href="" class="dialog-close">cancel [x]</a>
-    <br>
-    <p>
-      <h2>Example #1</h2>
-      Configure button 1 tap (touch for less than 1 sec) to automatically type a password:
-      <br>
-      <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click button [1a]
-      <br>
-      <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [Password] and [Return
-      after Password]
-      <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter/re-enter password and click [Set Slot]
-    </p>
+    <dialog id="slotExamples" class="white">
+      <a href="" class="dialog-close">cancel [x]</a>
+      <br />
+      <div>
+        <h2>Example #1</h2>
+        Configure button 1 tap (touch for less than 1 sec) to automatically type
+        a password:
+        <br />
+        <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click
+        button [1a]
+        <br />
+        <img class="moveimage" src="/images/regular/check-square.svg" /> Check
+        boxes next to [Password] and [Return after Password]
+        <br />
+        <img class="moveimage" src="/images/regular/keyboard.svg" />
+        Enter/re-enter password and click [Set Slot]
+      </div>
 
-    <p>
-      <h2>Example #2</h2>
-      Configure button 1 long-press (touch more than 1 sec) to type a username and password into a login form:
-      <br>
-      <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click button [1b]
-      <br>
-      <img class="moveimage" src="/images/regular/thumbs-up.svg" /> Configure a password as in example #1 for 1b
-      <br>
-      <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [Username] and [Tab after
-      Username]
-      <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter a username and click [Set Slot]
-    </p>
+      <div>
+        <h2>Example #2</h2>
+        Configure button 1 long-press (touch more than 1 sec) to type a username
+        and password into a login form:
+        <br />
+        <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click
+        button [1b]
+        <br />
+        <img class="moveimage" src="/images/regular/thumbs-up.svg" /> Configure
+        a password as in example #1 for 1b
+        <br />
+        <img class="moveimage" src="/images/regular/check-square.svg" /> Check
+        boxes next to [Username] and [Tab after Username]
+        <br />
+        <img class="moveimage" src="/images/regular/keyboard.svg" /> Enter a
+        username and click [Set Slot]
+      </div>
 
-    <p>
-      <h2>Example #3</h2>
-      Configure button 2 tap to automatically type the URL of a login page into your browser, followed by a username and
-      password:
-      <br>
-      <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click button [2a]
-      <br>
-      <img class="moveimage" src="/images/regular/thumbs-up.svg" /> Configure username/password as in example #2 for 2a
-      <br>
-      <img class="moveimage" src="/images/regular/check-square.svg" /> Check boxes next to [URL] and [Delay]
-      <br>
-      <img class="moveimage" src="/images/regular/keyboard.svg" /> Type a URL and a delay in seconds (time to
-      wait for URL to load) and click [Set Slot]
-    </p>
-  </dialog>
+      <div>
+        <h2>Example #3</h2>
+        Configure button 2 tap to automatically type the URL of a login page
+        into your browser, followed by a username and password:
+        <br />
+        <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click
+        button [2a]
+        <br />
+        <img class="moveimage" src="/images/regular/thumbs-up.svg" /> Configure
+        username/password as in example #2 for 2a
+        <br />
+        <img class="moveimage" src="/images/regular/check-square.svg" /> Check
+        boxes next to [URL] and [Delay]
+        <br />
+        <img class="moveimage" src="/images/regular/keyboard.svg" /> Type a URL
+        and a delay in seconds (time to wait for URL to load) and click [Set
+        Slot]
+      </div>
+    </dialog>
 
-
-  <script src="/scripts/onlyKey/OnlyKeyWizard.js"></script>
-  <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
-  <script src="/scripts/updater.js"></script>
-  <script src="/scripts/menubar.js"></script>
-  <script src="/scripts/external-links.js"></script>
-  <script src="/scripts/dialog-links.js"></script>
-</body>
-
+    <script src="/scripts/onlyKey/OnlyKeyWizard.js"></script>
+    <script src="/scripts/onlyKey/OnlyKeyComm.js"></script>
+    <script src="/scripts/updater.js"></script>
+    <script src="/scripts/menubar.js"></script>
+    <script src="/scripts/external-links.js"></script>
+    <script src="/scripts/dialog-links.js"></script>
+  </body>
 </html>

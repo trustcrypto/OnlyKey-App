@@ -59,7 +59,7 @@ if (chrome.passwordsPrivate) {
         next: 'Step8',
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
-            document.getElementById('step2-text').innerHTML = `
+          document.getElementById('step2-text').innerHTML = `
             <h3>Change PINs</h3>
             <p>
               Make sure to choose PINs that you will not forget and that only you know.
@@ -175,7 +175,7 @@ if (chrome.passwordsPrivate) {
           }
           this.steps.Step3.next = this.guided ? 'Step4' : 'Step1';
           this.onlyKey.flushMessage(this.onlyKey.sendSetPin.bind(this.onlyKey, cb));
-            //this.onlyKey.listenforvalue.bind(this.onlyKey, 'PIN', cb)));
+          //this.onlyKey.listenforvalue.bind(this.onlyKey, 'PIN', cb)));
         },
         exitFn: this.onlyKey.sendSetPin.bind(this.onlyKey),
       },
@@ -327,7 +327,7 @@ if (chrome.passwordsPrivate) {
       main.classList.remove(`ok-${type}`);
     });
     deviceType && main.classList.add(`ok-${deviceType}`);
-    
+
     this.initForm = document['init-panel'];
     document.getElementById('step8-2-text').innerHTML = `
       <label>
@@ -530,14 +530,14 @@ if (chrome.passwordsPrivate) {
     this.unlockOkGoSubmitBtn = document.getElementById('unlockOkGoSubmit');
     this.unlockOkGoSubmitBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      this.onlyKey.sendPin_GO([ this.unlockOkGoPinInput.value ], (err, msg) => {
+      this.onlyKey.sendPin_GO([this.unlockOkGoPinInput.value], (err, msg) => {
         // this.onlyKey.listen(function (err, msg) {
-          if (err) {
-            console.dir({
-              UNLOCK_ERR: err
-            });
-            throw Error('error');
-          }
+        if (err) {
+          console.dir({
+            UNLOCK_ERR: err
+          });
+          throw Error('error');
+        }
         // });
       });
     };
@@ -549,18 +549,18 @@ if (chrome.passwordsPrivate) {
       e && e.preventDefault && e.preventDefault();
       const selectedKey = document.querySelector('input[name="rsaKeySelect"]:checked').value;
       this.onlyKey.confirmRsaKeySelect(this.onlyKey.tempRsaKeys[selectedKey], null, err => {
-          if (err) {
-            //   return ???
-          }
+        if (err) {
+          //   return ???
+        }
 
-          this.onlyKey.tempRsaKeys = null;
-          this.dialog.closeAll();
+        this.onlyKey.tempRsaKeys = null;
+        this.dialog.closeAll();
 
-          if (this.guided) {
-            this.setNewCurrentStep(this.steps[this.currentStep]['next'])
-          } else {
-            this.reset();
-          }
+        if (this.guided) {
+          this.setNewCurrentStep(this.steps[this.currentStep]['next'])
+        } else {
+          this.reset();
+        }
       });
     };
 
@@ -605,12 +605,12 @@ if (chrome.passwordsPrivate) {
       var oid_nist256p1 = Uint8Array.from([42, 134, 72, 206, 61, 3, 1, 7]);
 
       console.info(rawKey.primaryKey.params[0].oid);
-      
-      if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
+
+      if (oid_ed25519.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
         this.onlyKey.tempEccCurve = 1;
-      } else if (oid_ed25519.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //curve25519
+      } else if (oid_ed25519.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //curve25519
         this.onlyKey.tempEccCurve = 1;
-      } else if (oid_nist256p1.sort().join(',')=== rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
+      } else if (oid_nist256p1.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
         this.onlyKey.tempEccCurve = 2;
       } else {
         this.onlyKey.tempEccCurve = 0;
@@ -623,9 +623,9 @@ if (chrome.passwordsPrivate) {
 
       rawKey.subKeys.forEach((subKey, i) => {
         //console.info(subKey.keyPacket);
-      keys.push({
-        name: 'Subkey ' + (i + 1),
-        s: rawKey.subKeys[i].keyPacket.params[3].data
+        keys.push({
+          name: 'Subkey ' + (i + 1),
+          s: rawKey.subKeys[i].keyPacket.params[3].data
         });
       });
 
@@ -642,7 +642,7 @@ if (chrome.passwordsPrivate) {
       }];
 
       rawKey.subKeys.forEach((subKey, i) => {
-          //console.info(subKey.keyPacket);
+        //console.info(subKey.keyPacket);
         keys.push({
           name: 'Subkey ' + (i + 1),
           p: subKey.keyPacket.params[3].data,
@@ -673,7 +673,7 @@ if (chrome.passwordsPrivate) {
       this.onlyKey.confirmRsaKeySelect(decryptionKey, 1, err => {
         this.onlyKey.confirmRsaKeySelect(signingKey, 2, err => {
           if (err) {
-              //   return ???
+            //   return ???
           }
 
           this.onlyKey.tempRsaKeys = null;
@@ -758,13 +758,13 @@ if (chrome.passwordsPrivate) {
     var passcode = backuprsaPasscode.value || '';
 
     if (!key) {
-        this.initConfigErrors.innerHTML = 'RSA Key cannot be empty.';
-        return false;
+      this.initConfigErrors.innerHTML = 'RSA Key cannot be empty.';
+      return false;
     }
 
     if (!passcode) {
-        this.initConfigErrors.innerHTML = 'Passcode cannot be empty.';
-        return false;
+      this.initConfigErrors.innerHTML = 'Passcode cannot be empty.';
+      return false;
     }
     backuprsaKey.value = '';
     backuprsaPasscode.value = '';
@@ -910,7 +910,7 @@ if (chrome.passwordsPrivate) {
             }
             break;
         }
-        
+
         this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
           if (!err) {
             this.setSlot();
@@ -1197,9 +1197,9 @@ if (chrome.passwordsPrivate) {
       slot = slot.toLowerCase();
       slotLabel = document.getElementById('slotLabel' + slot);
     }
-    
+
     if (!slotLabel) return;
-    
+
     slotLabel.innerText = label;
     if (label === 'empty') {
       slotLabel.classList.add('empty');
