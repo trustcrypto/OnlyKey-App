@@ -415,10 +415,11 @@
         <div class="flex-container">
           <div class="flex-item">
             <form id="typeSpeedForm" name="typeSpeedForm">
-              <b>Keyboard Type Speed </b>
+              <b>Keyboard Type Speed</b>
               <a
                 href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed"
-                class="external"
+                class="external tooltip fade"
+                data-tooltip="1 = about one character per second.&#xa;10 = almost instantaneous type speed."
               >
                 <img
                   class="moveimage"
@@ -440,11 +441,11 @@
                 value="Set Type Speed"
               />
               <br />
-              (1 = slowest, 10 = fastest, 4 = default)
+              (1 = slowest, 4 = default, 10 = fastest)
             </form>
             <form id="keyboardLayoutForm" name="keyboardLayoutForm">
-              <b>Keyboard Layout </b
-              ><a
+              <b>Keyboard Layout</b>
+              <a
                 href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts"
                 class="external"
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
@@ -485,8 +486,8 @@
               />
             </form>
             <form id="ledBrightnessForm" name="ledBrightnessForm">
-              <b>Indicator Light (LED) Brightness </b
-              ><a
+              <b>Indicator Light (LED) Brightness</b>
+              <a
                 href="https://docs.crp.to/usersguide.html#configurable-led-brightness"
                 class="external"
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
@@ -509,7 +510,7 @@
               (1 = dimmest, 10 = brightest, 8 = default)
             </form>
             <form id="modkeyModeForm" name="modkeyModeForm">
-              <b>Sysadmin Mode </b
+              <b class="config-mode-required">Sysadmin Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#sysadmin-mode"
                 class="external"
@@ -530,12 +531,10 @@
                 type="button"
                 id="modkeyModeSubmit"
                 value="Set Modifier Key Mode"
-              /><span style="font-size: 90%; color: red"
-                ><b> Config Mode Required</b></span
-              ><br />
+              /><br />
             </form>
             <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
-              <b>HMAC Challenge-Response Mode </b
+              <b class="config-mode-required">HMAC Challenge-Response Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#hmac-mode"
                 class="external"
@@ -561,12 +560,10 @@
                 type="button"
                 id="hmacchallengeModeSubmit"
                 value="Set HMAC Challenge Mode"
-              /><span style="font-size: 90%; color: red"
-                ><b> Config Mode Required</b></span
-              ><br />
+              /><br />
             </form>
             <form id="wipeModeForm" name="wipeModeForm">
-              <b>Wipe Mode </b
+              <b class="config-mode-required">Wipe Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#configurable-wipe-mode"
                 class="external"
@@ -590,14 +587,12 @@
                 type="button"
                 id="wipeModeSubmit"
                 value="Set Wipe Mode"
-              /><span style="font-size: 90%; color: red"
-                ><b> Config Mode Required</b></span
-              ><br />
+              /><br />
             </form>
           </div>
           <div class="flex-item">
             <form id="lockoutForm" name="lockoutForm">
-              <b>Inactivity Lockout Timer </b>
+              <b>Inactivity Lockout Timer</b>
               <a
                 class="external"
                 href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period"
@@ -645,7 +640,7 @@
               />
             </form>
             <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
-              <b>Derived Key Challenge Mode </b
+              <b class="config-mode-required">Derived Key Challenge Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#derived-challenge-mode"
                 class="external"
@@ -673,12 +668,10 @@
                 type="button"
                 id="derivedchallengeModeSubmit"
                 value="Set SSH Challenge Mode"
-              /><span style="font-size: 90%; color: red"
-                ><b> Config Mode Required</b></span
-              ><br />
+              /><br />
             </form>
             <form id="storedchallengeModeForm" name="storedchallengeModeForm">
-              <b>Stored Key Challenge Mode </b
+              <b class="config-mode-required">Stored Key Challenge Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#stored-challenge-mode"
                 class="external"
@@ -706,15 +699,13 @@
                 type="button"
                 id="storedchallengeModeSubmit"
                 value="Set Stored Challenge Mode"
-              /><span style="font-size: 90%; color: red"
-                ><b> Config Mode Required</b></span
-              ><br />
+              /><br />
             </form>
             <form id="backupModeForm" name="backupModeForm">
-              <b>Backup Key Mode </b>
+              <b class="config-mode-required">Backup Key Mode</b>
               <a
                 class="tooltip fade external"
-                data-tooltip="If a backup key is set, this prevents any changes to the backup key. If no backup key is set, backup functionality will be disabled on this device until a factory default is completed."
+                data-tooltip="Backup key may be changed by default. Enabling this setting prevents any changes to the backup key until a factory default is completed."
                 href="https://docs.crp.to/usersguide.html#backup-key-mode"
               >
                 <img
@@ -722,8 +713,6 @@
                   src="/images/solid/question-circle.svg"
                 />
               </a>
-
-              Backup key may be changed by default.
               <br />
               <label>
                 <input type="radio" checked name="okBackupMode" value="1" />
@@ -740,12 +729,12 @@
                 type="button"
                 id="backupModeSubmit"
                 value="Set Backup Key Mode"
-              /><span style="font-size: 90%; color: red"
-                ><b> Config Mode Required</b></span
-              ><br />
+              /><br />
             </form>
           </div>
         </div>
+        <hr />
+        <p style="color: red; font-weight: bold;">* = device must be in <b>config mode</b> to change</p>
       </div>
 
       <div id="keys-panel" class="hide panel">

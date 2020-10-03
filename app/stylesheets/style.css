@@ -379,7 +379,7 @@ nav > a.active {
   top: 26px;
   left: -5em;
   width: 20em;
-  white-space: normal;
+  white-space: pre-wrap;
   border-radius: 6px;
 }
 .tooltip.fade:after,
@@ -391,4 +391,15 @@ nav > a.active {
 .tooltip.fade:hover:before {
   opacity: 1;
   transform: translate3d(0, 0, 0);
+}
+
+.config-mode-required:after {
+    content: '*';
+    position: relative;
+    color: red;
+    font-size: 2em;
+    line-height: 0;
+    top: .3em;
+    margin-right: .25em;
+    font-weight: 100;
 }
