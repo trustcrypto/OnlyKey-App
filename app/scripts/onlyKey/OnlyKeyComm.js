@@ -683,17 +683,20 @@ OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
 
 OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
   // abcdefghijklmnopqrstuvwxyz
-  const key = await Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
-  const type = 161; //Backup and Decryption key
-  const slot = 131;
+  try {
+    const key = await Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
+    const type = 161; //Backup and Decryption key
+    const slot = 131;
+  } catch (e) {
+    return cb(e);
+  }
 
   this.setPrivateKey(slot, type, key, async function (err) {
     onlyKeyConfigWizard.initForm.reset();
     await wait(300);
     await listenForMessageIncludes2('Error', 'Success');
-    cb();
+    cb(err);
   });
-
 };
 
 OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
@@ -1807,12 +1810,12 @@ async function submitRsaForm(e) {
     var privKeys = await openpgp.key.readArmored(key);
     privKey = privKeys.keys[0];
 
-    var success = privKey.decrypt(passcode);
-
+    var success = await privKey.decrypt(passcode);
     if (!success) {
       throw new Error("Private Key decryption failed. Did you forget your passcode?");
     }
 
+    
     //console.info(privKey.primaryKey);
     //console.info(privKey.primaryKey.params);
     //console.info(privKey.primaryKey.params.length);
@@ -1821,7 +1824,7 @@ async function submitRsaForm(e) {
       throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
     }
   } catch (e) {
-    return ui.rsaForm.setError('Error parsing RSA key: ' + e);
+    return ui.rsaForm.setError('Error parsing RSA key: ' + e.message);
   }
 
   var allKeys = {
@@ -1829,7 +1832,7 @@ async function submitRsaForm(e) {
     subKeys: privKey.subKeys
   };
 
-  onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
+  await onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
     ui.rsaForm.setError(err);
   });
 }

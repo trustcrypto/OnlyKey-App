@@ -601,54 +601,59 @@ if (chrome.passwordsPrivate) {
     if (rawKey.primaryKey.params[0].oid) { //ECC
       var curve;
       var oid_ed25519 = Uint8Array.from([43, 6, 1, 4, 1, 218, 71, 15, 1]);
-      var oid_curve25519 = Uint8Array.from([43, 6, 1, 4, 1, 151, 85, 1, 5, 1]);
       var oid_nist256p1 = Uint8Array.from([42, 134, 72, 206, 61, 3, 1, 7]);
 
       console.info(rawKey.primaryKey.params[0].oid);
 
-      if (oid_ed25519.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
-        this.onlyKey.tempEccCurve = 1;
-      } else if (oid_ed25519.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //curve25519
-        this.onlyKey.tempEccCurve = 1;
-      } else if (oid_nist256p1.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
-        this.onlyKey.tempEccCurve = 2;
-      } else {
-        this.onlyKey.tempEccCurve = 0;
-      }
+      try {
+        if (oid_ed25519.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //ed25519
+          this.onlyKey.tempEccCurve = 1;
+        } else if (oid_ed25519.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //curve25519
+          this.onlyKey.tempEccCurve = 1;
+        } else if (oid_nist256p1.sort().join(',') === rawKey.primaryKey.params[0].oid.sort().join(',')) { //nist256p1
+          this.onlyKey.tempEccCurve = 2;
+        } else {
+          this.onlyKey.tempEccCurve = 0;
+        }
+        const keys = [{
+          name: 'Primary Key',
+          s: rawKey.primaryKey.params[2].data
+        }];
 
-      const keys = [{
-        name: 'Primary Key',
-        s: rawKey.primaryKey.params[2].data
-      }];
-
-      rawKey.subKeys.forEach((subKey, i) => {
-        //console.info(subKey.keyPacket);
-        keys.push({
-          name: 'Subkey ' + (i + 1),
-          s: rawKey.subKeys[i].keyPacket.params[3].data
+        rawKey.subKeys.forEach((subKey, i) => {
+          //console.info(subKey.keyPacket);
+          keys.push({
+            name: 'Subkey ' + (i + 1),
+            s: rawKey.subKeys[i].keyPacket.params[3].data
+          });
         });
-      });
+      } catch (e) {
+        return cb(e);
+      }
 
       console.info(keys);
       console.info(curve);
 
       this.onlyKey.tempRsaKeys = keys;
-
     } else { //RSA
-      const keys = [{
-        name: 'Primary Key',
-        p: rawKey.primaryKey.params[3].data,
-        q: rawKey.primaryKey.params[4].data
-      }];
+      try {
+        const keys = [{
+          name: 'Primary Key',
+          p: rawKey.primaryKey.params[3].data,
+          q: rawKey.primaryKey.params[4].data
+        }];
 
-      rawKey.subKeys.forEach((subKey, i) => {
-        //console.info(subKey.keyPacket);
-        keys.push({
-          name: 'Subkey ' + (i + 1),
-          p: subKey.keyPacket.params[3].data,
-          q: subKey.keyPacket.params[4].data
+        rawKey.subKeys.forEach((subKey, i) => {
+          //console.info(subKey.keyPacket);
+          keys.push({
+            name: 'Subkey ' + (i + 1),
+            p: subKey.keyPacket.params[3].data,
+            q: subKey.keyPacket.params[4].data
+          });
         });
-      });
+      } catch (e) {
+        return cb(e);
+      }
 
       this.onlyKey.tempRsaKeys = keys;
     }
@@ -693,6 +698,8 @@ if (chrome.passwordsPrivate) {
 
       this.dialog.open(this.selectPrivateKeyDialog, true);
     }
+
+    return cb();
   };
 
 
