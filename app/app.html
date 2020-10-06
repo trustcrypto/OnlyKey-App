@@ -419,7 +419,7 @@
               <a
                 href="https://docs.crp.to/usersguide.html#configurable-keyboard-type-speed"
                 class="external tooltip fade"
-                data-tooltip="1 = about one character per second.&#xa;10 = almost instantaneous type speed."
+                data-tooltip="Change the rate of speed at which OnlyKey types out characters.&#xa;&#xa;1 - about one character per second&#xa;4 - default&#xa;10 - almost instantaneous type speed"
               >
                 <img
                   class="moveimage"
@@ -447,7 +447,8 @@
               <b>Keyboard Layout</b>
               <a
                 href="https://docs.crp.to/usersguide.html#configurable-keyboard-layouts"
-                class="external"
+                class="external tooltip fade"
+                data-tooltip="Select any of the supported international keyboard layouts."
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
               /></a>
               <select id="okKeyboardLayout" name="okKeyboardLayout">
@@ -489,7 +490,8 @@
               <b>Indicator Light (LED) Brightness</b>
               <a
                 href="https://docs.crp.to/usersguide.html#configurable-led-brightness"
-                class="external"
+                class="external tooltip fade"
+                data-tooltip="Change the OnlyKey LED brightness.&#xa;&#xa;1 - dimmest&#xa;8 - default&#xa;10 - brightest"
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
               /></a>
               <input
@@ -566,7 +568,8 @@
               <b class="config-mode-required">Wipe Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#configurable-wipe-mode"
-                class="external"
+                class="external tooltip fade"
+                data-tooltip="By default, only sensitive data is wiped from OnlyKey when 10 incorrect PINs are entered. You can wipe the firmware as well by changing this option to 'Full Wipe.'"
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
               /></a>
               Only sensitive data is wiped by default.
@@ -594,8 +597,9 @@
             <form id="lockoutForm" name="lockoutForm">
               <b>Inactivity Lockout Timer</b>
               <a
-                class="external"
-                href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period"
+              class="external tooltip fade"
+              data-tooltip="By default, OnlyKey locks itself after 30 minutes. Change this setting to any duration (in minutes) up to 255. If you don't want OnlyKey to lock, enter 0."
+              href="https://docs.crp.to/usersguide.html#configurable-inactivity-lockout-period"
               >
                 <img
                   class="moveimage"
@@ -619,7 +623,8 @@
               <b>Lock Button</b>
               <a
                 href="https://docs.crp.to/usersguide.html#configurable-lock-button"
-                class="external"
+                class="external tooltip fade"
+                data-tooltip="Choose a button (1-6) that you can press for 5 seconds to quickly lock your OnlyKey, or enter 0 to disable this feature."
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
               /></a>
               The OnlyKey and the computer are locked automatically when this
@@ -642,8 +647,9 @@
             <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
               <b class="config-mode-required">Derived Key Challenge Mode</b
               ><a
-                href="https://docs.crp.to/usersguide.html#derived-challenge-mode"
-                class="external"
+                href="https://docs.crp.to/usersguide.html#challenge-mode"
+                class="external tooltip fade"
+                data-tooltip="By default, you must enter a 3-digit Challenge Code on OnlyKey to perform SSH or PGP operations. Changing this option to 'Button Press' allows those operations by tapping any button on your OnlyKey."
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
               /></a>
               <br />
@@ -673,8 +679,9 @@
             <form id="storedchallengeModeForm" name="storedchallengeModeForm">
               <b class="config-mode-required">Stored Key Challenge Mode</b
               ><a
-                href="https://docs.crp.to/usersguide.html#stored-challenge-mode"
-                class="external"
+                href="https://docs.crp.to/usersguide.html#challenge-mode"
+                class="external tooltip fade"
+                data-tooltip="By default, you must enter a 3-digit Challenge Code on OnlyKey to perform SSH or PGP operations. Changing this option to 'Button Press' allows those operations by tapping any button on your OnlyKey."
                 ><img class="moveimage" src="/images/solid/question-circle.svg"
               /></a>
               <br />
