@@ -683,10 +683,11 @@ OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
 
 OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
   // abcdefghijklmnopqrstuvwxyz
+  let key, type, slot;
   try {
-    const key = await Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
-    const type = 161; //Backup and Decryption key
-    const slot = 131;
+    key = await Array.from(openpgp.crypto.hash.digest(8, passphrase)); // 32 byte backup key is Sha256 hash of passphrase
+    type = 161; //Backup and Decryption key
+    slot = 131;
   } catch (e) {
     return cb(e);
   }
