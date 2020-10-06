@@ -743,7 +743,8 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
   }
 }
 
-OnlyKey.prototype.submitRestore = function (fileSelector, cb) {
+OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
+  const cb = typeof cbArg === 'function' ? cbArg : () => {};
   const _this = this;
   ui.restoreForm.setError('');
 
