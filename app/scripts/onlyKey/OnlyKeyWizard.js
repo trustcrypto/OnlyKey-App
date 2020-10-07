@@ -627,14 +627,13 @@ if (chrome.passwordsPrivate) {
             s: rawKey.subKeys[i].keyPacket.params[3].data
           });
         });
+        console.info(keys);
+        console.info(curve);
+  
+        this.onlyKey.tempRsaKeys = keys;
       } catch (e) {
         return cb(e);
       }
-
-      console.info(keys);
-      console.info(curve);
-
-      this.onlyKey.tempRsaKeys = keys;
     } else { //RSA
       try {
         const keys = [{
@@ -651,11 +650,10 @@ if (chrome.passwordsPrivate) {
             q: subKey.keyPacket.params[4].data
           });
         });
+        this.onlyKey.tempRsaKeys = keys;
       } catch (e) {
         return cb(e);
       }
-
-      this.onlyKey.tempRsaKeys = keys;
     }
 
     //if (!autokeyload) {

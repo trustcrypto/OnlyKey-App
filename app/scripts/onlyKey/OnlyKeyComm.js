@@ -1798,7 +1798,7 @@ async function submitRsaForm(e) {
   //key = key.toString().replace(/\s/g,'');
 
   if (!key) {
-    return ui.rsaForm.setError('RSA Key cannot be empty. Use [Wipe] to clear a key.');
+    return ui.rsaForm.setError('PGP Key cannot be empty. Use [Wipe] to clear a key.');
   }
 
   if (!passcode) {
@@ -1823,10 +1823,10 @@ async function submitRsaForm(e) {
     //console.info(privKey.primaryKey.params.length);
 
     if (!(privKey.primaryKey && privKey.primaryKey.params)) {
-      throw new Error("Private Key decryption was successful, but resulted in invalid mpi data.");
+      throw new Error("Key decryption was successful, but resulted in invalid data. Is this a valid OpenPGP key?");
     }
   } catch (e) {
-    return ui.rsaForm.setError('Error parsing RSA key: ' + e.message);
+    return ui.rsaForm.setError('Error parsing PGP key: ' + e.message);
   }
 
   var allKeys = {
