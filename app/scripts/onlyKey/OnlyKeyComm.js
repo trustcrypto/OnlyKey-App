@@ -362,7 +362,7 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
   );
 
   chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
-    await wait(100);
+    if (msgId != 'OKFWUPDATE') await wait(100);
     if (chrome.runtime.lastError) {
       console.error(
         "ERROR SENDING" + (msgId ? " " + msgId : "") + ":",
