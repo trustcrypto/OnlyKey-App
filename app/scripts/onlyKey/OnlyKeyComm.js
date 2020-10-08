@@ -1,9 +1,9 @@
-const desktopApp = typeof nw !== 'undefined';
+const desktopApp = typeof nw !== "undefined";
 let userPreferences, request;
 
 if (desktopApp) {
-  userPreferences = require('./scripts/userPreferences.js');
-  request = require('request');
+  userPreferences = require("./scripts/userPreferences.js");
+  request = require("request");
 }
 
 let backupsigFlag = -1;
@@ -12,31 +12,34 @@ let dialog;
 let myOnlyKey;
 let onlyKeyConfigWizard;
 
-
 const DEVICE_TYPES = {
-  CLASSIC: 'classic',
-  GO: 'go',
+  CLASSIC: "classic",
+  GO: "go",
 };
 
-const SUPPORTED_DEVICES = [{
-  vendorId: 5824, //OnlyKey firmware before Beta 7
-  productId: 1158,
-  maxInputReportSize: 64,
-  maxOutputReportSize: 64,
-  maxFeatureReportSize: 0,
-}, {
-  vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
-  productId: 24828,
-  maxInputReportSize: 64,
-  maxOutputReportSize: 64,
-  maxFeatureReportSize: 0,
-}, {
-  vendorId: 0000, //Black Vault Labs Bootloaderv1
-  productId: 45057,
-  maxInputReportSize: 64,
-  maxOutputReportSize: 64,
-  maxFeatureReportSize: 0,
-}];
+const SUPPORTED_DEVICES = [
+  {
+    vendorId: 5824, //OnlyKey firmware before Beta 7
+    productId: 1158,
+    maxInputReportSize: 64,
+    maxOutputReportSize: 64,
+    maxFeatureReportSize: 0,
+  },
+  {
+    vendorId: 7504, //OnlyKey firmware Beta 7+ http://www.linux-usb.org/usb.ids
+    productId: 24828,
+    maxInputReportSize: 64,
+    maxOutputReportSize: 64,
+    maxFeatureReportSize: 0,
+  },
+  {
+    vendorId: 0000, //Black Vault Labs Bootloaderv1
+    productId: 45057,
+    maxInputReportSize: 64,
+    maxOutputReportSize: 64,
+    maxFeatureReportSize: 0,
+  },
+];
 
 function getSupportedDevice(deviceInfo) {
   let supportedDevice;
@@ -44,7 +47,9 @@ function getSupportedDevice(deviceInfo) {
   for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
     let device = SUPPORTED_DEVICES[d];
 
-    const isMatch = Object.keys(device).every(prop => device[prop] == deviceInfo[prop]);
+    const isMatch = Object.keys(device).every(
+      (prop) => device[prop] == deviceInfo[prop]
+    );
     if (isMatch) {
       supportedDevice = device;
       break;
@@ -61,9 +66,9 @@ function getSupportedDevice(deviceInfo) {
 const chromeHid = {
   // chrome.hid.connect(integer deviceId, function callback)
   connect: function (deviceId, callback) {
-    if (deviceId === 'mockDevice') {
+    if (deviceId === "mockDevice") {
       return callback({
-        connectionId: 'mockConnection'
+        connectionId: "mockConnection",
       });
     } else {
       return chrome.hid.connect(deviceId, callback);
@@ -79,7 +84,7 @@ const chromeHid = {
   // chrome.hid.receive(integer connectionId, function callback)
   receive: function (connectionId, callback) {
     // console.log('>>> receive called with', arguments);
-    if (connectionId === 'mockConnection') {
+    if (connectionId === "mockConnection") {
       if (this._pendingReceive) {
         throw "There must not be multiple pending receives.";
       }
@@ -109,7 +114,7 @@ const chromeHid = {
   // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
   send: function (connectionId, reportId, data, callback) {
     // console.log('>>> send called with', arguments);
-    if (connectionId === 'mockConnection') {
+    if (connectionId === "mockConnection") {
       this._sent.push(arguments);
 
       // Simulate a successful send operation by calling the callback
@@ -134,20 +139,22 @@ const chromeHid = {
     mockDeviceAdded: function () {
       this._callbacks.forEach(function (callback) {
         callback.call(null, {
-          "collections": [{
-            "reportIds": [],
-            "usage": 1,
-            "usagePage": 61904
-          }],
-          "deviceId": "mockDevice",
-          "maxFeatureReportSize": 0,
-          "maxInputReportSize": 64,
-          "maxOutputReportSize": 64,
-          "productId": 1158,
-          "productName": "Keyboard/RawHID",
-          "reportDescriptor": {},
-          "serialNumber": "4294967295",
-          "vendorId": 5824
+          collections: [
+            {
+              reportIds: [],
+              usage: 1,
+              usagePage: 61904,
+            },
+          ],
+          deviceId: "mockDevice",
+          maxFeatureReportSize: 0,
+          maxInputReportSize: 64,
+          maxOutputReportSize: 64,
+          productId: 1158,
+          productName: "Keyboard/RawHID",
+          reportDescriptor: {},
+          serialNumber: "4294967295",
+          vendorId: 5824,
         });
       });
     },
@@ -188,7 +195,7 @@ function OnlyKey(params = {}) {
 
   this.lastMessages = {
     sent: [],
-    received: []
+    received: [],
   };
 
   this.messageHeader = [255, 255, 255, 255];
@@ -219,7 +226,7 @@ function OnlyKey(params = {}) {
     LOCKBUTTON: 25,
     hmacchallengeMode: 26,
     modkeyMode: 27,
-    KBDLAYOUT: 14
+    KBDLAYOUT: 14,
   };
 
   this.messages = {
@@ -253,7 +260,7 @@ OnlyKey.prototype.setConnection = function (connectionId) {
 
   if (connectionId === -1) {
     myOnlyKey = new OnlyKey({
-      deviceInfo: this.deviceInfo
+      deviceInfo: this.deviceInfo,
     });
     myOnlyKey.setInitialized(false);
     dialog.open(ui.disconnectedDialog);
@@ -266,13 +273,25 @@ OnlyKey.prototype.setConnection = function (connectionId) {
 OnlyKey.prototype.sendMessage = function (options, callback) {
   var bytesPerMessage = 64;
 
-  var msgId = typeof options.msgId === 'string' ? options.msgId.toUpperCase() : null;
-  var slotId = typeof options.slotId === 'number' || typeof options.slotId === 'string' ? options.slotId : null;
-  var fieldId = typeof options.fieldId === 'string' || typeof options.fieldId === 'number' ? options.fieldId : null;
-  var contents = typeof options.contents === 'number' || (options.contents && options.contents.length) ? options.contents : '';
-  var contentType = (options.contentType && options.contentType.toUpperCase()) || 'HEX';
+  var msgId =
+    typeof options.msgId === "string" ? options.msgId.toUpperCase() : null;
+  var slotId =
+    typeof options.slotId === "number" || typeof options.slotId === "string"
+      ? options.slotId
+      : null;
+  var fieldId =
+    typeof options.fieldId === "string" || typeof options.fieldId === "number"
+      ? options.fieldId
+      : null;
+  var contents =
+    typeof options.contents === "number" ||
+    (options.contents && options.contents.length)
+      ? options.contents
+      : "";
+  var contentType =
+    (options.contentType && options.contentType.toUpperCase()) || "HEX";
 
-  callback = typeof callback === 'function' ? callback : handleMessage;
+  callback = typeof callback === "function" ? callback : handleMessage;
 
   var reportId = 0;
   var bytes = new Uint8Array(bytesPerMessage);
@@ -304,10 +323,13 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
 
   if (!Array.isArray(contents)) {
     switch (typeof contents) {
-      case 'string':
-        contents = contents.replace(/\\x([a-fA-F0-9]{2})/g, (match, capture) => {
-          return String.fromCharCode(parseInt(capture, 16));
-        });
+      case "string":
+        contents = contents.replace(
+          /\\x([a-fA-F0-9]{2})/g,
+          (match, capture) => {
+            return String.fromCharCode(parseInt(capture, 16));
+          }
+        );
 
         for (var i = 0; i < contents.length && cursor < bytes.length; i++) {
           if (contents.charCodeAt(i) > 255) {
@@ -316,7 +338,7 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
           bytes[cursor++] = contents.charCodeAt(i);
         }
         break;
-      case 'number':
+      case "number":
         if (contents < 0 || contents > 255) {
           throw "Byte value out of bounds.";
         }
@@ -325,36 +347,43 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
     }
   } else {
     contents.forEach(function (val) {
-      bytes[cursor++] = contentType === 'HEX' ? hexStrToDec(val) : val;
+      bytes[cursor++] = contentType === "HEX" ? hexStrToDec(val) : val;
     });
   }
 
   var pad = 0;
-  for (; cursor < bytes.length;) {
+  for (; cursor < bytes.length; ) {
     bytes[cursor++] = pad;
   }
 
-  console.info("SENDING " + msgId + " to connectionId " + this.connection + ":", bytes);
+  console.info(
+    "SENDING " + msgId + " to connectionId " + this.connection + ":",
+    bytes
+  );
 
   chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
     await wait(100);
     if (chrome.runtime.lastError) {
-      console.error("ERROR SENDING" + (msgId ? " " + msgId : "") + ":", chrome.runtime.lastError, {
-        connectionId: this.connection
-      });
-      callback('ERROR SENDING PACKETS');
+      console.error(
+        "ERROR SENDING" + (msgId ? " " + msgId : "") + ":",
+        chrome.runtime.lastError,
+        {
+          connectionId: this.connection,
+        }
+      );
+      callback("ERROR SENDING PACKETS");
     } else {
-      myOnlyKey.setLastMessage('sent', msgId);
-      callback(null, 'OK');
+      myOnlyKey.setLastMessage("sent", msgId);
+      callback(null, "OK");
     }
   });
 };
 
-OnlyKey.prototype.setLastMessage = function (type, msgStr = '') {
+OnlyKey.prototype.setLastMessage = function (type, msgStr = "") {
   if (msgStr) {
     var newMessage = {
       text: msgStr,
-      timestamp: new Date().getTime()
+      timestamp: new Date().getTime(),
     };
     var messages = this.lastMessages[type] || [];
     var numberToKeep = 3;
@@ -363,23 +392,33 @@ OnlyKey.prototype.setLastMessage = function (type, msgStr = '') {
     }
     messages = [newMessage].concat(messages);
     this.lastMessages[type] = messages;
-    if (type === 'received' && onlyKeyConfigWizard) {
+    if (type === "received" && onlyKeyConfigWizard) {
       onlyKeyConfigWizard.setLastMessages(messages);
     }
   }
 };
 
 OnlyKey.prototype.getLastMessage = function (type) {
-  return this.lastMessages[type] && this.lastMessages[type][0] && this.lastMessages[type][0].hasOwnProperty('text') ? this.lastMessages[type][0].text : '';
+  return this.lastMessages[type] &&
+    this.lastMessages[type][0] &&
+    this.lastMessages[type][0].hasOwnProperty("text")
+    ? this.lastMessages[type][0].text
+    : "";
 };
 
 OnlyKey.prototype.getLastMessageIndex = function (type, index) {
-  return this.lastMessages[type] && this.lastMessages[type][index] && this.lastMessages[type][index].hasOwnProperty('text') ? this.lastMessages[type][index].text : '';
+  return this.lastMessages[type] &&
+    this.lastMessages[type][index] &&
+    this.lastMessages[type][index].hasOwnProperty("text")
+    ? this.lastMessages[type][index].text
+    : "";
 };
 
-OnlyKey.prototype.flushMessage = async function (callback = () => { }) {
+OnlyKey.prototype.flushMessage = async function (callback = () => {}) {
   const messageTypes = Object.keys(this.pendingMessages);
-  const pendingMessagesTypes = messageTypes.filter(type => this.pendingMessages[type] === true);
+  const pendingMessagesTypes = messageTypes.filter(
+    (type) => this.pendingMessages[type] === true
+  );
 
   if (!pendingMessagesTypes.length) {
     console.info("No pending messages to flush.");
@@ -389,22 +428,28 @@ OnlyKey.prototype.flushMessage = async function (callback = () => { }) {
   const msgId = pendingMessagesTypes[0];
 
   console.info(`Flushing pending ${msgId}.`);
-  this.sendPinMessage({
-    msgId,
-    poll: false
-  }, () => {
-    pollForInput({
-      flush: true
-    }, (err, msg) => {
-      this.setLastMessage('received', 'Canceled');
-      if (msg) {
-        console.info("Flushed previous message.");
-        return this.flushMessage(callback);
-      } else {
-        return callback();
-      }
-    });
-  });
+  this.sendPinMessage(
+    {
+      msgId,
+      poll: false,
+    },
+    () => {
+      pollForInput(
+        {
+          flush: true,
+        },
+        (err, msg) => {
+          this.setLastMessage("received", "Canceled");
+          if (msg) {
+            console.info("Flushed previous message.");
+            return this.flushMessage(callback);
+          } else {
+            return callback();
+          }
+        }
+      );
+    }
+  );
 };
 
 OnlyKey.prototype.listenfor = async function (msg, callback) {
@@ -412,13 +457,12 @@ OnlyKey.prototype.listenfor = async function (msg, callback) {
 };
 
 OnlyKey.prototype.listenforvalue = async function (succeed_msg, callback) {
-  await listenForMessageIncludes2('Error', succeed_msg);
+  await listenForMessageIncludes2("Error", succeed_msg);
 };
 
 OnlyKey.prototype.listen = function (callback) {
   pollForInput({}, callback);
 };
-
 
 OnlyKey.prototype.setTime = async function (callback) {
   var currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
@@ -428,53 +472,66 @@ OnlyKey.prototype.setTime = async function (callback) {
   // Also clear out any rogue messages from other apps
   var options = {
     contents: timeParts,
-    msgId: 'OKSETTIME'
+    msgId: "OKSETTIME",
   };
   this.sendMessage(options, this.sendMessage(options, callback));
 };
 
 OnlyKey.prototype.getLabels = async function (callback) {
-  this.labels = '';
+  this.labels = "";
   await wait(900);
-  this.sendMessage({
-    msgId: 'OKGETLABELS'
-  }, handleGetLabels);
+  this.sendMessage(
+    {
+      msgId: "OKGETLABELS",
+    },
+    handleGetLabels
+  );
 };
 
 function handleGetLabels(err, msg) {
-  msg = typeof msg === 'string' ? msg.trim() : '';
+  msg = typeof msg === "string" ? msg.trim() : "";
   console.info("HandleGetLabels msg:", msg);
-  if (myOnlyKey.getLastMessage('sent') !== 'OKGETLABELS') {
+  if (myOnlyKey.getLastMessage("sent") !== "OKGETLABELS") {
     return;
   }
 
-  if (myOnlyKey.labels === '') {
+  if (myOnlyKey.labels === "") {
     myOnlyKey.labels = [];
     return myOnlyKey.listen(handleGetLabels);
   }
 
   // if second char of response is a pipe, theses are labels
-  var msgParts = msg.split('|');
+  var msgParts = msg.split("|");
   var slotNum = parseInt(msgParts[0], 10);
-  if (msg.includes('Error not in config mode') || myOnlyKey.getLastMessage('received') == 'Error not in config mode, hold button 6 down for 5 sec') {
-    this.setLastMessage('received', 'Error not in config mode, hold button 6 down for 5 sec');
-  } else if (msg.indexOf('|') !== 2 || typeof slotNum !== 'number' || slotNum < 1 || slotNum > 12) {
+  if (
+    msg.includes("Error not in config mode") ||
+    myOnlyKey.getLastMessage("received") ==
+      "Error not in config mode, hold button 6 down for 5 sec"
+  ) {
+    this.setLastMessage(
+      "received",
+      "Error not in config mode, hold button 6 down for 5 sec"
+    );
+  } else if (
+    msg.indexOf("|") !== 2 ||
+    typeof slotNum !== "number" ||
+    slotNum < 1 ||
+    slotNum > 12
+  ) {
     myOnlyKey.listen(handleGetLabels);
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 12 && (msg.indexOf('|') == 2 || msg.indexOf('|') == 3)) {
+    if (slotNum < 12 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
       myOnlyKey.listen(handleGetLabels);
     }
   }
 }
 
-
-OnlyKey.prototype.sendPinMessage = function ({
-  msgId = '',
-  pin = '',
-  poll = true
-}, callback = () => { }) {
+OnlyKey.prototype.sendPinMessage = function (
+  { msgId = "", pin = "", poll = true },
+  callback = () => {}
+) {
   this.pendingMessages[msgId] = !this.pendingMessages[msgId];
   var cb = poll ? pollForInput.bind(this, {}, callback) : callback;
   console.info(`sendPinMessage ${msgId}`);
@@ -482,46 +539,60 @@ OnlyKey.prototype.sendPinMessage = function ({
     msgId,
   };
 
-  if (myOnlyKey.getLastMessage('received') == 'Error PIN is not between 7 - 10 digits') {
-    this.setLastMessage('received', 'Canceled');
-    messageParams.msgId = 'OKSETPIN';
+  if (
+    myOnlyKey.getLastMessage("received") ==
+    "Error PIN is not between 7 - 10 digits"
+  ) {
+    this.setLastMessage("received", "Canceled");
+    messageParams.msgId = "OKSETPIN";
     messageParams.poll = false;
   }
 
-  if (myOnlyKey.getLastMessage('received').includes("UNLOCKED") || myOnlyKey.getLastMessage('received').includes("INITIALIZED")) {
+  if (
+    myOnlyKey.getLastMessage("received").includes("UNLOCKED") ||
+    myOnlyKey.getLastMessage("received").includes("INITIALIZED")
+  ) {
     var cb2 = cb();
-    cb = pollForInput.bind(this, {}, cb2)
+    cb = pollForInput.bind(this, {}, cb2);
   }
-
 
   const deviceType = myOnlyKey.getDeviceType();
   if (deviceType === DEVICE_TYPES.GO) {
     messageParams.contents = pin;
-    messageParams.contentType = 'DEC';
+    messageParams.contentType = "DEC";
   }
   this.sendMessage(messageParams, cb);
-  console.info('last messages');
-  console.info(myOnlyKey.getLastMessageIndex('received', 0));
-  console.info(myOnlyKey.getLastMessageIndex('received', 1));
+  console.info("last messages");
+  console.info(myOnlyKey.getLastMessageIndex("received", 0));
+  console.info(myOnlyKey.getLastMessageIndex("received", 1));
 };
 
 OnlyKey.prototype.sendSetPin = function (callback) {
   console.info("sendSetPin");
-  this.sendPinMessage({
-    msgId: 'OKSETPIN'
-  }, callback);
+  this.sendPinMessage(
+    {
+      msgId: "OKSETPIN",
+    },
+    callback
+  );
 };
 
 OnlyKey.prototype.sendSetSDPin = function (callback) {
-  this.sendPinMessage({
-    msgId: 'OKSETSDPIN'
-  }, callback);
+  this.sendPinMessage(
+    {
+      msgId: "OKSETSDPIN",
+    },
+    callback
+  );
 };
 
 OnlyKey.prototype.sendSetPin2 = function (callback) {
-  this.sendPinMessage({
-    msgId: 'OKSETPIN2'
-  }, callback);
+  this.sendPinMessage(
+    {
+      msgId: "OKSETPIN2",
+    },
+    callback
+  );
 };
 
 OnlyKey.prototype.sendPin_GO = function (pins, callback) {
@@ -529,76 +600,96 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
   // otherwise, concatenate all PINs sent and fill with null (hex 0)
   const pinCount = pins.length;
   const bytesPerPin = 16;
-  const pinBytesLength = pinCount === 1 ? pins[0].length : pinCount * bytesPerPin;
+  const pinBytesLength =
+    pinCount === 1 ? pins[0].length : pinCount * bytesPerPin;
   let pinBytes = new Array(pinBytesLength).fill(0);
   pins.forEach((pin, i) => {
-    if (typeof pin !== 'string') pin = '';
+    if (typeof pin !== "string") pin = "";
     // PIN chars should only be ascii 0-9
     // add 48 to send as DEC
-    pin.split('').forEach((char, j) => pinBytes[(i * 16) + j] = 48 + Number(char));
+    pin
+      .split("")
+      .forEach((char, j) => (pinBytes[i * 16 + j] = 48 + Number(char)));
   });
-  this.sendPinMessage({
-    // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
-    msgId: 'OKSETPIN',
-    pin: pinBytes
-  }, async () => {
-    // Check if PIN attempts exceeded
-    if (myOnlyKey.getLastMessage('received').indexOf("Error password attempts for this session exceeded") === 0) {
-      document.getElementById('locked-text-go').innerHTML = "To prevent lockout OnlyKey only permits 3 failed PIN attempts at a time, please remove and reinsert OnlyKey to try again.";
-      console.info("PIN attempts exeeded");
-    } else {
-      document.getElementById('locked-text-go').innerHTML = `
+  this.sendPinMessage(
+    {
+      // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
+      msgId: "OKSETPIN",
+      pin: pinBytes,
+    },
+    async () => {
+      // Check if PIN attempts exceeded
+      if (
+        myOnlyKey
+          .getLastMessage("received")
+          .indexOf("Error password attempts for this session exceeded") === 0
+      ) {
+        document.getElementById("locked-text-go").innerHTML =
+          "To prevent lockout OnlyKey only permits 3 failed PIN attempts at a time, please remove and reinsert OnlyKey to try again.";
+        console.info("PIN attempts exeeded");
+      } else {
+        document.getElementById("locked-text-go").innerHTML = `
       <h3>Please enter your PIN</h3>
       <form name="unlockOkGoForm" id="unlockOkGoForm">
         <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
         <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
       </form>
       `;
+      }
+      return callback();
     }
-    return callback();
-  });
-
+  );
 };
 
 OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
   let slot = slotArg || this.getSlotNum();
-  if (typeof slot !== 'number') slot = this.getSlotNum(slot);
+  if (typeof slot !== "number") slot = this.getSlotNum(slot);
   var options = {
     contents: value,
-    msgId: 'OKSETSLOT',
+    msgId: "OKSETSLOT",
     slotId: slot,
-    fieldId: field
+    fieldId: field,
   };
   this.sendMessage(options, callback);
 };
 
 OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
   slot = slot || this.getSlotNum();
-  if (typeof slot !== 'number') slot = this.getSlotNum(slot);
+  if (typeof slot !== "number") slot = this.getSlotNum(slot);
   var options = {
-    msgId: 'OKWIPESLOT',
+    msgId: "OKWIPESLOT",
     slotId: slot,
-    fieldId: field || null
+    fieldId: field || null,
   };
   this.sendMessage(options, callback);
 };
 
 OnlyKey.prototype.getSlotNum = function (slotId) {
   slotId = slotId || this.currentSlotId;
-  var parts = slotId.split('');
-  return parseInt(parts[0], 10) + (parts[1].toLowerCase() === 'a' ? 0 : 6);
+  var parts = slotId.split("");
+  return parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 0 : 6);
 };
 
-OnlyKey.prototype.setYubiAuth = function (publicId, privateId, secretKey, callback) {
-  this.setSlot('XX', 'YUBIAUTH', (publicId + privateId + secretKey).match(/.{2}/g), async () => {
-    await this.listenforvalue('set AES Key', callback);
-    return callback();
-  });
+OnlyKey.prototype.setYubiAuth = function (
+  publicId,
+  privateId,
+  secretKey,
+  callback
+) {
+  this.setSlot(
+    "XX",
+    "YUBIAUTH",
+    (publicId + privateId + secretKey).match(/.{2}/g),
+    async () => {
+      await this.listenforvalue("set AES Key", callback);
+      return callback();
+    }
+  );
 };
 
 OnlyKey.prototype.wipeYubiAuth = function (callback) {
-  this.wipeSlot('XX', 'YUBIAUTH', async () => {
-    await this.listenforvalue('wiped AES Key', callback);
+  this.wipeSlot("XX", "YUBIAUTH", async () => {
+    await this.listenforvalue("wiped AES Key", callback);
     return callback();
   });
 };
@@ -608,7 +699,7 @@ OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
     privateId = privateId.match(/.{2}/g);
     var options = {
       contents: privateId,
-      msgId: 'OKSETU2FPRIV'
+      msgId: "OKSETU2FPRIV",
     };
     this.sendMessage(options, callback);
   } else {
@@ -617,9 +708,12 @@ OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
 };
 
 OnlyKey.prototype.wipeU2fPrivateId = function (callback) {
-  this.sendMessage({
-    msgId: 'OKWIPEU2FPRIV'
-  }, callback);
+  this.sendMessage(
+    {
+      msgId: "OKWIPEU2FPRIV",
+    },
+    callback
+  );
 };
 
 OnlyKey.prototype.setU2fCert = function (cert, packetHeader, callback) {
@@ -627,20 +721,21 @@ OnlyKey.prototype.setU2fCert = function (cert, packetHeader, callback) {
   msg = msg.concat(cert.match(/.{2}/g));
   var options = {
     contents: msg,
-    msgId: 'OKSETU2FCERT'
+    msgId: "OKSETU2FCERT",
   };
   this.sendMessage(options, callback);
 };
 
 OnlyKey.prototype.wipeU2fCert = function (callback) {
-  this.sendMessage({
-    msgId: 'OKWIPEU2FCERT'
-  }, callback);
+  this.sendMessage(
+    {
+      msgId: "OKWIPEU2FCERT",
+    },
+    callback
+  );
 };
 
-
 OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
-
   var privKey;
   let error;
 
@@ -651,34 +746,40 @@ OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
     var success = privKey.decrypt(passcode);
 
     if (!success) {
-      error = 'Private Key decryption failed.';
-      this.setLastMessage('received', error + ' Did you forget your passcode?')
+      error = "Private Key decryption failed.";
+      this.setLastMessage("received", error + " Did you forget your passcode?");
       throw Error(error);
     }
 
     if (!(privKey.primaryKey && privKey.primaryKey.params)) {
-      error = 'Private Key decryption was successful, but resulted in invalid mpi data.';
-      this.setLastMessage('received', error);
+      error =
+        "Private Key decryption was successful, but resulted in invalid mpi data.";
+      this.setLastMessage("received", error);
       throw Error(error);
     }
 
-    if (!(privKey.primaryKey && privKey.primaryKey.params && privKey.primaryKey.params.length === 6)) {
-      error = 'Private Key decryption was successful, but resulted in invalid mpi data.';
-      this.setLastMessage('received', error);
+    if (
+      !(
+        privKey.primaryKey &&
+        privKey.primaryKey.params &&
+        privKey.primaryKey.params.length === 6
+      )
+    ) {
+      error =
+        "Private Key decryption was successful, but resulted in invalid mpi data.";
+      this.setLastMessage("received", error);
       throw Error(error);
     }
-
   } catch (parseError) {
-    error = 'Error parsing RSA key.'
-    this.setLastMessage('received', error);
-    throw Error(error + '\n\n' + parseError);
+    error = "Error parsing RSA key.";
+    this.setLastMessage("received", error);
+    throw Error(error + "\n\n" + parseError);
   }
 
   await onlyKeyConfigWizard.initKeySelect(privKey, function (err) {
-    ui.rsaForm.setError(err);
-    if (typeof cb === 'function') cb(err);
+    ui.rsaForm.setError(err || "");
+    if (typeof cb === "function") cb(err);
   });
-
 };
 
 OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
@@ -695,7 +796,7 @@ OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
   this.setPrivateKey(slot, type, key, async function (err) {
     onlyKeyConfigWizard.initForm.reset();
     await wait(300);
-    await listenForMessageIncludes2('Error', 'Success');
+    await listenForMessageIncludes2("Error", "Success");
     cb(err);
   });
 };
@@ -714,24 +815,25 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
           contents = parseFirmwareData(contents);
           console.info("parsed contents", contents);
         } catch (parseError) {
-          throw new Error('Could not parse firmware file.\n\n' + parseError);
+          throw new Error("Could not parse firmware file.\n\n" + parseError);
         }
 
         if (contents) {
           onlyKeyConfigWizard.newFirmware = contents;
           if (!myOnlyKey.isBootloader) {
-            console.info('Working...');
+            console.info("Working...");
 
             const temparray = "1234";
-            submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-              console.info('Firmware file sent to OnlyKey');
+            submitFirmwareData(temparray, function (err) {
+              //First send one message to kick OnlyKey (in config mode) into bootloader
+              console.info("Firmware file sent to OnlyKey");
               myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
             });
           } else {
             await loadFirmware();
           }
         } else {
-          throw new Error('Incorrect firmware data format.');
+          throw new Error("Incorrect firmware data format.");
         }
       };
     })(file);
@@ -739,14 +841,14 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
     // Read in the image file as a data URL.
     reader.readAsText(file);
   } else {
-    throw new Error('Please select a file first.');
+    throw new Error("Please select a file first.");
   }
-}
+};
 
 OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
-  const cb = typeof cbArg === 'function' ? cbArg : () => {};
+  const cb = typeof cbArg === "function" ? cbArg : () => {};
   const _this = this;
-  ui.restoreForm.setError('');
+  ui.restoreForm.setError("");
 
   if (fileSelector.files && fileSelector.files.length) {
     var file = fileSelector.files[0];
@@ -758,28 +860,30 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
         try {
           contents = parseBackupData(contents);
         } catch (parseError) {
-          const error = 'Could not parse backup file.';
-          _this.setLastMessage('received', error)
-          throw Error(error + '\n\n' + parseError);
+          const error = "Could not parse backup file.";
+          _this.setLastMessage("received", error);
+          throw Error(error + "\n\n" + parseError);
         }
 
         if (contents) {
-          var step10text = document.getElementById('step10-text');
-          step10text.innerHTML = "Restoring from backup please wait...<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
+          var step10text = document.getElementById("step10-text");
+          step10text.innerHTML =
+            "Restoring from backup please wait...<br><br>" +
+            "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
           submitRestoreData(contents, async function (err) {
             if (err) {
-              _this.setLastMessage(error)
+              _this.setLastMessage(error);
               throw Error(error);
             }
 
-            _this.setLastMessage('Backup file sent to OnlyKey, please wait...');
+            _this.setLastMessage("Backup file sent to OnlyKey, please wait...");
             await wait(10000);
             step10text.innerHTML = "";
             cb();
           });
         } else {
-          const error = 'Incorrect backup data format.';
-          _this.setLastMessage(error)
+          const error = "Incorrect backup data format.";
+          _this.setLastMessage(error);
           throw Error(error);
         }
       };
@@ -788,24 +892,24 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
     // Read in the image file as a data URL.
     reader.readAsText(file);
   } else {
-    var contents = '000000000'
+    var contents = "000000000";
     submitRestoreData(contents, function (err) {
       if (err) {
-        _this.setLastMessage(error)
+        _this.setLastMessage(error);
         throw Error(error);
       }
 
-      _this.setLastMessage('Backup file sent to OnlyKey.');
+      _this.setLastMessage("Backup file sent to OnlyKey.");
       cb();
     });
   }
-}
+};
 
 OnlyKey.prototype.setPrivateKey = async function (slot, type, key, callback) {
   var msg, contentType;
   if (Array.isArray(key) || key.constructor === Uint8Array) {
     // RSA private key is an array of DEC bytes
-    contentType = 'DEC';
+    contentType = "DEC";
     msg = key;
   } else {
     // private key strings should be pairs of HEX bytes
@@ -814,38 +918,46 @@ OnlyKey.prototype.setPrivateKey = async function (slot, type, key, callback) {
 
   var options = {
     contents: msg,
-    msgId: 'OKSETPRIV',
+    msgId: "OKSETPRIV",
     slotId: slot,
     fieldId: type,
-    contentType: contentType
+    contentType: contentType,
   };
   this.sendMessage(options, callback);
 };
 
 OnlyKey.prototype.wipePrivateKey = function (slot, callback) {
   var options = {
-    msgId: 'OKWIPEPRIV',
-    slotId: slot
+    msgId: "OKWIPEPRIV",
+    slotId: slot,
   };
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.restore = async function (restoreData, packetHeader, callback) {
+OnlyKey.prototype.restore = async function (
+  restoreData,
+  packetHeader,
+  callback
+) {
   var msg = [packetHeader];
   msg = msg.concat(restoreData.match(/.{2}/g));
   var options = {
     contents: msg,
-    msgId: 'OKRESTORE'
+    msgId: "OKRESTORE",
   };
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.firmware = async function (firmwareData, packetHeader, callback) {
+OnlyKey.prototype.firmware = async function (
+  firmwareData,
+  packetHeader,
+  callback
+) {
   var msg = [packetHeader];
   msg = msg.concat(firmwareData.match(/.{2}/g));
   var options = {
     contents: msg,
-    msgId: 'OKFWUPDATE'
+    msgId: "OKFWUPDATE",
   };
   console.info("OKFWUPDATE message sent ");
   console.info(options);
@@ -853,15 +965,15 @@ OnlyKey.prototype.firmware = async function (firmwareData, packetHeader, callbac
 };
 
 OnlyKey.prototype.setLockout = function (lockout, callback) {
-  this.setSlot('XX', 'LOCKOUT', lockout, async () => {
-    await this.listenforvalue('set idle timeout', callback);
+  this.setSlot("XX", "LOCKOUT", lockout, async () => {
+    await this.listenforvalue("set idle timeout", callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setWipeMode = function (wipeMode, callback) {
-  this.setSlot('XX', 'WIPEMODE', wipeMode, async () => {
-    await this.listenforvalue('set Wipe Mode', callback);
+  this.setSlot("XX", "WIPEMODE", wipeMode, async () => {
+    await this.listenforvalue("set Wipe Mode", callback);
     return callback();
   });
 };
@@ -870,71 +982,79 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
   secProfileMode = parseInt(secProfileMode, 10);
   var options = {
     contents: secProfileMode,
-    msgId: 'OKSETSLOT',
-    slotId: 'XX',
-    fieldId: 'SECPROFILEMODE'
+    msgId: "OKSETSLOT",
+    slotId: "XX",
+    fieldId: "SECPROFILEMODE",
   };
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode, callback) {
-  this.setSlot('XX', 'derivedchallengeMode', derivedchallengeMode, async () => {
-    await this.listenforvalue('challenge mode', callback);
+OnlyKey.prototype.setderivedchallengeMode = function (
+  derivedchallengeMode,
+  callback
+) {
+  this.setSlot("XX", "derivedchallengeMode", derivedchallengeMode, async () => {
+    await this.listenforvalue("challenge mode", callback);
     return callback();
   });
 };
 
-OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode, callback) {
-  this.setSlot('XX', 'storedchallengeMode', storedchallengeMode, async () => {
-    await this.listenforvalue('challenge mode', callback);
+OnlyKey.prototype.setstoredchallengeMode = function (
+  storedchallengeMode,
+  callback
+) {
+  this.setSlot("XX", "storedchallengeMode", storedchallengeMode, async () => {
+    await this.listenforvalue("challenge mode", callback);
     return callback();
   });
 };
 
-OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode, callback) {
-  this.setSlot('XX', 'hmacchallengeMode', hmacchallengeMode, async () => {
-    await this.listenforvalue('HMAC Challenge Mode', callback);
+OnlyKey.prototype.sethmacchallengeMode = function (
+  hmacchallengeMode,
+  callback
+) {
+  this.setSlot("XX", "hmacchallengeMode", hmacchallengeMode, async () => {
+    await this.listenforvalue("HMAC Challenge Mode", callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setmodkeyMode = function (modkeyMode, callback) {
-  this.setSlot('XX', 'modkeyMode', modkeyMode, async () => {
-    await this.listenforvalue('Sysadmin Mode', callback);
+  this.setSlot("XX", "modkeyMode", modkeyMode, async () => {
+    await this.listenforvalue("Sysadmin Mode", callback);
     return callback();
   });
 };
 
-
 OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
   backupKeyMode = parseInt(backupKeyMode, 10);
-  this.setSlot('XX', 'BACKUPKEYMODE', backupKeyMode, callback);
+  this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode, callback);
 };
 
 OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
-  this.setSlot('XX', 'TYPESPEED', typeSpeed, async () => {
-    await this.listenforvalue('set keyboard typespeed', callback);
+  this.setSlot("XX", "TYPESPEED", typeSpeed, async () => {
+    await this.listenforvalue("set keyboard typespeed", callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setLedBrightness = function (ledBrightness, callback) {
-  this.setSlot('XX', 'LEDBRIGHTNESS', ledBrightness, async () => {
-    await this.listenforvalue('set LED brightness', callback);
+  this.setSlot("XX", "LEDBRIGHTNESS", ledBrightness, async () => {
+    await this.listenforvalue("set LED brightness", callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setLockButton = function (lockButton, callback) {
-  this.setSlot('XX', 'LOCKBUTTON', lockButton, async () => {
-    await this.listenforvalue('set lock button', callback);
+  this.setSlot("XX", "LOCKBUTTON", lockButton, async () => {
+    await this.listenforvalue("set lock button", callback);
     return callback();
   });
 };
 
 OnlyKey.prototype.setKBDLayout = function (kbdLayout, callback) {
-  this.setSlot('XX', 'KBDLAYOUT', kbdLayout, async () => {
-    await this.listenforvalue('set keyboard layout', callback);
+  this.setSlot("XX", "KBDLAYOUT", kbdLayout, async () => {
+    await this.listenforvalue("set keyboard layout", callback);
     return callback();
   });
 };
@@ -947,14 +1067,14 @@ OnlyKey.prototype.getVersion = function () {
   return this.version;
 };
 
-OnlyKey.prototype.setDeviceType = function (version = '') {
+OnlyKey.prototype.setDeviceType = function (version = "") {
   if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
   switch (lastChar) {
-    case 'g':
+    case "g":
       deviceType = DEVICE_TYPES.GO;
-      document.getElementById('slot-config-btns').innerHTML = `
+      document.getElementById("slot-config-btns").innerHTML = `
       <tr>
         <td>
           <span class="slotLabel" id="slotLabel1a">empty</span>
@@ -1008,15 +1128,15 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
           <input type="button" id="slot5bConfig" value="2d" />
         </td>
       </tr>
-    `
+    `;
       break;
-    case 'c':
+    case "c":
     default:
-      if (version.includes('BOOTLOADER')) {
-        deviceType = 'UNINITIALIZED';
+      if (version.includes("BOOTLOADER")) {
+        deviceType = "UNINITIALIZED";
       } else {
         deviceType = DEVICE_TYPES.CLASSIC;
-        document.getElementById('slot-config-btns').innerHTML = `
+        document.getElementById("slot-config-btns").innerHTML = `
         <tr>
           <td align="right">
             <span class="slotLabel" id="slotLabel1a">empty</span>
@@ -1060,7 +1180,7 @@ OnlyKey.prototype.setDeviceType = function (version = '') {
             <span class="slotLabel" id="slotLabel6b">empty</span>
           </td>
         </tr>
-      `
+      `;
         // throw Error(`Unable to determine deviceType from version ${version}`);
       }
   }
@@ -1114,12 +1234,12 @@ var ui = {
   lockedDialogGo: null,
   workingDialog: null,
   disconnectedDialog: null,
-  main: null
+  main: null,
 };
 
 var initializeWindow = function () {
   for (var k in ui) {
-    var id = k.replace(/([A-Z])/g, '-$1').toLowerCase();
+    var id = k.replace(/([A-Z])/g, "-$1").toLowerCase();
     var element = document.getElementById(id);
     if (!element) {
       throw "Missing UI element: " + k + ", " + id;
@@ -1127,30 +1247,33 @@ var initializeWindow = function () {
     ui[k] = element;
 
     if (k.indexOf("show") === 0) {
-      ui[k].addEventListener('click', toggleConfigPanel);
+      ui[k].addEventListener("click", toggleConfigPanel);
     }
   }
 
-  ui.yubiAuthForm = document['yubiAuthForm'];
-  ui.u2fAuthForm = document['u2fAuthForm'];
-  ui.lockoutForm = document['lockoutForm'];
-  ui.wipeModeForm = document['wipeModeForm'];
-  ui.storedchallengeModeForm = document['storedchallengeModeForm'];
-  ui.backupModeForm = document['backupModeForm'];
-  ui.derivedchallengeModeForm = document['derivedchallengeModeForm'];
-  ui.hmacchallengeModeForm = document['hmacchallengeModeForm'];
-  ui.modkeyModeForm = document['modkeyModeForm'];
-  ui.typeSpeedForm = document['typeSpeedForm'];
-  ui.ledBrightnessForm = document['ledBrightnessForm'];
-  ui.lockButtonForm = document['lockButtonForm'];
-  ui.keyboardLayoutForm = document['keyboardLayoutForm'];
-  ui.eccForm = document['eccForm'];
-  ui.rsaForm = document['rsaForm'];
-  ui.backupForm = document['backupForm'];
-  ui.restoreForm = document['restoreForm'];
-  ui.firmwareForm = document['firmwareForm'];
+  ui.yubiAuthForm = document["yubiAuthForm"];
+  ui.u2fAuthForm = document["u2fAuthForm"];
+  ui.lockoutForm = document["lockoutForm"];
+  ui.wipeModeForm = document["wipeModeForm"];
+  ui.storedchallengeModeForm = document["storedchallengeModeForm"];
+  ui.backupModeForm = document["backupModeForm"];
+  ui.derivedchallengeModeForm = document["derivedchallengeModeForm"];
+  ui.hmacchallengeModeForm = document["hmacchallengeModeForm"];
+  ui.modkeyModeForm = document["modkeyModeForm"];
+  ui.typeSpeedForm = document["typeSpeedForm"];
+  ui.ledBrightnessForm = document["ledBrightnessForm"];
+  ui.lockButtonForm = document["lockButtonForm"];
+  ui.keyboardLayoutForm = document["keyboardLayoutForm"];
+  ui.eccForm = document["eccForm"];
+  ui.rsaForm = document["rsaForm"];
+  ui.backupForm = document["backupForm"];
+  ui.restoreForm = document["restoreForm"];
+  ui.firmwareForm = document["firmwareForm"];
 
-  ui.getLockedDialog = (ok) => ok.getDeviceType() === DEVICE_TYPES.GO ? ui.lockedDialogGo : ui.lockedDialog;
+  ui.getLockedDialog = (ok) =>
+    ok.getDeviceType() === DEVICE_TYPES.GO
+      ? ui.lockedDialogGo
+      : ui.lockedDialog;
 
   enableIOControls(false);
   enableAuthForms();
@@ -1161,7 +1284,7 @@ var enableIOControls = function (ioEnabled) {
   closeSlotConfigForm();
 
   if (!ioEnabled) {
-    ui.main.classList.add('hide');
+    ui.main.classList.add("hide");
     if (myOnlyKey.connection === -1) {
       dialog.open(ui.disconnectedDialog);
     }
@@ -1171,100 +1294,99 @@ var enableIOControls = function (ioEnabled) {
     if (myOnlyKey.isLocked) {
       dialog.open(ui.getLockedDialog(myOnlyKey));
     } else if (myOnlyKey.isBootloader) {
-      ui.main.classList.remove('hide');
-      ui.initPanel.classList.add('hide');
-      ui.showInitPanel.classList.remove('hide', 'active');
-      ui.slotPanel.classList.add('hide');
-      ui.showSlotPanel.classList.remove('hide', 'active');
-      ui.prefPanel.classList.add('hide');
-      ui.showPrefPanel.classList.remove('hide', 'active');
-      ui.keysPanel.classList.add('hide');
-      ui.showKeysPanel.classList.remove('hide', 'active');
-      ui.backupPanel.classList.add('hide');
-      ui.backupPanel.classList.remove('active');
-      ui.firmwarePanel.classList.remove('hide');
-      ui.advancedPanel.classList.add('hide');
-      ui.advancedPanel.classList.remove('active');
-      ui.toolsPanel.classList.add('hide');
-      ui.toolsPanel.classList.remove('active');
-      ui.keysPanel.classList.add('hide');
-      ui.keysPanel.classList.remove('active');
-      ui.showBackupPanel.classList.remove('hide', 'active');
-      ui.showFirmwarePanel.classList.remove('hide');
-      ui.showFirmwarePanel.classList.add('active');
-      ui.showAdvancedPanel.classList.remove('hide', 'active');
-      ui.showToolsPanel.classList.remove('hide', 'active');
+      ui.main.classList.remove("hide");
+      ui.initPanel.classList.add("hide");
+      ui.showInitPanel.classList.remove("hide", "active");
+      ui.slotPanel.classList.add("hide");
+      ui.showSlotPanel.classList.remove("hide", "active");
+      ui.prefPanel.classList.add("hide");
+      ui.showPrefPanel.classList.remove("hide", "active");
+      ui.keysPanel.classList.add("hide");
+      ui.showKeysPanel.classList.remove("hide", "active");
+      ui.backupPanel.classList.add("hide");
+      ui.backupPanel.classList.remove("active");
+      ui.firmwarePanel.classList.remove("hide");
+      ui.advancedPanel.classList.add("hide");
+      ui.advancedPanel.classList.remove("active");
+      ui.toolsPanel.classList.add("hide");
+      ui.toolsPanel.classList.remove("active");
+      ui.keysPanel.classList.add("hide");
+      ui.keysPanel.classList.remove("active");
+      ui.showBackupPanel.classList.remove("hide", "active");
+      ui.showFirmwarePanel.classList.remove("hide");
+      ui.showFirmwarePanel.classList.add("active");
+      ui.showAdvancedPanel.classList.remove("hide", "active");
+      ui.showToolsPanel.classList.remove("hide", "active");
       dialog.close(ui.getLockedDialog(myOnlyKey));
     } else {
-      ui.main.classList.remove('hide');
-      ui.initPanel.classList.add('hide');
-      ui.showInitPanel.classList.remove('hide', 'active');
-      ui.slotPanel.classList.remove('hide');
-      ui.showSlotPanel.classList.remove('hide');
-      ui.showSlotPanel.classList.add('active');
-      ui.prefPanel.classList.add('hide');
-      ui.showPrefPanel.classList.remove('hide', 'active');
-      ui.keysPanel.classList.add('hide');
-      ui.showKeysPanel.classList.remove('hide', 'active');
-      ui.backupPanel.classList.add('hide');
-      ui.backupPanel.classList.remove('active');
-      ui.firmwarePanel.classList.add('hide');
-      ui.firmwarePanel.classList.remove('active');
-      ui.advancedPanel.classList.add('hide');
-      ui.advancedPanel.classList.remove('active');
-      ui.toolsPanel.classList.add('hide');
-      ui.toolsPanel.classList.remove('active');
-      ui.keysPanel.classList.add('hide');
-      ui.keysPanel.classList.remove('active');
-      ui.showBackupPanel.classList.remove('hide', 'active');
-      ui.showFirmwarePanel.classList.remove('hide', 'active');
-      ui.showAdvancedPanel.classList.remove('hide', 'active');
-      ui.showToolsPanel.classList.remove('hide', 'active');
+      ui.main.classList.remove("hide");
+      ui.initPanel.classList.add("hide");
+      ui.showInitPanel.classList.remove("hide", "active");
+      ui.slotPanel.classList.remove("hide");
+      ui.showSlotPanel.classList.remove("hide");
+      ui.showSlotPanel.classList.add("active");
+      ui.prefPanel.classList.add("hide");
+      ui.showPrefPanel.classList.remove("hide", "active");
+      ui.keysPanel.classList.add("hide");
+      ui.showKeysPanel.classList.remove("hide", "active");
+      ui.backupPanel.classList.add("hide");
+      ui.backupPanel.classList.remove("active");
+      ui.firmwarePanel.classList.add("hide");
+      ui.firmwarePanel.classList.remove("active");
+      ui.advancedPanel.classList.add("hide");
+      ui.advancedPanel.classList.remove("active");
+      ui.toolsPanel.classList.add("hide");
+      ui.toolsPanel.classList.remove("active");
+      ui.keysPanel.classList.add("hide");
+      ui.keysPanel.classList.remove("active");
+      ui.showBackupPanel.classList.remove("hide", "active");
+      ui.showFirmwarePanel.classList.remove("hide", "active");
+      ui.showAdvancedPanel.classList.remove("hide", "active");
+      ui.showToolsPanel.classList.remove("hide", "active");
       dialog.close(ui.getLockedDialog(myOnlyKey));
     }
   } else {
-    ui.main.classList.remove('hide');
-    ui.slotPanel.classList.add('hide');
-    ui.slotPanel.classList.remove('active');
-    ui.backupPanel.classList.add('hide');
-    ui.backupPanel.classList.remove('active');
-    ui.firmwarePanel.classList.add('hide');
-    ui.firmwarePanel.classList.remove('active');
-    ui.advancedPanel.classList.add('hide');
-    ui.advancedPanel.classList.remove('active');
-    ui.toolsPanel.classList.add('hide');
-    ui.toolsPanel.classList.remove('active');
-    ui.keysPanel.classList.add('hide');
-    ui.keysPanel.classList.remove('active');
-    ui.prefPanel.classList.add('hide');
-    ui.prefPanel.classList.remove('active');
-    ui.initPanel.classList.remove('hide');
-    ui.showInitPanel.classList.remove('hide');
-    ui.showInitPanel.classList.add('active');
-    ui.showSlotPanel.classList.add('hide');
-    ui.showPrefPanel.classList.add('hide');
-    ui.showKeysPanel.classList.add('hide');
-    ui.showBackupPanel.classList.add('hide');
-    ui.showAdvancedPanel.classList.add('hide');
-    ui.showToolsPanel.classList.add('hide');
-    ui.showFirmwarePanel.classList.add('hide');
+    ui.main.classList.remove("hide");
+    ui.slotPanel.classList.add("hide");
+    ui.slotPanel.classList.remove("active");
+    ui.backupPanel.classList.add("hide");
+    ui.backupPanel.classList.remove("active");
+    ui.firmwarePanel.classList.add("hide");
+    ui.firmwarePanel.classList.remove("active");
+    ui.advancedPanel.classList.add("hide");
+    ui.advancedPanel.classList.remove("active");
+    ui.toolsPanel.classList.add("hide");
+    ui.toolsPanel.classList.remove("active");
+    ui.keysPanel.classList.add("hide");
+    ui.keysPanel.classList.remove("active");
+    ui.prefPanel.classList.add("hide");
+    ui.prefPanel.classList.remove("active");
+    ui.initPanel.classList.remove("hide");
+    ui.showInitPanel.classList.remove("hide");
+    ui.showInitPanel.classList.add("active");
+    ui.showSlotPanel.classList.add("hide");
+    ui.showPrefPanel.classList.add("hide");
+    ui.showKeysPanel.classList.add("hide");
+    ui.showBackupPanel.classList.add("hide");
+    ui.showAdvancedPanel.classList.add("hide");
+    ui.showToolsPanel.classList.add("hide");
+    ui.showFirmwarePanel.classList.add("hide");
     dialog.close(ui.getLockedDialog(myOnlyKey));
   }
 };
 
 var enumerateDevices = function () {
   for (let d = 0; d < SUPPORTED_DEVICES.length; d++) {
-    const {
-      vendorId,
-      productId
-    } = SUPPORTED_DEVICES[d];
+    const { vendorId, productId } = SUPPORTED_DEVICES[d];
 
     const deviceInfo = {
       vendorId,
-      productId
+      productId,
     };
 
-    console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`)
+    console.log(
+      `Checking for devices with vendorId ${vendorId} and productId ${productId}...`
+    );
 
     chromeHid.getDevices(deviceInfo, onDevicesEnumerated);
   }
@@ -1288,9 +1410,14 @@ var onDevicesEnumerated = async function (devices) {
 var onDeviceAdded = async function (device) {
   var supportedDevice = getSupportedDevice(device);
   console.info(device.collections[0].usage);
-  if (supportedDevice && device.collections[0].usagePage == '65451' && device.serialNumber == '1000000000') {
+  if (
+    supportedDevice &&
+    device.collections[0].usagePage == "65451" &&
+    device.serialNumber == "1000000000"
+  ) {
     await connectDevice(device);
-  } else if (supportedDevice && device.serialNumber != '1000000000') { //Before Beta 8 fw
+  } else if (supportedDevice && device.serialNumber != "1000000000") {
+    //Before Beta 8 fw
     console.info("Beta 8+ device not found, looking for old device");
     await connectDevice(device);
   }
@@ -1299,7 +1426,7 @@ var onDeviceAdded = async function (device) {
 var connectDevice = async function (device) {
   const deviceId = device.deviceId;
 
-  console.info('CONNECTING device:', device);
+  console.info("CONNECTING device:", device);
 
   dialog.close(ui.disconnectedDialog);
   dialog.open(ui.workingDialog);
@@ -1318,12 +1445,15 @@ var connectDevice = async function (device) {
 };
 
 var onDeviceRemoved = function () {
-  console.info("ONDEVICEREMOVED was triggered with connectionId", myOnlyKey.connection);
+  console.info(
+    "ONDEVICEREMOVED was triggered with connectionId",
+    myOnlyKey.connection
+  );
   if (myOnlyKey.connection === -1) return handleDisconnect();
 
   chromeHid.disconnect(myOnlyKey.connection, function () {
     if (chrome.runtime.lastError) {
-      return console.warn('DISCONNECT ERROR:', chrome.runtime.lastError);
+      return console.warn("DISCONNECT ERROR:", chrome.runtime.lastError);
     }
     console.info("DISCONNECTED CONNECTION", myOnlyKey.connection);
     handleDisconnect();
@@ -1333,7 +1463,7 @@ var onDeviceRemoved = function () {
 function handleDisconnect() {
   myOnlyKey.setConnection(-1);
   delete myOnlyKey.deviceType;
-  myOnlyKey.setLastMessage('received', 'Disconnected');
+  myOnlyKey.setLastMessage("received", "Disconnected");
   onlyKeyConfigWizard.initForm.reset();
   enableIOControls(false);
 }
@@ -1341,14 +1471,15 @@ function handleDisconnect() {
 var pollForInput = function (optionsParam, callbackParam) {
   clearTimeout(myOnlyKey.poll);
 
-  const callback = typeof callbackParam === 'function' ? callbackParam : handleMessage;
+  const callback =
+    typeof callbackParam === "function" ? callbackParam : handleMessage;
   const options = optionsParam || {};
   let msg;
   let version;
 
   chromeHid.receive(myOnlyKey.connection, async function (reportId, data) {
     if (chrome.runtime.lastError) {
-      myOnlyKey.setLastMessage('received', '[error]');
+      myOnlyKey.setLastMessage("received", "[error]");
       return callback(chrome.runtime.lastError);
     } else {
       msg = readBytes(new Uint8Array(data));
@@ -1357,34 +1488,51 @@ var pollForInput = function (optionsParam, callbackParam) {
     console.info("RECEIVED:", msg);
     myOnlyKey.setDeviceType(msg);
 
-    if (msg.length > 1 && msg !== 'OK' && !options.flush) {
-      myOnlyKey.setLastMessage('received', msg);
+    if (msg.length > 1 && msg !== "OK" && !options.flush) {
+      myOnlyKey.setLastMessage("received", msg);
     }
 
     // if message begins with Error, call callback with msg as err
     // and the last sent message as 2nd arg
     if (msg.indexOf("Error") === 0 || msg.indexOf("ERROR") === 0) {
-      return callback(msg, myOnlyKey.getLastMessage('sent'));
+      return callback(msg, myOnlyKey.getLastMessage("sent"));
     } else if (msg.indexOf("UNINITIALIZEDv") >= 0) {
       myOnlyKey.fwUpdateSupport = true;
       version = msg.split("UNINITIALIZED").pop();
       handleVersion(version);
-      desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+      desktopApp &&
+        (await checkForNewFW(
+          userPreferences.autoUpdateFW,
+          myOnlyKey.fwUpdateSupport,
+          version
+        ));
     } else if (msg.indexOf("UNINITIALIZED") >= 0) {
       myOnlyKey.fwUpdateSupport = false;
-      version = 'v0.2-beta.6';
-      var upgradetext = document.getElementById('upgrade-text');
-      upgradetext.innerHTML = "This application is designed to work with a newer version of OnlyKey firmware. <br>Go to https://docs.crp.to/upgradeguide.html ";
+      version = "v0.2-beta.6";
+      var upgradetext = document.getElementById("upgrade-text");
+      upgradetext.innerHTML =
+        "This application is designed to work with a newer version of OnlyKey firmware. <br>Go to https://docs.crp.to/upgradeguide.html ";
       handleVersion(version);
-      desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+      desktopApp &&
+        (await checkForNewFW(
+          userPreferences.autoUpdateFW,
+          myOnlyKey.fwUpdateSupport,
+          version
+        ));
       return;
     } else if (msg.indexOf("UNLOCKED") >= 0) {
       version = msg.split("UNLOCKED").pop();
       handleVersion(version);
-      if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
+      if (version && (version[9] != "." || version[10] > 6)) {
+        //Firmware update through app supported
         myOnlyKey.fwUpdateSupport = true;
       }
-      desktopApp && await checkForNewFW(userPreferences.autoUpdateFW, myOnlyKey.fwUpdateSupport, version);
+      desktopApp &&
+        (await checkForNewFW(
+          userPreferences.autoUpdateFW,
+          myOnlyKey.fwUpdateSupport,
+          version
+        ));
     }
 
     return callback(null, msg);
@@ -1392,7 +1540,7 @@ var pollForInput = function (optionsParam, callbackParam) {
 };
 
 var readBytes = function (bytes) {
-  var msgStr = '';
+  var msgStr = "";
   var msgBytes = new Uint8Array(bytes.buffer);
 
   for (var i = 0; i < msgBytes.length; i++) {
@@ -1416,7 +1564,7 @@ var handleMessage = async function (err, msg) {
   var version;
   dialog.close(ui.workingDialog);
 
-  const indexOfInitialized = msg.indexOf('INITIALIZED');
+  const indexOfInitialized = msg.indexOf("INITIALIZED");
 
   switch (true) {
     case indexOfInitialized >= 0:
@@ -1425,10 +1573,10 @@ var handleMessage = async function (err, msg) {
 
       // special handling if last message sent was PIN-related
       if (myOnlyKey.getDeviceType === DEVICE_TYPES.CLASSIC) {
-        switch (myOnlyKey.getLastMessage('sent')) {
-          case 'OKSETPIN':
-          case 'OKSETPIN2':
-          case 'OKSETSDPIN':
+        switch (myOnlyKey.getLastMessage("sent")) {
+          case "OKSETPIN":
+          case "OKSETPIN2":
+          case "OKSETSDPIN":
             return pollForInput();
         }
       }
@@ -1437,11 +1585,12 @@ var handleMessage = async function (err, msg) {
       break;
   }
 
-  if (indexOfInitialized === 0) { // OK should still be locked
+  if (indexOfInitialized === 0) {
+    // OK should still be locked
     pollForInput();
   }
 
-  if (msg.replace(/\s/g, '').indexOf("UNINITIALIZEDv") >= 0) {
+  if (msg.replace(/\s/g, "").indexOf("UNINITIALIZEDv") >= 0) {
     myOnlyKey.fwUpdateSupport = true;
     version = msg.split("UNINITIALIZED").pop();
     handleVersion(version);
@@ -1457,13 +1606,14 @@ var handleMessage = async function (err, msg) {
     myOnlyKey.fwUpdateSupport = true;
     myOnlyKey.initBootloaderMode();
   } else if (msg.indexOf("UNLOCKED") >= 0) {
-    if (myOnlyKey.getLastMessage('sent') === 'OKSETPRIV') {
+    if (myOnlyKey.getLastMessage("sent") === "OKSETPRIV") {
       pollForInput();
     } else {
       myOnlyKey.setInitialized(true);
       version = msg.split("UNLOCKED").pop();
       handleVersion(version);
-      if (version && (version[9] != '.' || version[10] > 6)) { //Firmware update through app supported
+      if (version && (version[9] != "." || version[10] > 6)) {
+        //Firmware update through app supported
         myOnlyKey.fwUpdateSupport = true;
       }
       if (myOnlyKey.isLocked) {
@@ -1476,20 +1626,29 @@ var handleMessage = async function (err, msg) {
     myOnlyKey.isLocked = true;
   }
 
-  var firmwaretext = document.getElementById('firmware-text');
-  var step8text = document.getElementById('step8-text');
-  var step9text = document.getElementById('step9-text');
-  if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized) { //Firmware load in app without config mode
-    firmwaretext.innerHTML = "To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p> The OnlyKey will restart automatically when firmware load is complete.";
+  var firmwaretext = document.getElementById("firmware-text");
+  var step8text = document.getElementById("step8-text");
+  var step9text = document.getElementById("step9-text");
+  if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized) {
+    //Firmware load in app without config mode
+    firmwaretext.innerHTML =
+      "To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p> The OnlyKey will restart automatically when firmware load is complete.";
     step8text.innerHTML = " ";
     step9text.innerHTML = " ";
-  } else if (myOnlyKey.fwUpdateSupport) { //Firmware load in app with config mode
-    firmwaretext.innerHTML = "<u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.</p><p><u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.";
-    step8text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
-    step9text.innerHTML = "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
-  } else { //Firmware load not supported in app
-    firmwaretext.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
-    step8text.innerHTML = "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
+  } else if (myOnlyKey.fwUpdateSupport) {
+    //Firmware load in app with config mode
+    firmwaretext.innerHTML =
+      "<u>Step 1</u>. To load new firmware file to your OnlyKey, make sure your OnlyKey is unlocked.</p><p><u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.";
+    step8text.innerHTML =
+      "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+    step9text.innerHTML =
+      "To set a new passphrase on your OnlyKey, Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+  } else {
+    //Firmware load not supported in app
+    firmwaretext.innerHTML =
+      "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
+    step8text.innerHTML =
+      "This version of firmware is outdated and does not support this feature. To load latest firmware follow the loading instructions <a href='https://docs.crp.to/usersguide.html#loading-onlykey-firmware' class='external'>here</a>";
   }
 
   if (updateUI) {
@@ -1515,10 +1674,10 @@ function toggleConfigPanel(e) {
     backup: "Backup",
     firmware: "Firmware",
     advanced: "Advanced",
-    tools: "Tools"
+    tools: "Tools",
   };
-  var hiddenClass = 'hide';
-  var activeClass = 'active';
+  var hiddenClass = "hide";
+  var activeClass = "active";
   for (var panel in panels) {
     if (clicked.id.indexOf(panel) >= 0) {
       if (!clicked.classList.contains(activeClass)) {
@@ -1535,24 +1694,29 @@ function toggleConfigPanel(e) {
 }
 
 function initSlotConfigForm() {
-  var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName('input'));
+  var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName("input"));
   configBtns.forEach(function (btn, i) {
     var labelIndex = myOnlyKey.getSlotNum(btn.value);
-    var labelText = myOnlyKey.labels[labelIndex - 1] || 'empty';
+    var labelText = myOnlyKey.labels[labelIndex - 1] || "empty";
     onlyKeyConfigWizard.setSlotLabel(i, labelText);
-    btn.addEventListener('click', showSlotConfigForm);
+    btn.addEventListener("click", showSlotConfigForm);
   });
-  ui.slotConfigDialog.getElementsByClassName('slot-config-close')[0].addEventListener('click', closeSlotConfigForm);
-  ui.slotConfigDialog.addEventListener('close', () => ui.slotConfigForm.reset());
+  ui.slotConfigDialog
+    .getElementsByClassName("slot-config-close")[0]
+    .addEventListener("click", closeSlotConfigForm);
+  ui.slotConfigDialog.addEventListener("close", () =>
+    ui.slotConfigForm.reset()
+  );
 }
 
 function showSlotConfigForm(e) {
   var slotId = e.target.value;
   myOnlyKey.currentSlotId = slotId;
-  var slotLabel = document.getElementById('slotLabel' + slotId).innerText;
-  ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
+  var slotLabel = document.getElementById("slotLabel" + slotId).innerText;
+  ui.slotConfigDialog.getElementsByClassName("slotId")[0].innerText = slotId;
 
-  document.getElementById('txtSlotLabel').value = slotLabel.toLowerCase() === 'empty' ? '' : slotLabel;
+  document.getElementById("txtSlotLabel").value =
+    slotLabel.toLowerCase() === "empty" ? "" : slotLabel;
   dialog.open(ui.slotConfigDialog);
   initSlotConfigForm();
   e && e.preventDefault && e.preventDefault();
@@ -1564,101 +1728,116 @@ function closeSlotConfigForm(e) {
 }
 
 function enableAuthForms() {
-  var yubiSubmit = document.getElementById('yubiSubmit');
-  var yubiWipe = document.getElementById('yubiWipe');
-  yubiSubmit.addEventListener('click', submitYubiAuthForm);
-  yubiWipe.addEventListener('click', wipeYubiAuthForm);
+  var yubiSubmit = document.getElementById("yubiSubmit");
+  var yubiWipe = document.getElementById("yubiWipe");
+  yubiSubmit.addEventListener("click", submitYubiAuthForm);
+  yubiWipe.addEventListener("click", wipeYubiAuthForm);
 
-  var u2fSubmit = document.getElementById('u2fSubmit');
-  var u2fWipe = document.getElementById('u2fWipe');
-  u2fSubmit.addEventListener('click', submitU2fAuthForm);
-  u2fWipe.addEventListener('click', wipeU2fAuthForm);
+  var u2fSubmit = document.getElementById("u2fSubmit");
+  var u2fWipe = document.getElementById("u2fWipe");
+  u2fSubmit.addEventListener("click", submitU2fAuthForm);
+  u2fWipe.addEventListener("click", wipeU2fAuthForm);
 
-  var lockoutSubmit = document.getElementById('lockoutSubmit');
-  lockoutSubmit.addEventListener('click', submitLockoutForm);
+  var lockoutSubmit = document.getElementById("lockoutSubmit");
+  lockoutSubmit.addEventListener("click", submitLockoutForm);
 
-  var wipeModeSubmit = document.getElementById('wipeModeSubmit');
-  wipeModeSubmit.addEventListener('click', submitWipeModeForm);
+  var wipeModeSubmit = document.getElementById("wipeModeSubmit");
+  wipeModeSubmit.addEventListener("click", submitWipeModeForm);
 
-  var backupModeSubmit = document.getElementById('backupModeSubmit');
-  backupModeSubmit.addEventListener('click', submitBackupModeForm);
+  var backupModeSubmit = document.getElementById("backupModeSubmit");
+  backupModeSubmit.addEventListener("click", submitBackupModeForm);
 
-  var storedchallengeModeSubmit = document.getElementById('storedchallengeModeSubmit');
-  storedchallengeModeSubmit.addEventListener('click', submitstoredchallengeModeForm);
+  var storedchallengeModeSubmit = document.getElementById(
+    "storedchallengeModeSubmit"
+  );
+  storedchallengeModeSubmit.addEventListener(
+    "click",
+    submitstoredchallengeModeForm
+  );
 
-  var derivedchallengeModeSubmit = document.getElementById('derivedchallengeModeSubmit');
-  derivedchallengeModeSubmit.addEventListener('click', submitderivedchallengeModeForm);
+  var derivedchallengeModeSubmit = document.getElementById(
+    "derivedchallengeModeSubmit"
+  );
+  derivedchallengeModeSubmit.addEventListener(
+    "click",
+    submitderivedchallengeModeForm
+  );
 
-  var modkeyModeSubmit = document.getElementById('modkeyModeSubmit');
-  modkeyModeSubmit.addEventListener('click', submitmodkeyModeForm);
+  var modkeyModeSubmit = document.getElementById("modkeyModeSubmit");
+  modkeyModeSubmit.addEventListener("click", submitmodkeyModeForm);
 
-  var hmacchallengeModeSubmit = document.getElementById('hmacchallengeModeSubmit');
-  hmacchallengeModeSubmit.addEventListener('click', submithmacchallengeModeForm);
+  var hmacchallengeModeSubmit = document.getElementById(
+    "hmacchallengeModeSubmit"
+  );
+  hmacchallengeModeSubmit.addEventListener(
+    "click",
+    submithmacchallengeModeForm
+  );
 
-  var typeSpeedSubmit = document.getElementById('typeSpeedSubmit');
-  typeSpeedSubmit.addEventListener('click', submitTypeSpeedForm);
+  var typeSpeedSubmit = document.getElementById("typeSpeedSubmit");
+  typeSpeedSubmit.addEventListener("click", submitTypeSpeedForm);
 
-  var ledBrightnessSubmit = document.getElementById('ledBrightnessSubmit');
-  ledBrightnessSubmit.addEventListener('click', submitLedBrightnessForm);
+  var ledBrightnessSubmit = document.getElementById("ledBrightnessSubmit");
+  ledBrightnessSubmit.addEventListener("click", submitLedBrightnessForm);
 
-  var lockButtonSubmit = document.getElementById('lockButtonSubmit');
-  lockButtonSubmit.addEventListener('click', submitLockButtonForm);
+  var lockButtonSubmit = document.getElementById("lockButtonSubmit");
+  lockButtonSubmit.addEventListener("click", submitLockButtonForm);
 
-  var kbdLayoutSubmit = document.getElementById('kbdLayoutSubmit');
-  kbdLayoutSubmit.addEventListener('click', submitKBDLayoutForm);
+  var kbdLayoutSubmit = document.getElementById("kbdLayoutSubmit");
+  kbdLayoutSubmit.addEventListener("click", submitKBDLayoutForm);
 
-  var eccSubmit = document.getElementById('eccSubmit');
-  eccSubmit.addEventListener('click', submitEccForm);
+  var eccSubmit = document.getElementById("eccSubmit");
+  eccSubmit.addEventListener("click", submitEccForm);
   ui.eccForm.setError = function (errString) {
-    document.getElementById('eccFormError').innerText = errString;
+    document.getElementById("eccFormError").innerText = errString;
   };
 
-  var eccWipe = document.getElementById('eccWipe');
-  eccWipe.addEventListener('click', wipeEccKeyForm);
+  var eccWipe = document.getElementById("eccWipe");
+  eccWipe.addEventListener("click", wipeEccKeyForm);
 
-  var rsaSubmit = document.getElementById('rsaSubmit');
-  rsaSubmit.addEventListener('click', submitRsaForm);
+  var rsaSubmit = document.getElementById("rsaSubmit");
+  rsaSubmit.addEventListener("click", submitRsaForm);
   ui.rsaForm.setError = function (errString) {
-    document.getElementById('rsaFormError').innerText = errString;
+    document.getElementById("rsaFormError").innerText = errString;
   };
 
-  var rsaWipe = document.getElementById('rsaWipe');
-  rsaWipe.addEventListener('click', wipeRsaKeyForm);
+  var rsaWipe = document.getElementById("rsaWipe");
+  rsaWipe.addEventListener("click", wipeRsaKeyForm);
 
-  var backupSave = document.getElementById('backupSave');
-  backupSave.addEventListener('click', saveBackupFile);
+  var backupSave = document.getElementById("backupSave");
+  backupSave.addEventListener("click", saveBackupFile);
   ui.backupForm.setError = function (errString) {
-    document.getElementById('backupFormError').innerText = errString;
+    document.getElementById("backupFormError").innerText = errString;
   };
 
-  var restoreFromBackup = document.getElementById('doRestore');
-  restoreFromBackup.addEventListener('click', submitRestoreForm);
+  var restoreFromBackup = document.getElementById("doRestore");
+  restoreFromBackup.addEventListener("click", submitRestoreForm);
   ui.restoreForm.setError = function (errString) {
-    document.getElementById('restoreFormError').innerText = errString;
+    document.getElementById("restoreFormError").innerText = errString;
   };
 
-  var loadFirmware = document.getElementById('doFirmware');
-  loadFirmware.addEventListener('click', submitFirmwareForm);
+  var loadFirmware = document.getElementById("doFirmware");
+  loadFirmware.addEventListener("click", submitFirmwareForm);
   ui.firmwareForm.setError = function (errString) {
-    document.getElementById('firmwareFormError').innerText = errString;
+    document.getElementById("firmwareFormError").innerText = errString;
   };
 
-  ui.backupForm.setError('');
+  ui.backupForm.setError("");
   ui.backupForm.reset();
-  ui.restoreForm.setError('');
+  ui.restoreForm.setError("");
   ui.restoreForm.reset();
-  ui.firmwareForm.setError('');
+  ui.firmwareForm.setError("");
   ui.firmwareForm.reset();
 }
 
 function submitYubiAuthForm(e) {
-  var publicId = ui.yubiAuthForm.yubiPublicId.value || '';
-  var privateId = ui.yubiAuthForm.yubiPrivateId.value || '';
-  var secretKey = ui.yubiAuthForm.yubiSecretKey.value || '';
+  var publicId = ui.yubiAuthForm.yubiPublicId.value || "";
+  var privateId = ui.yubiAuthForm.yubiPrivateId.value || "";
+  var secretKey = ui.yubiAuthForm.yubiSecretKey.value || "";
 
-  publicId = publicId.toString().replace(/\s/g, '');
-  privateId = privateId.toString().replace(/\s/g, '');
-  secretKey = secretKey.toString().replace(/\s/g, '');
+  publicId = publicId.toString().replace(/\s/g, "");
+  privateId = privateId.toString().replace(/\s/g, "");
+  secretKey = secretKey.toString().replace(/\s/g, "");
 
   // going to be mean and only send the max chars allowed
   var maxPublicIdLength = 12; // 6 bytes
@@ -1683,11 +1862,11 @@ function wipeYubiAuthForm(e) {
 }
 
 function submitU2fAuthForm(e) {
-  var privateId = ui.u2fAuthForm.u2fPrivateId.value || '';
-  var cert = ui.u2fAuthForm.u2fCert.value || '';
+  var privateId = ui.u2fAuthForm.u2fPrivateId.value || "";
+  var cert = ui.u2fAuthForm.u2fCert.value || "";
 
-  privateId = privateId.toString().replace(/\s/g, '');
-  cert = cert.toString().replace(/\s/g, '');
+  privateId = privateId.toString().replace(/\s/g, "");
+  cert = cert.toString().replace(/\s/g, "");
 
   // going to be mean and only send the max chars allowed
   var maxPrivateIdLength = 64; // 32 bytes
@@ -1715,7 +1894,9 @@ function submitU2fCert(certStr, callback) {
   var maxPacketSize = 116; // 58 byte pairs
   var finalPacket = certStr.length - maxPacketSize <= 0;
 
-  var cb = finalPacket ? callback : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
+  var cb = finalPacket
+    ? callback
+    : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
 
   // packetHeader is hex number of bytes in certStr chunk
   var packetHeader = finalPacket ? (certStr.length / 2).toString(16) : "FF";
@@ -1732,36 +1913,40 @@ function wipeU2fAuthForm(e) {
 }
 
 function submitEccForm(e) {
-  ui.eccForm.setError('');
+  ui.eccForm.setError("");
 
-  var type = parseInt(ui.eccForm.eccType.value || '', 10);
-  var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
-  var key = ui.eccForm.eccKey.value || '';
+  var type = parseInt(ui.eccForm.eccType.value || "", 10);
+  var slot = parseInt(ui.eccForm.eccSlot.value || "", 10);
+  var key = ui.eccForm.eccKey.value || "";
 
   var maxKeyLength = 64; // 32 hex pairs
 
-  var priv_type = 'ECC';
+  var priv_type = "ECC";
 
   if (type == 0) {
-    maxKeyLength = 40 // 20 hex pairs
-    priv_type = 'HMAC';
+    maxKeyLength = 40; // 20 hex pairs
+    priv_type = "HMAC";
   }
 
-  key = key.toString().replace(/\s/g, '').slice(0, maxKeyLength);
+  key = key.toString().replace(/\s/g, "").slice(0, maxKeyLength);
 
   if (!key) {
-    return ui.eccForm.setError(priv_type + ' Key cannot be empty. Use [Wipe] to clear a key.');
+    return ui.eccForm.setError(
+      priv_type + " Key cannot be empty. Use [Wipe] to clear a key."
+    );
   }
 
   if (key.length !== maxKeyLength) {
-    return ui.eccForm.setError(priv_type + ' Key must be ' + maxKeyLength + ' characters.');
+    return ui.eccForm.setError(
+      priv_type + " Key must be " + maxKeyLength + " characters."
+    );
   }
 
   // set all type modifiers
   var typeModifier = 0;
 
   Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
-    if (ui.eccForm['eccSetAs' + modifier].checked) {
+    if (ui.eccForm["eccSetAs" + modifier].checked) {
       typeModifier += myOnlyKey.keyTypeModifiers[modifier];
     }
   });
@@ -1776,11 +1961,10 @@ function submitEccForm(e) {
   e && e.preventDefault && e.preventDefault();
 }
 
-
 function wipeEccKeyForm(e) {
-  ui.eccForm.setError('');
+  ui.eccForm.setError("");
 
-  var slot = parseInt(ui.eccForm.eccSlot.value || '', 10);
+  var slot = parseInt(ui.eccForm.eccSlot.value || "", 10);
   myOnlyKey.wipePrivateKey(slot, function (err) {
     myOnlyKey.listen(handleMessage);
   });
@@ -1790,22 +1974,25 @@ function wipeEccKeyForm(e) {
 
 async function submitRsaForm(e) {
   e && e.preventDefault && e.preventDefault();
-  ui.rsaForm.setError('');
+  ui.rsaForm.setError("");
 
-  var key = ui.rsaForm.rsaKey.value || '';
-  var passcode = ui.rsaForm.rsaPasscode.value || '';
+  var key = ui.rsaForm.rsaKey.value || "";
+  var passcode = ui.rsaForm.rsaPasscode.value || "";
 
   //key = key.toString().replace(/\s/g,'');
 
   if (!key) {
-    return ui.rsaForm.setError('PGP Key cannot be empty. Use [Wipe] to clear a key.');
+    return ui.rsaForm.setError(
+      "PGP Key cannot be empty. Use [Wipe] to clear a key."
+    );
   }
 
   if (!passcode) {
-    return ui.rsaForm.setError('Passcode cannot be empty.');
+    return ui.rsaForm.setError("Passcode cannot be empty.");
   }
 
-  var privKey, keyObj = {},
+  var privKey,
+    keyObj = {},
     retKey;
 
   try {
@@ -1814,68 +2001,79 @@ async function submitRsaForm(e) {
 
     var success = await privKey.decrypt(passcode);
     if (!success) {
-      throw new Error("Private Key decryption failed. Did you forget your passcode?");
+      throw new Error(
+        "Private Key decryption failed. Did you forget your passcode?"
+      );
     }
 
-    
     //console.info(privKey.primaryKey);
     //console.info(privKey.primaryKey.params);
     //console.info(privKey.primaryKey.params.length);
 
     if (!(privKey.primaryKey && privKey.primaryKey.params)) {
-      throw new Error("Key decryption was successful, but resulted in invalid data. Is this a valid OpenPGP key?");
+      throw new Error(
+        "Key decryption was successful, but resulted in invalid data. Is this a valid OpenPGP key?"
+      );
     }
   } catch (e) {
-    return ui.rsaForm.setError('Error parsing PGP key: ' + e.message);
+    return ui.rsaForm.setError("Error parsing PGP key: " + e.message);
   }
 
   var allKeys = {
     primaryKey: privKey.primaryKey,
-    subKeys: privKey.subKeys
+    subKeys: privKey.subKeys,
   };
 
   await onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
-    ui.rsaForm.setError(err);
+    ui.rsaForm.setError(err || "");
   });
 }
 
 OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
-
-  if (typeof (keyObj.s) !== 'undefined') { //ECC
+  if (typeof keyObj.s !== "undefined") {
+    //ECC
     var type = myOnlyKey.tempEccCurve;
     if (type == 0) {
-      return ui.rsaForm.setError("Unsupported ECC key type, key is not X25519 or NIST256p1.");
+      return ui.rsaForm.setError(
+        "Unsupported ECC key type, key is not X25519 or NIST256p1."
+      );
     }
 
     if (keyObj.s.length != 32) {
       return ui.rsaForm.setError("Selected key length should be 32 bytes.");
     }
 
-    var retKey = Array.from(keyObj.s)
-
-  } else { //RSA
+    var retKey = Array.from(keyObj.s);
+  } else {
+    //RSA
     var type = parseInt(keyObj.p.length / 64, 10);
 
     if ([1, 2, 3, 4].indexOf(type) < 0) {
-      return ui.rsaForm.setError("Selected key length should be 1024, 2048, 3072, or 4096 bits.");
+      return ui.rsaForm.setError(
+        "Selected key length should be 1024, 2048, 3072, or 4096 bits."
+      );
     }
 
     var retKey = [...keyObj.p, ...keyObj.q];
   }
-  var slot = slot !== null ? slot : parseInt(ui.rsaForm.rsaSlot.value || '', 10);
+  var slot =
+    slot !== null ? slot : parseInt(ui.rsaForm.rsaSlot.value || "", 10);
 
   // set all type modifiers
   var typeModifier = 0;
 
   Object.keys(myOnlyKey.keyTypeModifiers).forEach(function (modifier) {
-    if (ui.rsaForm['rsaSetAs' + modifier] && ui.rsaForm['rsaSetAs' + modifier].checked) {
+    if (
+      ui.rsaForm["rsaSetAs" + modifier] &&
+      ui.rsaForm["rsaSetAs" + modifier].checked
+    ) {
       typeModifier += myOnlyKey.keyTypeModifiers[modifier];
     }
   });
 
   type += typeModifier;
 
-  if (document.getElementById('rsaSlot').value === '99') {
+  if (document.getElementById("rsaSlot").value === "99") {
     if (slot == 1) {
       type += 32;
       console.info("Slot 1 set as decryption key" + type);
@@ -1886,11 +2084,12 @@ OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
       console.info("Slot 2 set as signature key" + type);
     }
   }
-  if (typeof (keyObj.s) !== 'undefined') { //ECC
+  if (typeof keyObj.s !== "undefined") {
+    //ECC
     if (slot < 101) slot += 100;
-    myOnlyKey.setPrivateKey(slot, type, retKey, err => {
+    myOnlyKey.setPrivateKey(slot, type, retKey, (err) => {
       // TODO: check for success, then reset
-      if (typeof cb === 'function') cb(err);
+      if (typeof cb === "function") cb(err);
       ui.rsaForm.reset();
       if (backupsigFlag >= 0) {
         backupsigFlag = -1;
@@ -1899,9 +2098,9 @@ OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
       this.listen(handleMessage);
     });
   } else {
-    submitRsaKey(slot, type, retKey, err => {
+    submitRsaKey(slot, type, retKey, (err) => {
       // TODO: check for success, then reset
-      if (typeof cb === 'function') cb(err);
+      if (typeof cb === "function") cb(err);
       ui.rsaForm.reset();
       if (backupsigFlag >= 0) {
         backupsigFlag = -1;
@@ -1910,52 +2109,64 @@ OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
       this.listen(handleMessage);
     });
   }
-
 };
 
 function submitRsaKey(slot, type, key, callback) {
   // this function should recursively call itself until all bytes are sent in chunks
   if (!Array.isArray(key)) {
-    return callback('Invalid key format.');
+    return callback("Invalid key format.");
   }
   var maxPacketSize = 57;
   var finalPacket = key.length - maxPacketSize <= 0;
 
-  var cb = finalPacket ? callback : submitRsaKey.bind(null, slot, type, key.slice(maxPacketSize), callback);
+  var cb = finalPacket
+    ? callback
+    : submitRsaKey.bind(null, slot, type, key.slice(maxPacketSize), callback);
 
   myOnlyKey.setPrivateKey(slot, type, key.slice(0, maxPacketSize), cb);
 }
 
 function saveBackupFile(e) {
   e && e.preventDefault && e.preventDefault();
-  ui.backupForm.setError('');
+  ui.backupForm.setError("");
 
   var backupData = ui.backupForm.backupData.value.trim();
   if (backupData) {
-    d = new Date()
-    dMonth = d.getMonth() + 1
-    dDate = d.getDate()
-    dYear = d.getFullYear()
-    dHour = ((d.getHours() + 1) < 12 ? d.getHours() : d.getHours() - 12);
-    dMinutes = (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
-    dM = ((d.getHours() + 1) < 12 ? 'AM' : 'PM');
-    df = dMonth + '-' + dDate + '-' + dYear + '-' + dHour + '-' + dMinutes + '-' + dM
-    var filename = "onlykey-backup-" + (df) + ".txt";
+    d = new Date();
+    dMonth = d.getMonth() + 1;
+    dDate = d.getDate();
+    dYear = d.getFullYear();
+    dHour = d.getHours() + 1 < 12 ? d.getHours() : d.getHours() - 12;
+    dMinutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+    dM = d.getHours() + 1 < 12 ? "AM" : "PM";
+    df =
+      dMonth +
+      "-" +
+      dDate +
+      "-" +
+      dYear +
+      "-" +
+      dHour +
+      "-" +
+      dMinutes +
+      "-" +
+      dM;
+    var filename = "onlykey-backup-" + df + ".txt";
     var blob = new Blob([backupData], {
-      type: "text/plain;charset=utf-8"
+      type: "text/plain;charset=utf-8",
     });
     saveAs(blob, filename); // REQUIRES FileSaver.js polyfill
 
-    document.getElementById('lastBackupFilename').innerText = filename;
+    document.getElementById("lastBackupFilename").innerText = filename;
     ui.backupForm.reset();
   } else {
-    ui.backupForm.setError('Backup data cannot be empty space.');
+    ui.backupForm.setError("Backup data cannot be empty space.");
   }
 }
 
 function submitRestoreForm(e) {
   e && e.preventDefault && e.preventDefault();
-  ui.restoreForm.setError('');
+  ui.restoreForm.setError("");
 
   var fileSelector = ui.restoreForm.restoreSelectFile;
   if (fileSelector.files && fileSelector.files.length) {
@@ -1969,12 +2180,16 @@ function submitRestoreForm(e) {
         try {
           contents = parseBackupData(contents);
         } catch (parseError) {
-          return ui.restoreForm.setError('Could not parse backup file.\n\n' + parseError);
+          return ui.restoreForm.setError(
+            "Could not parse backup file.\n\n" + parseError
+          );
         }
 
         if (contents) {
-          var restoretext = document.getElementById('restore-text');
-          restoretext.innerHTML = "Restoring from backup please wait...<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
+          var restoretext = document.getElementById("restore-text");
+          restoretext.innerHTML =
+            "Restoring from backup please wait...<br><br>" +
+            "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
           submitRestoreData(contents, async function (err) {
             // TODO: check for success, then reset
             await wait(10000);
@@ -1982,7 +2197,7 @@ function submitRestoreForm(e) {
             restoretext.innerHTML = "";
           });
         } else {
-          return ui.restoreForm.setError('Incorrect backup data format.');
+          return ui.restoreForm.setError("Incorrect backup data format.");
         }
       };
     })(file);
@@ -1990,7 +2205,7 @@ function submitRestoreForm(e) {
     // Read in the image file as a data URL.
     reader.readAsText(file);
   } else {
-    ui.restoreForm.setError('Please select a file first.');
+    ui.restoreForm.setError("Please select a file first.");
   }
 }
 
@@ -2003,7 +2218,9 @@ function submitRestoreData(restoreData, callback) {
   var maxPacketSize = 114; // 57 byte pairs
   var finalPacket = restoreData.length - maxPacketSize <= 0;
 
-  var cb = finalPacket ? callback : submitRestoreData.bind(null, restoreData.slice(maxPacketSize), callback);
+  var cb = finalPacket
+    ? callback
+    : submitRestoreData.bind(null, restoreData.slice(maxPacketSize), callback);
 
   // packetHeader is hex number of bytes in certStr chunk
   var packetHeader = finalPacket ? (restoreData.length / 2).toString(16) : "FF";
@@ -2014,8 +2231,8 @@ function submitRestoreData(restoreData, callback) {
 function submitFirmwareForm(e) {
   e && e.preventDefault && e.preventDefault();
 
-  ui.firmwareForm.setError('');
-  var fileSelector = ui.firmwareForm.firmwareSelectFile
+  ui.firmwareForm.setError("");
+  var fileSelector = ui.firmwareForm.firmwareSelectFile;
 
   if (fileSelector.files && fileSelector.files.length) {
     var file = fileSelector.files[0];
@@ -2030,19 +2247,22 @@ function submitFirmwareForm(e) {
           contents = parseFirmwareData(contents);
           console.info("parsed contents", contents);
         } catch (parseError) {
-          return ui.firmwareForm.setError('Could not parse firmware file.\n\n' + parseError);
+          return ui.firmwareForm.setError(
+            "Could not parse firmware file.\n\n" + parseError
+          );
         }
 
         if (contents) {
           onlyKeyConfigWizard.newFirmware = contents;
           if (!myOnlyKey.isBootloader) {
-            ui.firmwareForm.setError('Working...');
+            ui.firmwareForm.setError("Working...");
 
             const temparray = "1234";
-            submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
+            submitFirmwareData(temparray, function (err) {
+              //First send one message to kick OnlyKey (in config mode) into bootloader
               //TODO if OnlyKey responds with SUCCESSFULL then continue, if not exit
               ui.firmwareForm.reset();
-              ui.firmwareForm.setError('Firmware file sent to OnlyKey');
+              ui.firmwareForm.setError("Firmware file sent to OnlyKey");
 
               myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
             });
@@ -2050,7 +2270,7 @@ function submitFirmwareForm(e) {
             await loadFirmware();
           }
         } else {
-          return ui.firmwareForm.setError('Incorrect firmware data format.');
+          return ui.firmwareForm.setError("Incorrect firmware data format.");
         }
       };
     })(file);
@@ -2058,46 +2278,51 @@ function submitFirmwareForm(e) {
     // Read in the image file as a data URL.
     reader.readAsText(file);
   } else {
-    ui.firmwareForm.setError('Please select a file first.');
+    ui.firmwareForm.setError("Please select a file first.");
   }
 }
 
 async function loadFirmware() {
-  const firmwaretext = document.getElementById('firmware-text');
-  const fwlength = onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length;
+  const firmwaretext = document.getElementById("firmware-text");
+  const fwlength =
+    onlyKeyConfigWizard.newFirmware && onlyKeyConfigWizard.newFirmware.length;
 
-  if (fwlength) { // There is a firmware file to load]
+  if (fwlength) {
+    // There is a firmware file to load]
     console.info(`Firmware file parsed into ${fwlength} lines.`); //Each line is a block in the blockchain
 
     for (let i = 0; i < fwlength; i++) {
       const line = onlyKeyConfigWizard.newFirmware[i].toString();
       console.info(`Line ${i}: ${line}`);
 
-      firmwaretext.innerHTML = "Loading Firmware<br><br>" + "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>" + Number.parseFloat(((i / fwlength) * 100)).toFixed(0) + " Percent Complete";
+      firmwaretext.innerHTML =
+        "Loading Firmware<br><br>" +
+        "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>" +
+        Number.parseFloat((i / fwlength) * 100).toFixed(0) +
+        " Percent Complete";
 
       try {
         await submitFirmwareData(line);
         if (i < fwlength - 1) {
-          console.info(`This signature`, line.slice(0, 64))
-          console.info(`Block info`, line.slice(64, 65))
-          console.info(`Next signature`, line.slice(65, 129))
-          await listenForMessageIncludes('NEXT BLOCK');
+          console.info(`This signature`, line.slice(0, 64));
+          console.info(`Block info`, line.slice(64, 65));
+          console.info(`Next signature`, line.slice(65, 129));
+          await listenForMessageIncludes("NEXT BLOCK");
         } else {
-          console.info(`This signature`, line.slice(0, 64))
-          console.info(`Block info`, line.slice(64, 65))
-          await listenForMessageIncludes('SUCCESSFULLY LOADED FW');
+          console.info(`This signature`, line.slice(0, 64));
+          console.info(`Block info`, line.slice(64, 65));
+          await listenForMessageIncludes("SUCCESSFULLY LOADED FW");
           firmwaretext.innerHTML = "Firmware Load Complete!";
-          ui.firmwareForm.setError('');
-          document.getElementById('firmwareSelectFile').value = '';
+          ui.firmwareForm.setError("");
+          document.getElementById("firmwareSelectFile").value = "";
           onlyKeyConfigWizard.newFirmware = null;
           //
         }
       } catch (err) {
         console.error(`Error submitting firmware data:`, err);
-        return myOnlyKey.setLastMessage('received', err);
+        return myOnlyKey.setLastMessage("received", err);
       }
     }
-
 
     // After loading firmware OnlyKey will reboot and version will no longer be "BOOTLOADER"
   }
@@ -2106,91 +2331,133 @@ async function loadFirmware() {
 /**
  * Use promise and setTimeout to wait x seconds
  */
-const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
   if (!fwchecked) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       fwchecked = true;
-      if (checkForNewFW == true && fwUpdateSupport == true) { //fw checking enabled and firmware version supports app updates
-        var r = request.get('https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest', function (err, res, body) {
-          console.log(r.uri.href);
-          console.log(this.uri.href);
-          var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
-          console.info(version);
-          console.info(latestver);
-          var thisver_maj = version.slice(1, 2) * 100;
-          console.info(thisver_maj);
-          var thisver_min = version.slice(3, 4) * 10;
-          console.info(thisver_min);
-          if (thisver_maj == 0) {
-            var thisver_pat = version.slice(10, 11);
-          } else {
-            var thisver_pat = version.slice(5, 6);
-          }
-          var thisver_mod = version.slice(11, 12);
-          console.info(thisver_mod);
-          var latestver_maj = latestver.slice(1, 2) * 100;
-          console.info(latestver_maj);
-          var latestver_min = latestver.slice(3, 4) * 10;
-          console.info(latestver_min);
-          if (latestver_maj == 0) {
-            var latestver_pat = latestver.slice(10, 11);
-          } else {
-            var latestver_pat = latestver.slice(5, 6);
-          }
-          console.info(latestver_pat);
+      if (checkForNewFW == true && fwUpdateSupport == true) {
+        //fw checking enabled and firmware version supports app updates
+        var r = request.get(
+          "https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest",
+          function (err, res, body) {
+            console.log(r.uri.href);
+            console.log(this.uri.href);
+            var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
+            console.info(version);
+            console.info(latestver);
+            var thisver_maj = version.slice(1, 2) * 100;
+            console.info(thisver_maj);
+            var thisver_min = version.slice(3, 4) * 10;
+            console.info(thisver_min);
+            if (thisver_maj == 0) {
+              var thisver_pat = version.slice(10, 11);
+            } else {
+              var thisver_pat = version.slice(5, 6);
+            }
+            var thisver_mod = version.slice(11, 12);
+            console.info(thisver_mod);
+            var latestver_maj = latestver.slice(1, 2) * 100;
+            console.info(latestver_maj);
+            var latestver_min = latestver.slice(3, 4) * 10;
+            console.info(latestver_min);
+            if (latestver_maj == 0) {
+              var latestver_pat = latestver.slice(10, 11);
+            } else {
+              var latestver_pat = latestver.slice(5, 6);
+            }
+            console.info(latestver_pat);
 
-          if ((thisver_maj + thisver_min + thisver_pat) < (latestver_maj + latestver_min + latestver_pat)) {
-            if (version[9] != '.' || version[10] > 6) {
-              //if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.')) {
-              //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-              //};
-              if (thisver_mod == 'c') {
-                if (window.confirm('A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?')) {
-                  // Download latest standard firmware for color from URL
-                  // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
-                  var downloadurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/' + latestver + '/Signed_OnlyKey_';
-                  downloadurl = latestver_maj ? downloadurl + (latestver_maj / 100) + '_' + (latestver_min / 10) + '_' + latestver_pat + '_STD_Color.txt' : downloadurl + 'Beta' + latestver_pat + '_STD_Color.txt';
-                  console.info(downloadurl);
-                  var req = request.get(downloadurl, async function (err, res, body) {
-
-                    console.info(myOnlyKey.getLastMessage('received'));
-                    if (myOnlyKey.getLastMessage('received').indexOf("UNINITIALIZEDv") >= 0 || window.confirm('To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware.')) {
-                      if (req.responseContent.body) {
-                        var contents = req.responseContent.body && req.responseContent.body.trim();
-                        try {
-                          console.info("unparsed contents", contents);
-                          contents = parseFirmwareData(contents);
-                          console.info("parsed contents", contents);
-                        } catch (parseError) {
-                          throw new Error('Could not parse firmware file.\n\n' + parseError);
+            if (
+              thisver_maj + thisver_min + thisver_pat <
+              latestver_maj + latestver_min + latestver_pat
+            ) {
+              if (version[9] != "." || version[10] > 6) {
+                //if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.')) {
+                //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
+                //};
+                if (thisver_mod == "c") {
+                  if (
+                    window.confirm(
+                      "A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?"
+                    )
+                  ) {
+                    // Download latest standard firmware for color from URL
+                    // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+                    var downloadurl =
+                      "https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/" +
+                      latestver +
+                      "/Signed_OnlyKey_";
+                    downloadurl = latestver_maj
+                      ? downloadurl +
+                        latestver_maj / 100 +
+                        "_" +
+                        latestver_min / 10 +
+                        "_" +
+                        latestver_pat +
+                        "_STD_Color.txt"
+                      : downloadurl + "Beta" + latestver_pat + "_STD_Color.txt";
+                    console.info(downloadurl);
+                    var req = request.get(downloadurl, async function (
+                      err,
+                      res,
+                      body
+                    ) {
+                      console.info(myOnlyKey.getLastMessage("received"));
+                      if (
+                        myOnlyKey
+                          .getLastMessage("received")
+                          .indexOf("UNINITIALIZEDv") >= 0 ||
+                        window.confirm(
+                          "To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware."
+                        )
+                      ) {
+                        if (req.responseContent.body) {
+                          var contents =
+                            req.responseContent.body &&
+                            req.responseContent.body.trim();
+                          try {
+                            console.info("unparsed contents", contents);
+                            contents = parseFirmwareData(contents);
+                            console.info("parsed contents", contents);
+                          } catch (parseError) {
+                            throw new Error(
+                              "Could not parse firmware file.\n\n" + parseError
+                            );
+                          }
+                          console.info(contents);
+                          onlyKeyConfigWizard.newFirmware = contents;
+                          const temparray = "1234";
+                          await submitFirmwareData(temparray, function (err) {
+                            //First send one message to kick OnlyKey (in config mode) into bootloader
+                            console.info("Working...");
+                            console.info("Firmware file sent to OnlyKey");
+                            myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                          });
+                          resolve();
+                        } else {
+                          alert(`Firmware Download Failed`);
+                          resolve();
+                          return;
                         }
-                        console.info(contents);
-                        onlyKeyConfigWizard.newFirmware = contents;
-                        const temparray = "1234";
-                        await submitFirmwareData(temparray, function (err) { //First send one message to kick OnlyKey (in config mode) into bootloader
-                          console.info('Working...');
-                          console.info('Firmware file sent to OnlyKey');
-                          myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
-                        });
-                        resolve();
-                      } else {
-                        alert(`Firmware Download Failed`);
-                        resolve();
-                        return;
                       }
-                    };
-                  });
-                };
+                    });
+                  }
+                }
               }
             }
           }
-        });
+        );
       } else if (!fwUpdateSupport) {
-        if (window.confirm('This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page.')) {
-          window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-        };
+        if (
+          window.confirm(
+            "This application is designed to work with a newer version of OnlyKey firmware. Click OK to go to the firmware download page."
+          )
+        ) {
+          window.location.href =
+            "https://docs.crp.to/usersguide.html#loading-onlykey-firmware";
+        }
       }
       resolve();
     });
@@ -2208,49 +2475,68 @@ function submitFirmwareData(firmwareData) {
     const finalPacket = firmwareData.length - maxPacketSize <= 0;
 
     // packetHeader is hex number of bytes in chunk
-    const packetHeader = finalPacket ? (firmwareData.length / 2).toString(16) : "FF";
+    const packetHeader = finalPacket
+      ? (firmwareData.length / 2).toString(16)
+      : "FF";
 
-    myOnlyKey.firmware(firmwareData.slice(0, maxPacketSize), packetHeader, async function () {
-      await listenForMessageIncludes('RECEIVED OKFWUPDATE').then(result => {
-        if (finalPacket) {
-          console.info(`FINAL PACKET SENT`);
-          return resolve('submitFirmwareData complete');
-        } else {
-          submitFirmwareData(firmwareData.slice(maxPacketSize)).then(resolve, reject);
-        }
-      }, reject);
-    });
+    myOnlyKey.firmware(
+      firmwareData.slice(0, maxPacketSize),
+      packetHeader,
+      async function () {
+        await listenForMessageIncludes("RECEIVED OKFWUPDATE").then((result) => {
+          if (finalPacket) {
+            console.info(`FINAL PACKET SENT`);
+            return resolve("submitFirmwareData complete");
+          } else {
+            submitFirmwareData(firmwareData.slice(maxPacketSize)).then(
+              resolve,
+              reject
+            );
+          }
+        }, reject);
+      }
+    );
   });
 }
 
-
 async function listenForMessageIncludes(str) {
-  return new Promise(async function listenForMessageIncludesAgain(resolve, reject) {
+  return new Promise(async function listenForMessageIncludesAgain(
+    resolve,
+    reject
+  ) {
     console.info(`Listening for "${str}"...`);
     myOnlyKey.listen(async (err, msg) => {
       if (msg && msg.includes(str)) {
         console.info(`Match received "${msg}"...`);
         resolve();
-      } else if (msg && (msg.includes('UNLOCKED') || msg.includes('|'))) {
+      } else if (msg && (msg.includes("UNLOCKED") || msg.includes("|"))) {
         //Chrome app background page sends settime which results in unexpected unlocked response
-        console.info(`While waiting for "${str}", received unexpected message: ${msg}`);
+        console.info(
+          `While waiting for "${str}", received unexpected message: ${msg}`
+        );
         await listenForMessageIncludesAgain(resolve, reject);
       } else {
-        reject(err || `While waiting for "${str}", received unexpected message: ${msg}`);
+        reject(
+          err ||
+            `While waiting for "${str}", received unexpected message: ${msg}`
+        );
       }
     });
-  })
+  });
 }
 
 async function listenForMessageIncludes2(...args) {
-  return new Promise(async function listenForMessageIncludesAgain2(resolve, reject) {
+  return new Promise(async function listenForMessageIncludesAgain2(
+    resolve,
+    reject
+  ) {
     myOnlyKey.listen(async (err, msg) => {
       let match;
       for (let i = 0; i < args.length; i++) {
         var str = args[i];
         console.info(`Listening for "${str}"`);
 
-        if (msg && (msg.includes(str))) {
+        if (msg && msg.includes(str)) {
           match = msg;
         } else if (err) {
           match = err;
@@ -2268,12 +2554,12 @@ async function listenForMessageIncludes2(...args) {
         }
       }
     });
-  })
+  });
 }
 
-function parseFirmwareData(contents = '') {
+function parseFirmwareData(contents = "") {
   // split by newline
-  const lines = contents.split('\n');
+  const lines = contents.split("\n");
   lines.shift(); //Remove -----BEGIN SIGNED FIRMWARE-----
   const newContent = [];
 
@@ -2288,9 +2574,9 @@ function parseFirmwareData(contents = '') {
 }
 
 function wipeRsaKeyForm(e) {
-  ui.rsaForm.setError('');
+  ui.rsaForm.setError("");
 
-  var slot = parseInt(ui.rsaForm.rsaSlot.value || '', 10);
+  var slot = parseInt(ui.rsaForm.rsaSlot.value || "", 10);
   myOnlyKey.wipePrivateKey(slot, function (err) {
     myOnlyKey.listen(handleMessage);
   });
@@ -2304,14 +2590,20 @@ function submitLockoutForm(e) {
     lockout = 0;
   }
 
-  if (typeof lockout !== 'number' || lockout < 0) {
+  if (typeof lockout !== "number" || lockout < 0) {
     lockout = 30;
   }
 
   lockout = Math.min(lockout, 255);
 
   myOnlyKey.setLockout(lockout, function (err) {
-    myOnlyKey.setLastMessage('received', 'Lockout set to ' + lockout + ' minutes' + (lockout === 0 ? ' (disabled)' : ''));
+    myOnlyKey.setLastMessage(
+      "received",
+      "Lockout set to " +
+        lockout +
+        " minutes" +
+        (lockout === 0 ? " (disabled)" : "")
+    );
     ui.lockoutForm.reset();
   });
 
@@ -2319,7 +2611,10 @@ function submitLockoutForm(e) {
 }
 
 function submitstoredchallengeModeForm(e) {
-  var storedchallengeMode = parseInt(ui.storedchallengeModeForm.okStoredChallengeMode.value, 10);
+  var storedchallengeMode = parseInt(
+    ui.storedchallengeModeForm.okStoredChallengeMode.value,
+    10
+  );
 
   myOnlyKey.setstoredchallengeMode(storedchallengeMode, function (err) {
     myOnlyKey.listen(handleMessage);
@@ -2330,7 +2625,10 @@ function submitstoredchallengeModeForm(e) {
 }
 
 function submitderivedchallengeModeForm(e) {
-  var derivedchallengeMode = parseInt(ui.derivedchallengeModeForm.okderivedchallengeMode.value, 10);
+  var derivedchallengeMode = parseInt(
+    ui.derivedchallengeModeForm.okderivedchallengeMode.value,
+    10
+  );
 
   myOnlyKey.setderivedchallengeMode(derivedchallengeMode, function (err) {
     myOnlyKey.listen(handleMessage);
@@ -2341,7 +2639,10 @@ function submitderivedchallengeModeForm(e) {
 }
 
 function submithmacchallengeModeForm(e) {
-  var hmacchallengeMode = parseInt(ui.hmacchallengeModeForm.okhmacchallengeMode.value, 10);
+  var hmacchallengeMode = parseInt(
+    ui.hmacchallengeModeForm.okhmacchallengeMode.value,
+    10
+  );
 
   myOnlyKey.sethmacchallengeMode(hmacchallengeMode, function (err) {
     myOnlyKey.listen(handleMessage);
@@ -2363,9 +2664,12 @@ function submitmodkeyModeForm(e) {
 }
 
 function submitSecProfileModeForm(e) {
-  var secProfileMode = parseInt(ui.secProfileModeForm.okSecProfileMode.value, 10);
+  var secProfileMode = parseInt(
+    ui.secProfileModeForm.okSecProfileMode.value,
+    10
+  );
 
-  myOnlyKey.setSecProfileMode(SecProfileMode, function (err) { });
+  myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {});
 
   e && e.preventDefault && e.preventDefault();
 }
@@ -2394,14 +2698,14 @@ function submitWipeModeForm(e) {
 function submitTypeSpeedForm(e) {
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
 
-  if (typeof typeSpeed !== 'number' || typeSpeed < 1) {
+  if (typeof typeSpeed !== "number" || typeSpeed < 1) {
     typeSpeed = 4; //Default type speed
   }
 
   typeSpeed = Math.min(typeSpeed, 10);
 
   myOnlyKey.setTypeSpeed(typeSpeed, function (err) {
-    myOnlyKey.setLastMessage('received', 'Type Speed set successfully');
+    myOnlyKey.setLastMessage("received", "Type Speed set successfully");
     ui.typeSpeedForm.reset();
   });
 
@@ -2411,14 +2715,14 @@ function submitTypeSpeedForm(e) {
 function submitLedBrightnessForm(e) {
   var ledBrightness = parseInt(ui.ledBrightnessForm.okLedBrightness.value, 10);
 
-  if (typeof ledBrightness !== 'number' || ledBrightness < 1) {
+  if (typeof ledBrightness !== "number" || ledBrightness < 1) {
     ledBrightness = 8; //Default led brightness
   }
 
   ledBrightness = Math.min(ledBrightness, 10);
 
   myOnlyKey.setLedBrightness(ledBrightness, function (err) {
-    myOnlyKey.setLastMessage('received', 'LED Brightness set successfully');
+    myOnlyKey.setLastMessage("received", "LED Brightness set successfully");
     ui.ledBrightnessForm.reset();
   });
 
@@ -2428,14 +2732,14 @@ function submitLedBrightnessForm(e) {
 function submitLockButtonForm(e) {
   var lockButton = parseInt(ui.lockButtonForm.okLockButton.value, 10);
 
-  if (typeof lockButton !== 'number' || lockButton < 0 || lockButton > 6) {
+  if (typeof lockButton !== "number" || lockButton < 0 || lockButton > 6) {
     return;
   }
 
   lockButton = Math.min(lockButton, 10);
 
   myOnlyKey.setLockButton(lockButton, function (err) {
-    myOnlyKey.setLastMessage('received', 'Lock button set successfully');
+    myOnlyKey.setLastMessage("received", "Lock button set successfully");
     ui.lockButtonForm.reset();
   });
 
@@ -2445,14 +2749,14 @@ function submitLockButtonForm(e) {
 function submitKBDLayoutForm(e) {
   var kbdLayout = parseInt(ui.keyboardLayoutForm.okKeyboardLayout.value, 10);
 
-  if (typeof kbdLayout !== 'number' || kbdLayout < 1) {
+  if (typeof kbdLayout !== "number" || kbdLayout < 1) {
     kbdLayout = 1;
   }
 
   kbdLayout = Math.min(kbdLayout, 25);
 
   myOnlyKey.setKBDLayout(kbdLayout, function (err) {
-    myOnlyKey.setLastMessage('received', 'Keyboard Layout set successfully');
+    myOnlyKey.setLastMessage("received", "Keyboard Layout set successfully");
     ui.keyboardLayoutForm.reset();
   });
 
@@ -2468,7 +2772,7 @@ function handleVersion(version) {
 function setOkVersionStr() {
   const version = myOnlyKey.getVersion();
   const deviceType = myOnlyKey.getDeviceType();
-  let typeStr = 'OnlyKey';
+  let typeStr = "OnlyKey";
   if (deviceType !== DEVICE_TYPES.CLASSIC) {
     typeStr += ` ${deviceType.toUpperCase()}`;
   }
@@ -2478,22 +2782,21 @@ function setOkVersionStr() {
   }
 }
 
-window.addEventListener('load', init);
-
+window.addEventListener("load", init);
 
 function hexToModhex(inputStr, reverse) {
   // 0123 4567 89ab cdef
   // cbde fghi jkln rtuv
   // Example: hexadecimal number "4711" translates to "fibb"
-  var hex = '0123456789abcdef';
-  var modhex = 'cbdefghijklnrtuv';
-  var newStr = '';
+  var hex = "0123456789abcdef";
+  var modhex = "cbdefghijklnrtuv";
+  var newStr = "";
   var o = reverse ? modhex : hex;
   var t = reverse ? hex : modhex;
-  inputStr.split('').forEach(function (c) {
+  inputStr.split("").forEach(function (c) {
     var i = o.indexOf(c);
     if (i < 0) {
-      throw new Error('Invalid character sent for hexToModhex conversion');
+      throw new Error("Invalid character sent for hexToModhex conversion");
     }
     newStr += t.charAt(i);
   });
@@ -2512,12 +2815,12 @@ function strPad(str, places, char) {
 // http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript
 function base64tohex(base64) {
   var raw = atob(base64);
-  var HEX = '';
+  var HEX = "";
   var _hex;
 
   for (i = 0; i < raw.length; i++) {
     _hex = raw.charCodeAt(i).toString(16);
-    HEX += (_hex.length == 2 ? _hex : '0' + _hex);
+    HEX += _hex.length == 2 ? _hex : "0" + _hex;
   }
   return HEX.toUpperCase();
 }
@@ -2525,26 +2828,25 @@ function base64tohex(base64) {
 function parseBackupData(contents) {
   var newContents = [];
   // split by newline
-  contents.split('\n').forEach(function (line) {
-    if (line.indexOf('--') !== 0) {
+  contents.split("\n").forEach(function (line) {
+    if (line.indexOf("--") !== 0) {
       newContents.push(base64tohex(line));
     }
   });
 
   // join back to unified base64 string
-  newContents = newContents.join('');
+  newContents = newContents.join("");
   return newContents;
 }
 
 function hexStrToDec(hexStr) {
-  return new Number('0x' + hexStr).toString(10);
+  return new Number("0x" + hexStr).toString(10);
 }
 
 function byteToHex(value) {
-  if (value < 16) return '0' + value.toString(16);
+  if (value < 16) return "0" + value.toString(16);
   return value.toString(16);
 }
-
 
 //nw.Window.get().on('new-win-policy', function(frame, url, policy) {
 //  // do not open the window
