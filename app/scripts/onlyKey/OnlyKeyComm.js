@@ -237,10 +237,6 @@ function OnlyKey(params = {}) {
     OKGETLABELS: 229, //0xE5
     OKSETSLOT: 230, //0xE6
     OKWIPESLOT: 231, //0xE7
-    OKSETU2FPRIV: 232, //0xE8
-    OKWIPEU2FPRIV: 233, //0xE9
-    OKSETU2FCERT: 234, //0xEA
-    OKWIPEU2FCERT: 235, //0xEB
     OKGETPUBKEY: 236,
     OKSIGN: 237,
     OKWIPEPRIV: 238,
@@ -692,47 +688,6 @@ OnlyKey.prototype.wipeYubiAuth = function (callback) {
     await this.listenforvalue("wiped AES Key", callback);
     return callback();
   });
-};
-
-OnlyKey.prototype.setU2fPrivateId = function (privateId, callback) {
-  if (privateId.length) {
-    privateId = privateId.match(/.{2}/g);
-    var options = {
-      contents: privateId,
-      msgId: "OKSETU2FPRIV",
-    };
-    this.sendMessage(options, callback);
-  } else {
-    callback();
-  }
-};
-
-OnlyKey.prototype.wipeU2fPrivateId = function (callback) {
-  this.sendMessage(
-    {
-      msgId: "OKWIPEU2FPRIV",
-    },
-    callback
-  );
-};
-
-OnlyKey.prototype.setU2fCert = function (cert, packetHeader, callback) {
-  var msg = [packetHeader];
-  msg = msg.concat(cert.match(/.{2}/g));
-  var options = {
-    contents: msg,
-    msgId: "OKSETU2FCERT",
-  };
-  this.sendMessage(options, callback);
-};
-
-OnlyKey.prototype.wipeU2fCert = function (callback) {
-  this.sendMessage(
-    {
-      msgId: "OKWIPEU2FCERT",
-    },
-    callback
-  );
 };
 
 OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
@@ -1252,7 +1207,6 @@ var initializeWindow = function () {
   }
 
   ui.yubiAuthForm = document["yubiAuthForm"];
-  ui.u2fAuthForm = document["u2fAuthForm"];
   ui.lockoutForm = document["lockoutForm"];
   ui.wipeModeForm = document["wipeModeForm"];
   ui.storedchallengeModeForm = document["storedchallengeModeForm"];
@@ -1733,11 +1687,6 @@ function enableAuthForms() {
   yubiSubmit.addEventListener("click", submitYubiAuthForm);
   yubiWipe.addEventListener("click", wipeYubiAuthForm);
 
-  var u2fSubmit = document.getElementById("u2fSubmit");
-  var u2fWipe = document.getElementById("u2fWipe");
-  u2fSubmit.addEventListener("click", submitU2fAuthForm);
-  u2fWipe.addEventListener("click", wipeU2fAuthForm);
-
   var lockoutSubmit = document.getElementById("lockoutSubmit");
   lockoutSubmit.addEventListener("click", submitLockoutForm);
 
@@ -1858,57 +1807,6 @@ function submitYubiAuthForm(e) {
 
 function wipeYubiAuthForm(e) {
   myOnlyKey.wipeYubiAuth();
-  e && e.preventDefault && e.preventDefault();
-}
-
-function submitU2fAuthForm(e) {
-  var privateId = ui.u2fAuthForm.u2fPrivateId.value || "";
-  var cert = ui.u2fAuthForm.u2fCert.value || "";
-
-  privateId = privateId.toString().replace(/\s/g, "");
-  cert = cert.toString().replace(/\s/g, "");
-
-  // going to be mean and only send the max chars allowed
-  var maxPrivateIdLength = 64; // 32 bytes
-  var maxCertLength = 2048; // 1024 bytes
-  privateId = privateId.slice(0, maxPrivateIdLength);
-  cert = cert.slice(0, maxCertLength);
-
-  // TODO: validation
-  myOnlyKey.setU2fPrivateId(privateId, function (err) {
-    submitU2fCert(cert, function (err) {
-      // TODO: check for success, then reset
-      ui.u2fAuthForm.reset();
-    });
-  });
-
-  e && e.preventDefault && e.preventDefault();
-}
-
-function submitU2fCert(certStr, callback) {
-  // this function should recursively call itself until all bytes are sent in chunks
-  if (!certStr.length) {
-    return callback();
-  }
-
-  var maxPacketSize = 116; // 58 byte pairs
-  var finalPacket = certStr.length - maxPacketSize <= 0;
-
-  var cb = finalPacket
-    ? callback
-    : submitU2fCert.bind(null, certStr.slice(maxPacketSize), callback);
-
-  // packetHeader is hex number of bytes in certStr chunk
-  var packetHeader = finalPacket ? (certStr.length / 2).toString(16) : "FF";
-
-  myOnlyKey.setU2fCert(certStr.slice(0, maxPacketSize), packetHeader, cb);
-}
-
-function wipeU2fAuthForm(e) {
-  myOnlyKey.wipeU2fPrivateId(function (err) {
-    myOnlyKey.wipeU2fCert();
-  });
-
   e && e.preventDefault && e.preventDefault();
 }
 

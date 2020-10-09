@@ -1058,52 +1058,6 @@
               <div id="yubiError" class="form-error"></div>
             </form>
             <hr />
-            <form id="u2fAuthForm" name="u2fAuthForm" class="auth-form">
-              <h2>Add U2F Security Info</h2>
-              <label>
-                Private Identity (32 bytes hex)
-                <br />
-                <textarea
-                  id="u2fPrivateId"
-                  name="u2fPrivateId"
-                  maxlength="64"
-                  minlength="64"
-                  cols="40"
-                  rows="2"
-                  placeholder="ECC Private Key"
-                  required
-                ></textarea>
-              </label>
-              <br />
-              <label>
-                U2F Certificate (up to 768 bytes hex)
-                <br />
-                <textarea
-                  id="u2fCert"
-                  name="u2fCert"
-                  maxlength="3071"
-                  minlength="2"
-                  cols="40"
-                  rows="4"
-                  placeholder="certificate"
-                  required
-                ></textarea>
-              </label>
-              <br /><br />
-              <input
-                type="button"
-                id="u2fSubmit"
-                name="u2fSubmit"
-                value="Save to OnlyKey"
-              />
-              <input
-                type="button"
-                id="u2fWipe"
-                name="u2fWipe"
-                value="Wipe from OnlyKey"
-              />
-              <div id="u2fError" class="form-error"></div>
-            </form>
           </div>
           <div class="flex-item">
             <form id="eccForm" name="eccForm" class="auth-form">
@@ -1628,7 +1582,7 @@
               <br />
               <label>
                 <input type="radio" name="mode" value="u2f" />
-                U2F
+                FIDO2 / U2F
               </label>
               <br />
             </td>
