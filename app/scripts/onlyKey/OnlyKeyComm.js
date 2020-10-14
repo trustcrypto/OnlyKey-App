@@ -751,7 +751,7 @@ OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
   this.setPrivateKey(slot, type, key, async function (err) {
     onlyKeyConfigWizard.initForm.reset();
     await wait(300);
-    await listenForMessageIncludes2("Error", "Success");
+    await listenForMessageIncludes2("Error not in config mode, hold button 6 down for 5 sec", "Success");
     cb(err);
   });
 };
@@ -776,7 +776,7 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
         if (contents) {
           onlyKeyConfigWizard.newFirmware = contents;
           if (!myOnlyKey.isBootloader) {
-            console.info("Working...");
+            console.info("Working... Do not remove OnlyKey");
 
             const temparray = "1234";
             submitFirmwareData(temparray, function (err) {
@@ -2153,7 +2153,7 @@ function submitFirmwareForm(e) {
         if (contents) {
           onlyKeyConfigWizard.newFirmware = contents;
           if (!myOnlyKey.isBootloader) {
-            ui.firmwareForm.setError("Working...");
+            ui.firmwareForm.setError("Working... Do not remove OnlyKey");
 
             const temparray = "1234";
             submitFirmwareData(temparray, function (err) {
@@ -2329,7 +2329,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                           const temparray = "1234";
                           await submitFirmwareData(temparray, function (err) {
                             //First send one message to kick OnlyKey (in config mode) into bootloader
-                            console.info("Working...");
+                            console.info("Working... Do not remove OnlyKey");
                             console.info("Firmware file sent to OnlyKey");
                             myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
                           });
@@ -2437,7 +2437,7 @@ async function listenForMessageIncludes2(...args) {
         if (msg && msg.includes(str)) {
           match = msg;
         } else if (err) {
-          match = err;
+          console.info(`Error received "${err}"...`);
         }
 
         if (match) {
