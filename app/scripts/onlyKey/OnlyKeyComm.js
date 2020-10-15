@@ -8,6 +8,8 @@ if (desktopApp) {
 
 let backupsigFlag = -1;
 let fwchecked = false;
+let massupdatefw;
+let massupdatefwver;
 let dialog;
 let myOnlyKey;
 let onlyKeyConfigWizard;
@@ -775,6 +777,8 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
 
         if (contents) {
           onlyKeyConfigWizard.newFirmware = contents;
+          massupdatefw = contents;
+          massupdatefwver = fileSelector.files[0].name;
           if (!myOnlyKey.isBootloader) {
             console.info("Working... Do not remove OnlyKey");
 
@@ -1608,6 +1612,24 @@ var handleMessage = async function (err, msg) {
   if (updateUI) {
     enableIOControls(true);
   }
+  await wait (2000);
+
+  if (massupdatefw && !myOnlyKey.isBootloader) {
+    console.info("Working... Do not remove OnlyKey");
+    console.info(massupdatefwver);
+    //console.info(massupdatefwver.name.slice(15,16));
+    //console.info(massupdatefwver.name.slice(17,18));
+    //console.info(massupdatefwver.name.slice(19,20));
+    const temparray = "1234";
+    onlyKeyConfigWizard.newFirmware = massupdatefw;
+    submitFirmwareData(temparray, function (err) {
+      //First send one message to kick OnlyKey (in config mode) into bootloader
+      console.info("Firmware file sent to OnlyKey");
+      myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+    });
+  } 
+
+  return;
 };
 
 function init() {
@@ -2231,7 +2253,7 @@ async function loadFirmware() {
  */
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
+async function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
   if (!fwchecked) {
     return new Promise((resolve) => {
       fwchecked = true;
