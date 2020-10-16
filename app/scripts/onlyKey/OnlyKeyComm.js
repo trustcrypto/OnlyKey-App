@@ -11,6 +11,8 @@ let fwchecked = false;
 let dialog;
 let myOnlyKey;
 let onlyKeyConfigWizard;
+let massupdatefw;
+let massupdatefwver;
 
 const DEVICE_TYPES = {
   CLASSIC: "classic",
@@ -774,6 +776,8 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
         }
 
         if (contents) {
+          massupdatefw = contents;
+          massupdatefwver = fileSelector.files[0].name;
           onlyKeyConfigWizard.newFirmware = contents;
           if (!myOnlyKey.isBootloader) {
             console.info("Working... Do not remove OnlyKey");
