@@ -1612,9 +1612,40 @@ var handleMessage = async function (err, msg) {
   if (updateUI) {
     enableIOControls(true);
   }
+
   await wait (2000);
 
-  if (massupdatefw && !myOnlyKey.isBootloader) {
+  console.info(version);
+  var thisver_maj = version.slice(1, 2) * 100
+  console.info(thisver_maj);
+  console.info(version.slice(1, 2));
+  var thisver_min = version.slice(3, 4) * 10;
+  console.info(thisver_min);
+  console.info(version.slice(3, 4));
+  var thisver_pat = version.slice(5, 6);
+  console.info(thisver_pat);
+  console.info(version.slice(5, 6));
+
+  console.info(massupdatefwver);
+  var updatever_maj = massupdatefwver.slice(15, 16) * 100;
+  console.info(massupdatefwver.slice(15, 16));
+  var updatever_min = massupdatefwver.slice(17, 18) * 10;
+  console.info(massupdatefwver.slice(17, 18));
+  var updatever_pat = massupdatefwver.slice(19, 20);
+  console.info(massupdatefwver.slice(19, 20));
+
+
+
+  console.info(thisver_maj+thisver_min+thisver_pat);
+  console.info(updatever_maj+updatever_min+updatever_pat);
+
+
+  
+  
+  await wait (1000);
+
+
+  if (massupdatefw && !myOnlyKey.isBootloader && (thisver_maj+thisver_min+thisver_pat) < (updatever_maj+updatever_min+updatever_pat)) {
     console.info("Working... Do not remove OnlyKey");
     console.info(massupdatefwver);
     //console.info(massupdatefwver.name.slice(15,16));
