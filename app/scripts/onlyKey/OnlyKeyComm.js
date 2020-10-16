@@ -8,8 +8,6 @@ if (desktopApp) {
 
 let backupsigFlag = -1;
 let fwchecked = false;
-let massupdatefw;
-let massupdatefwver;
 let dialog;
 let myOnlyKey;
 let onlyKeyConfigWizard;
@@ -777,8 +775,6 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
 
         if (contents) {
           onlyKeyConfigWizard.newFirmware = contents;
-          massupdatefw = contents;
-          massupdatefwver = fileSelector.files[0].name;
           if (!myOnlyKey.isBootloader) {
             console.info("Working... Do not remove OnlyKey");
 
@@ -2284,7 +2280,7 @@ async function loadFirmware() {
  */
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
+function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
   if (!fwchecked) {
     return new Promise((resolve) => {
       fwchecked = true;
