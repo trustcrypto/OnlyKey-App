@@ -2242,9 +2242,12 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
           function (err, res, body) {
             console.log(r.uri.href);
             console.log(this.uri.href);
+            //var testupgradeurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/tag/v2.1.0-prod'
+            //var latestver = testupgradeurl.substr(testupgradeurl.length - 11); //end of redirected URL is the version
             var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
             console.info(version);
             console.info(latestver);
+
             var thisver_maj = version.slice(1, 2) * 100;
             console.info(thisver_maj);
             var thisver_min = version.slice(3, 4) * 10;
@@ -2294,7 +2297,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                         latestver_min / 10 +
                         "_" +
                         latestver_pat +
-                        "_STD_Color.txt"
+                        "_STD.txt"
                       : downloadurl + "Beta" + latestver_pat + "_STD_Color.txt";
                     console.info(downloadurl);
                     var req = request.get(downloadurl, async function (
