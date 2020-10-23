@@ -23,6 +23,14 @@ module.exports.replace = function (str, patterns) {
     return str;
 };
 
-module.exports.getEnvName = function () {
-    return argv.env || 'development';
+module.exports.getEnvName = getEnvName;
+
+module.exports.getNodeModulesDir = function () {
+    return getEnvName() === 'production'
+        ? 'release_node_modules/node_modules'
+        : 'node_modules';
 };
+
+function getEnvName () {
+    return argv.env || 'development';
+}

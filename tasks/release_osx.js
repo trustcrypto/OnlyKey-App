@@ -1,42 +1,45 @@
 'use strict';
 
-var Q = require('q');
-var jetpack = require('fs-jetpack');
-var utils = require('./utils');
+const Q = require('q');
+const jetpack = require('fs-jetpack');
+const { replace } = require('./utils');
 
-var projectDir;
-var releasesDir;
-var tmpDir;
-var finalAppDir;
-var manifest;
+let projectDir;
+let releasesDir;
+let tmpDir;
+let finalAppDir;
+let manifest;
+let node_modules_dir
 
-var init = function () {
-    projectDir = jetpack;
-    tmpDir = projectDir.dir('./tmp', { empty: true });
-    releasesDir = projectDir.dir('./releases');
-    manifest = projectDir.read('package.json', 'json');
+
+const init = function (params={}) {
+    projectDir = params.projectDir || jetpack;
+    tmpDir = params.tmpDir || projectDir.dir('./tmp', { empty: true });
+    releasesDir = params.releasesDir || projectDir.dir('./releases');
+    manifest = params.manifest || projectDir.read('package.json', 'json');
+    node_modules_dir = node_modules_dir || 'node_modules';
+
     finalAppDir = tmpDir.cwd(manifest.productName + '.app');
-
     return Q();
 };
 
-var copyRuntime = function () {
+const copyRuntime = function () {
     // When copying files, ignore `ljproj` files. Otherwise, the application
     // name will show up as 'nwjs'. Thanks to
     // https://github.com/nwjs-community/nw-builder/
-    return projectDir.copyAsync('node_modules/nw/nwjs/nwjs.app',
+    return projectDir.copyAsync(`${node_modules_dir}/nw/nwjs/nwjs.app`,
                                 finalAppDir.path(),
                                 { matching: ['Contents/**/*', '!Contents/Resources/*.lproj/*'] });
 };
 
-var copyBuiltApp = function () {
+const copyBuiltApp = function () {
     return projectDir.copyAsync('build', finalAppDir.path('Contents/Resources/app.nw'));
 };
 
-var prepareOsSpecificThings = function () {
+const prepareOsSpecificThings = function () {
     // Info.plist
-    var info = projectDir.read('resources/osx/Info.plist');
-    info = utils.replace(info, {
+    let info = projectDir.read('resources/osx/Info.plist');
+    info = replace(info, {
         productName: manifest.productName,
         version: manifest.version
     });
@@ -51,15 +54,15 @@ var prepareOsSpecificThings = function () {
     return Q();
 };
 
-var packToDmgFile = function () {
-    var deferred = Q.defer();
+const packToDmgFile = function () {
+    const deferred = Q.defer();
 
-    var appdmg = require('appdmg');
-    var dmgName = manifest.name + '_' + manifest.version + '.dmg';
+    const appdmg = require('appdmg');
+    const dmgName = manifest.name + '_' + manifest.version + '.dmg';
 
     // Prepare appdmg config
-    var dmgManifest = projectDir.read('resources/osx/appdmg.json');
-    dmgManifest = utils.replace(dmgManifest, {
+    let dmgManifest = projectDir.read('resources/osx/appdmg.json');
+    dmgManifest = replace(dmgManifest, {
         productName: manifest.productName,
         appPath: finalAppDir.path(),
         dmgIcon: projectDir.path("resources/osx/dmg-icon.icns"),
@@ -72,7 +75,7 @@ var packToDmgFile = function () {
 
     console.log('Packaging to DMG file...');
 
-    var readyDmgPath = releasesDir.path(dmgName);
+    const readyDmgPath = releasesDir.path(dmgName);
     appdmg({
         source: tmpDir.path('appdmg.json'),
         target: readyDmgPath
@@ -88,12 +91,12 @@ var packToDmgFile = function () {
     return deferred.promise;
 };
 
-var cleanClutter = function () {
+const cleanClutter = function () {
     return tmpDir.removeAsync('.');
 };
 
-module.exports = function () {
-    return init()
+module.exports = function (params) {
+    return init(params)
     .then(copyRuntime)
     .then(copyBuiltApp)
     .then(prepareOsSpecificThings)

@@ -4,7 +4,7 @@ const gulp = require('gulp');
 const sourcemaps = require('gulp-sourcemaps');
 const jetpack = require('fs-jetpack');
 
-const { getEnvName } = require('./utils');
+const { getEnvName, getNodeModulesDir } = require('./utils');
 const isChrome = getEnvName() === 'chrome';
 
 const projectDir = jetpack;
@@ -51,8 +51,8 @@ var copyTask = function () {
 
     if (getEnvName() === 'production') {
         // const devDeps = Object.keys(manifest.devDependencies || {}).map(d => `!${d}/**/*`);
-        projectDir.copy('node_modules', destDir.path('node_modules'), {
-            matching: [ '!nw/**/*' ]; //.concat(devDeps),
+        projectDir.copy(`../${getNodeModulesDir()}`, destDir.path('node_modules'), {
+            matching: [ '!nw/**/*' ], //.concat(devDeps),
             overwrite: true
         });
     }
