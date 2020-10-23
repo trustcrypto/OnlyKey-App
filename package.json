@@ -24,11 +24,11 @@
     "nw-dev": "^3.0.1",
     "q": "^1.5.1",
     "selenium-webdriver": "^3.6.0",
-    "tree-kill": "^1.2.1"
+    "tree-kill": "^1.2.1",
+    "yargs": "^16.1.0"
   },
   "scripts": {
     "build": "$(npm bin)/gulp build",
-    "prerelease": "rm -rf ./release_node_modules; mkdir ./release_node_modules; cp ./package.json ./release_node_modules; json -I -f ./release_node_modules/package.json -e 'this.name=\"OK_TMP\"'; npm install --prefix ./release_node_modules --production; $(npm bin)/gulp build",
     "release": "$(npm bin)/gulp release --env=production",
     "start": "node ./tasks/start",
     "pretest": "npm run-script build",

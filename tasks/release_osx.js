@@ -26,17 +26,20 @@ const copyRuntime = function () {
     // When copying files, ignore `ljproj` files. Otherwise, the application
     // name will show up as 'nwjs'. Thanks to
     // https://github.com/nwjs-community/nw-builder/
+    console.log(`Copying runtime file nwjs.app from ${projectDir.path(node_modules_dir)}/nw/nwjs...`);
     return projectDir.copyAsync(`${node_modules_dir}/nw/nwjs/nwjs.app`,
                                 finalAppDir.path(),
                                 { matching: ['Contents/**/*', '!Contents/Resources/*.lproj/*'] });
 };
 
 const copyBuiltApp = function () {
+    console.log(`Copying /build contents into app.nw`);
     return projectDir.copyAsync('build', finalAppDir.path('Contents/Resources/app.nw'));
 };
 
 const prepareOsSpecificThings = function () {
     // Info.plist
+    console.log(`Doing OSX-specific things...`);
     let info = projectDir.read('resources/osx/Info.plist');
     info = replace(info, {
         productName: manifest.productName,

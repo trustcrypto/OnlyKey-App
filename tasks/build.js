@@ -26,7 +26,8 @@ const paths = {
     ],
     filesToCopyFromRootDir: [
         'manifest.json',
-        // 'node_modules/**/*',
+        '!release_node_modules/**/*',
+        '!releases/**/*',
     ],
 };
 
@@ -50,9 +51,9 @@ var copyTask = function () {
     projectDir.copy('resources/onlykey_logo_128.png', destDir.path('icon.png'), { overwrite: true });
 
     if (getEnvName() === 'production') {
-        // const devDeps = Object.keys(manifest.devDependencies || {}).map(d => `!${d}/**/*`);
-        projectDir.copy(`../${getNodeModulesDir()}`, destDir.path('node_modules'), {
-            matching: [ '!nw/**/*' ], //.concat(devDeps),
+        console.log(`Copying node_modules from ${getNodeModulesDir()}...`);
+        rootDir.copy(`${getNodeModulesDir()}`, destDir.path('node_modules'), {
+            matching: [ '!nw/**/*' ],
             overwrite: true
         });
     }
