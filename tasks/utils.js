@@ -1,7 +1,7 @@
 'use strict';
 
-var argv = require('yargs').argv;
-var os = require('os');
+const { argv } = process;
+const os = require('os');
 
 module.exports.os = function () {
     switch (os.platform()) {

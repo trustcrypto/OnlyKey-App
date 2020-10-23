@@ -1,14 +1,14 @@
 'use strict';
 
-var gulp = require('gulp');
-var utils = require('./utils');
+const gulp = require('gulp');
+const utils = require('./utils');
 
-var releaseForOs = {
+const releaseTasks = {
     osx: require('./release_osx'),
     linux: require('./release_linux'),
     windows: require('./release_windows'),
 };
 
-gulp.task('release', gulp.series('build', function () {
-    return releaseForOs[utils.os()]();
+gulp.task('release', gulp.series('build', function releaseForOs() {
+    return releaseTasks[utils.os()]();
 }));

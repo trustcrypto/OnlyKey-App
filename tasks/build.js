@@ -1,18 +1,19 @@
 'use strict';
 
-var gulp = require('gulp');
-var sourcemaps = require('gulp-sourcemaps');
-var jetpack = require('fs-jetpack');
+const gulp = require('gulp');
+const sourcemaps = require('gulp-sourcemaps');
+const jetpack = require('fs-jetpack');
 
-var utils = require('./utils');
+const { getEnvName } = require('./utils');
+const isChrome = getEnvName() === 'chrome';
 
-var projectDir = jetpack;
-var rootDir = projectDir.cwd('./');
-var destDir = projectDir.cwd('./build');
+const projectDir = jetpack;
+const rootDir = projectDir.cwd('./');
+const destDir = projectDir.cwd('./build');
 
-const isChrome = utils.getEnvName() === 'chrome';
+let manifest = rootDir.read('package.json', 'json');
 
-var paths = {
+const paths = {
     jsCodeToTranspile: [
         'app/scripts/**/*.js',
         'app/*.js',
@@ -30,7 +31,7 @@ var paths = {
 };
 
 if (isChrome) {
-    const manifest = rootDir.read('manifest.json', 'json')
+    manifest = rootDir.read('manifest.json', 'json');
     paths.filesToCopyFromRootDir.push(
         'resources/onlykey_logo_*.png'
     );
@@ -48,9 +49,10 @@ gulp.task('clean', function(callback) {
 var copyTask = function () {
     projectDir.copy('resources/onlykey_logo_128.png', destDir.path('icon.png'), { overwrite: true });
 
-    if (utils.getEnvName() === 'production') {
+    if (getEnvName() === 'production') {
+        // const devDeps = Object.keys(manifest.devDependencies || {}).map(d => `!${d}/**/*`);
         projectDir.copy('node_modules', destDir.path('node_modules'), {
-            matching: [ '!nw/**/*' ],
+            matching: [ '!nw/**/*' ]; //.concat(devDeps),
             overwrite: true
         });
     }
@@ -84,8 +86,7 @@ gulp.task('transpile-watch', transpileTask);
 
 // Add and customize OS-specific and target-specific stuff.
 gulp.task('finalize', function (done) {
-    var manifest = rootDir.read('package.json', 'json');
-    switch (utils.getEnvName()) {
+    switch (getEnvName()) {
         case 'production':
             // Hide dev toolbar if doing a release.
             manifest.window.toolbar = false;
@@ -103,9 +104,6 @@ gulp.task('finalize', function (done) {
             break;
     }
     destDir.write('package.json', manifest);
-
-    var configFilePath = projectDir.path('config/env_' + utils.getEnvName() + '.json');
-    destDir.copy(configFilePath, 'env_config.json');
     return done();
 });
 
