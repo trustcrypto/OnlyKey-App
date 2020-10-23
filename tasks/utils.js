@@ -1,6 +1,6 @@
 'use strict';
 
-const { argv } = process;
+const argv = require('yargs').argv;
 const os = require('os');
 
 module.exports.os = function () {

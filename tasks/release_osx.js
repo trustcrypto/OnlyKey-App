@@ -9,15 +9,14 @@ let releasesDir;
 let tmpDir;
 let finalAppDir;
 let manifest;
-let node_modules_dir
-
+let node_modules_dir;
 
 const init = function (params={}) {
     projectDir = params.projectDir || jetpack;
     tmpDir = params.tmpDir || projectDir.dir('./tmp', { empty: true });
     releasesDir = params.releasesDir || projectDir.dir('./releases');
     manifest = params.manifest || projectDir.read('package.json', 'json');
-    node_modules_dir = node_modules_dir || 'node_modules';
+    node_modules_dir = params.node_modules_dir || 'node_modules';
 
     finalAppDir = tmpDir.cwd(manifest.productName + '.app');
     return Q();

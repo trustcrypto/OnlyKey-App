@@ -17,7 +17,7 @@ var init = function (params={}) {
     tmpDir = params.tmpDir || projectDir.dir('./tmp', { empty: true });
     releasesDir = params.releasesDir || projectDir.dir('./releases');
     manifest = params.manifest || projectDir.read('package.json', 'json');
-    node_modules_dir = node_modules_dir || 'node_modules';
+    node_modules_dir = params.node_modules_dir || 'node_modules';
 
     readyAppDir = tmpDir.cwd(manifest.name);
     return Q();
