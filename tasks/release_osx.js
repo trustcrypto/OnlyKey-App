@@ -27,9 +27,17 @@ const copyRuntime = function () {
     // name will show up as 'nwjs'. Thanks to
     // https://github.com/nwjs-community/nw-builder/
     console.log(`Copying runtime file nwjs.app from ${projectDir.path(node_modules_dir)}/nw/nwjs...`);
+
+    projectDir.copy(`${node_modules_dir}/nw/nwjs/nwjs.app/Contents`,
+        finalAppDir.path(),
+        { matching: [ 'Versions'] });
+
     return projectDir.copyAsync(`${node_modules_dir}/nw/nwjs/nwjs.app`,
-                                finalAppDir.path(),
-                                { matching: ['Contents/**/*', '!Contents/Resources/*.lproj/*'] });
+        finalAppDir.path(),
+        {
+            overwrite: true,
+            matching: [ 'Contents/**/*', '!Contents/Resources/*.lproj/*' ]
+        });
 };
 
 const copyBuiltApp = function () {
