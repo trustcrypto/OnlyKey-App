@@ -12,21 +12,23 @@ var packDir;
 var tmpDir;
 var readyAppDir;
 var manifest;
+var node_modules_dir;
 
-var init = function () {
-    projectDir = jetpack;
-    tmpDir = projectDir.dir('./tmp', { empty: true });
-    releasesDir = projectDir.dir('./releases');
-    manifest = projectDir.read('package.json', 'json');
+var init = function (params={}) {
+    projectDir = params.projectDir || jetpack;
+    tmpDir = params.tmpDir || projectDir.dir('./tmp', { empty: true });
+    releasesDir = params.releasesDir || projectDir.dir('./releases');
+    manifest = params.manifest || projectDir.read('package.json', 'json');
+    node_modules_dir = params.node_modules_dir || 'node_modules';
+
     packName = manifest.name + '_' + manifest.version;
     packDir = tmpDir.dir(packName);
     readyAppDir = packDir.cwd('opt', manifest.name);
-
     return Q();
 };
 
 var copyRuntime = function () {
-    return projectDir.copyAsync('node_modules/nw/nwjs', readyAppDir.path(), { overwrite: true });
+    return projectDir.copyAsync(`${node_modules_dir}/nw/nwjs`, readyAppDir.path(), { overwrite: true });
 };
 
 var copyBuiltApp = function () {
@@ -90,8 +92,8 @@ var cleanClutter = function () {
     return tmpDir.removeAsync('.');
 };
 
-module.exports = function () {
-    return init()
+module.exports = function (params) {
+    return init(params)
     .then(copyRuntime)
     .then(copyBuiltApp)
     .then(prepareOsSpecificThings)

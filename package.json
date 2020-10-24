@@ -7,31 +7,34 @@
   "main": "app.js",
   "dependencies": {
     "auto-launch": "^5.0.5",
-    "fs-jetpack": "^2.2.2",
-    "nw": "^0.49.0",
+    "nw": "^0.36.4",
     "nw-autoupdater": "^1.1.8",
-    "q": "^1.5.1",
     "request": "^2.88.0"
   },
   "devDependencies": {
+    "appdmg": "^0.6.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint": "^6.4.0",
-    "gulp": "^4.0.0",
+    "fs-jetpack": "^2.2.2",
+    "gulp": "^4.0.2",
     "gulp-sourcemaps": "^2.6.4",
-    "mocha": "^5.2.0",
+    "json": "^10.0.0",
+    "mocha": "^8.2.0",
     "nw-dev": "^3.0.1",
+    "q": "^1.5.1",
     "selenium-webdriver": "^3.6.0",
     "tree-kill": "^1.2.1",
-    "yargs": "^8.0.2"
+    "yargs": "^16.1.0"
   },
   "scripts": {
-    "build": "./node_modules/.bin/gulp build",
-    "release": "./node_modules/.bin/gulp release --env=production",
+    "build": "$(npm bin)/gulp build",
+    "prerelease": "rm -rf ./release_node_modules; mkdir ./release_node_modules; cp ./package.json ./release_node_modules; json -I -f ./release_node_modules/package.json -e 'this.name=\"OK_TMP\"'; npm install --prefix ./release_node_modules --production; $(npm bin)/gulp build --env=production",
+    "release": "$(npm bin)/gulp release --env=production",
     "start": "node ./tasks/start",
     "pretest": "npm run-script build",
     "test": "mocha",
-    "prechrome": "./node_modules/.bin/gulp build --env=chrome",
+    "prechrome": "$(npm bin)/gulp build --env=chrome",
     "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
   },
   "repository": {

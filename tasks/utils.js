@@ -1,7 +1,7 @@
 'use strict';
 
-var argv = require('yargs').argv;
-var os = require('os');
+const argv = require('yargs').argv;
+const os = require('os');
 
 module.exports.os = function () {
     switch (os.platform()) {
@@ -23,6 +23,14 @@ module.exports.replace = function (str, patterns) {
     return str;
 };
 
-module.exports.getEnvName = function () {
-    return argv.env || 'development';
+module.exports.getEnvName = getEnvName;
+
+module.exports.getNodeModulesDir = function () {
+    return getEnvName() === 'production'
+        ? 'release_node_modules/node_modules'
+        : 'node_modules';
 };
+
+function getEnvName () {
+    return argv.env || 'development';
+}
