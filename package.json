@@ -7,7 +7,7 @@
   "main": "app.js",
   "dependencies": {
     "auto-launch": "^5.0.5",
-    "nw": "^0.49.0",
+    "nw": "^0.36.4",
     "nw-autoupdater": "^1.1.8",
     "request": "^2.88.0"
   },
