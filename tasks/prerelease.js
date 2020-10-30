@@ -1,18 +1,17 @@
 "use strict";
 
 const gulp = require("gulp");
-const projectDir = require("fs-jetpack");
-const { getNodeModulesDir, os } = require("./utils");
-
-const manifest = projectDir.read("package.json", "json");
+const jetpack = require("fs-jetpack");
+const { getNodeModulesDir } = require("./utils");
 
 async function prerelease() {
+  const projectDir = jetpack.cwd();
+  const nodeModulesParent = getNodeModulesDir({ env: "production" }).split('/')[0];
+  const manifest = jetpack.read("package.json", "json");
   manifest.name = "OK_TMP";
-  projectDir.dir(getNodeModulesDir({ env: "production" }), { empty: true });
-  projectDir.write(
-    `${getNodeModulesDir({ env: "production" })}\package.json`,
-    manifest
-  );
+  jetpack
+    .dir(nodeModulesParent, { empty: projectDir !== nodeModulesParent })
+    .write('package.json', manifest);
 }
 
 gulp.task("prerelease", prerelease);
