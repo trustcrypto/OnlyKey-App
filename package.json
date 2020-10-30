@@ -12,7 +12,6 @@
     "request": "^2.88.0"
   },
   "devDependencies": {
-    "appdmg": "^0.6.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint": "^6.4.0",
@@ -28,13 +27,13 @@
     "yargs": "^16.1.0"
   },
   "scripts": {
-    "build": "$(npm bin)/gulp build",
-    "prerelease": "rm -rf ./release_node_modules; mkdir ./release_node_modules; cp ./package.json ./release_node_modules; json -I -f ./release_node_modules/package.json -e 'this.name=\"OK_TMP\"'; npm install --prefix ./release_node_modules --production; $(npm bin)/gulp build --env=production",
-    "release": "$(npm bin)/gulp release --env=production",
+    "build": "./node_modules/.bin/gulp build",
+    "prerelease": "./node_modules/.bin/gulp prerelease && npm install --prefix release_node_modules --production && npm run build -- --env=production",
+    "release": "./node_modules/.bin/gulp release --env=production",
     "start": "node ./tasks/start",
     "pretest": "npm run-script build",
     "test": "mocha",
-    "prechrome": "$(npm bin)/gulp build --env=chrome",
+    "prechrome": "./node_modules/.bin/gulp build --env=chrome",
     "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
   },
   "repository": {
