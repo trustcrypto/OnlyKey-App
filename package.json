@@ -28,7 +28,7 @@
   },
   "scripts": {
     "build": "./node_modules/.bin/gulp build",
-    "prerelease": "./node_modules/.bin/gulp prerelease && npm install --prefix release_node_modules --production && npm run build -- --env=production",
+    "prerelease": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build -- --env=production",
     "release": "./node_modules/.bin/gulp release --env=production",
     "start": "node ./tasks/start",
     "pretest": "npm run-script build",
