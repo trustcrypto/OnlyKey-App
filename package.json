@@ -5,6 +5,16 @@
   "version_name": "5.3.0",
   "description": "Setup and configure OnlyKey",
   "main": "app.js",
+  "scripts": {
+    "build": "./node_modules/.bin/gulp build",
+    "prerelease": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build -- --env=production",
+    "release": "./node_modules/.bin/gulp release --env=production",
+    "start": "node ./tasks/start",
+    "pretest": "npm run-script build",
+    "test": "mocha",
+    "prechrome": "./node_modules/.bin/gulp build --env=chrome",
+    "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
+  },
   "dependencies": {
     "auto-launch": "^5.0.5",
     "nw": "^0.36.4",
@@ -12,7 +22,6 @@
     "request": "^2.88.0"
   },
   "devDependencies": {
-    "appdmg": "^0.6.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "eslint": "^6.4.0",
@@ -27,15 +36,8 @@
     "tree-kill": "^1.2.1",
     "yargs": "^16.1.0"
   },
-  "scripts": {
-    "build": "./node_modules/.bin/gulp build",
-    "prerelease": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build -- --env=production",
-    "release": "./node_modules/.bin/gulp release --env=production",
-    "start": "node ./tasks/start",
-    "pretest": "npm run-script build",
-    "test": "mocha",
-    "prechrome": "./node_modules/.bin/gulp build --env=chrome",
-    "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
+  "optionalDependencies": {
+    "appdmg": "^0.6.0"
   },
   "repository": {
     "type": "git",
