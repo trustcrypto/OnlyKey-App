@@ -1,36 +1,36 @@
-'use strict';
+"use strict";
 
-const argv = require('yargs').argv;
-const os = require('os');
+const argv = require("yargs").argv;
+const os = require("os");
 
 module.exports.os = function () {
-    switch (os.platform()) {
-        case 'darwin':
-            return 'osx';
-        case 'linux':
-            return 'linux';
-        case 'win32':
-            return 'windows';
-    }
-    return 'unsupported';
+  switch (os.platform()) {
+    case "darwin":
+      return "osx";
+    case "linux":
+      return "linux";
+    case "win32":
+      return "windows";
+  }
+  return "unsupported";
 };
 
 module.exports.replace = function (str, patterns) {
-    Object.keys(patterns).forEach(function (pattern) {
-        var matcher = new RegExp('{{' + pattern + '}}', 'g');
-        str = str.replace(matcher, patterns[pattern]);
-    });
-    return str;
+  Object.keys(patterns).forEach(function (pattern) {
+    var matcher = new RegExp("{{" + pattern + "}}", "g");
+    str = str.replace(matcher, patterns[pattern]);
+  });
+  return str;
 };
 
 module.exports.getEnvName = getEnvName;
 
-module.exports.getNodeModulesDir = function () {
-    return getEnvName() === 'production'
-        ? 'release_node_modules/node_modules'
-        : 'node_modules';
+module.exports.getNodeModulesDir = function (params = {}) {
+  return (params.env || getEnvName()) === "production"
+    ? "release_node_modules/node_modules"
+    : "node_modules";
 };
 
-function getEnvName () {
-    return argv.env || 'development';
+function getEnvName() {
+  return argv.env || "development";
 }
