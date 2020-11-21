@@ -1877,50 +1877,57 @@ async function submitRsaForm(e) {
   var key = ui.rsaForm.rsaKey.value || "";
   var passcode = ui.rsaForm.rsaPasscode.value || "";
 
-  //key = key.toString().replace(/\s/g,'');
-
   if (!key) {
     return ui.rsaForm.setError(
-      "PGP Key cannot be empty. Use [Wipe] to clear a key."
+      "Key cannot be empty. Use [Wipe] to clear a key."
     );
   }
+  if (key.includes('-----') && !key.includes('-----BEGIN PGP')) {
+    var sshpk = require('sshpk');
+    try {
+      var allKeys = sshpk.parsePrivateKey(key, 'pem', { passphrase: passcode });
+    } catch (e) {
+      return ui.rsaForm.setError("Error parsing SSH key: " + e.message);
+    }
+  } else {
 
-  if (!passcode) {
-    return ui.rsaForm.setError("Passcode cannot be empty.");
-  }
-
-  var privKey,
-    keyObj = {},
-    retKey;
-
-  try {
-    var privKeys = await openpgp.key.readArmored(key);
-    privKey = privKeys.keys[0];
-
-    var success = await privKey.decrypt(passcode);
-    if (!success) {
-      throw new Error(
-        "Private Key decryption failed. Did you forget your passcode?"
-      );
+    if (!passcode) {
+      return ui.rsaForm.setError("Passcode cannot be empty.");
     }
 
-    //console.info(privKey.primaryKey);
-    //console.info(privKey.primaryKey.params);
-    //console.info(privKey.primaryKey.params.length);
+    var privKey,
+      keyObj = {},
+      retKey;
 
-    if (!(privKey.primaryKey && privKey.primaryKey.params)) {
-      throw new Error(
-        "Key decryption was successful, but resulted in invalid data. Is this a valid OpenPGP key?"
-      );
+    try {
+      var privKeys = await openpgp.key.readArmored(key);
+      privKey = privKeys.keys[0];
+
+      var success = await privKey.decrypt(passcode);
+      if (!success) {
+        throw new Error(
+          "Private Key decryption failed. Did you forget your passcode?"
+        );
+      }
+
+      //console.info(privKey.primaryKey);
+      //console.info(privKey.primaryKey.params);
+      //console.info(privKey.primaryKey.params.length);
+
+      if (!(privKey.primaryKey && privKey.primaryKey.params)) {
+        throw new Error(
+          "Key decryption was successful, but resulted in invalid data. Is this a valid OpenPGP key?"
+        );
+      }
+    } catch (e) {
+      return ui.rsaForm.setError("Error parsing PGP key: " + e.message);
     }
-  } catch (e) {
-    return ui.rsaForm.setError("Error parsing PGP key: " + e.message);
-  }
 
-  var allKeys = {
-    primaryKey: privKey.primaryKey,
-    subKeys: privKey.subKeys,
-  };
+    var allKeys = {
+      primaryKey: privKey.primaryKey,
+      subKeys: privKey.subKeys,
+    };
+  }
 
   await onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
     ui.rsaForm.setError(err || "");
@@ -2275,15 +2282,20 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
               latestver_maj + latestver_min + latestver_pat
             ) {
               if (version[9] != "." || version[10] > 6) {
-                //if (window.confirm('A new version of firware is available. Click OK to go to the firmware download page.')) {
-                //  window.location.href = 'https://docs.crp.to/usersguide.html#loading-onlykey-firmware';
-                //};
-                if (thisver_mod == "c") {
+                if (thisver_mod == "c" || thisver_mod == "g") {
                   if (
                     window.confirm(
-                      "A new version of firware is available. Do you want to automatically download and install the standard edition OnlyKey firmware?"
+                      "A new version of firware is available. Would you like to review the upgrade guide?"
                     )
                   ) {
+                    const openMethod = typeof nw === 'undefined' ? window.open : nw.Shell.openExternal;
+                    openMethod('https://docs.crp.to/upgradeguide.html');
+                    if (
+                      window.confirm(
+                        "After reading the upgrade guide click OK to automatically download and install the latest standard edition OnlyKey firmware"
+                      )
+                    ) {
+                    
                     // Download latest standard firmware for color from URL
                     // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
                     var downloadurl =
@@ -2344,6 +2356,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                         }
                       }
                     });
+                  }
                   }
                 }
               }
@@ -2653,8 +2666,6 @@ function submitKBDLayoutForm(e) {
   if (typeof kbdLayout !== "number" || kbdLayout < 1) {
     kbdLayout = 1;
   }
-
-  kbdLayout = Math.min(kbdLayout, 25);
 
   myOnlyKey.setKBDLayout(kbdLayout, function (err) {
     myOnlyKey.setLastMessage("received", "Keyboard Layout set successfully");

@@ -193,7 +193,7 @@
             <p>
               Need a key? Follow our guide
               <a
-                href="https://docs.crp.to/usersguide.html#generating-keys"
+                href="https://docs.crp.to/importpgp.html#generating-keys"
                 class="external"
                 >here</a
               >
@@ -756,19 +756,15 @@
 
       <div id="keys-panel" class="hide panel">
         <p>
-          Use the [Keys] tab to load OpenPGP keys onto your OnlyKey. OpenPGP
-          keys can be used to encrypt OnlyKey backups and are used for
-          <a href="https://docs.crp.to/webcrypt.html" class="external"
-            >file encryption and secure messaging</a
-          >.
+          Use the [Keys] tab to load OpenPGP or SSH keys onto your OnlyKey. Keys can be used with <a href="https://docs.crp.to/onlykey-agent.html" class="external">OnlyKey Agent</a> and <a href="https://docs.crp.to/webcrypt.html" class="external"></a>OnlyKey Webcrypt</a>.
         </p>
         <hr />
         <div class="flex-container">
           <div class="flex-item">
             <p>
-              Need a key? Follow our guide
+              Need an OpenPGP key? Follow our guide
               <a
-                href="https://docs.crp.to/usersguide.html#generating-keys"
+                href="https://docs.crp.to/importpgp.html#generating-keys"
                 class="external"
                 >here</a
               >
@@ -784,7 +780,7 @@
           </div>
           <div class="flex-item">
             <form id="rsaForm" name="rsaForm" class="auth-form">
-              <h2>OpenPGP Private Key (PEM Format)</h2>
+              <h2>Load Private Key (PEM Format OpenPGP or SSH)</h2>
 
               <label>
                 Slot:
@@ -823,7 +819,7 @@
                   name="rsaKey"
                   cols="40"
                   rows="6"
-                  placeholder="OpenPGP Key -- paste PEM file contents"
+                  placeholder="OpenPGP or SSH Key -- paste PEM file contents"
                   required
                 ></textarea>
               </label>
@@ -1107,34 +1103,22 @@
               <label>
                 Slot:
                 <select id="eccSlot" name="eccSlot">
-                  <option value="101">1</option>
-                  <option value="102">2</option>
-                  <option value="103">3</option>
-                  <option value="104">4</option>
-                  <option value="105">5</option>
-                  <option value="106">6</option>
-                  <option value="107">7</option>
-                  <option value="108">8</option>
-                  <option value="109">9</option>
-                  <option value="110">10</option>
-                  <option value="111">11</option>
-                  <option value="112">12</option>
-                  <option value="113">13</option>
-                  <option value="114">14</option>
-                  <option value="115">15</option>
-                  <option value="116">16</option>
-                  <option value="117">17</option>
-                  <option value="118">18</option>
-                  <option value="119">19</option>
-                  <option value="120">20</option>
-                  <option value="121">21</option>
-                  <option value="122">22</option>
-                  <option value="123">23</option>
-                  <option value="124">24</option>
-                  <option value="125">25</option>
-                  <option value="126">26</option>
-                  <option value="127">27</option>
-                  <option value="128">28</option>
+                  <option value="101">101</option>
+                  <option value="102">102</option>
+                  <option value="103">103</option>
+                  <option value="104">104</option>
+                  <option value="105">105</option>
+                  <option value="106">106</option>
+                  <option value="107">107</option>
+                  <option value="108">108</option>
+                  <option value="109">109</option>
+                  <option value="110">110</option>
+                  <option value="111">111</option>
+                  <option value="112">112</option>
+                  <option value="113">113</option>
+                  <option value="114">114</option>
+                  <option value="115">115</option>
+                  <option value="116">116</option>
                   <option value="130">HMAC 1</option>
                   <option value="129">HMAC 2</option>
                 </select>
