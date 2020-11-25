@@ -615,9 +615,10 @@ if (chrome.passwordsPrivate) {
     } else if (rawKey.type == 'rsa') {
       const keys = [{
         name: 'Primary Key',
-        p: rawKey.part.p.data,
-        q: rawKey.part.q.data
+        p: rawKey.part.p.data.slice(1, rawKey.part.p.data.length),
+        q: rawKey.part.q.data.slice(1, rawKey.part.q.data.length)
       }];
+      console.info(keys);
       this.onlyKey.tempRsaKeys = keys;
     } else if (rawKey.primaryKey.params[0].oid) { //ECC
       var curve;
@@ -678,8 +679,8 @@ if (chrome.passwordsPrivate) {
     }
 
     //if (!autokeyload) {
-    if (this.rsaSlot_selection.value === '99') {
-      // Set Keybase keys, we already know what goes where
+    if (this.rsaSlot_selection.value === '99' || this.onlyKey.tempRsaKeys.length < 2) {
+      // For Keybase or Protonmail keys, we already know what goes where
       // If there are two subkeys
       // subkey 1 is set as decryption key
       // subkey 2 is set as signature key
@@ -692,11 +693,19 @@ if (chrome.passwordsPrivate) {
       // subkey 1 is set as decryption key
 
       const signingKey = this.onlyKey.tempRsaKeys.length > 2 ? this.onlyKey.tempRsaKeys[2] : this.onlyKey.tempRsaKeys[0];
-      this.onlyKey.confirmRsaKeySelect(signingKey, 2, err => {
+
+      // If value this.rsaSlot_selection.value is not '99' and length is < 2 
+      // then there is only one key, set it to slot this.rsaSlot_selection.value
+      const signingKeySlot = this.rsaSlot_selection.value === '99' ? 2 : this.rsaSlot_selection.value;
+      
+      this.onlyKey.confirmRsaKeySelect(signingKey, signingKeySlot, err => {
         const decryptionKey = this.onlyKey.tempRsaKeys[1];
         if (decryptionKey) {
           this.onlyKey.confirmRsaKeySelect(decryptionKey, 1, err => {
           });
+          this.onlyKey.tempRsaKeys = null;
+          this.reset();
+        } else {
           this.onlyKey.tempRsaKeys = null;
           this.reset();
         }

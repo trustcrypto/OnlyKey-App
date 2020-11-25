@@ -206,22 +206,22 @@
                 <option value="2">RSA 2</option>
                 <option value="3">RSA 3</option>
                 <option value="4">RSA 4</option>
-                <option value="101">ECC 1</option>
-                <option value="102">ECC 2</option>
-                <option value="103">ECC 3</option>
-                <option value="104">ECC 4</option>
-                <option value="105">ECC 5</option>
-                <option value="106">ECC 6</option>
-                <option value="107">ECC 7</option>
-                <option value="108">ECC 8</option>
-                <option value="109">ECC 9</option>
-                <option value="110">ECC 10</option>
-                <option value="111">ECC 11</option>
-                <option value="112">ECC 12</option>
-                <option value="113">ECC 13</option>
-                <option value="114">ECC 14</option>
-                <option value="115">ECC 15</option>
-                <option value="116">ECC 16</option>
+                <option value="101">ECC 1 (101)</option>
+                <option value="102">ECC 2 (102)</option>
+                <option value="103">ECC 3 (103)</option>
+                <option value="104">ECC 4 (104)</option>
+                <option value="105">ECC 5 (105)</option>
+                <option value="106">ECC 6 (106)</option>
+                <option value="107">ECC 7 (107)</option>
+                <option value="108">ECC 8 (108)</option>
+                <option value="109">ECC 9 (109)</option>
+                <option value="110">ECC 10 (110)</option>
+                <option value="111">ECC 11 (111)</option>
+                <option value="112">ECC 12 (112)</option>
+                <option value="113">ECC 13 (113)</option>
+                <option value="114">ECC 14 (114)</option>
+                <option value="115">ECC 15 (115)</option>
+                <option value="116">ECC 16 (116)</option>
               </select>
             </label>
             <br />
@@ -756,7 +756,7 @@
 
       <div id="keys-panel" class="hide panel">
         <p>
-          Use the [Keys] tab to load OpenPGP or SSH keys onto your OnlyKey. Keys can be used with <a href="https://docs.crp.to/onlykey-agent.html" class="external">OnlyKey Agent</a> and <a href="https://docs.crp.to/webcrypt.html" class="external"></a>OnlyKey Webcrypt</a>.
+          Use the [Keys] tab to load OpenPGP or OpenSSH keys onto your OnlyKey. Keys can be used with <a href="https://docs.crp.to/onlykey-agent.html" class="external">OnlyKey Agent</a> and <a href="https://docs.crp.to/webcrypt.html" class="external">OnlyKey Webcrypt</a>.
         </p>
         <hr />
         <div class="flex-container">
@@ -780,7 +780,7 @@
           </div>
           <div class="flex-item">
             <form id="rsaForm" name="rsaForm" class="auth-form">
-              <h2>Load Private Key (PEM Format OpenPGP or SSH)</h2>
+              <h2>Load Private Key (PEM Format OpenPGP or OpenSSH)</h2>
 
               <label>
                 Slot:
@@ -790,22 +790,22 @@
                   <option value="2">RSA 2</option>
                   <option value="3">RSA 3</option>
                   <option value="4">RSA 4</option>
-                  <option value="101">ECC 1</option>
-                  <option value="102">ECC 2</option>
-                  <option value="103">ECC 3</option>
-                  <option value="104">ECC 4</option>
-                  <option value="105">ECC 5</option>
-                  <option value="106">ECC 6</option>
-                  <option value="107">ECC 7</option>
-                  <option value="108">ECC 8</option>
-                  <option value="109">ECC 9</option>
-                  <option value="110">ECC 10</option>
-                  <option value="111">ECC 11</option>
-                  <option value="112">ECC 12</option>
-                  <option value="113">ECC 13</option>
-                  <option value="114">ECC 14</option>
-                  <option value="115">ECC 15</option>
-                  <option value="116">ECC 16</option>
+                  <option value="101">ECC 1 (101)</option>
+                  <option value="102">ECC 2 (102)</option>
+                  <option value="103">ECC 3 (103)</option>
+                  <option value="104">ECC 4 (104)</option>
+                  <option value="105">ECC 5 (105)</option>
+                  <option value="106">ECC 6 (106)</option>
+                  <option value="107">ECC 7 (107)</option>
+                  <option value="108">ECC 8 (108)</option>
+                  <option value="109">ECC 9 (109)</option>
+                  <option value="110">ECC 10 (110)</option>
+                  <option value="111">ECC 11 (111)</option>
+                  <option value="112">ECC 12 (112)</option>
+                  <option value="113">ECC 13 (113)</option>
+                  <option value="114">ECC 14 (114)</option>
+                  <option value="115">ECC 15 (115)</option>
+                  <option value="116">ECC 16 (116)</option>
                 </select>
               </label>
 
@@ -819,7 +819,7 @@
                   name="rsaKey"
                   cols="40"
                   rows="6"
-                  placeholder="OpenPGP or SSH Key -- paste PEM file contents"
+                  placeholder="OpenPGP or OpenSSH Key -- paste PEM file contents"
                   required
                 ></textarea>
               </label>
@@ -1103,24 +1103,24 @@
               <label>
                 Slot:
                 <select id="eccSlot" name="eccSlot">
-                  <option value="101">101</option>
-                  <option value="102">102</option>
-                  <option value="103">103</option>
-                  <option value="104">104</option>
-                  <option value="105">105</option>
-                  <option value="106">106</option>
-                  <option value="107">107</option>
-                  <option value="108">108</option>
-                  <option value="109">109</option>
-                  <option value="110">110</option>
-                  <option value="111">111</option>
-                  <option value="112">112</option>
-                  <option value="113">113</option>
-                  <option value="114">114</option>
-                  <option value="115">115</option>
-                  <option value="116">116</option>
-                  <option value="130">HMAC 1</option>
-                  <option value="129">HMAC 2</option>
+                  <option value="101">ECC 1 (101)</option>
+                  <option value="102">ECC 2 (102)</option>
+                  <option value="103">ECC 3 (103)</option>
+                  <option value="104">ECC 4 (104)</option>
+                  <option value="105">ECC 5 (105)</option>
+                  <option value="106">ECC 6 (106)</option>
+                  <option value="107">ECC 7 (107)</option>
+                  <option value="108">ECC 8 (108)</option>
+                  <option value="109">ECC 9 (109)</option>
+                  <option value="110">ECC 10 (110)</option>
+                  <option value="111">ECC 11 (111)</option>
+                  <option value="112">ECC 12 (112)</option>
+                  <option value="113">ECC 13 (113)</option>
+                  <option value="114">ECC 14 (114)</option>
+                  <option value="115">ECC 15 (115)</option>
+                  <option value="116">ECC 16 (116)</option>
+                  <option value="130">HMAC 1 (130)</option>
+                  <option value="129">HMAC 2 (129)</option>
                 </select>
               </label>
 
