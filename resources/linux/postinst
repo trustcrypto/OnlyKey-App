@@ -1,0 +1,5 @@
+#!/bin/bash
+# This `DEBIAN/postinst` script is run post-installation
+
+
+udevadm control --reload-rules
