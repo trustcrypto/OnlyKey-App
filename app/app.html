@@ -1598,7 +1598,7 @@
             <td>
               <label>
                 <input type="radio" name="mode" value="googleAuthOtp" />
-                Google Authenticator OTP (TOTP)
+                OATH-TOTP (Google Authenticator)
               </label>
             </td>
             <td>
@@ -1607,19 +1607,8 @@
                 id="txt2FAUserName"
                 name="txt2FAUserName"
                 value=""
+                placeholder="TOTP Secret"
               />
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <label>
-                <input type="radio" name="tabReturn3" value="2" />
-                Return after OTP
-              </label>
-              <label>
-                <input type="radio" name="tabReturn3" value="0" />
-                None
-              </label>
             </td>
           </tr>
           <tr></tr>
@@ -1629,6 +1618,45 @@
                 <input type="radio" name="mode" value="yubikeyOtp" />
                 Yubikey OTP
               </label>
+            </td>
+            <td>
+              <label>
+                <input
+                  type="text"
+                  id="yubiPublicId"
+                  name="yubiPublicId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="Public Identity"
+                  required
+                />
+              </label>
+              <label>
+                <input
+                  type="text"
+                  id="yubiPrivateId"
+                  name="yubiPrivateId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="Private Identity"
+                  required
+                />
+              </label>
+              <label>
+                <input
+                  type="text"
+                  id="yubiSecretKey"
+                  name="yubiSecretKey"
+                  maxlength="47"
+                  minlength="32"
+                  placeholder="Secret Key"
+                  required
+                />
+              </label>
+              <br />
+            </td>
+          </tr><tr>
+            <td>
               <br />
               <label>
                 <input type="radio" name="mode" value="u2f" />
@@ -1642,6 +1670,10 @@
               <label>
                 <input type="radio" name="tabReturn3" value="2" />
                 Return after OTP
+              </label>
+              <label>
+                <input type="radio" name="tabReturn6" value="1" />
+                Tab after OTP
               </label>
               <label>
                 <input type="radio" name="tabReturn3" value="0" />
