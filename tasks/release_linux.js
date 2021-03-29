@@ -47,6 +47,13 @@ var prepareOsSpecificThings = function () {
     });
     packDir.write('usr/share/applications/' + manifest.name + '.desktop', desktop);
 
+    var udevRules = projectDir.read('resources/linux/49-onlykey.rules');
+    packDir.write('etc/udev/rules.d/49-onlykey.rules' , udevRules);
+
+    var postinst = projectDir.read('resources/linux/postinst');
+    // mode >=0755 и <=0775
+    packDir.write('DEBIAN/postinst' , postinst, {mode: '755'});
+
     return Q();
 };
 
