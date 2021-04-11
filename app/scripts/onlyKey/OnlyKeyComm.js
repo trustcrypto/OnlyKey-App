@@ -358,7 +358,7 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
   );
 
   chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
-    if (msgId != 'OKFWUPDATE') await wait(100);
+    if (msgId != "OKFWUPDATE") await wait(100);
     if (chrome.runtime.lastError) {
       console.error(
         "ERROR SENDING" + (msgId ? " " + msgId : "") + ":",
@@ -751,7 +751,10 @@ OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
   this.setPrivateKey(slot, type, key, async function (err) {
     onlyKeyConfigWizard.initForm.reset();
     await wait(300);
-    await listenForMessageIncludes2("Error not in config mode, hold button 6 down for 5 sec", "Success");
+    await listenForMessageIncludes2(
+      "Error not in config mode, hold button 6 down for 5 sec",
+      "Success"
+    );
     cb(err);
   });
 };
@@ -1882,15 +1885,14 @@ async function submitRsaForm(e) {
       "Key cannot be empty. Use [Wipe] to clear a key."
     );
   }
-  if (key.includes('-----') && !key.includes('-----BEGIN PGP')) {
-    var sshpk = require('sshpk');
+  if (key.includes("-----") && !key.includes("-----BEGIN PGP")) {
+    var sshpk = require("sshpk");
     try {
-      var allKeys = sshpk.parsePrivateKey(key, 'pem', { passphrase: passcode });
+      var allKeys = sshpk.parsePrivateKey(key, "pem", { passphrase: passcode });
     } catch (e) {
       return ui.rsaForm.setError("Error parsing SSH key: " + e.message);
     }
   } else {
-
     if (!passcode) {
       return ui.rsaForm.setError("Passcode cannot be empty.");
     }
@@ -2288,75 +2290,85 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                       "A new version of firware is available. Would you like to review the upgrade guide?"
                     )
                   ) {
-                    const openMethod = typeof nw === 'undefined' ? window.open : nw.Shell.openExternal;
-                    openMethod('https://docs.crp.to/upgradeguide.html');
+                    const openMethod =
+                      typeof nw === "undefined"
+                        ? window.open
+                        : nw.Shell.openExternal;
+                    openMethod("https://docs.crp.to/upgradeguide.html");
                     if (
                       window.confirm(
                         "After reading the upgrade guide click OK to automatically download and install the latest standard edition OnlyKey firmware"
                       )
                     ) {
-                    
-                    // Download latest standard firmware for color from URL
-                    // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
-                    var downloadurl =
-                      "https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/" +
-                      latestver +
-                      "/Signed_OnlyKey_";
-                    downloadurl = latestver_maj
-                      ? downloadurl +
-                        latestver_maj / 100 +
-                        "_" +
-                        latestver_min / 10 +
-                        "_" +
-                        latestver_pat +
-                        "_STD.txt"
-                      : downloadurl + "Beta" + latestver_pat + "_STD_Color.txt";
-                    console.info(downloadurl);
-                    var req = request.get(downloadurl, async function (
-                      err,
-                      res,
-                      body
-                    ) {
-                      console.info(myOnlyKey.getLastMessage("received"));
-                      if (
-                        myOnlyKey
-                          .getLastMessage("received")
-                          .indexOf("UNINITIALIZEDv") >= 0 ||
-                        window.confirm(
-                          "To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware."
-                        )
-                      ) {
-                        if (req.responseContent.body) {
-                          var contents =
-                            req.responseContent.body &&
-                            req.responseContent.body.trim();
-                          try {
-                            console.info("unparsed contents", contents);
-                            contents = parseFirmwareData(contents);
-                            console.info("parsed contents", contents);
-                          } catch (parseError) {
-                            throw new Error(
-                              "Could not parse firmware file.\n\n" + parseError
-                            );
+                      // Download latest standard firmware for color from URL
+                      // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
+                      var downloadurl =
+                        "https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/" +
+                        latestver +
+                        "/Signed_OnlyKey_";
+                      downloadurl = latestver_maj
+                        ? downloadurl +
+                          latestver_maj / 100 +
+                          "_" +
+                          latestver_min / 10 +
+                          "_" +
+                          latestver_pat +
+                          "_STD.txt"
+                        : downloadurl +
+                          "Beta" +
+                          latestver_pat +
+                          "_STD_Color.txt";
+                      console.info(downloadurl);
+                      var req = request.get(
+                        downloadurl,
+                        async function (err, res, body) {
+                          console.info(myOnlyKey.getLastMessage("received"));
+                          if (
+                            myOnlyKey
+                              .getLastMessage("received")
+                              .indexOf("UNINITIALIZEDv") >= 0 ||
+                            window.confirm(
+                              "To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware."
+                            )
+                          ) {
+                            if (req.responseContent.body) {
+                              var contents =
+                                req.responseContent.body &&
+                                req.responseContent.body.trim();
+                              try {
+                                console.info("unparsed contents", contents);
+                                contents = parseFirmwareData(contents);
+                                console.info("parsed contents", contents);
+                              } catch (parseError) {
+                                throw new Error(
+                                  "Could not parse firmware file.\n\n" +
+                                    parseError
+                                );
+                              }
+                              console.info(contents);
+                              onlyKeyConfigWizard.newFirmware = contents;
+                              const temparray = "1234";
+                              await submitFirmwareData(
+                                temparray,
+                                function (err) {
+                                  //First send one message to kick OnlyKey (in config mode) into bootloader
+                                  console.info(
+                                    "Working... Do not remove OnlyKey"
+                                  );
+                                  console.info("Firmware file sent to OnlyKey");
+                                  myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                                }
+                              );
+                              resolve();
+                            } else {
+                              alert(`Firmware Download Failed`);
+                              resolve();
+                              return;
+                            }
                           }
-                          console.info(contents);
-                          onlyKeyConfigWizard.newFirmware = contents;
-                          const temparray = "1234";
-                          await submitFirmwareData(temparray, function (err) {
-                            //First send one message to kick OnlyKey (in config mode) into bootloader
-                            console.info("Working... Do not remove OnlyKey");
-                            console.info("Firmware file sent to OnlyKey");
-                            myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
-                          });
-                          resolve();
-                        } else {
-                          alert(`Firmware Download Failed`);
-                          resolve();
-                          return;
                         }
-                      }
-                    });
-                  }
+                      );
+                    }
                   }
                 }
               }

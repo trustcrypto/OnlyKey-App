@@ -369,7 +369,7 @@ nav>a.active {
   content: "";
   height: 0;
   width: 0;
-  top: 20px;
+  top: 32px;
   left: 0;
 }
 
@@ -380,7 +380,7 @@ nav>a.active {
   content: attr(data-tooltip);
   font-size: 14px;
   padding: 0.5em 1em;
-  top: 26px;
+  top: 38px;
   left: -5em;
   width: 20em;
   white-space: pre-wrap;
