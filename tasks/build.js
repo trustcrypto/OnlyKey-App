@@ -31,6 +31,7 @@ const paths = {
 if (isChrome) {
   manifest = rootDir.read("manifest.json", "json");
   paths.filesToCopyFromRootDir.push("resources/onlykey_logo_*.png");
+  console.log(`Copying resources/onlykey_logo_*.png for Chrome extension...`);
 }
 
 // -------------------------------------
