@@ -2040,25 +2040,7 @@ function saveBackupFile(e) {
   var backupData = ui.backupForm.backupData.value.trim();
   if (backupData) {
     d = new Date();
-    dMonth = d.getMonth() + 1;
-    dDate = d.getDate();
-    dYear = d.getFullYear();
-    dHour = d.getHours() + 1 < 12 ? d.getHours() : d.getHours() - 12;
-    dMinutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-    dM = d.getHours() + 1 < 12 ? "AM" : "PM";
-    df =
-      dMonth +
-      "-" +
-      dDate +
-      "-" +
-      dYear +
-      "-" +
-      dHour +
-      "-" +
-      dMinutes +
-      "-" +
-      dM;
-    var filename = "onlykey-backup-" + df + ".txt";
+    var filename = "onlykey-backup-" + d.toISOString() + ".txt";
     var blob = new Blob([backupData], {
       type: "text/plain;charset=utf-8",
     });
