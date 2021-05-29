@@ -104,14 +104,15 @@ if (typeof nw == 'undefined') {
         chrome.hid.getDevices(deviceInfo, onDevicesEnumerated);
     }
 } else {
+    const userPreferences = require('./scripts/userPreferences.js');
+
     const AutoLaunch = require('auto-launch');
     const autoLaunch = new AutoLaunch({
         name: 'OnlyKey',
         isHidden: true
     });
-
-    // read localStorage setting or default to true if first time running app
-    const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
+    // use userPreferences to chech autoLaunch status
+    const enableAutoLaunch = userPreferences.autoLaunch
 
     autoLaunch.isEnabled()
         .then(isEnabled => {
