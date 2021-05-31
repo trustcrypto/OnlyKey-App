@@ -2040,7 +2040,8 @@ function saveBackupFile(e) {
   var backupData = ui.backupForm.backupData.value.trim();
   if (backupData) {
     d = new Date();
-    var filename = "onlykey-backup-" + d.toISOString() + ".txt";
+    Date.prototype.__proto__.format = require("es5-ext/date/#/format");
+    var filename = "onlykey-backup-" + d.format("%Y-%m-%dT%H-%M-%S") + ".txt";
     var blob = new Blob([backupData], {
       type: "text/plain;charset=utf-8",
     });
