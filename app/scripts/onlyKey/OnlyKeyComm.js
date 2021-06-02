@@ -2242,13 +2242,15 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
   if (!fwchecked) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       fwchecked = true;
       if (checkForNewFW == true && fwUpdateSupport == true) {
         //fw checking enabled and firmware version supports app updates
         var r = request.get(
           "https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest",
           function (err, res, body) {
+            if (err) return reject(err);
+            
             console.log(r.uri.href);
             console.log(this.uri.href);
             //var testupgradeurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/tag/v2.1.0-prod'
