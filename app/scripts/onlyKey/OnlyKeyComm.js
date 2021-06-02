@@ -2242,18 +2242,21 @@ const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
   if (!fwchecked) {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       fwchecked = true;
       if (checkForNewFW == true && fwUpdateSupport == true) {
         //fw checking enabled and firmware version supports app updates
         var r = request.get(
           "https://github.com/trustcrypto/OnlyKey-Firmware/releases/latest",
           function (err, res, body) {
+            if (err) return reject(err);
+
             console.log(r.uri.href);
             console.log(this.uri.href);
             //var testupgradeurl = 'https://github.com/trustcrypto/OnlyKey-Firmware/releases/tag/v2.1.0-prod'
-            //var latestver = testupgradeurl.substr(testupgradeurl.length - 11); //end of redirected URL is the version
-            var latestver = this.uri.href.substr(this.uri.href.length - 11); //end of redirected URL is the version
+            //var latestver = testupgradeurl.split("/tag/v"); //end of redirected URL is the version
+            var latestver = this.uri.href.split("/tag/v");
+            latestver = latestver[1];
             console.info(version);
             console.info(latestver);
 
@@ -2268,15 +2271,13 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
             }
             var thisver_mod = version.slice(11, 12);
             console.info(thisver_mod);
-            var latestver_maj = latestver.slice(1, 2) * 100;
+            var latestversplit = latestver.split(".")
+            var latestver_maj = latestversplit[0] * 100;
             console.info(latestver_maj);
-            var latestver_min = latestver.slice(3, 4) * 10;
+            var latestver_min = latestversplit[1] * 10;
             console.info(latestver_min);
-            if (latestver_maj == 0) {
-              var latestver_pat = latestver.slice(10, 11);
-            } else {
-              var latestver_pat = latestver.slice(5, 6);
-            }
+            var latestver_pat = latestversplit[2].split("-");
+            latestver_pat = latestver_pat[0];
             console.info(latestver_pat);
 
             if (
@@ -2304,20 +2305,15 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                       // https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/
                       var downloadurl =
                         "https://github.com/trustcrypto/OnlyKey-Firmware/releases/download/" +
-                        latestver +
+                        "v" + latestver +
                         "/Signed_OnlyKey_";
-                      downloadurl = latestver_maj
-                        ? downloadurl +
+                      downloadurl = downloadurl +
                           latestver_maj / 100 +
                           "_" +
                           latestver_min / 10 +
                           "_" +
                           latestver_pat +
-                          "_STD.txt"
-                        : downloadurl +
-                          "Beta" +
-                          latestver_pat +
-                          "_STD_Color.txt";
+                          "_STD.txt";
                       console.info(downloadurl);
                       var req = request.get(
                         downloadurl,
