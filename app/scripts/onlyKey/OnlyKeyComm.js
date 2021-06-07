@@ -1029,6 +1029,7 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
+  console.info(`lastChar ${lastChar}`);
   switch (lastChar) {
     case "g":
       deviceType = DEVICE_TYPES.GO;
@@ -2257,8 +2258,8 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
             //var latestver = testupgradeurl.split("/tag/v"); //end of redirected URL is the version
             var latestver = this.uri.href.split("/tag/v");
             latestver = latestver[1];
-            console.info(version);
-            console.info(latestver);
+            console.info("Current verion", version);
+            console.info("Latest verion", latestver);
 
             var thisver_maj = version.slice(1, 2) * 100;
             console.info(thisver_maj);
@@ -2270,15 +2271,20 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
               var thisver_pat = version.slice(5, 6);
             }
             var thisver_mod = version.slice(11, 12);
-            console.info(thisver_mod);
+            console.info("Current verion mod", thisver_mod);
             var latestversplit = latestver.split(".")
+            console.info(latestversplit);
             var latestver_maj = latestversplit[0] * 100;
-            console.info(latestver_maj);
+            console.info("Latest verion maj", latestver_maj);
             var latestver_min = latestversplit[1] * 10;
-            console.info(latestver_min);
-            var latestver_pat = latestversplit[2].split("-");
+            console.info("Latest verion min", latestver_min);
+            if (latestver_maj == 0) {
+              var latestver_pat = latestver.slice(10, 11);
+            } else {
+              var latestver_pat = latestversplit[2].split("-");
+            }
             latestver_pat = latestver_pat[0];
-            console.info(latestver_pat);
+            console.info("Latest verion pat", latestver_pat);
 
             if (
               thisver_maj + thisver_min + thisver_pat <
