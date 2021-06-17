@@ -32,6 +32,8 @@ To use the **standalone app:**
 - Obtain an installer from https://github.com/trustcrypto/OnlyKey-Chrome-App/releases/latest
 - Install and launch the app.
 
+Linux users installing the deb package should verify the GPG signature using `debsig-verify`. There is an article outlining this process [here](https://www.unboundsecurity.com/docs/UKC/UKC_Code_Signing_IG/HTML/Content/Products/UKC-EKM/UKC_Code_Signing_IG/LinuxPackage/SignDebian.html#h3_4).
+
 To use the **OnlyKey Chrome App:** (Chromebook Users)
 
 - Go to https://chrome.google.com/webstore/detail/onlykey-configuration/adafilbceehejjehoccladhbkgbjmica,
