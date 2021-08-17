@@ -6,3 +6,4 @@ Thumbs.db
 /releases/
 /tmp/
 /release_node_modules/
+package-lock.json
