@@ -4,11 +4,6 @@
   if (typeof nw == 'undefined') return;
 
   const userPreferences = require('./scripts/userPreferences.js');
-  
-  // Create a tray icon
-  var tray = new nw.Tray({ icon: './images/ok-tray-logo.png' });
-
-  // begin settings menu
   const settingsMenu = new nw.Menu();
 
   settingsMenu.append(new nw.MenuItem({
@@ -57,6 +52,9 @@
       checked: userPreferences.autoUpdateFW,
   }));
 
-  // Give it a menu
-  tray.menu = settingsMenu;
+  const tray = new nw.Tray({
+    icon: './images/ok-tray-logo.png',
+    menu: settingsMenu,
+    tooltip: 'OnlyKey Configuration App settings'
+  });
 })();

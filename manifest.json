@@ -1,8 +1,8 @@
 {
   "name": "OnlyKey Configuration",
   "manifest_version": 2,
-  "version": "5.3.3",
-  "version_name": "5.3.3",
+  "version": "5.3.4",
+  "version_name": "5.3.4",
   "minimum_chrome_version": "45.0.2439.3",
   "app": {
     "background": {
