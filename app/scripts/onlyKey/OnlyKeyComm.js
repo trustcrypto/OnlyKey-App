@@ -2752,13 +2752,22 @@ function base64tohex(base64) {
 
 function parseBackupData(contents) {
   var newContents = [];
+  // TODO hash each line, check that hash matches backup file hash
+  // let backuphash = new Array(32).fill(0);
   // split by newline
   contents.split("\n").forEach(function (line) {
     if (line.indexOf("--") !== 0) {
       newContents.push(base64tohex(line));
+      //try {
+        //backuphash = await Array.from(openpgp.crypto.hash.digest(8, backuphash, base64tohex(line))); // Sha256 hash of backuphash and current line
+      //} catch (e) {
+        //return cb(e);
+      //}
+    } else if (line.indexOf("BACKUP") !== 0) { // This line is -----<sha256hash>-----
+      // TODO test that filebackuphash and backuphash are the same, if not backup is corrupt
+      // let filebackuphash = base64tohex(line.slice(5, line.length-5))); // sha256 hash is 32 bytes
     }
   });
-
   // join back to unified base64 string
   newContents = newContents.join("");
   return newContents;
