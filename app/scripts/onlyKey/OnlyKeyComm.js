@@ -424,32 +424,23 @@ OnlyKey.prototype.flushMessage = async function (callback = () => {}) {
   const msgId = pendingMessagesTypes[0];
 
   console.info(`Flushing pending ${msgId}.`);
-  this.sendPinMessage(
-    {
-      msgId,
-      poll: false,
-    },
-    () => {
-      pollForInput(
-        {
-          flush: true,
-        },
-        (err, msg) => {
-          this.setLastMessage("received", "Canceled");
-          if (msg) {
-            console.info("Flushed previous message.");
-            return this.flushMessage(callback);
-          } else {
-            return callback();
-          }
-        }
-      );
-    }
-  );
+  this.sendPinMessage({ msgId, poll: false }, () => {
+    pollForInput({ flush: true }, (err, msg) => {
+      this.setLastMessage("received", "Canceled");
+      if (msg) {
+        console.info("Flushed previous message.");
+        return this.flushMessage(callback);
+      } else {
+        return callback();
+      }
+    });
+  });
 };
 
 OnlyKey.prototype.listenforvalue = async function (succeed_msg) {
-  await listenForMessageIncludes2("Error", succeed_msg);
+  await listenForMessageIncludes2("Error", succeed_msg).catch(error => {
+    throw error;
+  });
 };
 
 OnlyKey.prototype.listen = function (callback) {
@@ -927,7 +918,9 @@ OnlyKey.prototype.setLockout = function (lockout, callback) {
 
 OnlyKey.prototype.setWipeMode = function (wipeMode) {
   this.setSlot("XX", "WIPEMODE", wipeMode, async () => {
-    return await this.listenforvalue("set Wipe Mode");
+    return await this.listenforvalue("set Wipe Mode").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
@@ -944,32 +937,42 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
 
 OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode) {
   this.setSlot("XX", "derivedchallengeMode", derivedchallengeMode, async () => {
-    return await this.listenforvalue("challenge mode");
+    return await this.listenforvalue("challenge mode").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
 OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode) {
   this.setSlot("XX", "storedchallengeMode", storedchallengeMode, async () => {
-    return await this.listenforvalue("challenge mode");
+    return await this.listenforvalue("challenge mode").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
 OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode) {
   this.setSlot("XX", "hmacchallengeMode", hmacchallengeMode, async () => {
-    return await this.listenforvalue("HMAC Challenge Mode");
+    return await this.listenforvalue("HMAC Challenge Mode").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
 OnlyKey.prototype.setmodkeyMode = function (modkeyMode) {
   this.setSlot("XX", "modkeyMode", modkeyMode, async () => {
-    return await this.listenforvalue("Sysadmin Mode");
+    return await this.listenforvalue("Sysadmin Mode").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
 OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode) {
   backupKeyMode = parseInt(backupKeyMode, 10);
   this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode,  async () => {
-    return await this.listenforvalue("set Backup Key Mode");
+    return await this.listenforvalue("set Backup Key Mode").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
@@ -987,7 +990,9 @@ OnlyKey.prototype.setLedBrightness = function (ledBrightness) {
 
 OnlyKey.prototype.setLockButton = function (lockButton) {
   this.setSlot("XX", "LOCKBUTTON", lockButton, async () => {
-    return await this.listenforvalue("set lock button");
+    return await this.listenforvalue("set lock button").catch(error => {
+      console.error(error.message);
+    });
   });
 };
 
@@ -1665,45 +1670,45 @@ function enableAuthForms() {
   yubiWipe.addEventListener("click", wipeYubiAuthForm);
 
   var lockoutSubmit = document.getElementById("lockoutSubmit");
-  lockoutSubmit.addEventListener("click", submitLockoutForm);
+  lockoutSubmit.addEventListener("click", submitLockout);
 
   const fullWipeModeBtn = document.getElementById("fullWipeModeBtn");
-  fullWipeModeBtn.addEventListener("click", (e) => submitWipeModeForm(e, 2));
+  fullWipeModeBtn.addEventListener("click", (e) => submitWipeMode(e, 2));
 
   const backupModeBtn = document.getElementById("backupModeBtn");
-  backupModeBtn.addEventListener("click", (e) => submitBackupModeForm(e, 1));
+  backupModeBtn.addEventListener("click", (e) => submitBackupMode(e, 1));
 
   const storedKeyChallengeCodeBtn = document.getElementById("storedKeyChallengeCodeBtn");
-  storedKeyChallengeCodeBtn.addEventListener("click", (e) => submitstoredchallengeModeForm(e, 0));
+  storedKeyChallengeCodeBtn.addEventListener("click", (e) => submitstoredchallengeMode(e, 0));
   const storedKeyBtnPressBtn = document.getElementById("storedKeyBtnPressBtn");
-  storedKeyBtnPressBtn.addEventListener("click", (e) => submitstoredchallengeModeForm(e, 1));
+  storedKeyBtnPressBtn.addEventListener("click", (e) => submitstoredchallengeMode(e, 1));
 
   const derivedKeyChallengeCodeBtn = document.getElementById("derivedKeyChallengeCodeBtn");
-  derivedKeyChallengeCodeBtn.addEventListener("click", (e) => submitderivedchallengeModeForm(e, 0));
+  derivedKeyChallengeCodeBtn.addEventListener("click", (e) => submitderivedchallengeMode(e, 0));
   const derivedKeyBtnPressBtn = document.getElementById("derivedKeyBtnPressBtn");
-  derivedKeyBtnPressBtn.addEventListener("click", (e) => submitderivedchallengeModeForm(e, 1));
+  derivedKeyBtnPressBtn.addEventListener("click", (e) => submitderivedchallengeMode(e, 1));
 
   const disableModkeyModeBtn = document.getElementById("disableModkeyModeBtn");
-  disableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyModeForm(e, 0));
+  disableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyMode(e, 0));
   const enableModkeyModeBtn = document.getElementById("enableModkeyModeBtn");
-  enableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyModeForm(e, 1));
+  enableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyMode(e, 1));
 
   const disableHmacBtnPressBtn = document.getElementById("disableHmacBtnPressBtn");
-  disableHmacBtnPressBtn.addEventListener("click", (e) => submithmacchallengeModeForm(e, 0));
+  disableHmacBtnPressBtn.addEventListener("click", (e) => submithmacchallengeMode(e, 0));
   const enableHmacBtnPressBtn = document.getElementById("enableHmacBtnPressBtn");
-  enableHmacBtnPressBtn.addEventListener("click", (e) => submithmacchallengeModeForm(e, 1));
+  enableHmacBtnPressBtn.addEventListener("click", (e) => submithmacchallengeMode(e, 1));
 
   var typeSpeedSubmit = document.getElementById("typeSpeedSubmit");
-  typeSpeedSubmit.addEventListener("click", submitTypeSpeedForm);
+  typeSpeedSubmit.addEventListener("click", submitTypeSpeed);
 
   var ledBrightnessSubmit = document.getElementById("ledBrightnessSubmit");
-  ledBrightnessSubmit.addEventListener("click", submitLedBrightnessForm);
+  ledBrightnessSubmit.addEventListener("click", submitLedBrightness);
 
   var lockButtonSubmit = document.getElementById("lockButtonSubmit");
-  lockButtonSubmit.addEventListener("click", submitLockButtonForm);
+  lockButtonSubmit.addEventListener("click", submitLockButton);
 
   var kbdLayoutSubmit = document.getElementById("kbdLayoutSubmit");
-  kbdLayoutSubmit.addEventListener("click", submitKBDLayoutForm);
+  kbdLayoutSubmit.addEventListener("click", submitKBDLayout);
 
   var eccSubmit = document.getElementById("eccSubmit");
   eccSubmit.addEventListener("click", submitEccForm);
@@ -1721,7 +1726,7 @@ function enableAuthForms() {
   };
 
   var rsaWipe = document.getElementById("rsaWipe");
-  rsaWipe.addEventListener("click", wipeRsaKeyForm);
+  rsaWipe.addEventListener("click", wipeRsaKey);
 
   var backupSave = document.getElementById("backupSave");
   backupSave.addEventListener("click", saveBackupFile);
@@ -2431,12 +2436,12 @@ async function listenForMessageIncludes2(...args) {
       if (msg) {
         if (args.some(str => msg.includes(str))) {
           console.info(`Match received "${msg}"`);
-          return resolve();
+        } else {
+          //Chrome app background page sends settime which results in unexpected unlocked response
+          console.info(`Received ${msg}`);
+        // return await listenForMessageIncludesAgain2(resolve, reject);
         }
-
-        //Chrome app background page sends settime which results in unexpected unlocked response
-        console.info(`Received ${msg}`);
-        return await listenForMessageIncludesAgain2(resolve, reject);
+        return resolve();
       }
       
       console.info(`Error received "${err.message || err}"`);
@@ -2461,7 +2466,7 @@ function parseFirmwareData(contents = "") {
   return newContent;
 }
 
-function wipeRsaKeyForm(e) {
+function wipeRsaKey(e) {
   e && e.preventDefault && e.preventDefault();
   ui.rsaForm.setError("");
 
@@ -2471,7 +2476,7 @@ function wipeRsaKeyForm(e) {
   });
 }
 
-function submitLockoutForm(e) {
+function submitLockout(e) {
   e && e.preventDefault && e.preventDefault();
   var lockout = parseInt(ui.lockoutForm.okLockout.value, 10);
   if (isNaN(lockout)) {
@@ -2496,37 +2501,37 @@ function submitLockoutForm(e) {
   });
 }
 
-function submitstoredchallengeModeForm(e, storedchallengeMode) {
+function submitstoredchallengeMode(e, storedchallengeMode) {
   e && e.preventDefault && e.preventDefault();
   return myOnlyKey.setstoredchallengeMode(storedchallengeMode);
 }
 
-function submitderivedchallengeModeForm(e, derivedchallengeMode) {
+function submitderivedchallengeMode(e, derivedchallengeMode) {
   e && e.preventDefault && e.preventDefault();
   return myOnlyKey.setderivedchallengeMode(derivedchallengeMode);
 }
 
-function submithmacchallengeModeForm(e, hmacchallengeMode) {
+function submithmacchallengeMode(e, hmacchallengeMode) {
   e && e.preventDefault && e.preventDefault();
   return myOnlyKey.sethmacchallengeMode(hmacchallengeMode);
 }
 
-function submitmodkeyModeForm(e, modkeyMode) {
+function submitmodkeyMode(e, modkeyMode) {
   e && e.preventDefault && e.preventDefault();
   return myOnlyKey.setmodkeyMode(modkeyMode);
 }
 
-function submitBackupModeForm(e, backupKeyMode) {
+function submitBackupMode(e, backupKeyMode) {
   e && e.preventDefault && e.preventDefault();
   return myOnlyKey.setbackupKeyMode(backupKeyMode);
 }
 
-function submitWipeModeForm(e, wipeMode) {
+function submitWipeMode(e, wipeMode) {
   e && e.preventDefault && e.preventDefault();
   return myOnlyKey.setWipeMode(wipeMode);
 }
 
-function submitTypeSpeedForm(e) {
+function submitTypeSpeed(e) {
   e && e.preventDefault && e.preventDefault();
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
 
@@ -2535,10 +2540,16 @@ function submitTypeSpeedForm(e) {
   }
 
   typeSpeed = Math.min(typeSpeed, 10);
-  return myOnlyKey.setTypeSpeed(typeSpeed);
+  return myOnlyKey.setTypeSpeed(typeSpeed, function (err) {
+    myOnlyKey.setLastMessage(
+      "received",
+      "Type speed set to " + typeSpeed
+    );
+    ui.typeSpeedForm.reset();
+  });
 }
 
-function submitLedBrightnessForm(e) {
+function submitLedBrightness(e) {
   e && e.preventDefault && e.preventDefault();
   var ledBrightness = parseInt(ui.ledBrightnessForm.okLedBrightness.value, 10);
 
@@ -2547,10 +2558,16 @@ function submitLedBrightnessForm(e) {
   }
 
   ledBrightness = Math.min(ledBrightness, 10);
-  return myOnlyKey.setLedBrightness(ledBrightness);
+  return myOnlyKey.setLedBrightness(ledBrightness, function (err) {
+    myOnlyKey.setLastMessage(
+      "received",
+      "LED brightness set to " + ledBrightness
+    );
+    ui.ledBrightnessForm.reset();
+  });
 }
 
-function submitLockButtonForm(e) {
+function submitLockButton(e) {
   e && e.preventDefault && e.preventDefault();
   var lockButton = parseInt(ui.lockButtonForm.okLockButton.value, 10);
 
@@ -2562,7 +2579,7 @@ function submitLockButtonForm(e) {
   return myOnlyKey.setLockButton(lockButton);
 }
 
-function submitKBDLayoutForm(e) {
+function submitKBDLayout(e) {
   e && e.preventDefault && e.preventDefault();
   var kbdLayout = parseInt(ui.keyboardLayoutForm.okKeyboardLayout.value, 10);
 
