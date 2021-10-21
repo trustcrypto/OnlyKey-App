@@ -517,7 +517,7 @@
               <br />
               (1 = dimmest, 8 = default, 10 = brightest)
             </form>
-            <form id="modkeyModeForm" name="modkeyModeForm">
+            <form>
               <b class="config-mode-required">Sysadmin Mode</b
               ><a
               href="https://docs.crp.to/usersguide.html#sysadmin-mode"
@@ -525,55 +525,46 @@
               data-tooltip="By default, OnlyKey may only type regular keyboard characters, TAB, and RETURN. This is useful for entering login information like usernames and passwords. For more advanced use cases such as for system administrators, keystroke combinations such as CTRL-ALT-DEL and username/password or system commands may be used."
               ><img class="moveimage" src="/images/solid/question-circle.svg"
             /></a>
-              <br />
-              <label>
-                <input type="radio" checked name="okmodkeyMode" value="0" />
-                <u>Disable Sysadmin Mode</u>
-              </label>
-              <br />
-              <label>
-                <input type="radio" name="okmodkeyMode" value="1" />
-                <u>Enable Sysadmin Mode</u>
-              </label>
+              <br/>
+              Allow advanced keystroke combinations and system commands?
               <br />
               <input
                 type="button"
-                id="modkeyModeSubmit"
-                value="Set Sysadmin Mode"
-              /><br />
-            </form>
-            <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
+                id="enableModkeyModeBtn"
+                value="Yes"
+              />
+              <input
+                type="button"
+                id="disableModkeyModeBtn"
+                value="No"
+              />
+              <br />
+              </form>
+            <form>
               <b class="config-mode-required">HMAC User Input Mode</b
               ><a
               href="https://docs.crp.to/usersguide.html#hmac-mode"
               class="external tooltip fade"
-              data-tooltip="By default, you must press a button on OnlyKey to perform HMAC challenge-response operations. Changing this option to 'Button Press Not Required' allows those operations without pressing a button."
+              data-tooltip="By default, you must press a button on OnlyKey to perform HMAC challenge-response operations. Selecting 'NO' for this option allows those operations without pressing a button."
               ><img class="moveimage" src="/images/solid/question-circle.svg"
             /></a>
               <br />
-              <label>
-                <input
-                  type="radio"
-                  checked
-                  name="okhmacchallengeMode"
-                  value="0"
-                />
-                <u>Button Press Required</u>
-              </label>
-              <br />
-              <label>
-                <input type="radio" name="okhmacchallengeMode" value="1" />
-                <u>Button Press Not Required</u>
-              </label>
+              Require a button press for HMAC challenge-response operations?
               <br />
               <input
                 type="button"
-                id="hmacchallengeModeSubmit"
-                value="Set HMAC User Input Mode"
-              /><br />
+                id="enableHmacBtnPressBtn"
+                value="Yes"
+              />
+              <input
+                type="button"
+                id="disableHmacBtnPressBtn"
+                value="No"
+              />
+              <br />
             </form>
-            <form id="wipeModeForm" name="wipeModeForm">
-              <b class="config-mode-required">Wipe Mode</b
+            <form>
+              <b class="config-mode-required">Full Wipe Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#configurable-wipe-mode"
                 class="external tooltip fade"
@@ -582,11 +573,8 @@
               /></a>
               Only sensitive data is wiped by default.
               <br />
-              <label>
-                <input type="radio" checked name="okWipeMode" value="2" />
-                <u>Full Wipe</u> &ndash;
-                <em>Device is wiped and firmware must be reloaded.</em>
-              </label>
+              <u>Full Wipe</u> &ndash;
+              <em>Wipe device and firmware must be reloaded.</em>
               <br />
               <span style="font-size: small; background-color: yellow"
                 ><b>
@@ -596,8 +584,8 @@
               <br />
               <input
                 type="button"
-                id="wipeModeSubmit"
-                value="Set Wipe Mode"
+                id="fullWipeModeBtn"
+                value="Set Full Wipe Mode"
               /><br />
             </form>
           </div>
@@ -646,105 +634,50 @@
                 placeholder="1 - 6"
                 style="width: 50px"
               />
-              <input
-                type="button"
-                id="lockButtonSubmit"
-                value="Set as Lock Button"
-              />
+              <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
             </form>
-            <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
-              <b class="config-mode-required">Derived Key User Input Mode</b
-              ><a
+            <form>
+              <b class="config-mode-required">Derived Key User Input Mode</b><a
                 href="https://docs.crp.to/usersguide.html#challenge-mode"
                 class="external tooltip fade"
                 data-tooltip="By default, you must enter a 3-digit Challenge Code on OnlyKey to perform SSH or PGP operations. Changing this option to 'Button Press' allows those operations by tapping any button on your OnlyKey."
-                ><img class="moveimage" src="/images/solid/question-circle.svg"
-              /></a>
+              ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
               Enable or disable challenge for derived keys (SSH/PGP)
               <br />
-              <label>
-                <input
-                  type="radio"
-                  checked
-                  name="okderivedchallengeMode"
-                  value="0"
-                />
-                <u>Challenge Code Required</u>
-              </label>
+              <input type="button" id="derivedKeyChallengeCodeBtn" value="Challenge Code" />
+              <input type="button" id="derivedKeyBtnPressBtn" value="Button Press" />
               <br />
-              <label>
-                <input type="radio" name="okderivedchallengeMode" value="1" />
-                <u>Button Press Required</u>
-              </label>
-              <br />
-              <input
-                type="button"
-                id="derivedchallengeModeSubmit"
-                value="Set Derived Key User Input Mode"
-              /><br />
             </form>
-            <form id="storedchallengeModeForm" name="storedchallengeModeForm">
-              <b class="config-mode-required">Stored Key User Input Mode</b
-              ><a
+            <form>
+              <b class="config-mode-required">Stored Key User Input Mode</b><a
                 href="https://docs.crp.to/usersguide.html#challenge-mode"
                 class="external tooltip fade"
                 data-tooltip="By default, you must enter a 3-digit Challenge Code on OnlyKey to perform SSH or PGP operations. Changing this option to 'Button Press' allows those operations by tapping any button on your OnlyKey."
-                ><img class="moveimage" src="/images/solid/question-circle.svg"
-              /></a>
+              ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
               Enable or disable challenge for stored keys (SSH/PGP)
               <br />
-              <label>
-                <input
-                  type="radio"
-                  checked
-                  name="okStoredChallengeMode"
-                  value="0"
-                />
-                <u>Challenge Code Required</u>
-              </label>
+              <input type="button" id="storedKeyChallengeCodeBtn" value="Challenge Code" />
+              <input type="button" id="storedKeyBtnPressBtn" value="Button Press" />
               <br />
-              <label>
-                <input type="radio" name="okStoredChallengeMode" value="1" />
-                <u>Button Press Required</u>
-              </label>
-              <br />
-              <input
-                type="button"
-                id="storedchallengeModeSubmit"
-                value="Set Stored User Input Mode"
-              /><br />
             </form>
-            <form id="backupModeForm" name="backupModeForm">
+            <form>
               <b class="config-mode-required">Backup Key Mode</b>
               <a
                 class="tooltip fade external"
                 data-tooltip="Backup key may be changed by default. Enabling this setting prevents any changes to the backup key until a factory default is completed."
                 href="https://docs.crp.to/usersguide.html#backup-key-mode"
-              >
-                <img
-                  class="moveimage"
-                  src="/images/solid/question-circle.svg"
-                />
-              </a>
+              ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
-              <label>
-                <input type="radio" checked name="okBackupMode" value="1" />
-                <u>Locked</u> - <em>Backup key may not be changed on device</em>
-              </label>
+              <u>Locked</u> - <em>Backup key may not be changed on device</em>
               <br />
-              <span style="font-size: small; background-color: yellow"
-                ><b>
-                  WARNING - Once set to "Locked" this cannot be changed.
-                </b></span
-              >
+              <span style="font-size: small; background-color: yellow">
+                <b>WARNING - Once set to "Locked" this cannot be changed.</b>
+              </span>
               <br />
-              <input
-                type="button"
-                id="backupModeSubmit"
-                value="Set Backup Key Mode"
-              /><br />
+              <input type="button" id="backupModeBtn" value="Lock Backup Key" />
+              <br />
             </form>
           </div>
         </div>
