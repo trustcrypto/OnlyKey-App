@@ -918,9 +918,7 @@ OnlyKey.prototype.setLockout = function (lockout, callback) {
 
 OnlyKey.prototype.setWipeMode = function (wipeMode) {
   this.setSlot("XX", "WIPEMODE", wipeMode, async () => {
-    return await this.listenforvalue("set Wipe Mode").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("set Wipe Mode");
   });
 };
 
@@ -937,42 +935,32 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
 
 OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode) {
   this.setSlot("XX", "derivedchallengeMode", derivedchallengeMode, async () => {
-    return await this.listenforvalue("challenge mode").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("challenge mode");
   });
 };
 
 OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode) {
   this.setSlot("XX", "storedchallengeMode", storedchallengeMode, async () => {
-    return await this.listenforvalue("challenge mode").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("challenge mode");
   });
 };
 
 OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode) {
   this.setSlot("XX", "hmacchallengeMode", hmacchallengeMode, async () => {
-    return await this.listenforvalue("HMAC Challenge Mode").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("HMAC Challenge Mode");
   });
 };
 
 OnlyKey.prototype.setmodkeyMode = function (modkeyMode) {
   this.setSlot("XX", "modkeyMode", modkeyMode, async () => {
-    return await this.listenforvalue("Sysadmin Mode").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("Sysadmin Mode");
   });
 };
 
 OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode) {
   backupKeyMode = parseInt(backupKeyMode, 10);
   this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode,  async () => {
-    return await this.listenforvalue("set Backup Key Mode").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("set Backup Key Mode");
   });
 };
 
@@ -990,9 +978,7 @@ OnlyKey.prototype.setLedBrightness = function (ledBrightness) {
 
 OnlyKey.prototype.setLockButton = function (lockButton) {
   this.setSlot("XX", "LOCKBUTTON", lockButton, async () => {
-    return await this.listenforvalue("set lock button").catch(error => {
-      console.error(error.message);
-    });
+    return await this.listenforvalue("set lock button");
   });
 };
 
@@ -2437,9 +2423,9 @@ async function listenForMessageIncludes2(...args) {
         if (args.some(str => msg.includes(str))) {
           console.info(`Match received "${msg}"`);
         } else {
-          //Chrome app background page sends settime which results in unexpected unlocked response
           console.info(`Received ${msg}`);
-        // return await listenForMessageIncludesAgain2(resolve, reject);
+          //Chrome app background page sends settime which results in unexpected unlocked response
+          if (!desktopApp) return await listenForMessageIncludesAgain2(resolve, reject);
         }
         return resolve();
       }
@@ -2540,13 +2526,7 @@ function submitTypeSpeed(e) {
   }
 
   typeSpeed = Math.min(typeSpeed, 10);
-  return myOnlyKey.setTypeSpeed(typeSpeed, function (err) {
-    myOnlyKey.setLastMessage(
-      "received",
-      "Type speed set to " + typeSpeed
-    );
-    ui.typeSpeedForm.reset();
-  });
+  return myOnlyKey.setTypeSpeed(typeSpeed);
 }
 
 function submitLedBrightness(e) {
@@ -2558,13 +2538,7 @@ function submitLedBrightness(e) {
   }
 
   ledBrightness = Math.min(ledBrightness, 10);
-  return myOnlyKey.setLedBrightness(ledBrightness, function (err) {
-    myOnlyKey.setLastMessage(
-      "received",
-      "LED brightness set to " + ledBrightness
-    );
-    ui.ledBrightnessForm.reset();
-  });
+  return myOnlyKey.setLedBrightness(ledBrightness);
 }
 
 function submitLockButton(e) {
