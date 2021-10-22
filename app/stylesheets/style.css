@@ -152,10 +152,19 @@ dialog.white a {
   position: relative;
 }
 
-.slot-config-close {
+#slot-config-dialog h2 {
+  margin-top: 0;
+}
+
+#slot-config-top-links {
   position: absolute;
   top: 1em;
   right: 1em;
+  text-align: right;
+}
+
+#slot-config-top-links a {
+  margin-left: 2em;
 }
 
 #slotExamples>div {
@@ -408,4 +417,12 @@ nav>a.active {
   top: .3em;
   margin-right: .25em;
   font-weight: 100;
+}
+
+[data-mode="basic"] .advanced-option {
+  display: none;
+}
+
+#slot-config-form {
+  margin-left: -0.5em;
 }

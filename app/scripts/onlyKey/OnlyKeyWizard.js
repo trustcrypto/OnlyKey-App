@@ -480,6 +480,12 @@ if (chrome.passwordsPrivate) {
     this.slotConfigForm = document['slot-config-form'];
     this.slotConfigDialog = document.getElementById('slot-config-dialog');
 
+    this.slotConfigAdvancedModeInput = document.getElementById('slot-config-advanced');
+    this.slotConfigAdvancedModeInput.onchange = e => {
+      const mode = this.slotConfigAdvancedModeInput.checked ? 'advanced' : 'basic';
+      document.getElementById('slot-config-dialog').setAttribute('data-mode', mode);
+    }
+
     this.finalStepDialog = document.getElementById('finalStep-dialog');
 
     this.slotWipe = document.getElementById('slotWipe');
