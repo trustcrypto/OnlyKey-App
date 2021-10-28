@@ -1280,29 +1280,24 @@
 
     <dialog id="slot-config-dialog" data-mode="basic">
       <div id="slot-config-top-links">
-        <label>
-          <input type="checkbox" id="slot-config-advanced" />
-          Advanced Options
-        </label>
-        <a href="" class="slot-config-close" title="Close">[X]</a>
+        <a href="" class="slot-config-close" title="Close">close &#9746;</a>
       </div>
       <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
-      Check the box next to the fields you want to save to OnlyKey<br />
-      <img
-        class="moveimage"
-        src="/images/solid/arrow-down.svg"
-      />
+      <nav>
+        <a id="basic-slot-config" href="" class="active">Basic</a>
+        <a id="mfa-slot-config" href="">MFA</a>
+        <a id="advanced-slot-config" href="">Advanced</a>
+      </nav>
       <form name="slot-config-form" id="slot-config-form">
+        <p>
+          Check the boxes next to the fields you want to set<br />
+          <img
+            class="moveimage"
+            src="/images/solid/arrow-down.svg"
+          />
+        </p>
         <table>
-          <!--                 <tr>
-                    <td>Load Defaults From Template</td>
-                    <td>
-                        <select id="templates" name="templates">
-                            <option value="test">test</option>
-                        </select>
-                    </td>
-                </tr> -->
-          <tr>
+          <tr class="universal-option">
             <td>
               <label>
                 <input
@@ -1380,7 +1375,7 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input
@@ -1402,7 +1397,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn1" value="1" />
@@ -1440,7 +1435,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input
@@ -1462,7 +1457,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>Re-enter Password</td>
             <td>
               <input
@@ -1474,7 +1469,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn2" value="2" />
@@ -1486,11 +1481,11 @@
               </label>
             </td>
           </tr>
-          <tr></tr>
-          <tr class="advanced-option">
+          <tr class="universal-option"></tr>
+          <tr class="mfa-option">
             <td><br />Options below are for two-factor authentication:</td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn2" value="1" />
@@ -1498,7 +1493,7 @@
               </label>
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="mfa-option">
             <td>
               <label>
                 <input
@@ -1520,7 +1515,7 @@
               />
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn5" value="1" />
@@ -1532,7 +1527,7 @@
               </label>
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="mode" value="googleAuthOtp" />
@@ -1548,7 +1543,7 @@
               />
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn3" value="2" />
@@ -1560,8 +1555,8 @@
               </label>
             </td>
           </tr>
-          <tr></tr>
-          <tr class="advanced-option">
+          <tr class="universal-option"></tr>
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="mode" value="yubikeyOtp" />
@@ -1575,7 +1570,7 @@
               <br />
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn3" value="2" />
@@ -1587,10 +1582,10 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="universal-option">
             <td colspan="2" id="slotConfigErrors"></td>
           </tr>
-          <tr>
+          <tr class="universal-option">
             <td>
               <input
                 type="button"
@@ -1599,7 +1594,7 @@
                 value="Wipe Slot"
               />
             </td>
-            <td>
+            <td class="universal-option">
               <input
                 type="button"
                 id="slotSubmit"

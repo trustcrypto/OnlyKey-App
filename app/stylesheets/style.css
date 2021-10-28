@@ -167,6 +167,27 @@ dialog.white a {
   margin-left: 2em;
 }
 
+dialog > nav {
+  margin-left: .5em;
+}
+
+dialog > nav > a {
+  padding-bottom: 0;
+  padding-top: 0;
+  border-color: transparent;
+}
+
+dialog > nav + form {
+  background-color: white;
+  color: black;
+  padding: 0.5em;
+  border-radius: 4px;
+}
+
+dialog > nav + form > p {
+  margin: 0 0 0 .45em;
+}
+
 #slotExamples>div {
   margin-bottom: 2em;
 }
@@ -419,10 +440,10 @@ nav>a.active {
   font-weight: 100;
 }
 
-[data-mode="basic"] .advanced-option {
+[data-mode="basic"] .advanced-option, [data-mode="basic"] .mfa-option {
   display: none;
 }
 
-#slot-config-form {
-  margin-left: -0.5em;
+[data-mode="mfa"] .advanced-option, [data-mode="mfa"] .basic-option {
+  display: none;
 }

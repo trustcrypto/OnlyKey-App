@@ -480,11 +480,16 @@ if (chrome.passwordsPrivate) {
     this.slotConfigForm = document['slot-config-form'];
     this.slotConfigDialog = document.getElementById('slot-config-dialog');
 
-    this.slotConfigAdvancedModeInput = document.getElementById('slot-config-advanced');
-    this.slotConfigAdvancedModeInput.onchange = e => {
-      const mode = this.slotConfigAdvancedModeInput.checked ? 'advanced' : 'basic';
-      document.getElementById('slot-config-dialog').setAttribute('data-mode', mode);
-    }
+    const slotConfigModes = ['advanced', 'basic', 'mfa'];
+    slotConfigModes.forEach(mode => {
+      document.getElementById(`${mode}-slot-config`).onclick = e => {
+        e && e.preventDefault && e.preventDefault();
+        document.getElementById('slot-config-dialog').setAttribute('data-mode', mode);
+        slotConfigModes.forEach(eachMode => {
+          document.getElementById(`${eachMode}-slot-config`).classList[eachMode === mode ? 'add' : 'remove']('active');
+        })
+      }
+    });
 
     this.finalStepDialog = document.getElementById('finalStep-dialog');
 
