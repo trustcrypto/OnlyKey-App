@@ -241,7 +241,7 @@ td.ok-photo-cell {
 
 /* configure onlykey go photo background */
 td.okgo-photo-cell {
-  background: transparent url(/images/placeholder-go-photo.png) no-repeat 50% 0%;
+  background: transparent url(/images/placeholder-go-photo.jpg) no-repeat 50% 0%;
   background-size: contain;
   padding-top: 10px;
   width: 120px;

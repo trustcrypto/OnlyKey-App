@@ -341,7 +341,7 @@
           Configure Slots <a
           href="https://docs.crp.to/usersguide.html#all-about-slots"
           class="external tooltip fade"
-          data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and two-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
+          data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and multi-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
           ><img class="moveimage" src="/images/solid/cogs.svg" width="19px"
         /></a>
         </h2>
@@ -1284,15 +1284,16 @@
       </div>
       <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
       <nav>
-        <a id="basic-slot-config" href="" class="active">Basic</a>
-        <a id="mfa-slot-config" href="">MFA</a>
-        <a id="advanced-slot-config" href="">Advanced</a>
+        <a id="basic-slot-config" href="" class="active">Basic Login</a>
+        <a id="mfa-slot-config" href="">Multi-factor</a>
+        <a id="advanced-slot-config" href="">Full Configuration (Advanced)</a>
       </nav>
       <form name="slot-config-form" id="slot-config-form">
         <p>
           Check the boxes next to the fields you want to set<br />
           <img
             class="moveimage"
+            style="right: 3px"
             src="/images/solid/arrow-down.svg"
           />
         </p>
@@ -1479,13 +1480,16 @@
                 <input type="radio" name="tabReturn2" value="0" />
                 None
               </label>
+              <label>
+                <input type="radio" name="tabReturn2" value="1" />
+                Tab after Password
+              </label>
             </td>
           </tr>
-          <tr class="universal-option"></tr>
-          <tr class="mfa-option">
+          <tr class="advanced-option">
             <td><br />Options below are for two-factor authentication:</td>
           </tr>
-          <tr class="mfa-option">
+          <tr class="advanced-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn2" value="1" />
@@ -1493,7 +1497,7 @@
               </label>
             </td>
           </tr>
-          <tr class="mfa-option">
+          <tr class="advanced-option">
             <td>
               <label>
                 <input
@@ -1515,7 +1519,7 @@
               />
             </td>
           </tr>
-          <tr class="mfa-option">
+          <tr class="advanced-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn5" value="1" />
@@ -1563,9 +1567,40 @@
                 Yubikey OTP
               </label>
               <br />
+            </td>
+            <td>
               <label>
-                <input type="radio" name="mode" value="u2f" />
-                FIDO2 / U2F
+                <input
+                  type="text"
+                  id="yubiPublicId"
+                  name="yubiPublicId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="Public Identity"
+                  required
+                />
+              </label>
+              <label>
+                <input
+                  type="text"
+                  id="yubiPrivateId"
+                  name="yubiPrivateId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="Private Identity"
+                  required
+                />
+              </label>
+              <label>
+                <input
+                  type="text"
+                  id="yubiSecretKey"
+                  name="yubiSecretKey"
+                  maxlength="47"
+                  minlength="32"
+                  placeholder="Secret Key"
+                  required
+                />
               </label>
               <br />
             </td>
