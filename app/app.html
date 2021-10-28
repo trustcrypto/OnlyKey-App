@@ -1487,7 +1487,7 @@
             </td>
           </tr>
           <tr class="advanced-option">
-            <td><br />Options below are for two-factor authentication:</td>
+            <td>Options below are for two-factor authentication:</td>
           </tr>
           <tr class="advanced-option">
             <td>
@@ -1535,13 +1535,14 @@
             <td>
               <label>
                 <input type="radio" name="mode" value="googleAuthOtp" />
-                Google Authenticator OTP (TOTP)
+                OATH-TOTP (Google Authenticator)
               </label>
             </td>
             <td>
               <input
                 type="text"
                 id="txt2FAUserName"
+                placeholder="TOTP Secret"
                 name="txt2FAUserName"
                 value=""
               />
