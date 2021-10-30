@@ -67,7 +67,7 @@ h3,
   margin: 0.25em 0;
 }
 
-body>div {
+body > div {
   padding: 16px;
 }
 
@@ -79,7 +79,7 @@ body>div {
   filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
 }
 
-h2>img {
+h2 > img {
   /* filter values computed on https://codepen.io/sosuke/pen/Pjoqqp */
   filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
 }
@@ -172,9 +172,12 @@ dialog > nav {
 }
 
 dialog > nav > a {
-  padding-bottom: 0;
+  padding-bottom: 4px;
   padding-top: 0;
-  border-color: transparent;
+}
+
+dialog > nav > a.active {
+  border-color: white;
 }
 
 dialog > nav + form {
@@ -182,13 +185,15 @@ dialog > nav + form {
   color: black;
   padding: 0.5em;
   border-radius: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 dialog > nav + form > p {
   margin: 0 0 0 .45em;
 }
 
-#slotExamples>div {
+#slotExamples > div {
   margin-bottom: 2em;
 }
 
@@ -205,7 +210,7 @@ dialog > nav + form > p {
   margin-bottom: 0;
 }
 
-#lastMessage>span {
+#lastMessage > span {
   font-weight: bold;
 }
 
@@ -213,7 +218,7 @@ dialog > nav + form > p {
   opacity: 0.7;
 }
 
-#lastMessage li+li {
+#lastMessage li + li {
   opacity: 0.4;
 }
 
@@ -226,7 +231,7 @@ dialog > nav + form > p {
   text-align: right;
 }
 
-#versions>i {
+#versions > i {
   display: block;
 }
 
@@ -281,20 +286,20 @@ td.okgo-photo-cell {
   flex: 1 32%;
 }
 
-.flex-item>p,
-.flex-item>form,
-.flex-item>div {
+.flex-item > p,
+.flex-item > form,
+.flex-item > div {
   margin-right: 1em;
 }
 
-.flex-item+.flex-item>p,
-.flex-item+.flex-item>form,
-.flex-item+.flex-item>div {
+.flex-item + .flex-item > p,
+.flex-item + .flex-item > form,
+.flex-item + .flex-item > div {
   margin-right: 0;
   margin-left: 1em;
 }
 
-.flex-item form+form {
+.flex-item form + form {
   margin-top: 1.5em;
 }
 
@@ -303,23 +308,27 @@ nav {
   font-size: 12px;
 }
 
-nav>a {
+nav > a {
   padding: 4px 4px 2px 4px;
   border-radius: 6px 6px 0 0;
   border-bottom: 0;
-  border: 2px solid transparent;
+  border: 2px solid darkgray;
   text-decoration: none;
   font-size: 1.5em;
   color: darkgrey;
+  position: relative;
+  bottom: 2px;
+  border-bottom-color: transparent;
+  z-index: 1;
 }
 
-nav>a.active {
-  position: relative;
-  z-index: 2;
+nav > a.active {
   border-color: maroon;
   border-bottom: 0;
   background-color: white;
   color: maroon;
+  padding-bottom: 4px;
+  z-index: 2;
 }
 
 #main {
@@ -353,7 +362,7 @@ nav>a.active {
   color: darkgray;
 }
 
-.step-nav>* {
+.step-nav > * {
   margin-right: 1em;
 }
 
