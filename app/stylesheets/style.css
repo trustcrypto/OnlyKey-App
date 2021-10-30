@@ -203,7 +203,7 @@ dialog > nav + form > p {
   left: 0;
   padding: 0.5em 1em;
   background-color: transparent;
-  color: white;
+  color: black;
 }
 
 #lastMessage ul {
