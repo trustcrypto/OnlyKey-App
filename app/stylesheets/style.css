@@ -1,6 +1,6 @@
 @font-face {
   font-family: "HFont";
-  src: url("Roboto-Medium.ttf") format("truetype");
+  src: url("Lato-Regular.ttf") format("truetype");
 }
 
 @font-face {
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: "TxFont";
-  src: url("Roboto-Regular.ttf") format("truetype");
+  src: url("Lato-Regular.ttf") format("truetype");
 }
 
 body {
@@ -119,9 +119,9 @@ td[data-step].active {
 
 dialog {
   border-radius: 10px;
-  box-shadow: 0px 0px 8px 2px rgba(0, 0, 0, 0.5);
-  border-color: white;
-  background-color: #333;
+  box-shadow: 0px 0px 8px 2px black;
+  border-color: black;
+  background-color: #262A2C;
   color: white;
   max-width: 80%;
 }
@@ -136,11 +136,11 @@ dialog a {
 
 dialog.white {
   background-color: white;
-  color: black;
+  color: #262A2C;
 }
 
 dialog.white a {
-  color: black;
+  color: #262A2C;
 }
 
 .dialog-close {
@@ -177,7 +177,9 @@ dialog > nav > a {
 }
 
 dialog > nav > a.active {
-  border-color: white;
+  border-radius: 10px;
+  box-shadow: 0px 0px 8px 2px black;
+  border-color: black;
 }
 
 dialog > nav + form {
@@ -312,10 +314,10 @@ nav > a {
   padding: 4px 4px 2px 4px;
   border-radius: 6px 6px 0 0;
   border-bottom: 0;
-  border: 2px solid darkgray;
+  border: 2px solid #889096;
   text-decoration: none;
   font-size: 1.5em;
-  color: darkgrey;
+  color: #889096;
   position: relative;
   bottom: 2px;
   border-bottom-color: transparent;
@@ -323,11 +325,12 @@ nav > a {
 }
 
 nav > a.active {
-  border-color: #333;
+  border-color: black;
   border-bottom: 0;
   background-color: white;
-  color: #333;
+  color: #262A2C;
   padding-bottom: 4px;
+  font-size: 1.5em;
   z-index: 2;
 }
 
@@ -359,7 +362,7 @@ nav > a.active {
   font-family: TxFont, monospace;
   font-style: italic;
   font-weight: normal;
-  color: darkgray;
+  color: #889096;
 }
 
 .step-nav > * {
