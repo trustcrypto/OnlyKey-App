@@ -215,6 +215,7 @@ function OnlyKey(params = {}) {
     TFATYPE: 8,
     TFAUSERNAME: 9,
     YUBIAUTH: 10,
+    YUBIANDHMAC: 29,
     LOCKOUT: 11,
     WIPEMODE: 12,
     BACKUPKEYMODE: 20,

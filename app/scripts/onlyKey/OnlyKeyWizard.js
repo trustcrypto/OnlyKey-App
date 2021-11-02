@@ -878,7 +878,11 @@ if (chrome.passwordsPrivate) {
       txt2FAUserName: {
         input: form.txt2FAUserName,
         msgId: 'TFAUSERNAME'
-      }
+      },
+      yubiPublicId2: {
+        input: form.yubiPublicId2 + form.yubiPrivateId2 + form.yubiSecretKey2,
+        msgId: 'YUBIANDHMAC'
+      },
     };
 
     formErrorsContainer.innerHTML = "";
@@ -950,6 +954,20 @@ if (chrome.passwordsPrivate) {
               formValue = base32tohex(formValue.replace(/\s/g, ''));
               formValue = formValue.match(/.{2}/g);
               console.info("was converted to HEX:", formValue);
+            }
+            break;
+          case 'yubiPublicId2':
+            if (this.currentSlot.mode === 'yubikeyOtp') {
+
+              // TODO check for all three values, throw error if any are missing
+
+              // TODO combine three values, convert from modhex like other yubikey function
+
+              formValue = this.currentSlot['yubiPublicId2'] + this.currentSlot['yubiPrivateId2'] + this.currentSlot['yubiSecretKey2'] 
+              console.info(this.currentSlot['yubiPublicId2']);
+
+
+
             }
             break;
         }
