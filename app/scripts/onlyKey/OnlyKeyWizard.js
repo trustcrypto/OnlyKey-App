@@ -822,6 +822,8 @@ if (chrome.passwordsPrivate) {
     const form = this.slotConfigForm;
     const formErrors = [];
     const formErrorsContainer = document.getElementById('slotConfigErrors');
+    formErrorsContainer.innerHTML = "";
+
     const fieldMap = {
       chkSlotLabel: {
         input: form.txtSlotLabel,
@@ -878,27 +880,12 @@ if (chrome.passwordsPrivate) {
       txt2FAUserName: {
         input: form.txt2FAUserName,
         msgId: 'TFAUSERNAME'
+      },
+      yubiSlotPublicId: {
+        input: form.yubiSlotPublicId,
+        msgId: 'YUBIANDHMAC'
       }
     };
-
-    formErrorsContainer.innerHTML = "";
-
-    if (form.txtPassword.value !== form.txtPasswordConfirm.value) {
-      formErrors.push('Password fields do not match');
-    }
-
-    if (formErrors.length) {
-      // early exit
-      let html = "<ul>";
-      for (let i = 0; i < formErrors.length; i++) {
-        html += "<li><blink>" + formErrors[i]; + "</blink></li>";
-      }
-      formErrorsContainer.innerHTML = html + "</ul>";
-
-      this.slotSubmit.disabled = false;
-      this.slotWipe.disabled = false;
-      return;
-    }
 
     // process all form fields
     for (let field in fieldMap) {
@@ -914,45 +901,122 @@ if (chrome.passwordsPrivate) {
             } else {
               formValue = ('' + (fieldMap[field].input).value).trim();
             }
+
+            let error = false;
+            if (field === 'chkPassword') {
+              if (!formValue.length) {
+                formErrors.push('Password field cannot be blank');
+                error = true;
+              }
+              if (form.txtPassword.value !== form.txtPasswordConfirm.value) {
+                formErrors.push('Password fields do not match');
+                error = true;
+              }
+            }
             console.info(formValue);
             console.info((fieldMap[field].input).name)
-            form[field].checked = false;
+            if (!error) form[field].checked = false;
           }
           break;
         case 'hidden':
         case 'number':
         case 'text':
           const checkVar = ('' + (form[field].value)).trim();
-          if (checkVar.length) {
+          if (checkVar.length || field === 'txt2FAUserName' || field === 'yubiSlotPublicId') {
             isChecked = true;
             formValue = ('' + (fieldMap[field].input).value).trim();
-            form[field].value = '';
+
+            let error = false;
+            switch (field) {
+              // validate Google OTP fields
+              case 'txt2FAUserName':
+                if (this.currentSlot.mode === 'googleAuthOtp') {
+                  console.info("BASE32 value:", formValue);
+                  formValue = base32tohex(formValue.replace(/\s/g, ''));
+                  formValue = formValue.match(/.{2}/g);
+                  console.info("was converted to HEX:", formValue);
+                  delete this.currentSlot.mode;
+                } else {
+                  isChecked = false;
+                }
+                break;
+              // validate Yubikey OTP fields
+              case 'yubiSlotPublicId':
+                if (this.currentSlot.mode === 'yubikeyOtp') {
+                  const privateIdField = form['yubiSlotPrivateId'];
+                  const secretField = form['yubiSlotSecretKey'];
+                  const privateId = ('' + privateIdField.value).trim();
+                  const secret = ('' + secretField.value).trim();
+
+                  formValue += (privateId + secret);
+                  console.info("BASE32 value:", formValue);
+                  formValue = base32tohex(formValue.replace(/\s/g, ''));
+                  formValue = formValue.match(/.{2}/g);
+                  console.info("was converted to HEX:", formValue);
+                  privateIdField.value = '';
+                  secretField.value = '';
+                  delete this.currentSlot.mode;
+                } else {
+                  isChecked = false;
+                }
+                break;
+            }
+    
+            if (!error) form[field].value = '';
           }
           break;
         case undefined: // radios?
           if (form[field].value !== '') {
+            let error = false;
             isChecked = true;
             formValue = (fieldMap[field].input).value;
-            clearRadios(field);
+
+            // check OTP required fields before committing to set OTP mode
+            switch(formValue) {
+              case 'googleAuthOtp':
+                const txt2FAUserName = ('' + form['txt2FAUserName'].value).trim();
+                if (!txt2FAUserName.length) {
+                  formErrors.push('OATH-TOTP secret cannot be blank');
+                  error = true;
+                }
+                break;
+              case 'yubikeyOtp':
+                const publicId = ('' + form['yubiSlotPublicId'].value).trim();
+                const privateId = ('' + form['yubiSlotPrivateId'].value).trim();
+                const secret = ('' + form['yubiSlotSecretKey'].value).trim();
+  
+                if (!publicId.length || !privateId.length || !secret.length) {
+                  formErrors.push('Yubikey public ID, private ID, and secret cannot be blank');
+                  error = true;
+                }
+                break;
+              default:
+                break;
+            }
+            
+            if (!error) clearRadios(field);
           }
+
           break;
         default:
           break;
       }
 
       if (isChecked) {
-        this.currentSlot[field] = formValue;
-
-        switch (field) {
-          case 'txt2FAUserName':
-            if (this.currentSlot.mode === 'googleAuthOtp') {
-              console.info("BASE32 value:", formValue);
-              formValue = base32tohex(formValue.replace(/\s/g, ''));
-              formValue = formValue.match(/.{2}/g);
-              console.info("was converted to HEX:", formValue);
-            }
-            break;
+        if (formErrors.length) {
+          // early exit
+          let html = '';
+          for (let i = 0; i < formErrors.length; i++) {
+            html += `<li>${formErrors[i]}</li>`;
+          }
+          formErrorsContainer.innerHTML = `<ul>${html}</ul>`;
+    
+          this.slotSubmit.disabled = false;
+          this.slotWipe.disabled = false;
+          return;
         }
+
+        this.currentSlot[field] = formValue;
 
         this.onlyKey.setSlot(null, fieldMap[field].msgId, formValue, (err, msg) => {
           if (!err) {

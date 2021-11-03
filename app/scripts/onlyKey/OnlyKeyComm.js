@@ -215,6 +215,7 @@ function OnlyKey(params = {}) {
     TFATYPE: 8,
     TFAUSERNAME: 9,
     YUBIAUTH: 10,
+    YUBIANDHMAC: 29,
     LOCKOUT: 11,
     WIPEMODE: 12,
     BACKUPKEYMODE: 20,
@@ -1626,9 +1627,10 @@ function initSlotConfigForm() {
   ui.slotConfigDialog
     .getElementsByClassName("slot-config-close")[0]
     .addEventListener("click", closeSlotConfigForm);
-  ui.slotConfigDialog.addEventListener("close", () =>
+  ui.slotConfigDialog.addEventListener("close", () => {
+    document.getElementById('slotConfigErrors').innerHTML = '';
     ui.slotConfigForm.reset()
-  );
+  });
 }
 
 function showSlotConfigForm(e) {
