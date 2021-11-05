@@ -30,7 +30,7 @@
     </div>
 
     <div id="main" class="hide">
-      <img src="/images/OnlyKey_Logo_360x.png" width="280" />
+      <img src="/images/OnlyKey_Logo.png" width="340" />
 
       <nav>
         <a id="show-init-panel" href="">Setup</a>
@@ -341,7 +341,7 @@
           Configure Slots <a
           href="https://docs.crp.to/usersguide.html#all-about-slots"
           class="external tooltip fade"
-          data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and two-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
+          data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and multi-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
           ><img class="moveimage" src="/images/solid/cogs.svg" width="19px"
         /></a>
         </h2>
@@ -517,7 +517,7 @@
               <br />
               (1 = dimmest, 8 = default, 10 = brightest)
             </form>
-            <form id="modkeyModeForm" name="modkeyModeForm">
+            <form>
               <b class="config-mode-required">Sysadmin Mode</b
               ><a
               href="https://docs.crp.to/usersguide.html#sysadmin-mode"
@@ -525,55 +525,46 @@
               data-tooltip="By default, OnlyKey may only type regular keyboard characters, TAB, and RETURN. This is useful for entering login information like usernames and passwords. For more advanced use cases such as for system administrators, keystroke combinations such as CTRL-ALT-DEL and username/password or system commands may be used."
               ><img class="moveimage" src="/images/solid/question-circle.svg"
             /></a>
-              <br />
-              <label>
-                <input type="radio" checked name="okmodkeyMode" value="0" />
-                <u>Disable Sysadmin Mode</u>
-              </label>
-              <br />
-              <label>
-                <input type="radio" name="okmodkeyMode" value="1" />
-                <u>Enable Sysadmin Mode</u>
-              </label>
+              <br/>
+              Allow advanced keystroke combinations and system commands?
               <br />
               <input
                 type="button"
-                id="modkeyModeSubmit"
-                value="Set Sysadmin Mode"
-              /><br />
-            </form>
-            <form id="hmacchallengeModeForm" name="hmacchallengeModeForm">
+                id="enableModkeyModeBtn"
+                value="Yes"
+              />
+              <input
+                type="button"
+                id="disableModkeyModeBtn"
+                value="No"
+              />
+              <br />
+              </form>
+            <form>
               <b class="config-mode-required">HMAC User Input Mode</b
               ><a
               href="https://docs.crp.to/usersguide.html#hmac-mode"
               class="external tooltip fade"
-              data-tooltip="By default, you must press a button on OnlyKey to perform HMAC challenge-response operations. Changing this option to 'Button Press Not Required' allows those operations without pressing a button."
+              data-tooltip="By default, you must press a button on OnlyKey to perform HMAC challenge-response operations. Selecting 'NO' for this option allows those operations without pressing a button."
               ><img class="moveimage" src="/images/solid/question-circle.svg"
             /></a>
               <br />
-              <label>
-                <input
-                  type="radio"
-                  checked
-                  name="okhmacchallengeMode"
-                  value="0"
-                />
-                <u>Button Press Required</u>
-              </label>
-              <br />
-              <label>
-                <input type="radio" name="okhmacchallengeMode" value="1" />
-                <u>Button Press Not Required</u>
-              </label>
+              Require a button press for HMAC challenge-response operations?
               <br />
               <input
                 type="button"
-                id="hmacchallengeModeSubmit"
-                value="Set HMAC User Input Mode"
-              /><br />
+                id="enableHmacBtnPressBtn"
+                value="Yes"
+              />
+              <input
+                type="button"
+                id="disableHmacBtnPressBtn"
+                value="No"
+              />
+              <br />
             </form>
-            <form id="wipeModeForm" name="wipeModeForm">
-              <b class="config-mode-required">Wipe Mode</b
+            <form>
+              <b class="config-mode-required">Full Wipe Mode</b
               ><a
                 href="https://docs.crp.to/usersguide.html#configurable-wipe-mode"
                 class="external tooltip fade"
@@ -582,11 +573,8 @@
               /></a>
               Only sensitive data is wiped by default.
               <br />
-              <label>
-                <input type="radio" checked name="okWipeMode" value="2" />
-                <u>Full Wipe</u> &ndash;
-                <em>Device is wiped and firmware must be reloaded.</em>
-              </label>
+              <u>Full Wipe</u> &ndash;
+              <em>Wipe device and firmware must be reloaded.</em>
               <br />
               <span style="font-size: small; background-color: yellow"
                 ><b>
@@ -596,8 +584,8 @@
               <br />
               <input
                 type="button"
-                id="wipeModeSubmit"
-                value="Set Wipe Mode"
+                id="fullWipeModeBtn"
+                value="Set Full Wipe Mode"
               /><br />
             </form>
           </div>
@@ -646,105 +634,50 @@
                 placeholder="1 - 6"
                 style="width: 50px"
               />
-              <input
-                type="button"
-                id="lockButtonSubmit"
-                value="Set as Lock Button"
-              />
+              <input type="button" id="lockButtonSubmit" value="Set as Lock Button" />
             </form>
-            <form id="derivedchallengeModeForm" name="derivedchallengeModeForm">
-              <b class="config-mode-required">Derived Key User Input Mode</b
-              ><a
+            <form>
+              <b class="config-mode-required">Derived Key User Input Mode</b><a
                 href="https://docs.crp.to/usersguide.html#challenge-mode"
                 class="external tooltip fade"
                 data-tooltip="By default, you must enter a 3-digit Challenge Code on OnlyKey to perform SSH or PGP operations. Changing this option to 'Button Press' allows those operations by tapping any button on your OnlyKey."
-                ><img class="moveimage" src="/images/solid/question-circle.svg"
-              /></a>
+              ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
               Enable or disable challenge for derived keys (SSH/PGP)
               <br />
-              <label>
-                <input
-                  type="radio"
-                  checked
-                  name="okderivedchallengeMode"
-                  value="0"
-                />
-                <u>Challenge Code Required</u>
-              </label>
+              <input type="button" id="derivedKeyChallengeCodeBtn" value="Challenge Code" />
+              <input type="button" id="derivedKeyBtnPressBtn" value="Button Press" />
               <br />
-              <label>
-                <input type="radio" name="okderivedchallengeMode" value="1" />
-                <u>Button Press Required</u>
-              </label>
-              <br />
-              <input
-                type="button"
-                id="derivedchallengeModeSubmit"
-                value="Set Derived Key User Input Mode"
-              /><br />
             </form>
-            <form id="storedchallengeModeForm" name="storedchallengeModeForm">
-              <b class="config-mode-required">Stored Key User Input Mode</b
-              ><a
+            <form>
+              <b class="config-mode-required">Stored Key User Input Mode</b><a
                 href="https://docs.crp.to/usersguide.html#challenge-mode"
                 class="external tooltip fade"
                 data-tooltip="By default, you must enter a 3-digit Challenge Code on OnlyKey to perform SSH or PGP operations. Changing this option to 'Button Press' allows those operations by tapping any button on your OnlyKey."
-                ><img class="moveimage" src="/images/solid/question-circle.svg"
-              /></a>
+              ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
               Enable or disable challenge for stored keys (SSH/PGP)
               <br />
-              <label>
-                <input
-                  type="radio"
-                  checked
-                  name="okStoredChallengeMode"
-                  value="0"
-                />
-                <u>Challenge Code Required</u>
-              </label>
+              <input type="button" id="storedKeyChallengeCodeBtn" value="Challenge Code" />
+              <input type="button" id="storedKeyBtnPressBtn" value="Button Press" />
               <br />
-              <label>
-                <input type="radio" name="okStoredChallengeMode" value="1" />
-                <u>Button Press Required</u>
-              </label>
-              <br />
-              <input
-                type="button"
-                id="storedchallengeModeSubmit"
-                value="Set Stored User Input Mode"
-              /><br />
             </form>
-            <form id="backupModeForm" name="backupModeForm">
+            <form>
               <b class="config-mode-required">Backup Key Mode</b>
               <a
                 class="tooltip fade external"
                 data-tooltip="Backup key may be changed by default. Enabling this setting prevents any changes to the backup key until a factory default is completed."
                 href="https://docs.crp.to/usersguide.html#backup-key-mode"
-              >
-                <img
-                  class="moveimage"
-                  src="/images/solid/question-circle.svg"
-                />
-              </a>
+              ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
-              <label>
-                <input type="radio" checked name="okBackupMode" value="1" />
-                <u>Locked</u> - <em>Backup key may not be changed on device</em>
-              </label>
+              <u>Locked</u> - <em>Backup key may not be changed on device</em>
               <br />
-              <span style="font-size: small; background-color: yellow"
-                ><b>
-                  WARNING - Once set to "Locked" this cannot be changed.
-                </b></span
-              >
+              <span style="font-size: small; background-color: yellow">
+                <b>WARNING - Once set to "Locked" this cannot be changed.</b>
+              </span>
               <br />
-              <input
-                type="button"
-                id="backupModeSubmit"
-                value="Set Backup Key Mode"
-              /><br />
+              <input type="button" id="backupModeBtn" value="Lock Backup Key" />
+              <br />
             </form>
           </div>
         </div>
@@ -1345,26 +1278,23 @@
       <div id="selectPrivateKeyError" class="form-error"></div>
     </dialog>
 
-    <dialog id="slot-config-dialog">
-      <a href="" class="slot-config-close">cancel [x]</a>
+    <dialog id="slot-config-dialog" data-mode="basic">
+      <div id="slot-config-top-links">
+        <a href="" class="slot-config-close" title="Close">close &#9746;</a>
+      </div>
       <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
-      Check the box next to the fields you want to save to OnlyKey<br />
-      <img
-        class="moveimage"
-        style="right: 8px"
-        src="/images/solid/arrow-down.svg"
-      />
+      <nav>
+        <a id="basic-slot-config" href="" class="active">Basic Login</a>
+        <a id="mfa-slot-config" href="">Multi-factor</a>
+        <a id="advanced-slot-config" href="">Full Configuration (Advanced)</a>
+      </nav>
       <form name="slot-config-form" id="slot-config-form">
+        <p>
+          Check the boxes next to the fields you want to set<br />
+          <img class="moveimage" src="/images/solid/arrow-down.svg" />
+        </p>
         <table>
-          <!--                 <tr>
-                    <td>Load Defaults From Template</td>
-                    <td>
-                        <select id="templates" name="templates">
-                            <option value="test">test</option>
-                        </select>
-                    </td>
-                </tr> -->
-          <tr>
+          <tr class="universal-option">
             <td>
               <label>
                 <input
@@ -1386,7 +1316,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input
@@ -1408,7 +1338,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input
@@ -1430,7 +1360,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn4" value="1" />
@@ -1442,7 +1372,7 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input
@@ -1464,7 +1394,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn1" value="1" />
@@ -1480,7 +1410,7 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input
@@ -1502,7 +1432,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input
@@ -1524,7 +1454,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>Re-enter Password</td>
             <td>
               <input
@@ -1536,7 +1466,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="basic-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn2" value="2" />
@@ -1546,13 +1476,16 @@
                 <input type="radio" name="tabReturn2" value="0" />
                 None
               </label>
+              <label>
+                <input type="radio" name="tabReturn2" value="1" />
+                Tab after Password
+              </label>
             </td>
           </tr>
-          <tr></tr>
-          <tr>
-            <td><br />Options below are for two-factor authentication:</td>
+          <tr class="advanced-option">
+            <td>Options below are for two-factor authentication:</td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn2" value="1" />
@@ -1560,7 +1493,7 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input
@@ -1582,7 +1515,7 @@
               />
             </td>
           </tr>
-          <tr>
+          <tr class="advanced-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn5" value="1" />
@@ -1594,23 +1527,24 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="mode" value="googleAuthOtp" />
-                Google Authenticator OTP (TOTP)
+                OATH-TOTP (Google Authenticator)
               </label>
             </td>
             <td>
               <input
                 type="text"
                 id="txt2FAUserName"
+                placeholder="TOTP Secret"
                 name="txt2FAUserName"
                 value=""
               />
             </td>
           </tr>
-          <tr>
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn3" value="2" />
@@ -1622,22 +1556,50 @@
               </label>
             </td>
           </tr>
-          <tr></tr>
-          <tr>
+          <tr class="universal-option"></tr>
+          <tr class="mfa-option">
             <td>
               <label>
-                <input type="radio" name="mode" value="yubikeyOtp" />
+                <input type="radio" name="mode" value="YubikeyOtp" />
                 Yubikey OTP
               </label>
               <br />
+            </td>
+            <td>
               <label>
-                <input type="radio" name="mode" value="u2f" />
-                FIDO2 / U2F
+                <input
+                  type="text"
+                  id="yubiSlotPublicId"
+                  name="yubiSlotPublicId"
+                  maxlength="32"
+                  minlength="12"
+                  placeholder="Public Identity"
+                />
+              </label>
+              <label>
+                <input
+                  type="text"
+                  id="yubiSlotPrivateId"
+                  name="yubiSlotPrivateId"
+                  maxlength="17"
+                  minlength="12"
+                  placeholder="Private Identity"
+                />
+              </label>
+              <label>
+                <input
+                  type="text"
+                  id="yubiSlotSecretKey"
+                  name="yubiSlotSecretKey"
+                  maxlength="47"
+                  minlength="32"
+                  placeholder="Secret Key"
+                />
               </label>
               <br />
             </td>
           </tr>
-          <tr>
+          <tr class="mfa-option">
             <td>
               <label>
                 <input type="radio" name="tabReturn3" value="2" />
@@ -1649,10 +1611,10 @@
               </label>
             </td>
           </tr>
-          <tr>
+          <tr class="universal-option">
             <td colspan="2" id="slotConfigErrors"></td>
           </tr>
-          <tr>
+          <tr class="universal-option">
             <td>
               <input
                 type="button"
@@ -1661,7 +1623,7 @@
                 value="Wipe Slot"
               />
             </td>
-            <td>
+            <td class="universal-option">
               <input
                 type="button"
                 id="slotSubmit"

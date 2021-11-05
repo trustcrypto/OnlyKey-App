@@ -21,7 +21,7 @@ Just getting started with OnlyKey?
 - Setting OnlyKey preferences (Preferences)
 - Setting advanced options such as Yubikey and U2F security info (Advanced)
 
-*The app is required on all systems where Google Authenticator (TOTP) is used*
+*The app is required on all systems where OATH-TOTP (Google Authenticator) is used*
 
 For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html)
 

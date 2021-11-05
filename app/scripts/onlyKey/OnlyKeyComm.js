@@ -215,6 +215,7 @@ function OnlyKey(params = {}) {
     TFATYPE: 8,
     TFAUSERNAME: 9,
     YUBIAUTH: 10,
+    YUBIANDHMAC: 29,
     LOCKOUT: 11,
     WIPEMODE: 12,
     BACKUPKEYMODE: 20,
@@ -424,36 +425,23 @@ OnlyKey.prototype.flushMessage = async function (callback = () => {}) {
   const msgId = pendingMessagesTypes[0];
 
   console.info(`Flushing pending ${msgId}.`);
-  this.sendPinMessage(
-    {
-      msgId,
-      poll: false,
-    },
-    () => {
-      pollForInput(
-        {
-          flush: true,
-        },
-        (err, msg) => {
-          this.setLastMessage("received", "Canceled");
-          if (msg) {
-            console.info("Flushed previous message.");
-            return this.flushMessage(callback);
-          } else {
-            return callback();
-          }
-        }
-      );
-    }
-  );
+  this.sendPinMessage({ msgId, poll: false }, () => {
+    pollForInput({ flush: true }, (err, msg) => {
+      this.setLastMessage("received", "Canceled");
+      if (msg) {
+        console.info("Flushed previous message.");
+        return this.flushMessage(callback);
+      } else {
+        return callback();
+      }
+    });
+  });
 };
 
-OnlyKey.prototype.listenfor = async function (msg, callback) {
-  await listenForMessageIncludes(msg);
-};
-
-OnlyKey.prototype.listenforvalue = async function (succeed_msg, callback) {
-  await listenForMessageIncludes2("Error", succeed_msg);
+OnlyKey.prototype.listenforvalue = async function (succeed_msg) {
+  await listenForMessageIncludes2("Error", succeed_msg).catch(error => {
+    throw error;
+  });
 };
 
 OnlyKey.prototype.listen = function (callback) {
@@ -677,7 +665,7 @@ OnlyKey.prototype.setYubiAuth = function (
     "YUBIAUTH",
     (publicId + privateId + secretKey).match(/.{2}/g),
     async () => {
-      await this.listenforvalue("set AES Key", callback);
+      await this.listenforvalue("set AES Key");
       return callback();
     }
   );
@@ -685,7 +673,7 @@ OnlyKey.prototype.setYubiAuth = function (
 
 OnlyKey.prototype.wipeYubiAuth = function (callback) {
   this.wipeSlot("XX", "YUBIAUTH", async () => {
-    await this.listenforvalue("wiped AES Key", callback);
+    await this.listenforvalue("wiped AES Key");
     return callback();
   });
 };
@@ -924,15 +912,14 @@ OnlyKey.prototype.firmware = async function (
 
 OnlyKey.prototype.setLockout = function (lockout, callback) {
   this.setSlot("XX", "LOCKOUT", lockout, async () => {
-    await this.listenforvalue("set idle timeout", callback);
+    await this.listenforvalue("set idle timeout");
     return callback();
   });
 };
 
-OnlyKey.prototype.setWipeMode = function (wipeMode, callback) {
+OnlyKey.prototype.setWipeMode = function (wipeMode) {
   this.setSlot("XX", "WIPEMODE", wipeMode, async () => {
-    await this.listenforvalue("set Wipe Mode", callback);
-    return callback();
+    return await this.listenforvalue("set Wipe Mode");
   });
 };
 
@@ -947,73 +934,58 @@ OnlyKey.prototype.setSecProfileMode = function (secProfileMode, callback) {
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.setderivedchallengeMode = function (
-  derivedchallengeMode,
-  callback
-) {
+OnlyKey.prototype.setderivedchallengeMode = function (derivedchallengeMode) {
   this.setSlot("XX", "derivedchallengeMode", derivedchallengeMode, async () => {
-    await this.listenforvalue("challenge mode", callback);
-    return callback();
+    return await this.listenforvalue("challenge mode");
   });
 };
 
-OnlyKey.prototype.setstoredchallengeMode = function (
-  storedchallengeMode,
-  callback
-) {
+OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode) {
   this.setSlot("XX", "storedchallengeMode", storedchallengeMode, async () => {
-    await this.listenforvalue("challenge mode", callback);
-    return callback();
+    return await this.listenforvalue("challenge mode");
   });
 };
 
-OnlyKey.prototype.sethmacchallengeMode = function (
-  hmacchallengeMode,
-  callback
-) {
+OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode) {
   this.setSlot("XX", "hmacchallengeMode", hmacchallengeMode, async () => {
-    await this.listenforvalue("HMAC Challenge Mode", callback);
-    return callback();
+    return await this.listenforvalue("HMAC Challenge Mode");
   });
 };
 
-OnlyKey.prototype.setmodkeyMode = function (modkeyMode, callback) {
+OnlyKey.prototype.setmodkeyMode = function (modkeyMode) {
   this.setSlot("XX", "modkeyMode", modkeyMode, async () => {
-    await this.listenforvalue("Sysadmin Mode", callback);
-    return callback();
+    return await this.listenforvalue("Sysadmin Mode");
   });
 };
 
-OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
+OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode) {
   backupKeyMode = parseInt(backupKeyMode, 10);
-  this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode, callback);
+  this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode,  async () => {
+    return await this.listenforvalue("set Backup Key Mode");
+  });
 };
 
-OnlyKey.prototype.setTypeSpeed = function (typeSpeed, callback) {
+OnlyKey.prototype.setTypeSpeed = function (typeSpeed) {
   this.setSlot("XX", "TYPESPEED", typeSpeed, async () => {
-    await this.listenforvalue("set keyboard typespeed", callback);
-    return callback();
+    return await this.listenforvalue("set keyboard typespeed");
   });
 };
 
-OnlyKey.prototype.setLedBrightness = function (ledBrightness, callback) {
+OnlyKey.prototype.setLedBrightness = function (ledBrightness) {
   this.setSlot("XX", "LEDBRIGHTNESS", ledBrightness, async () => {
-    await this.listenforvalue("set LED brightness", callback);
-    return callback();
+    return await this.listenforvalue("set LED brightness");
   });
 };
 
-OnlyKey.prototype.setLockButton = function (lockButton, callback) {
+OnlyKey.prototype.setLockButton = function (lockButton) {
   this.setSlot("XX", "LOCKBUTTON", lockButton, async () => {
-    await this.listenforvalue("set lock button", callback);
-    return callback();
+    return await this.listenforvalue("set lock button");
   });
 };
 
-OnlyKey.prototype.setKBDLayout = function (kbdLayout, callback) {
+OnlyKey.prototype.setKBDLayout = function (kbdLayout) {
   this.setSlot("XX", "KBDLAYOUT", kbdLayout, async () => {
-    await this.listenforvalue("set keyboard layout", callback);
-    return callback();
+    return await this.listenforvalue("set keyboard layout");
   });
 };
 
@@ -1211,12 +1183,6 @@ var initializeWindow = function () {
 
   ui.yubiAuthForm = document["yubiAuthForm"];
   ui.lockoutForm = document["lockoutForm"];
-  ui.wipeModeForm = document["wipeModeForm"];
-  ui.storedchallengeModeForm = document["storedchallengeModeForm"];
-  ui.backupModeForm = document["backupModeForm"];
-  ui.derivedchallengeModeForm = document["derivedchallengeModeForm"];
-  ui.hmacchallengeModeForm = document["hmacchallengeModeForm"];
-  ui.modkeyModeForm = document["modkeyModeForm"];
   ui.typeSpeedForm = document["typeSpeedForm"];
   ui.ledBrightnessForm = document["ledBrightnessForm"];
   ui.lockButtonForm = document["lockButtonForm"];
@@ -1492,7 +1458,7 @@ var pollForInput = function (optionsParam, callbackParam) {
         ));
     }
 
-    return callback(null, msg);
+    return await callback(null, msg);
   });
 };
 
@@ -1661,9 +1627,10 @@ function initSlotConfigForm() {
   ui.slotConfigDialog
     .getElementsByClassName("slot-config-close")[0]
     .addEventListener("click", closeSlotConfigForm);
-  ui.slotConfigDialog.addEventListener("close", () =>
+  ui.slotConfigDialog.addEventListener("close", () => {
+    document.getElementById('slotConfigErrors').innerHTML = '';
     ui.slotConfigForm.reset()
-  );
+  });
 }
 
 function showSlotConfigForm(e) {
@@ -1691,52 +1658,45 @@ function enableAuthForms() {
   yubiWipe.addEventListener("click", wipeYubiAuthForm);
 
   var lockoutSubmit = document.getElementById("lockoutSubmit");
-  lockoutSubmit.addEventListener("click", submitLockoutForm);
+  lockoutSubmit.addEventListener("click", submitLockout);
 
-  var wipeModeSubmit = document.getElementById("wipeModeSubmit");
-  wipeModeSubmit.addEventListener("click", submitWipeModeForm);
+  const fullWipeModeBtn = document.getElementById("fullWipeModeBtn");
+  fullWipeModeBtn.addEventListener("click", (e) => submitWipeMode(e, 2));
 
-  var backupModeSubmit = document.getElementById("backupModeSubmit");
-  backupModeSubmit.addEventListener("click", submitBackupModeForm);
+  const backupModeBtn = document.getElementById("backupModeBtn");
+  backupModeBtn.addEventListener("click", (e) => submitBackupMode(e, 1));
 
-  var storedchallengeModeSubmit = document.getElementById(
-    "storedchallengeModeSubmit"
-  );
-  storedchallengeModeSubmit.addEventListener(
-    "click",
-    submitstoredchallengeModeForm
-  );
+  const storedKeyChallengeCodeBtn = document.getElementById("storedKeyChallengeCodeBtn");
+  storedKeyChallengeCodeBtn.addEventListener("click", (e) => submitstoredchallengeMode(e, 0));
+  const storedKeyBtnPressBtn = document.getElementById("storedKeyBtnPressBtn");
+  storedKeyBtnPressBtn.addEventListener("click", (e) => submitstoredchallengeMode(e, 1));
 
-  var derivedchallengeModeSubmit = document.getElementById(
-    "derivedchallengeModeSubmit"
-  );
-  derivedchallengeModeSubmit.addEventListener(
-    "click",
-    submitderivedchallengeModeForm
-  );
+  const derivedKeyChallengeCodeBtn = document.getElementById("derivedKeyChallengeCodeBtn");
+  derivedKeyChallengeCodeBtn.addEventListener("click", (e) => submitderivedchallengeMode(e, 0));
+  const derivedKeyBtnPressBtn = document.getElementById("derivedKeyBtnPressBtn");
+  derivedKeyBtnPressBtn.addEventListener("click", (e) => submitderivedchallengeMode(e, 1));
 
-  var modkeyModeSubmit = document.getElementById("modkeyModeSubmit");
-  modkeyModeSubmit.addEventListener("click", submitmodkeyModeForm);
+  const disableModkeyModeBtn = document.getElementById("disableModkeyModeBtn");
+  disableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyMode(e, 0));
+  const enableModkeyModeBtn = document.getElementById("enableModkeyModeBtn");
+  enableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyMode(e, 1));
 
-  var hmacchallengeModeSubmit = document.getElementById(
-    "hmacchallengeModeSubmit"
-  );
-  hmacchallengeModeSubmit.addEventListener(
-    "click",
-    submithmacchallengeModeForm
-  );
+  const disableHmacBtnPressBtn = document.getElementById("disableHmacBtnPressBtn");
+  disableHmacBtnPressBtn.addEventListener("click", (e) => submithmacchallengeMode(e, 0));
+  const enableHmacBtnPressBtn = document.getElementById("enableHmacBtnPressBtn");
+  enableHmacBtnPressBtn.addEventListener("click", (e) => submithmacchallengeMode(e, 1));
 
   var typeSpeedSubmit = document.getElementById("typeSpeedSubmit");
-  typeSpeedSubmit.addEventListener("click", submitTypeSpeedForm);
+  typeSpeedSubmit.addEventListener("click", submitTypeSpeed);
 
   var ledBrightnessSubmit = document.getElementById("ledBrightnessSubmit");
-  ledBrightnessSubmit.addEventListener("click", submitLedBrightnessForm);
+  ledBrightnessSubmit.addEventListener("click", submitLedBrightness);
 
   var lockButtonSubmit = document.getElementById("lockButtonSubmit");
-  lockButtonSubmit.addEventListener("click", submitLockButtonForm);
+  lockButtonSubmit.addEventListener("click", submitLockButton);
 
   var kbdLayoutSubmit = document.getElementById("kbdLayoutSubmit");
-  kbdLayoutSubmit.addEventListener("click", submitKBDLayoutForm);
+  kbdLayoutSubmit.addEventListener("click", submitKBDLayout);
 
   var eccSubmit = document.getElementById("eccSubmit");
   eccSubmit.addEventListener("click", submitEccForm);
@@ -1754,7 +1714,7 @@ function enableAuthForms() {
   };
 
   var rsaWipe = document.getElementById("rsaWipe");
-  rsaWipe.addEventListener("click", wipeRsaKeyForm);
+  rsaWipe.addEventListener("click", wipeRsaKey);
 
   var backupSave = document.getElementById("backupSave");
   backupSave.addEventListener("click", saveBackupFile);
@@ -2458,28 +2418,22 @@ async function listenForMessageIncludes2(...args) {
     reject
   ) {
     myOnlyKey.listen(async (err, msg) => {
-      let match;
-      for (let i = 0; i < args.length; i++) {
-        var str = args[i];
-        console.info(`Listening for "${str}"`);
-
-        if (msg && msg.includes(str)) {
-          match = msg;
-        } else if (err) {
-          console.info(`Error received "${err}"...`);
-        }
-
-        if (match) {
-          console.info(`Match received "${match}"...`);
-          resolve();
-        } else if (msg) {
-          //Chrome app background page sends settime which results in unexpected unlocked response
-          console.info(`Received ${msg}`);
-          await listenForMessageIncludesAgain2(resolve, reject);
+      const strings = '"' + args.join('" or "') + '"';
+      console.info(`Listening for ${strings}`);
+      
+      if (msg) {
+        if (args.some(str => msg.includes(str))) {
+          console.info(`Match received "${msg}"`);
         } else {
-          reject(err || `No response from OnlyKey ${msg}`);
+          console.info(`Received ${msg}`);
+          //Chrome app background page sends settime which results in unexpected unlocked response
+          if (!desktopApp) return await listenForMessageIncludesAgain2(resolve, reject);
         }
+        return resolve();
       }
+      
+      console.info(`Error received "${err.message || err}"`);
+      return reject(err);
     });
   });
 }
@@ -2496,22 +2450,22 @@ function parseFirmwareData(contents = "") {
     console.info(`BLOCK: ${line}`);
     newContent.push(line);
   }
-
+  
   return newContent;
 }
 
-function wipeRsaKeyForm(e) {
+function wipeRsaKey(e) {
+  e && e.preventDefault && e.preventDefault();
   ui.rsaForm.setError("");
 
   var slot = parseInt(ui.rsaForm.rsaSlot.value || "", 10);
   myOnlyKey.wipePrivateKey(slot, function (err) {
     myOnlyKey.listen(handleMessage);
   });
-
-  e && e.preventDefault && e.preventDefault();
 }
 
-function submitLockoutForm(e) {
+function submitLockout(e) {
+  e && e.preventDefault && e.preventDefault();
   var lockout = parseInt(ui.lockoutForm.okLockout.value, 10);
   if (isNaN(lockout)) {
     lockout = 0;
@@ -2533,96 +2487,40 @@ function submitLockoutForm(e) {
     );
     ui.lockoutForm.reset();
   });
-
-  e && e.preventDefault && e.preventDefault();
 }
 
-function submitstoredchallengeModeForm(e) {
-  var storedchallengeMode = parseInt(
-    ui.storedchallengeModeForm.okStoredChallengeMode.value,
-    10
-  );
-
-  myOnlyKey.setstoredchallengeMode(storedchallengeMode, function (err) {
-    myOnlyKey.listen(handleMessage);
-    ui.storedchallengeModeForm.reset();
-  });
-
+function submitstoredchallengeMode(e, storedchallengeMode) {
   e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setstoredchallengeMode(storedchallengeMode);
 }
 
-function submitderivedchallengeModeForm(e) {
-  var derivedchallengeMode = parseInt(
-    ui.derivedchallengeModeForm.okderivedchallengeMode.value,
-    10
-  );
-
-  myOnlyKey.setderivedchallengeMode(derivedchallengeMode, function (err) {
-    myOnlyKey.listen(handleMessage);
-    ui.derivedchallengeModeForm.reset();
-  });
-
+function submitderivedchallengeMode(e, derivedchallengeMode) {
   e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setderivedchallengeMode(derivedchallengeMode);
 }
 
-function submithmacchallengeModeForm(e) {
-  var hmacchallengeMode = parseInt(
-    ui.hmacchallengeModeForm.okhmacchallengeMode.value,
-    10
-  );
-
-  myOnlyKey.sethmacchallengeMode(hmacchallengeMode, function (err) {
-    myOnlyKey.listen(handleMessage);
-    ui.hmacchallengeModeForm.reset();
-  });
-
+function submithmacchallengeMode(e, hmacchallengeMode) {
   e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.sethmacchallengeMode(hmacchallengeMode);
 }
 
-function submitmodkeyModeForm(e) {
-  var modkeyMode = parseInt(ui.modkeyModeForm.okmodkeyMode.value, 10);
-
-  myOnlyKey.setmodkeyMode(modkeyMode, function (err) {
-    myOnlyKey.listen(handleMessage);
-    ui.modkeyModeForm.reset();
-  });
-
+function submitmodkeyMode(e, modkeyMode) {
   e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setmodkeyMode(modkeyMode);
 }
 
-function submitSecProfileModeForm(e) {
-  var secProfileMode = parseInt(
-    ui.secProfileModeForm.okSecProfileMode.value,
-    10
-  );
-
-  myOnlyKey.setSecProfileMode(SecProfileMode, function (err) {});
-
+function submitBackupMode(e, backupKeyMode) {
   e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setbackupKeyMode(backupKeyMode);
 }
 
-function submitBackupModeForm(e) {
-  var backupKeyMode = parseInt(ui.backupModeForm.okBackupMode.value, 10);
-
-  myOnlyKey.setbackupKeyMode(backupKeyMode, function (err) {
-    ui.backupModeForm.reset();
-  });
-
+function submitWipeMode(e, wipeMode) {
   e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setWipeMode(wipeMode);
 }
 
-function submitWipeModeForm(e) {
-  var wipeMode = parseInt(ui.wipeModeForm.okWipeMode.value, 10);
-
-  myOnlyKey.setWipeMode(wipeMode, function (err) {
-    myOnlyKey.listen(handleMessage);
-    ui.wipeModeForm.reset();
-  });
-
+function submitTypeSpeed(e) {
   e && e.preventDefault && e.preventDefault();
-}
-
-function submitTypeSpeedForm(e) {
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
 
   if (typeof typeSpeed !== "number" || typeSpeed < 1) {
@@ -2630,16 +2528,11 @@ function submitTypeSpeedForm(e) {
   }
 
   typeSpeed = Math.min(typeSpeed, 10);
-
-  myOnlyKey.setTypeSpeed(typeSpeed, function (err) {
-    myOnlyKey.setLastMessage("received", "Type Speed set successfully");
-    ui.typeSpeedForm.reset();
-  });
-
-  e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setTypeSpeed(typeSpeed);
 }
 
-function submitLedBrightnessForm(e) {
+function submitLedBrightness(e) {
+  e && e.preventDefault && e.preventDefault();
   var ledBrightness = parseInt(ui.ledBrightnessForm.okLedBrightness.value, 10);
 
   if (typeof ledBrightness !== "number" || ledBrightness < 1) {
@@ -2647,16 +2540,11 @@ function submitLedBrightnessForm(e) {
   }
 
   ledBrightness = Math.min(ledBrightness, 10);
-
-  myOnlyKey.setLedBrightness(ledBrightness, function (err) {
-    myOnlyKey.setLastMessage("received", "LED Brightness set successfully");
-    ui.ledBrightnessForm.reset();
-  });
-
-  e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setLedBrightness(ledBrightness);
 }
 
-function submitLockButtonForm(e) {
+function submitLockButton(e) {
+  e && e.preventDefault && e.preventDefault();
   var lockButton = parseInt(ui.lockButtonForm.okLockButton.value, 10);
 
   if (typeof lockButton !== "number" || lockButton < 0 || lockButton > 6) {
@@ -2664,28 +2552,18 @@ function submitLockButtonForm(e) {
   }
 
   lockButton = Math.min(lockButton, 10);
-
-  myOnlyKey.setLockButton(lockButton, function (err) {
-    myOnlyKey.setLastMessage("received", "Lock button set successfully");
-    ui.lockButtonForm.reset();
-  });
-
-  e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setLockButton(lockButton);
 }
 
-function submitKBDLayoutForm(e) {
+function submitKBDLayout(e) {
+  e && e.preventDefault && e.preventDefault();
   var kbdLayout = parseInt(ui.keyboardLayoutForm.okKeyboardLayout.value, 10);
 
   if (typeof kbdLayout !== "number" || kbdLayout < 1) {
     kbdLayout = 1;
   }
 
-  myOnlyKey.setKBDLayout(kbdLayout, function (err) {
-    myOnlyKey.setLastMessage("received", "Keyboard Layout set successfully");
-    ui.keyboardLayoutForm.reset();
-  });
-
-  e && e.preventDefault && e.preventDefault();
+  return myOnlyKey.setKBDLayout(kbdLayout);
 }
 
 function handleVersion(version) {

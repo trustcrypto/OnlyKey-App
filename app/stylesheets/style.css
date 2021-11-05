@@ -1,6 +1,6 @@
 @font-face {
   font-family: "HFont";
-  src: url("Roboto-Medium.ttf") format("truetype");
+  src: url("Lato-Regular.ttf") format("truetype");
 }
 
 @font-face {
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: "TxFont";
-  src: url("Roboto-Regular.ttf") format("truetype");
+  src: url("Lato-Regular.ttf") format("truetype");
 }
 
 body {
@@ -67,7 +67,7 @@ h3,
   margin: 0.25em 0;
 }
 
-body>div {
+body > div {
   padding: 16px;
 }
 
@@ -79,13 +79,13 @@ body>div {
   filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
 }
 
-h2>img {
+h2 > img {
   /* filter values computed on https://codepen.io/sosuke/pen/Pjoqqp */
   filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
 }
 
 .panel {
-  border: 2px maroon solid;
+  border: 2px #333 solid;
   padding: 15px 15px 0 15px;
   position: relative;
   z-index: 1;
@@ -119,9 +119,9 @@ td[data-step].active {
 
 dialog {
   border-radius: 10px;
-  box-shadow: 0px 0px 8px 2px rgba(0, 0, 0, 0.5);
-  border-color: white;
-  background-color: maroon;
+  box-shadow: 0px 0px 8px 2px black;
+  border-color: black;
+  background-color: #262A2C;
   color: white;
   max-width: 80%;
 }
@@ -136,11 +136,11 @@ dialog a {
 
 dialog.white {
   background-color: white;
-  color: black;
+  color: #262A2C;
 }
 
 dialog.white a {
-  color: black;
+  color: #262A2C;
 }
 
 .dialog-close {
@@ -152,13 +152,48 @@ dialog.white a {
   position: relative;
 }
 
-.slot-config-close {
+#slot-config-dialog h2 {
+  margin-top: 0;
+}
+
+#slot-config-top-links {
   position: absolute;
   top: 1em;
   right: 1em;
+  text-align: right;
 }
 
-#slotExamples>div {
+#slot-config-top-links a {
+  margin-left: 2em;
+}
+
+dialog > nav {
+  margin-left: .5em;
+}
+
+dialog > nav > a {
+  padding-bottom: 4px;
+  padding-top: 0;
+}
+
+dialog > nav > a.active {
+  border-color: black;
+}
+
+dialog > nav + form {
+  background-color: white;
+  color: black;
+  padding: 0.5em;
+  border-radius: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+dialog > nav + form > p {
+  margin: 0 0 0 .45em;
+}
+
+#slotExamples > div {
   margin-bottom: 2em;
 }
 
@@ -167,15 +202,15 @@ dialog.white a {
   bottom: 0;
   left: 0;
   padding: 0.5em 1em;
-  background-color: white;
-  color: maroon;
+  background-color: transparent;
+  color: black;
 }
 
 #lastMessage ul {
   margin-bottom: 0;
 }
 
-#lastMessage>span {
+#lastMessage > span {
   font-weight: bold;
 }
 
@@ -183,7 +218,7 @@ dialog.white a {
   opacity: 0.7;
 }
 
-#lastMessage li+li {
+#lastMessage li + li {
   opacity: 0.4;
 }
 
@@ -196,7 +231,7 @@ dialog.white a {
   text-align: right;
 }
 
-#versions>i {
+#versions > i {
   display: block;
 }
 
@@ -211,7 +246,7 @@ td.ok-photo-cell {
 
 /* configure onlykey go photo background */
 td.okgo-photo-cell {
-  background: transparent url(/images/placeholder-go-photo.png) no-repeat 50% 0%;
+  background: transparent url(/images/placeholder-go-photo.jpg) no-repeat 50% 0%;
   background-size: contain;
   padding-top: 10px;
   width: 120px;
@@ -251,20 +286,20 @@ td.okgo-photo-cell {
   flex: 1 32%;
 }
 
-.flex-item>p,
-.flex-item>form,
-.flex-item>div {
+.flex-item > p,
+.flex-item > form,
+.flex-item > div {
   margin-right: 1em;
 }
 
-.flex-item+.flex-item>p,
-.flex-item+.flex-item>form,
-.flex-item+.flex-item>div {
+.flex-item + .flex-item > p,
+.flex-item + .flex-item > form,
+.flex-item + .flex-item > div {
   margin-right: 0;
   margin-left: 1em;
 }
 
-.flex-item form+form {
+.flex-item form + form {
   margin-top: 1.5em;
 }
 
@@ -273,23 +308,27 @@ nav {
   font-size: 12px;
 }
 
-nav>a {
+nav > a {
   padding: 4px 4px 2px 4px;
   border-radius: 6px 6px 0 0;
   border-bottom: 0;
-  border: 2px solid transparent;
+  border: 2px solid #889096;
   text-decoration: none;
   font-size: 1.5em;
-  color: darkgrey;
+  color: #889096;
+  position: relative;
+  bottom: 2px;
+  border-bottom-color: transparent;
+  z-index: 1;
 }
 
-nav>a.active {
-  position: relative;
-  z-index: 2;
-  border-color: maroon;
+nav > a.active {
+  border-color: black;
   border-bottom: 0;
   background-color: white;
-  color: maroon;
+  color: #262A2C;
+  padding-bottom: 4px;
+  z-index: 2;
 }
 
 #main {
@@ -320,10 +359,10 @@ nav>a.active {
   font-family: TxFont, monospace;
   font-style: italic;
   font-weight: normal;
-  color: darkgray;
+  color: #889096;
 }
 
-.step-nav>* {
+.step-nav > * {
   margin-right: 1em;
 }
 
@@ -408,4 +447,12 @@ nav>a.active {
   top: .3em;
   margin-right: .25em;
   font-weight: 100;
+}
+
+[data-mode="basic"] .advanced-option, [data-mode="basic"] .mfa-option {
+  display: none;
+}
+
+[data-mode="mfa"] .advanced-option, [data-mode="mfa"] .basic-option {
+  display: none;
 }
