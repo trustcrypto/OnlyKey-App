@@ -883,7 +883,7 @@ if (chrome.passwordsPrivate) {
       },
       yubiSlotPublicId: {
         input: form.yubiSlotPublicId,
-        msgId: 'YUBIANDHMAC'
+        msgId: 'YUBIAUTH'
       }
     };
 
@@ -942,17 +942,28 @@ if (chrome.passwordsPrivate) {
                 break;
               // validate Yubikey OTP fields
               case 'yubiSlotPublicId':
-                if (this.currentSlot.mode === 'yubikeyOtp') {
+                if (this.currentSlot.mode === 'YubikeyOtp') {
+
                   const privateIdField = form['yubiSlotPrivateId'];
                   const secretField = form['yubiSlotSecretKey'];
                   const privateId = ('' + privateIdField.value).trim();
                   const secret = ('' + secretField.value).trim();
+                  console.info("publicId", formValue);
+                  console.info("privateId", privateId);
+                  console.info("secret", secret);
+                  pubId = formValue.toString().replace(/\s/g, "");
+                  privId = privateId.toString().replace(/\s/g, "");
+                  secKey = secret.toString().replace(/\s/g, "");
+                
+                  var maxPublicIdLength = 32; // 16 bytes
+                  var maxPrivateIdLength = 12; // 6 bytes
+                  var maxSecretKeyLength = 32; // 16 bytes
+                  pubId = hexToModhex(pubId.slice(0, maxPublicIdLength), true);
+                  privId = privId.slice(0, maxPrivateIdLength);
+                  secKey = secKey.slice(0, maxSecretKeyLength);
 
-                  formValue += (privateId + secret);
-                  console.info("BASE32 value:", formValue);
-                  formValue = base32tohex(formValue.replace(/\s/g, ''));
-                  formValue = formValue.match(/.{2}/g);
-                  console.info("was converted to HEX:", formValue);
+                  formValue = (pubId + privId + secKey).match(/.{2}/g);
+                  console.info("formValue", formValue);
                   privateIdField.value = '';
                   secretField.value = '';
                   delete this.currentSlot.mode;
@@ -980,7 +991,7 @@ if (chrome.passwordsPrivate) {
                   error = true;
                 }
                 break;
-              case 'yubikeyOtp':
+              case 'YubikeyOtp':
                 const publicId = ('' + form['yubiSlotPublicId'].value).trim();
                 const privateId = ('' + form['yubiSlotPrivateId'].value).trim();
                 const secret = ('' + form['yubiSlotSecretKey'].value).trim();
