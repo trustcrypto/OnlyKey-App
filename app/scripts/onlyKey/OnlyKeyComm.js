@@ -2642,6 +2642,31 @@ function parseBackupData(contents) {
   return newContents;
 }
 
+function hashBackupData(contents) {
+  var newContents = [];
+  // split by newline
+  contents.split("\n").forEach(function (line) {
+    var backuphash = new Uint8Array(32).fill(0);
+    var sha256 = require('js-sha256');
+    var hash = sha256.create();
+    if (line.indexOf("--") !== 0) {
+      try {
+        var valuetohash = Uint8Array.from(base64tohex(line), "hex")
+        hash.update(backuphash);
+        hash.update(valuetohash);
+        backuphash = hash.array();
+        } catch (e) {
+      }
+    } else if (line.indexOf("BACKUP") !== 0) { // This line is -----<sha256hash>-----
+      //TODO test that filebackuphash and backuphash are the same, if not backup is corrupt
+      let filebackuphash = base64tohex(line.slice(5, line.length-5)); // sha256 hash is 32 bytes
+      console.info("computed backup hash", hash.hex());
+      console.info("file backup hash", filebackuphash);
+    }
+  });
+  return (filebackuphash == hash.hex());
+}
+
 function hexStrToDec(hexStr) {
   return new Number("0x" + hexStr).toString(10);
 }
