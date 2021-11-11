@@ -14,7 +14,7 @@
 }
 
 html {
-  background-color: #222;
+  background-color: #36393F;
 }
 
 body {
@@ -89,7 +89,7 @@ h2 > img {
 }
 
 .panel {
-  border: 2px #666 solid;
+  border: 2px #262A2C solid;
   padding: 15px 15px 0 15px;
   position: relative;
   z-index: 1;
@@ -318,21 +318,23 @@ nav > a {
   padding: 4px 4px 2px 4px;
   border-radius: 6px 6px 0 0;
   border-bottom: 0;
-  border: 2px solid #666;
+  border: 2px solid #000;
+  box-shadow: 1px 0px 0px 0px black;
   text-decoration: none;
   font-size: 1.5em;
   color: #999;
-  background-color: #333;
+  background-color: #262A2C;
   position: relative;
   bottom: 2px;
   border-bottom-color: transparent;
   z-index: 1;
 }
 
+
 nav > a.active {
   border-bottom: 0;
   background-color: white;
-  color: #262A2C;
+  color: #2F3136;
   padding-bottom: 4px;
   z-index: 2;
 }
