@@ -1722,7 +1722,7 @@ function enableAuthForms() {
     document.getElementById("backupFormError").innerText = errString;
   };
 
-  var backupVefify = document.getElementById("backupVerify");
+  var backupVerify = document.getElementById("backupVerify");
   backupVerify.addEventListener("click", verifyBackupFile);
   ui.backupForm.setError = function (errString) {
     document.getElementById("backupFormError").innerText = errString;
@@ -2073,7 +2073,6 @@ function verifyBackupFile(e) {
       if (!doesfwsupport) {
         ui.backupForm.setError("ERROR this backup file does not support verification");
       }
-        ui.backupForm.reset();
     } catch (parseError) {
       ui.backupForm.setError("ERROR this backup file is corrupt");
     }
