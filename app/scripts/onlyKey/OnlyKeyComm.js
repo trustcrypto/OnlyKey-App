@@ -1722,6 +1722,12 @@ function enableAuthForms() {
     document.getElementById("backupFormError").innerText = errString;
   };
 
+  var backupVefify = document.getElementById("backupVerify");
+  backupVerify.addEventListener("click", verifyBackupFile);
+  ui.backupForm.setError = function (errString) {
+    document.getElementById("backupFormError").innerText = errString;
+  };
+
   var restoreFromBackup = document.getElementById("doRestore");
   restoreFromBackup.addEventListener("click", submitRestoreForm);
   ui.restoreForm.setError = function (errString) {
@@ -2026,6 +2032,51 @@ function saveBackupFile(e) {
 
     document.getElementById("lastBackupFilename").innerText = filename;
     ui.backupForm.reset();
+  } else {
+    ui.backupForm.setError("Backup data cannot be empty space.");
+  }
+}
+
+function verifyBackupFile(e) {
+  e && e.preventDefault && e.preventDefault();
+  ui.backupForm.setError("");
+  document.getElementById("verifyBackupMessage").innerText = "";
+  var backupData = ui.backupForm.backupData.value.trim();
+  if (backupData) {
+    try {
+      var backuphash = new Uint8Array(32).fill(0);
+      var doesfwsupport;
+      backupData.split("\n").forEach(function (line) {
+        var sha256 = require('js-sha256');
+        var hash = sha256.create();
+        if (!line.includes("--")) {
+          var valuetohash = hexStringtoByteArray(base64tohex(line));
+          console.info("line to hash", valuetohash);
+          hash.update(backuphash);
+          hash.update(valuetohash);
+          backuphash = hash.array();
+          console.info("current hash", hash.hex());
+        } else if (!line.includes("BACKUP")) { // This line is --<sha256hash>
+          //TODO test that filebackuphash and backuphash are the same, if not backup is corrupt
+          console.info("File hash", line.slice(2, line.length));
+          var filebackuphash = base64tohex(line.slice(2, line.length)); // sha256 hash is 32 bytes
+          console.info("computed backup hash", arraytoHexString(backuphash));
+          console.info("file backup hash", filebackuphash);
+          if (filebackuphash === arraytoHexString(backuphash).toUpperCase()) {
+            document.getElementById("verifyBackupMessage").innerText = "Successfully verified backup SHA256 hash";
+          } else {
+            ui.backupForm.setError("ERROR this backup file is corrupt");
+          }
+          doesfwsupport = true;
+        } 
+      });
+      if (!doesfwsupport) {
+        ui.backupForm.setError("ERROR this backup file does not support verification");
+      }
+        ui.backupForm.reset();
+    } catch (parseError) {
+      ui.backupForm.setError("ERROR this backup file is corrupt");
+    }
   } else {
     ui.backupForm.setError("Backup data cannot be empty space.");
   }
@@ -2607,6 +2658,20 @@ function hexToModhex(inputStr, reverse) {
   return newStr;
 }
 
+function arraytoHexString(byteArray) {
+  return Array.from(byteArray, function(byte) {
+    return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+  }).join('')
+}
+
+function hexStringtoByteArray(hexString) {
+  var result = [];
+  for (var i = 0; i < hexString.length; i += 2) {
+    result.push(parseInt(hexString.substr(i, 2), 16));
+  }
+  return result;
+}
+
 function strPad(str, places, char) {
   while (str.length < places) {
     str = "" + (char || 0) + str;
@@ -2640,31 +2705,6 @@ function parseBackupData(contents) {
   // join back to unified base64 string
   newContents = newContents.join("");
   return newContents;
-}
-
-function hashBackupData(contents) {
-  var newContents = [];
-  // split by newline
-  contents.split("\n").forEach(function (line) {
-    var backuphash = new Uint8Array(32).fill(0);
-    var sha256 = require('js-sha256');
-    var hash = sha256.create();
-    if (line.indexOf("--") !== 0) {
-      try {
-        var valuetohash = Uint8Array.from(base64tohex(line), "hex")
-        hash.update(backuphash);
-        hash.update(valuetohash);
-        backuphash = hash.array();
-        } catch (e) {
-      }
-    } else if (line.indexOf("BACKUP") !== 0) { // This line is -----<sha256hash>-----
-      //TODO test that filebackuphash and backuphash are the same, if not backup is corrupt
-      let filebackuphash = base64tohex(line.slice(5, line.length-5)); // sha256 hash is 32 bytes
-      console.info("computed backup hash", hash.hex());
-      console.info("file backup hash", filebackuphash);
-    }
-  });
-  return (filebackuphash == hash.hex());
 }
 
 function hexStrToDec(hexStr) {

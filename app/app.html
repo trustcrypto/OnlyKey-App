@@ -814,20 +814,19 @@
               <fieldset>
                 <p>
                   <u>Step 1</u>. To begin backup, ensure that you have a backup
-                  passphrase or key set and that you have an offline copy of
-                  this backup key. The same key that you use to backup your
-                  OnlyKey will be required to restore your OnlyKey.
+                  passphrase set and have an offline copy of
+                  this backup passphrase. The same passphrase will be required to restore your OnlyKey.
                 </p>
                 <p>
                   <u>Step 2</u>. Click inside the text area below. Hold the #1
                   button down on your OnlyKey for 5+ seconds and release. This
-                  will type out an encrypted backup of your OnlyKey into the
-                  box.
+                  will TYPE out an encrypted backup of your OnlyKey into the
+                  text area.
                 </p>
                 <p>
                   <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----",
                   the backup of the OnlyKey slots and keys is complete. Select
-                  [Save file] to save your encrypted backup.
+                  [Save File] to save your encrypted backup or [Verify Backup] to verify backup integrity.
                 </p>
               </fieldset>
 
@@ -840,7 +839,7 @@
                   id="backupData"
                   name="backupData"
                   cols="40"
-                  rows="6"
+                  rows="3"
                   placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."
                 ></textarea>
               </label>
@@ -849,9 +848,21 @@
 
               <input
                 type="button"
+                id="backupVerify"
+                name="backupVerify"
+                value="Verify Backup"
+              />
+              <span style ="color:green" id="verifyBackupMessage"
+                ></span
+              >
+
+              <br />
+
+              <input
+                type="button"
                 id="backupSave"
                 name="backupSave"
-                value="Save file"
+                value="Save File"
               />
               <span id="lastBackupFilename"
                 >onlykey-backup-[timestamp].txt</span
