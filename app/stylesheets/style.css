@@ -208,7 +208,7 @@ dialog > nav + form > p {
   left: 0;
   padding: 0.5em 1em;
   background-color: transparent;
-  color: black;
+  color: #ccc;
 }
 
 #lastMessage ul {
@@ -234,6 +234,7 @@ dialog > nav + form > p {
   padding: 0.5em 1em;
   font-size: 10pt;
   text-align: right;
+  color: #ccc
 }
 
 #versions > i {
