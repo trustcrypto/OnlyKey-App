@@ -13,6 +13,10 @@
   src: url("Lato-Regular.ttf") format("truetype");
 }
 
+html {
+  background-color: #222;
+}
+
 body {
   font-family: BodyFont, monospace;
   font-size: 11pt;
@@ -85,11 +89,12 @@ h2 > img {
 }
 
 .panel {
-  border: 2px #333 solid;
+  border: 2px #666 solid;
   padding: 15px 15px 0 15px;
   position: relative;
   z-index: 1;
   transition: all 0.25s ease;
+  background-color: #fff;
 }
 
 .hide {
@@ -312,10 +317,11 @@ nav > a {
   padding: 4px 4px 2px 4px;
   border-radius: 6px 6px 0 0;
   border-bottom: 0;
-  border: 2px solid #889096;
+  border: 2px solid #666;
   text-decoration: none;
   font-size: 1.5em;
-  color: #889096;
+  color: #999;
+  background-color: #333;
   position: relative;
   bottom: 2px;
   border-bottom-color: transparent;
@@ -323,7 +329,6 @@ nav > a {
 }
 
 nav > a.active {
-  border-color: black;
   border-bottom: 0;
   background-color: white;
   color: #262A2C;
@@ -334,6 +339,11 @@ nav > a.active {
 #main {
   margin-top: 0;
   padding-top: .5em;
+}
+
+#main > img {
+  -webkit-filter: invert(1);
+  filter: invert(1);  
 }
 
 .form-error {
