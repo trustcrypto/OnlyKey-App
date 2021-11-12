@@ -177,12 +177,13 @@ dialog > nav {
 }
 
 dialog > nav > a {
-  padding-bottom: 4px;
+  padding-bottom: 2px;
   padding-top: 0;
 }
 
 dialog > nav > a.active {
   border-color: black;
+  padding-bottom: 2px;
 }
 
 dialog > nav + form {

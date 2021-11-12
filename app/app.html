@@ -682,7 +682,7 @@
           </div>
         </div>
         <hr />
-        <p style="color: red; font-weight: bold; margin: 0">
+        <p style="color: red; font-weight: bold; margin: .5em">
           * = device must be in <b>config mode</b> to change
         </p>
       </div>
@@ -1025,7 +1025,6 @@
               />
               <div id="yubiError" class="form-error"></div>
             </form>
-            <hr />
           </div>
           <div class="flex-item">
             <form id="eccForm" name="eccForm" class="auth-form">
@@ -1251,8 +1250,16 @@
       <p id="locked-text-go"></p>
     </dialog>
 
-    <dialog id="slot-wipe-confirm">
-      <h2>WARNING: THIS WILL WIPE ALL LOGIN AND MFA DATA IN THIS SLOT! WIPE OnlyKey Slot <span id="wipeCurrentSlotId">1a</span>?</h2>
+    <dialog id="slot-wipe-confirm" style="color: red;">
+      <h2>
+        WARNING:
+        <br/>
+        You are about to wipe everything from this slot,
+        <br/>
+        including all login and MFA data!
+        <br/><br/>
+        WIPE OnlyKey Slot <span id="wipeCurrentSlotId">1a</span>?
+      </h2>
       <input
         type="button"
         id="slotWipeConfirm"
