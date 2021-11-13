@@ -29,7 +29,7 @@ button {
   font-family: BodyFont, monospace;
   font-size: 110%;
   background-color: #19639C;
-  color: #FFF;
+  color: #fefefe;
   border-color: #19639C;
   border-radius: 4px 4px 4px 4px;
 }
@@ -38,7 +38,7 @@ input[type="button"] {
   font-family: BodyFont, monospace;
   font-size: 110%;
   background-color: #19639C;
-  color: #FFF;
+  color: #fefefe;
   border-color: #19639C;
   border-radius: 4px 4px 4px 4px;
 }
@@ -90,7 +90,7 @@ body > div {
   width: 0.875em;
   /* filter values computed on https://codepen.io/sosuke/pen/Pjoqqp */
   /* gold filter */
-  filter: invert(89%) sepia(27%) saturate(493%) hue-rotate(343deg) brightness(82%) contrast(103%);
+  filter: invert(89%) sepia(27%) saturate(493%) hue-rotate(343deg) brightness(72%) contrast(103%);
 }
 
 .moveimage.gray-filter {
