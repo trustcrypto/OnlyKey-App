@@ -576,17 +576,15 @@
               <u>Full Wipe</u> &ndash;
               <em>Wipe device and firmware must be reloaded.</em>
               <br />
-              <span style="font-size: small; background-color: yellow"
-                ><b>
+              <span class="disclaimer highlight"><b>
                   WARNING - Once set to "Full Wipe" this cannot be changed.
-                </b></span
-              >
+                </b></span>
               <br />
               <input
                 type="button"
                 id="fullWipeModeBtn"
                 value="Set Full Wipe Mode"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               /><br />
             </form>
           </div>
@@ -673,17 +671,17 @@
               <br />
               <u>Locked</u> - <em>Backup key may not be changed on device</em>
               <br />
-              <span style="font-size: small; background-color: yellow">
+              <span class="disclaimer highlight">
                 <b>WARNING - Once set to "Locked" this cannot be changed.</b>
               </span>
               <br />
-              <input type="button" id="backupModeBtn" value="Lock Backup Key" style="background-color: #ED4245; border-color: #ED4245" />
+              <input type="button" id="backupModeBtn" value="Lock Backup Key" class="caution" />
               <br />
             </form>
           </div>
         </div>
         <hr />
-        <p style="color: red; font-weight: bold; margin: .5em">
+        <p style="color: #ED4245; font-weight: bold; margin: .5em">
           * = device must be in <b>config mode</b> to change
         </p>
       </div>
@@ -793,7 +791,7 @@
                 id="rsaWipe"
                 name="rsaWipe"
                 value="Wipe from OnlyKey"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
               <div id="rsaFormError" class="form-error"></div>
             </form>
@@ -1024,7 +1022,7 @@
                 id="yubiWipe"
                 name="yubiWipe"
                 value="Wipe from OnlyKey"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
               <div id="yubiError" class="form-error"></div>
             </form>
@@ -1139,7 +1137,7 @@
                 id="eccWipe"
                 name="eccWipe"
                 value="Wipe from OnlyKey"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
               <div id="eccFormError" class="form-error"></div>
             </form>
@@ -1271,7 +1269,7 @@
       <p id="locked-text-go"></p>
     </dialog>
 
-    <dialog id="slot-wipe-confirm" style="color: red;">
+    <dialog id="slot-wipe-confirm">
       <h2>
         WARNING:
         <br/>
@@ -1286,6 +1284,7 @@
         id="slotWipeConfirm"
         name="slotWipeConfirm"
         value="Wipe"
+        class="caution"
       />
       <input
         type="button"
@@ -1330,7 +1329,7 @@
       <form name="slot-config-form" id="slot-config-form">
         <p>
           Check the box/radio next to the fields you want to set<br />
-          <img class="moveimage" src="/images/solid/arrow-down.svg" />
+          <img class="moveimage gray-filter" src="/images/solid/arrow-down.svg" />
         </p>
         <table>
           <tr class="universal-option">
@@ -1660,7 +1659,7 @@
                 id="slotWipe"
                 name="slotWipe"
                 value="Wipe All Slot Data"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
             </td>
             <td class="universal-option">
