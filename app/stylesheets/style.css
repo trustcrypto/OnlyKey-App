@@ -27,11 +27,19 @@ body {
 button {
   font-family: BodyFont, monospace;
   font-size: 110%;
+  background-color: #19639C;
+  color: #FFF;
+  border-color: #104771;
+  border-radius: 4px 4px 4px 4px;
 }
 
 input[type="button"] {
   font-family: BodyFont, monospace;
   font-size: 110%;
+  background-color: #19639C;
+  color: #FFF;
+  border-color: #104771;
+  border-radius: 4px 4px 4px 4px;
 }
 
 a,
@@ -209,7 +217,7 @@ dialog > nav + form > p {
   left: 0;
   padding: 0.5em 1em;
   background-color: transparent;
-  color: #ccc;
+  color: #B9BBBE;
 }
 
 #lastMessage ul {
@@ -235,7 +243,7 @@ dialog > nav + form > p {
   padding: 0.5em 1em;
   font-size: 10pt;
   text-align: right;
-  color: #ccc
+  color: #B9BBBE
 }
 
 #versions > i {
@@ -251,7 +259,7 @@ td.ok-photo-cell {
   height: 260px;
 }
 
-/* configure onlykey go photo background */
+/* configure OnlyKey DUO photo background */
 td.okgo-photo-cell {
   background: transparent url(/images/placeholder-go-photo.jpg) no-repeat 50% 0%;
   background-size: contain;
@@ -323,7 +331,7 @@ nav > a {
   box-shadow: 1px 0px 0px 0px black;
   text-decoration: none;
   font-size: 1.5em;
-  color: #999;
+  color: #B9BBBE;
   background-color: #262A2C;
   position: relative;
   bottom: 2px;
@@ -373,7 +381,7 @@ nav > a.active {
   font-family: TxFont, monospace;
   font-style: italic;
   font-weight: normal;
-  color: #889096;
+  color: #B9BBBE;
 }
 
 .step-nav > * {

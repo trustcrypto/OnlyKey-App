@@ -67,7 +67,7 @@ if (chrome.passwordsPrivate) {
             </p>
             <p>
               DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and,
-              if I forget my PINs, the only way to recover my OnlyKey GO is to perform a
+              if I forget my PINs, the only way to recover my OnlyKey DUO is to perform a
               factory reset which wipes all sensitive information.
             </p>
             <label>

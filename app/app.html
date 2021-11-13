@@ -96,7 +96,7 @@
                 </td>
                 <td class="init-only device-specific ok-go">
                   <button id="SetPINS" type="button">
-                    Change OnlyKey Go PINs
+                    Change OnlyKey DUO PINs
                   </button>
                 </td>
               </tr>
@@ -360,7 +360,7 @@
               <tr>
                 <td align="right">
                   <span class="slotLabel" id="slotLabel1a">empty</span>
-                  <input type="button" id="slot1aConfig" value="1a" /><br />
+                  <input type="button" id="slot1aConfig" value="1a" /><br/>
                   <span class="slotLabel" id="slotLabel1b">empty</span>
                   <input type="button" id="slot1bConfig" value="1b" />
                 </td>
@@ -586,6 +586,7 @@
                 type="button"
                 id="fullWipeModeBtn"
                 value="Set Full Wipe Mode"
+                style="background-color: #ED4245; border-color: #ED4245" 
               /><br />
             </form>
           </div>
@@ -676,7 +677,7 @@
                 <b>WARNING - Once set to "Locked" this cannot be changed.</b>
               </span>
               <br />
-              <input type="button" id="backupModeBtn" value="Lock Backup Key" />
+              <input type="button" id="backupModeBtn" value="Lock Backup Key" style="background-color: #ED4245; border-color: #ED4245" />
               <br />
             </form>
           </div>
@@ -792,6 +793,7 @@
                 id="rsaWipe"
                 name="rsaWipe"
                 value="Wipe from OnlyKey"
+                style="background-color: #ED4245; border-color: #ED4245" 
               />
               <div id="rsaFormError" class="form-error"></div>
             </form>
@@ -968,7 +970,7 @@
         <div class="flex-container">
           <div class="flex-item">
             <form id="yubiAuthForm" name="yubiAuthForm" class="auth-form">
-              <h2>Add Yubikey Security Info</h2>
+              <h2>Add Yubikey Security Info (Legacy)</h2>
               <label>
                 Public Identity (6 bytes modhex)
                 <br />
@@ -1022,6 +1024,7 @@
                 id="yubiWipe"
                 name="yubiWipe"
                 value="Wipe from OnlyKey"
+                style="background-color: #ED4245; border-color: #ED4245" 
               />
               <div id="yubiError" class="form-error"></div>
             </form>
@@ -1136,6 +1139,7 @@
                 id="eccWipe"
                 name="eccWipe"
                 value="Wipe from OnlyKey"
+                style="background-color: #ED4245; border-color: #ED4245" 
               />
               <div id="eccFormError" class="form-error"></div>
             </form>
@@ -1153,40 +1157,51 @@
           /></a>
           </h2>
           <div class="flex-item">
-            <span class="h1">Encrypt Messages
-            <a
-              href="https://apps.crp.to/app/encrypt"
-              class="external tooltip fade"
-              data-tooltip="Securely encrypt messages in the browser using OnlyKey."
-              ><img class="moveimage" src="/images/solid/lock.svg" width="50px"
-              />
-            </span></a>
-            <span class="h1">Decrypt Messages
+            <button type="button" >
+              <span class="h2">
               <a
-                href="https://apps.crp.to/app/decrypt"
+                style="color: white"
+                href="https://apps.crp.to/app/encrypt"
                 class="external tooltip fade"
-                data-tooltip="Securely decrypt OpenPGP encrypted messages in the browser using OnlyKey"
-                ><img class="moveimage" src="/images/solid/unlock.svg" width="50px"
+                data-tooltip="Securely encrypt messages in the browser using OnlyKey."
+                >Encrypt Messages <img class="moveimage" src="/images/solid/lock.svg" width="50px"
                 />
-            </span></a>
-          </div>
-          <div class="flex-item">
-            <span class="h1">Encrypt Files
-              <a
-                href="https://apps.crp.to/app/encrypt-file"
-                class="external tooltip fade"
-                data-tooltip="Securely encrypt files in the browser using OnlyKey."
-                ><img class="moveimage" src="/images/solid/file-archive.svg" width="40px"
-                />
-            </span></a>
-            <span class="h1">Decrypt Files
-              <a
-                href="https://apps.crp.to/app/decrypt-file"
-                class="external tooltip fade"
-                data-tooltip="Securely decrypt OpenPGP encrypted files in the browser using OnlyKey."
-                ><img class="moveimage" src="/images/solid/file-alt.svg" width="40px"
-                />
-            </span></a>
+              </span></a>
+            </button>
+            <button type="button" >
+              <span class="h2">
+                <a
+                  style="color: white"
+                  href="https://apps.crp.to/app/decrypt"
+                  class="external tooltip fade"
+                  data-tooltip="Securely decrypt OpenPGP encrypted messages in the browser using OnlyKey"
+                  >Decrypt Messages <img class="moveimage" src="/images/solid/unlock.svg" width="50px"
+                  />
+              </span></a>
+            </button>
+            <br>
+            <br>
+            <button type="button" >
+              <span class="h2">
+                <a
+                  style="color: white" href="https://apps.crp.to/app/encrypt-file"
+                  class="external tooltip fade"
+                  data-tooltip="Securely encrypt files in the browser using OnlyKey."
+                  >Encrypt Files <img class="moveimage" src="/images/solid/file-archive.svg" width="40px"
+                  />
+              </span></a>
+            </button>
+            <button type="button" >
+              <span class="h2">
+                <a
+                  style="color: white"
+                  href="https://apps.crp.to/app/decrypt-file"
+                  class="external tooltip fade"
+                  data-tooltip="Securely decrypt OpenPGP encrypted files in the browser using OnlyKey."
+                  >Decrypt Files <img class="moveimage" src="/images/solid/file-alt.svg" width="40px"
+                  />
+              </span></a>
+            </button>
           </div>
         </div>
         <h2>
@@ -1198,26 +1213,32 @@
         /></a>
         </h2>
         <div class="flex-item">
-          <span class="h1">OnlyKey GPG Agent
-          <a
-            href="https://docs.crp.to/onlykey-agent.html#gpg-agent-quickstart-guide"
-            class="external tooltip fade"
-            data-tooltip="Provides a way to securely use OnlyKey for OpenPGP on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use GPG to do things like sign emails, git commits, software packages etc."
-            ><img class="moveimage" src="/images/solid/envelope.svg" width="50px"
-            /> <img class="moveimage" src="/images/solid/file-code.svg" width="50px"
-            /> <img class="moveimage" src="/images/solid/code-branch.svg" width="50px"
-            />
-          </span></a>
-        </div>
-        <div class="flex-item">
-          <span class="h1">OnlyKey SSH Agent
-          <a
-            href="https://docs.crp.to/onlykey-agent.html#ssh-agent-quickstart-guide"
-            class="external tooltip fade"
-            data-tooltip="Provides a way to securely use OnlyKey for SSH authentication on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH."
-            ><img class="moveimage" src="/images/solid/terminal.svg" width="50px"
-            />
-          </span></a>
+          <button type="button" >
+            <span class="h2">
+            <a
+              style="color: white"
+              href="https://docs.crp.to/onlykey-agent.html#gpg-agent-quickstart-guide"
+              class="external tooltip fade"
+              data-tooltip="Provides a way to securely use OnlyKey for OpenPGP on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use GPG to do things like sign emails, git commits, software packages etc."
+              >OnlyKey GPG Agent <img class="moveimage" src="/images/solid/envelope.svg" width="50px"
+              /> <img class="moveimage" src="/images/solid/file-code.svg" width="50px"
+              /> <img class="moveimage" src="/images/solid/code-branch.svg" width="50px"
+              />
+            </span></a>
+          </button>
+          <br>
+          <br>
+          <button type="button" >
+            <span class="h2">
+            <a
+              style="color: white"
+              href="https://docs.crp.to/onlykey-agent.html#ssh-agent-quickstart-guide"
+              class="external tooltip fade"
+              data-tooltip="Provides a way to securely use OnlyKey for SSH authentication on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH."
+              >OnlyKey SSH Agent <img class="moveimage" src="/images/solid/terminal.svg" width="50px"
+              />
+            </span></a>
+          </button>
         </div>
       </div>
     </div>
@@ -1246,7 +1267,7 @@
     </dialog>
 
     <dialog id="locked-dialog-go">
-      <h1>Your OnlyKey Go is locked</h1>
+      <h1>Your OnlyKey DUO is locked</h1>
       <p id="locked-text-go"></p>
     </dialog>
 
@@ -1639,6 +1660,7 @@
                 id="slotWipe"
                 name="slotWipe"
                 value="Wipe All Slot Data"
+                style="background-color: #ED4245; border-color: #ED4245" 
               />
             </td>
             <td class="universal-option">
