@@ -63,13 +63,13 @@
             </p>
             <p class="init-only">
               Your OnlyKey is ready to use! You can change the Backup
-              Passphrase/Key or change PINs below at any time. <br /><br /><b
-                >Before selecting an option below</b
-              >, you must first put your OnlyKey into config mode. To do this
-              hold down the #6 button on your OnlyKey for 5+ seconds and
+              Passphrase/Key or change PINs below at any time.
+              <br /><br />
+              Before selecting an option below,
+              <span class="highlight">you must first put your OnlyKey into config mode</span>.
+              To do this, hold down the #6 button on your OnlyKey for 5+ seconds and
               release. The OnlyKey light will turn off. Re-enter your current
-              primary PIN to enter config mode and notice the OnlyKey flashes
-              red.
+              primary PIN to enter config mode and notice the OnlyKey flashes red.
             </p>
             <table>
               <tr>
@@ -703,8 +703,8 @@
               for generating an OpenPGP key with Keybase.
             </p>
             <p>
-              <b>Before loading a key</b>, you must first put your OnlyKey into
-              config mode. To do this hold down the #6 button on your OnlyKey
+              Before loading a key, <span class="highlight">you must first put your OnlyKey into
+              config mode</span>. To do this hold down the #6 button on your OnlyKey
               for 5+ seconds and release. The OnlyKey light will turn off.
               Re-enter your current primary PIN to enter config mode and notice
               the OnlyKey flashes red.
@@ -825,8 +825,9 @@
                 </p>
                 <p>
                   <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----",
-                  the backup of the OnlyKey slots and keys is complete. Select
-                  [Save File] to save your encrypted backup or [Verify Backup] to verify backup integrity.
+                  the backup process is complete. Click
+                  [Verify Backup] to verify the backup integrity, or
+                  [Save File] to save your encrypted backup.
                 </p>
               </fieldset>
 
@@ -852,11 +853,9 @@
                 name="backupVerify"
                 value="Verify Backup"
               />
-              <span style ="color:green" id="verifyBackupMessage"
-                ></span
-              >
+              <span style ="color:green" id="verifyBackupMessage"></span>
 
-              <br />
+              <br /><br/>
 
               <input
                 type="button"
@@ -886,8 +885,7 @@
                 <p>
                   <u>Step 1</u>. To restore a backup file to your OnlyKey,
                   ensure you have loaded the same backup passphrase or backup
-                  key you used to create the backup. Also make sure your OnlyKey
-                  is unlocked.
+                  key you used to create the backup.
                 </p>
                 <p>
                   <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+
@@ -1241,7 +1239,7 @@
       </div>
     </div>
 
-    <dialog id="finalStep-dialog">
+    <dialog id="finalStep-dialog" class="silver-gradient-bg">
       <h2>Your OnlyKey has been successfully configured.</h2>
       <h3>
         Please unplug and reinsert your OnlyKey to continue setting up your
@@ -1249,22 +1247,22 @@
       </h3>
     </dialog>
 
-    <dialog id="disconnected-dialog">
+    <dialog id="disconnected-dialog" class="silver-gradient-bg">
       <h1>Please connect your OnlyKey</h1>
     </dialog>
 
-    <dialog id="working-dialog">
+    <dialog id="working-dialog" class="silver-gradient-bg">
       <h1>Working...</h1>
       <h2>Please wait</h2>
       <p id="upgrade-text"></p>
     </dialog>
 
-    <dialog id="locked-dialog">
+    <dialog id="locked-dialog" class="silver-gradient-bg">
       <h1>Your OnlyKey is locked</h1>
       <p id="locked-text"></p>
     </dialog>
 
-    <dialog id="locked-dialog-go">
+    <dialog id="locked-dialog-go" class="silver-gradient-bg">
       <h1>Your OnlyKey DUO is locked</h1>
       <p id="locked-text-go"></p>
     </dialog>
@@ -1316,7 +1314,7 @@
       <div id="selectPrivateKeyError" class="form-error"></div>
     </dialog>
 
-    <dialog id="slot-config-dialog" data-mode="basic">
+    <dialog id="slot-config-dialog" data-mode="basic" class="silver-gradient-bg">
       <div id="slot-config-top-links">
         <a href="" class="slot-config-close" title="Close">close &#9746;</a>
       </div>

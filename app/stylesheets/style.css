@@ -14,7 +14,8 @@
 }
 
 html {
-  background-color: #36393F;
+  /* background-color: #36393F; */
+  background: radial-gradient(ellipse at 50% 50%, rgba(133, 133, 133, 1) 0%, rgba(46, 46, 46, 1) 100%);
 }
 
 body {
@@ -25,7 +26,7 @@ body {
   color: #333;
 }
 
-button {
+button, input[type="button"] {
   font-family: BodyFont, monospace;
   font-size: 110%;
   background-color: #19639C;
@@ -34,13 +35,21 @@ button {
   border-radius: 4px 4px 4px 4px;
 }
 
-input[type="button"] {
-  font-family: BodyFont, monospace;
-  font-size: 110%;
-  background-color: #19639C;
-  color: #fefefe;
-  border-color: #19639C;
-  border-radius: 4px 4px 4px 4px;
+button:hover,
+input[type="button"]:hover,
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+  cursor: pointer
+}
+
+button:disabled {
+  color: #eee;
+  background-color: #aaa;
+  border-color: #ccc;
+}
+
+button:disabled:hover, input.disabled:hover {
+  cursor: not-allowed;
 }
 
 a,
@@ -138,11 +147,15 @@ td[data-step].active {
 
 dialog {
   border-radius: 10px;
-  box-shadow: 0px 0px 8px 2px black;
-  border-color: black;
+  box-shadow: 0px 0px 8px 2px rgba(0,0,0,.7);
+  border-color: #333;
   background-color: #262A2C;
-  color: white;
+  color: #eee;
   max-width: 90%;
+}
+
+.silver-gradient-bg {
+  background: radial-gradient(ellipse at 50% 50%, rgba(133, 133, 133, 1) 0%, rgba(46, 46, 46, 1) 100%);
 }
 
 dialog::backdrop {
@@ -333,12 +346,12 @@ nav > a {
   padding: 4px 4px 2px 4px;
   border-radius: 6px 6px 0 0;
   border-bottom: 0;
-  border: 2px solid #000;
+  border: 2px solid #262A2C;
   box-shadow: 1px 0px 0px 0px black;
   text-decoration: none;
   font-size: 1.5em;
-  color: #B9BBBE;
-  background-color: #262A2C;
+  color: #bbb;
+  background-color: #333;
   position: relative;
   bottom: 2px;
   border-bottom-color: transparent;
@@ -374,7 +387,7 @@ nav > a.active {
 }
 
 #tools-panel {
-  margin-bottom: 1.5em;
+  padding-bottom: 1.5em;
 }
 
 #tools-panel h2 {
