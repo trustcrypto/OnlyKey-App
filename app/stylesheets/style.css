@@ -13,6 +13,11 @@
   src: url("Lato-Regular.ttf") format("truetype");
 }
 
+@font-face {
+  font-family: "TxStrong";
+  src: url("Lato-Bold.ttf") format("truetype");
+}
+
 html {
   /* background-color: #36393F; */
   background: radial-gradient(ellipse at 50% 50%, rgba(133, 133, 133, 1) 0%, rgba(46, 46, 46, 1) 100%);
@@ -78,6 +83,8 @@ h1,
 h2,
 .h2 {
   font-size: 150%;
+  font-family: TxStrong, monospace;
+  color: #555;
   display: block;
   margin: 0.5em 0;
 }
@@ -98,17 +105,18 @@ body > div {
   top: 1px;
   width: 0.875em;
   /* filter values computed on https://codepen.io/sosuke/pen/Pjoqqp */
+  filter: invert(43%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
+
+}
+
+.moveimage.gold-filter {
   /* gold filter */
   filter: invert(89%) sepia(27%) saturate(493%) hue-rotate(343deg) brightness(72%) contrast(103%);
 }
 
-.moveimage.gray-filter {
-  filter: invert(53%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(99%) contrast(93%);
-}
-
 button img.moveimage {
-  /* tweak brightness and contrast */
-  filter: invert(89%) sepia(27%) saturate(493%) hue-rotate(343deg) brightness(87%) contrast(93%);
+  /* tweak */
+  filter: invert(63%) sepia(12%) saturate(4%) hue-rotate(1deg) brightness(100%) contrast(100%);
 }
 
 .panel {
@@ -395,8 +403,7 @@ nav > a.active {
 }
 
 .slotLabel {
-  font-family: HFont, monospace;
-  font-weight: bold;
+  font-family: TxStrong, monospace;
   color: black;
 }
 
@@ -514,6 +521,10 @@ input.caution {
 
 .highlight {
   background-color: gold;
+}
+
+.strong{
+  font-family: TxStrong, monospace;
 }
 
 .disclaimer {
