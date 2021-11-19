@@ -34,9 +34,9 @@ body {
 button, input[type="button"] {
   font-family: BodyFont, monospace;
   font-size: 110%;
-  background-color: #19639C;
+  background-color: #237BCD;
   color: #fefefe;
-  border-color: #19639C;
+  border-color: #237BCD;
   border-radius: 4px 4px 4px 4px;
 }
 
