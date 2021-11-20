@@ -63,13 +63,13 @@
             </p>
             <p class="init-only">
               Your OnlyKey is ready to use! You can change the Backup
-              Passphrase/Key or change PINs below at any time. <br /><br /><b
-                >Before selecting an option below</b
-              >, you must first put your OnlyKey into config mode. To do this
-              hold down the #6 button on your OnlyKey for 5+ seconds and
+              Passphrase/Key or change PINs below at any time.
+              <br /><br />
+              Before selecting an option below,
+              <span class="strong">you must first put your OnlyKey into config mode</span>.
+              To do this, hold down the #6 button on your OnlyKey for 5+ seconds and
               release. The OnlyKey light will turn off. Re-enter your current
-              primary PIN to enter config mode and notice the OnlyKey flashes
-              red.
+              primary PIN to enter config mode and notice the OnlyKey flashes red.
             </p>
             <table>
               <tr>
@@ -576,17 +576,15 @@
               <u>Full Wipe</u> &ndash;
               <em>Wipe device and firmware must be reloaded.</em>
               <br />
-              <span style="font-size: small; background-color: yellow"
-                ><b>
+              <span class="disclaimer highlight"><b>
                   WARNING - Once set to "Full Wipe" this cannot be changed.
-                </b></span
-              >
+                </b></span>
               <br />
               <input
                 type="button"
                 id="fullWipeModeBtn"
                 value="Set Full Wipe Mode"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               /><br />
             </form>
           </div>
@@ -667,23 +665,23 @@
               <b class="config-mode-required">Backup Key Mode</b>
               <a
                 class="tooltip fade external"
-                data-tooltip="Backup key may be changed by default. Enabling this setting prevents any changes to the backup key until a factory default is completed."
+                data-tooltip="Backup key may be changed by default. Enabling this setting prevents any changes to the backup key and if no backup key is set will disable backups. Setting remains in effect until a factory default is completed."
                 href="https://docs.crp.to/usersguide.html#backup-key-mode"
               ><img class="moveimage" src="/images/solid/question-circle.svg" /></a>
               <br />
               <u>Locked</u> - <em>Backup key may not be changed on device</em>
               <br />
-              <span style="font-size: small; background-color: yellow">
+              <span class="disclaimer highlight">
                 <b>WARNING - Once set to "Locked" this cannot be changed.</b>
               </span>
               <br />
-              <input type="button" id="backupModeBtn" value="Lock Backup Key" style="background-color: #ED4245; border-color: #ED4245" />
+              <input type="button" id="backupModeBtn" value="Lock Backup Key" class="caution" />
               <br />
             </form>
           </div>
         </div>
         <hr />
-        <p style="color: red; font-weight: bold; margin: .5em">
+        <p style="color: #ED4245; font-weight: bold; margin: .5em">
           * = device must be in <b>config mode</b> to change
         </p>
       </div>
@@ -705,8 +703,8 @@
               for generating an OpenPGP key with Keybase.
             </p>
             <p>
-              <b>Before loading a key</b>, you must first put your OnlyKey into
-              config mode. To do this hold down the #6 button on your OnlyKey
+              Before loading a key, <span class="strong">you must first put your OnlyKey into
+              config mode</span>. To do this hold down the #6 button on your OnlyKey
               for 5+ seconds and release. The OnlyKey light will turn off.
               Re-enter your current primary PIN to enter config mode and notice
               the OnlyKey flashes red.
@@ -793,7 +791,7 @@
                 id="rsaWipe"
                 name="rsaWipe"
                 value="Wipe from OnlyKey"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
               <div id="rsaFormError" class="form-error"></div>
             </form>
@@ -827,8 +825,9 @@
                 </p>
                 <p>
                   <u>Step 3</u>. Once you see "-----END ONLYKEY BACKUP-----",
-                  the backup of the OnlyKey slots and keys is complete. Select
-                  [Save File] to save your encrypted backup or [Verify Backup] to verify backup integrity.
+                  the backup process is complete. Click
+                  [Verify Backup] to verify the backup integrity, or
+                  [Save File] to save your encrypted backup.
                 </p>
               </fieldset>
 
@@ -854,11 +853,9 @@
                 name="backupVerify"
                 value="Verify Backup"
               />
-              <span style ="color:green" id="verifyBackupMessage"
-                ></span
-              >
+              <span style ="color:green" id="verifyBackupMessage"></span>
 
-              <br />
+              <br /><br/>
 
               <input
                 type="button"
@@ -888,8 +885,7 @@
                 <p>
                   <u>Step 1</u>. To restore a backup file to your OnlyKey,
                   ensure you have loaded the same backup passphrase or backup
-                  key you used to create the backup. Also make sure your OnlyKey
-                  is unlocked.
+                  key you used to create the backup.
                 </p>
                 <p>
                   <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+
@@ -1024,7 +1020,7 @@
                 id="yubiWipe"
                 name="yubiWipe"
                 value="Wipe from OnlyKey"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
               <div id="yubiError" class="form-error"></div>
             </form>
@@ -1139,7 +1135,7 @@
                 id="eccWipe"
                 name="eccWipe"
                 value="Wipe from OnlyKey"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
               <div id="eccFormError" class="form-error"></div>
             </form>
@@ -1205,7 +1201,7 @@
           </div>
         </div>
         <h2>
-          Securely use OpenPGP and SSH on a local computer with OnlyKey Agent <a
+          <br>Securely use OpenPGP and SSH on a local computer with OnlyKey Agent <a
           href="https://docs.crp.to/onlykey-agent.html"
           class="external tooltip fade"
           data-tooltip="OnlyKey Agent is a hardware-based SSH and GPG agent that allows offline cold storage of your SSH and OpenPGP keys. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH and GPG."
@@ -1219,7 +1215,7 @@
               style="color: white"
               href="https://docs.crp.to/onlykey-agent.html#gpg-agent-quickstart-guide"
               class="external tooltip fade"
-              data-tooltip="Provides a way to securely use OnlyKey for OpenPGP on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use GPG to do things like sign emails, git commits, software packages etc."
+              data-tooltip="Provides a way to securely use OnlyKey for OpenPGP on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores keys off of the computer and you can still easily use GPG to do things like sign emails, git commits, software packages etc."
               >OnlyKey GPG Agent <img class="moveimage" src="/images/solid/envelope.svg" width="50px"
               /> <img class="moveimage" src="/images/solid/file-code.svg" width="50px"
               /> <img class="moveimage" src="/images/solid/code-branch.svg" width="50px"
@@ -1243,7 +1239,7 @@
       </div>
     </div>
 
-    <dialog id="finalStep-dialog">
+    <dialog id="finalStep-dialog" class="silver-gradient-bg">
       <h2>Your OnlyKey has been successfully configured.</h2>
       <h3>
         Please unplug and reinsert your OnlyKey to continue setting up your
@@ -1251,27 +1247,27 @@
       </h3>
     </dialog>
 
-    <dialog id="disconnected-dialog">
+    <dialog id="disconnected-dialog" class="silver-gradient-bg">
       <h1>Please connect your OnlyKey</h1>
     </dialog>
 
-    <dialog id="working-dialog">
+    <dialog id="working-dialog" class="silver-gradient-bg">
       <h1>Working...</h1>
       <h2>Please wait</h2>
       <p id="upgrade-text"></p>
     </dialog>
 
-    <dialog id="locked-dialog">
+    <dialog id="locked-dialog" class="silver-gradient-bg">
       <h1>Your OnlyKey is locked</h1>
       <p id="locked-text"></p>
     </dialog>
 
-    <dialog id="locked-dialog-go">
+    <dialog id="locked-dialog-go" class="silver-gradient-bg">
       <h1>Your OnlyKey DUO is locked</h1>
       <p id="locked-text-go"></p>
     </dialog>
 
-    <dialog id="slot-wipe-confirm" style="color: red;">
+    <dialog id="slot-wipe-confirm">
       <h2>
         WARNING:
         <br/>
@@ -1286,6 +1282,7 @@
         id="slotWipeConfirm"
         name="slotWipeConfirm"
         value="Wipe"
+        class="caution"
       />
       <input
         type="button"
@@ -1317,7 +1314,7 @@
       <div id="selectPrivateKeyError" class="form-error"></div>
     </dialog>
 
-    <dialog id="slot-config-dialog" data-mode="basic">
+    <dialog id="slot-config-dialog" data-mode="basic" class="silver-gradient-bg">
       <div id="slot-config-top-links">
         <a href="" class="slot-config-close" title="Close">close &#9746;</a>
       </div>
@@ -1660,7 +1657,7 @@
                 id="slotWipe"
                 name="slotWipe"
                 value="Wipe All Slot Data"
-                style="background-color: #ED4245; border-color: #ED4245" 
+                class="caution"
               />
             </td>
             <td class="universal-option">
