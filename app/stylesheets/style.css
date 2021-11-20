@@ -193,7 +193,8 @@ dialog.white a {
 }
 
 #slot-config-dialog h2 {
-  margin-top: 0;
+  margin: -0.2em 0 1em 0;
+  color: #eee;
 }
 
 #slot-config-top-links {
