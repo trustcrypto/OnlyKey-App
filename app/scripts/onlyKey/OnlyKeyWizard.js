@@ -261,7 +261,8 @@ if (chrome.passwordsPrivate) {
         },
         exitFn: (cb) => {
           const backupKeyMode = this.initForm.backupKeyMode;
-          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupRSAKey.bind(this, cb));
+          this.onlyKey.setbackupKeyMode(backupKeyMode.value);
+          this.submitBackupRSAKey(cb);
         }
       },
       Step10: { //Restore from backup
