@@ -243,11 +243,9 @@ if (chrome.passwordsPrivate) {
           if (this.direction === NEXT) {
             if (!this.checkInitialized() && this.advancedSetup) {
               const backupKeyMode = this.initForm.backupKeyMode;
-              this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
-            } else {
-              // not going to next step due to [Previous] click
-              this.submitBackupKey(cb);
+              this.onlyKey.setbackupKeyMode(backupKeyMode.value);
             }
+            this.submitBackupKey(cb);
           } else {
             cb();
           }
