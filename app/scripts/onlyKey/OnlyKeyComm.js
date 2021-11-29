@@ -719,7 +719,7 @@ OnlyKey.prototype.setRSABackupKey = async function (key, passcode, cb) {
     throw Error(error + "\n\n" + parseError);
   }
 
-  await onlyKeyConfigWizard.initKeySelect(privKey, function (err) {
+  return onlyKeyConfigWizard.initKeySelect(privKey, function (err) {
     ui.rsaForm.setError(err || "");
     if (typeof cb === "function") cb(err);
   });
@@ -851,7 +851,7 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
   }
 };
 
-OnlyKey.prototype.setPrivateKey = async function (slot, type, key, callback) {
+OnlyKey.prototype.setPrivateKey = function (slot, type, key, callback) {
   var msg, contentType;
   if (Array.isArray(key) || key.constructor === Uint8Array) {
     // RSA private key is an array of DEC bytes
@@ -958,11 +958,12 @@ OnlyKey.prototype.setmodkeyMode = function (modkeyMode) {
   });
 };
 
-OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode) {
+OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode, callback) {
   backupKeyMode = parseInt(backupKeyMode, 10);
-  this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode,  async () => {
-    return await this.listenforvalue("set Backup Key Mode");
-  });
+  const cb = callback || async function () {
+    await this.listenforvalue("set Backup Key Mode");
+  }.bind(this);
+  return this.setSlot("XX", "BACKUPKEYMODE", backupKeyMode, cb);
 };
 
 OnlyKey.prototype.setTypeSpeed = function (typeSpeed) {
@@ -1865,9 +1866,7 @@ async function submitRsaForm(e) {
       return ui.rsaForm.setError("Passcode cannot be empty.");
     }
 
-    var privKey,
-      keyObj = {},
-      retKey;
+    let privKey;
 
     try {
       var privKeys = await openpgp.key.readArmored(key);
@@ -1899,7 +1898,7 @@ async function submitRsaForm(e) {
     };
   }
 
-  await onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
+  return onlyKeyConfigWizard.initKeySelect(allKeys, function (err) {
     ui.rsaForm.setError(err || "");
   });
 }
@@ -1931,8 +1930,7 @@ OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
 
     var retKey = [...keyObj.p, ...keyObj.q];
   }
-  var slot =
-    slot !== null ? slot : parseInt(ui.rsaForm.rsaSlot.value || "", 10);
+  slot = (slot !== null) ? slot : parseInt(ui.rsaForm.rsaSlot.value || "", 10);
 
   // set all type modifiers
   var typeModifier = 0;
@@ -1959,31 +1957,27 @@ OnlyKey.prototype.confirmRsaKeySelect = function (keyObj, slot, cb) {
       console.info("Slot 2 set as signature key" + type);
     }
   }
+
+  let keyHandlerFn = submitRsaKey;
+
   if (typeof keyObj.s !== "undefined") {
     //ECC
     if (slot < 101) slot += 100;
-    myOnlyKey.setPrivateKey(slot, type, retKey, (err) => {
-      // TODO: check for success, then reset
-      if (typeof cb === "function") cb(err);
-      ui.rsaForm.reset();
-      if (backupsigFlag >= 0) {
-        backupsigFlag = -1;
-        //reset backup form
-      }
-      this.listen(handleMessage);
-    });
-  } else {
-    submitRsaKey(slot, type, retKey, (err) => {
-      // TODO: check for success, then reset
-      if (typeof cb === "function") cb(err);
-      ui.rsaForm.reset();
-      if (backupsigFlag >= 0) {
-        backupsigFlag = -1;
-        //reset backup form
-      }
-      this.listen(handleMessage);
-    });
+    keyHandlerFn = myOnlyKey.setPrivateKey;
   }
+
+  return keyHandlerFn(slot, type, retKey, (err) => {
+    if (err) {
+      return typeof cb === "function" && cb(err);
+    } else {
+      //reset backup form
+      ui.rsaForm.reset();
+      if (backupsigFlag >= 0) {
+        backupsigFlag = -1;
+      }
+      return this.listen(cb || handleMessage);
+    }
+  });
 };
 
 function submitRsaKey(slot, type, key, callback) {

@@ -22,6 +22,7 @@ if (chrome.passwordsPrivate) {
   }
 
   Wizard.prototype.init = function (myOnlyKey) {
+    console.info('Wizard.init() called');
     // reset all forms
     document.querySelectorAll('form').forEach(form => form.reset());
 
@@ -243,11 +244,11 @@ if (chrome.passwordsPrivate) {
           if (this.direction === NEXT) {
             if (!this.checkInitialized() && this.advancedSetup) {
               const backupKeyMode = this.initForm.backupKeyMode;
-              this.onlyKey.setbackupKeyMode(backupKeyMode.value);
+              return this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
             }
-            this.submitBackupKey(cb);
+            return this.submitBackupKey(cb);
           } else {
-            cb();
+            return cb();
           }
         }
       },
@@ -260,9 +261,8 @@ if (chrome.passwordsPrivate) {
           this.onlyKey.flushMessage();
         },
         exitFn: (cb) => {
-          const backupKeyMode = this.initForm.backupKeyMode;
-          this.onlyKey.setbackupKeyMode(backupKeyMode.value);
-          this.submitBackupRSAKey(cb);
+          const backupKeyMode = this.initForm.backupKeyModePGP;
+          return this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupRSAKey.bind(this, cb));
         }
       },
       Step10: { //Restore from backup
@@ -331,7 +331,7 @@ if (chrome.passwordsPrivate) {
     document.getElementById('step8-2-text').innerHTML = `
       <label>
         <input type='radio' checked name='backupKeyMode' value=0 />
-        <u>Permit future backup key changes(Default)</u>
+        <u>Permit future backup key changes (Default)</u>
       </label>
       <br />
       <label>
@@ -340,6 +340,7 @@ if (chrome.passwordsPrivate) {
       </label>
       <br />
       <td>
+        <br />
         <button id='SetPGPKey' type='button'>
           <b>Use PGP Key instead of passphrase</b>
         </button>
@@ -604,8 +605,8 @@ if (chrome.passwordsPrivate) {
   };
 
 
-  Wizard.prototype.initKeySelect = async function (rawKey, cb) {
-    console.info(rawKey);
+  Wizard.prototype.initKeySelect = function (rawKey, cb) {
+    console.info({ rawKey });
 
     //Check if PGP or SSH
     if (rawKey.type == 'ed25519') {
@@ -708,16 +709,18 @@ if (chrome.passwordsPrivate) {
       // then there is only one key, set it to slot this.rsaSlot_selection.value
       const signingKeySlot = this.rsaSlot_selection.value === '99' ? 2 : this.rsaSlot_selection.value;
       
-      this.onlyKey.confirmRsaKeySelect(signingKey, signingKeySlot, err => {
+      return this.onlyKey.confirmRsaKeySelect(signingKey, signingKeySlot, (err, res) => {
+        if (err) return cb(err);
         const decryptionKey = this.onlyKey.tempRsaKeys[1];
         if (decryptionKey) {
-          this.onlyKey.confirmRsaKeySelect(decryptionKey, 1, err => {
+          this.onlyKey.confirmRsaKeySelect(decryptionKey, 1, (err, res) => {
+            if (err) return cb(err);
+            this.onlyKey.tempRsaKeys = null;
+            return cb(null, res);
           });
-          this.onlyKey.tempRsaKeys = null;
-          this.reset();
         } else {
           this.onlyKey.tempRsaKeys = null;
-          this.reset();
+          return cb(null, res);
         }
       });
     } else {
@@ -733,7 +736,6 @@ if (chrome.passwordsPrivate) {
 
       this.dialog.open(this.selectPrivateKeyDialog, true);
     }
-
     return cb();
   };
 
@@ -805,13 +807,21 @@ if (chrome.passwordsPrivate) {
     }
 
     if (!passcode) {
-      this.initConfigErrors.innerHTML = 'Passcode cannot be empty.';
+      this.initConfigErrors.innerHTML = 'Passphrase cannot be empty.';
       return false;
     }
-    backuprsaKey.value = '';
-    backuprsaPasscode.value = '';
 
-    this.onlyKey.setRSABackupKey(key, passcode, cb);
+    this.onlyKey.setRSABackupKey(key, passcode, (err, res) => {
+      if (err) {
+        return cb(err);
+      }
+
+      // reset form fields
+      backuprsaKey.value = '';
+      backuprsaPasscode.value = '';
+  
+      return cb(res);
+    });
   };
 
   Wizard.prototype.setSlot = function () {
@@ -1414,7 +1424,7 @@ function makeRadioButton(name, value, text) {
 
 function toggleAdvancedUI(e) {
   e && e.preventDefault && e.preventDefault();
-  this.advancedSetup = e.target.checked;
+  this.setAdvancedSetup(e.target.checked);
   this.initSteps();
 }
 
