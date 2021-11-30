@@ -820,7 +820,7 @@ if (chrome.passwordsPrivate) {
       backuprsaKey.value = '';
       backuprsaPasscode.value = '';
   
-      return cb(res);
+      return cb(null, res);
     });
   };
 
