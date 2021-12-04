@@ -243,11 +243,9 @@ if (chrome.passwordsPrivate) {
           if (this.direction === NEXT) {
             if (!this.checkInitialized() && this.advancedSetup) {
               const backupKeyMode = this.initForm.backupKeyMode;
-              this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
-            } else {
-              // not going to next step due to [Previous] click
-              this.submitBackupKey(cb);
+              this.onlyKey.setbackupKeyMode(backupKeyMode.value);
             }
+            this.submitBackupKey(cb);
           } else {
             cb();
           }
@@ -263,11 +261,12 @@ if (chrome.passwordsPrivate) {
         },
         exitFn: (cb) => {
           const backupKeyMode = this.initForm.backupKeyMode;
-          this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupRSAKey.bind(this, cb));
+          this.onlyKey.setbackupKeyMode(backupKeyMode.value);
+          this.submitBackupRSAKey(cb);
         }
       },
       Step10: { //Restore from backup
-        prev: 'Step9',
+        prev: 'Step8',
         next: 'Step11',
         enterFn: () => {
           this.btnSubmitStep.disabled = false;
@@ -339,12 +338,6 @@ if (chrome.passwordsPrivate) {
         <input type='radio' name='backupKeyMode' value=1 />
         <u>Lock backup key on this device</u>
       </label>
-      <br />
-      <td>
-        <button id='SetPGPKey' type='button'>
-          <b>Use PGP Key instead of passphrase</b>
-        </button>
-      </td>
       <br />
     `;
     this.setPrimaryPINHtml('step2-text');
@@ -441,7 +434,7 @@ if (chrome.passwordsPrivate) {
       this.gotoStep('Step8');
     };
 
-    this.setPGPKey.onclick = (e) => {
+    if (this.setPGPKey) this.setPGPKey.onclick = (e) => {
       e && e.preventDefault && e.preventDefault();
       this.gotoStep('Step9');
     };
