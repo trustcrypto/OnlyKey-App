@@ -2037,6 +2037,7 @@ function saveBackupFile(e) {
   } else {
     ui.backupForm.setError("Backup data cannot be empty space.");
   }
+  document.getElementById("verifyBackupMessage").innerText = "";
 }
 
 function verifyBackupFile(e) {
