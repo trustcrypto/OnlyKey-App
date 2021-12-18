@@ -105,10 +105,19 @@ if (typeof nw == 'undefined') {
     }
 } else {
     const AutoLaunch = require('auto-launch');
-    const autoLaunch = new AutoLaunch({
+    const { os } = require('os');
+    const osx = os.platform() === 'darwin';
+    const autoLaunchOptions = {
         name: 'OnlyKey',
         isHidden: true
-    });
+    };
+
+    if (osx) {
+        // path should use "nwjs Helper", not "nwjs Helper (Renderer)"
+        autoLaunchOptions.path = process.execPath.replace(/ \(Renderer\)/g, '');
+    }
+
+    const autoLaunch = new AutoLaunch(autoLaunchOptions);
 
     // read localStorage setting or default to true if first time running app
     const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
