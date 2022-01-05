@@ -20,6 +20,7 @@
 
   if (osx) {
       autoLaunchOptions.path = appPath;
+      autoLaunchOptions.isHidden = false;
   }
 
   const autoLaunch = new AutoLaunch(autoLaunchOptions);
