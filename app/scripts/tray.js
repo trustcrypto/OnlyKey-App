@@ -76,9 +76,11 @@
 
   const tray = new nw.Tray({
     icon: './images/ok-tray-logo.png',
-    tooltip: 'OnlyKey Configuration App settings',
   });
-
+  
+  // linux tooltip resulted in menu items failing to render sometimes when the app was launched
+  if (!linux) tray.tooltip = 'OnlyKey Configuration App settings';
+  
   settingsMenu.append(autoLaunchMenuItem);
   settingsMenu.append(autoUpdateMenuItem);
   settingsMenu.append(autoUpdateFWMenuItem);
