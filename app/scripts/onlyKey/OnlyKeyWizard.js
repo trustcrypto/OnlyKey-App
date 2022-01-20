@@ -39,15 +39,15 @@ if (chrome.passwordsPrivate) {
       case 'classic':
         this.initClassicSteps();
         break;
-      case 'go':
+      case 'duo':
       default:
-        this.initGoSteps();
+        this.initDuoSteps();
         break;
     }
     console.log(`Wizard.initSteps() called with ${deviceType}`);
   };
 
-  Wizard.prototype.initGoSteps = function () {
+  Wizard.prototype.initDuoSteps = function () {
     this.steps = {
       Step1: {
         enterFn: this.setGuided.bind(this, true),
@@ -81,36 +81,36 @@ if (chrome.passwordsPrivate) {
               <div class='flex-item col-3'>
                 <p class='center'>
                   <u>Primary Profile</u><br/>
-                  <input type='password' id='goPrimaryPin' name='goPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
-                  <input type='password' id='goPrimaryPinConfirm' name='goPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  <input type='password' id='duoPrimaryPin' name='duoPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
+                  <input type='password' id='duoPrimaryPinConfirm' name='duoPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
                   [required]
                 </p>
-                <p id='goPrimaryPinErrors' class='form-error'></p>
+                <p id='duoPrimaryPinErrors' class='form-error'></p>
               </div>
               <div class='flex-item col-3'>
                 <p class='center'>
                   <u>Secondary Profile</u><br/>
-                  <input type='password' id='goSecondaryPin' name='goSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
-                  <input type='password' id='goSecondaryPinConfirm' name='goSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  <input type='password' id='duoSecondaryPin' name='duoSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
+                  <input type='password' id='duoSecondaryPinConfirm' name='duoSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
                   [optional]
                 </p>
-                <p id='goSecondaryPinErrors' class='form-error'></p>
+                <p id='duoSecondaryPinErrors' class='form-error'></p>
               </div>
               <div class='flex-item col-3'>
                 <p class='center'>
                   <u>Self-Destruct</u><br/>
-                  <input type='password' id='goSDPin' name='goSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
-                  <input type='password' id='goSDPinConfirm' name='goSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  <input type='password' id='duoSDPin' name='duoSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
+                  <input type='password' id='duoSDPinConfirm' name='duoSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
                   [optional]
                 </p>
-                <p id='goSdPinErrors' class='form-error'></p>
+                <p id='duoSdPinErrors' class='form-error'></p>
               </div>
             </div>
           `;
         },
         exitFn: (cb) => {
-          const pins = this.validateGoPins();
-          pins && this.onlyKey.sendPin_GO(pins, cb);
+          const pins = this.validateDuoPins();
+          pins && this.onlyKey.sendPin_DUO(pins, cb);
         }
       },
       Step8: { // backup passphrase
@@ -321,7 +321,7 @@ if (chrome.passwordsPrivate) {
     const deviceType = this.onlyKey.getDeviceType();
     const main = document.getElementById('main');
     const deviceTypes = Object.values(DEVICE_TYPES);
-    // const deviceTypes = ['classic', 'go'];
+    // const deviceTypes = ['classic', 'duo'];
     deviceTypes.forEach(type => {
       main.classList.remove(`ok-${type}`);
     });
@@ -520,21 +520,21 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
-    document.getElementById('locked-text-go').innerHTML = `
+    document.getElementById('locked-text-duo').innerHTML = `
     <h3>Please enter your PIN</h3>
-    <form name="unlockOkGoForm" id="unlockOkGoForm">
-      <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
-      <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
+    <form name="unlockOkDuoForm" id="unlockOkDuoForm">
+      <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
+      <input type="button" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
     </form>
     `;
     document.getElementById('locked-text').innerHTML = `
     <h3>Please enter your PIN</h3>
     `;
-    this.unlockOkGoPinInput = document.getElementById('unlockOkGoPin');
-    this.unlockOkGoSubmitBtn = document.getElementById('unlockOkGoSubmit');
-    this.unlockOkGoSubmitBtn.onclick = e => {
+    this.unlockOkDuoPinInput = document.getElementById('unlockOkDuoPin');
+    this.unlockOkDuoSubmitBtn = document.getElementById('unlockOkDuoSubmit');
+    this.unlockOkDuoSubmitBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      this.onlyKey.sendPin_GO([this.unlockOkGoPinInput.value], (err, msg) => {
+      this.onlyKey.sendPin_DUO([this.unlockOkDuoPinInput.value], (err, msg) => {
         // this.onlyKey.listen(function (err, msg) {
         if (err) {
           console.dir({
@@ -1319,15 +1319,15 @@ if (chrome.passwordsPrivate) {
     }
   };
 
-  Wizard.prototype.validateGoPins = function () {
-    const pin1 = document.getElementById('goPrimaryPin').value;
-    const pin1Confirm = document.getElementById('goPrimaryPinConfirm').value;
+  Wizard.prototype.validatDuoPins = function () {
+    const pin1 = document.getElementById('duoPrimaryPin').value;
+    const pin1Confirm = document.getElementById('duoPrimaryPinConfirm').value;
     const pin1Errors = [];
-    const pin2 = document.getElementById('goSecondaryPin').value;
-    const pin2Confirm = document.getElementById('goSecondaryPinConfirm').value;
+    const pin2 = document.getElementById('duoSecondaryPin').value;
+    const pin2Confirm = document.getElementById('duoSecondaryPinConfirm').value;
     const pin2Errors = [];
-    const pin3 = document.getElementById('goSDPin').value;
-    const pin3Confirm = document.getElementById('goSDPinConfirm').value;
+    const pin3 = document.getElementById('duoSDPin').value;
+    const pin3Confirm = document.getElementById('duoSDPinConfirm').value;
     const pin3Errors = [];
 
     const minPinLength = 7;
@@ -1353,9 +1353,9 @@ if (chrome.passwordsPrivate) {
 
     let errorsFound = false;
     [
-      { errors: pin1Errors, containerId: 'goPrimaryPinErrors' },
-      { errors: pin2Errors, containerId: 'goSecondaryPinErrors' },
-      { errors: pin3Errors, containerId: 'goSdPinErrors' }
+      { errors: pin1Errors, containerId: 'duoPrimaryPinErrors' },
+      { errors: pin2Errors, containerId: 'duoSecondaryPinErrors' },
+      { errors: pin3Errors, containerId: 'duoSdPinErrors' }
     ].forEach(pinForm => {
       document.getElementById(pinForm.containerId).innerHTML = '';
       if (pinForm.errors.length) {

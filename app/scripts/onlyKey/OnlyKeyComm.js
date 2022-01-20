@@ -14,7 +14,7 @@ let onlyKeyConfigWizard;
 
 const DEVICE_TYPES = {
   CLASSIC: "classic",
-  GO: "go",
+  DUO: "duo",
 };
 
 const SUPPORTED_DEVICES = [
@@ -541,7 +541,7 @@ OnlyKey.prototype.sendPinMessage = function (
   }
 
   const deviceType = myOnlyKey.getDeviceType();
-  if (deviceType === DEVICE_TYPES.GO) {
+  if (deviceType === DEVICE_TYPES.DUO) {
     messageParams.contents = pin;
     messageParams.contentType = "DEC";
   }
@@ -579,7 +579,7 @@ OnlyKey.prototype.sendSetPin2 = function (callback) {
   );
 };
 
-OnlyKey.prototype.sendPin_GO = function (pins, callback) {
+OnlyKey.prototype.sendPin_DUO = function (pins, callback) {
   // if only 1 pin is sent, just send those pin chars as a login attempt
   // otherwise, concatenate all PINs sent and fill with null (hex 0)
   const pinCount = pins.length;
@@ -608,15 +608,15 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
           .getLastMessage("received")
           .indexOf("Error password attempts for this session exceeded") === 0
       ) {
-        document.getElementById("locked-text-go").innerHTML =
+        document.getElementById("locked-text-duo").innerHTML =
           "To prevent lockout OnlyKey only permits 3 failed PIN attempts at a time, please remove and reinsert OnlyKey to try again.";
         console.info("PIN attempts exeeded");
       } else {
-        document.getElementById("locked-text-go").innerHTML = `
+        document.getElementById("locked-text-duo").innerHTML = `
       <h3>Please enter your PIN</h3>
-      <form name="unlockOkGoForm" id="unlockOkGoForm">
-        <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
-        <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
+      <form name="unlockOkDuoForm" id="unlockOkDuoForm">
+        <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
+        <input type="button" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
       </form>
       `;
       }
@@ -1002,8 +1002,9 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
   switch (lastChar) {
-    case "g":
-      deviceType = DEVICE_TYPES.GO;
+    case "n":
+    case "p":
+      deviceType = DEVICE_TYPES.DUO;
       document.getElementById("slot-config-btns").innerHTML = `
       <tr>
         <td>
@@ -1012,7 +1013,7 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
           <span class="slotLabel" id="slotLabel1b">empty</span>
           <input type="button" id="slot1bConfig" value="1b" />
         </td>
-        <td class="okgo-photo-cell"></td>
+        <td class="okduo-photo-cell"></td>
         <td>
           <input type="button" id="slot2aConfig" value="2a" />
           <span class="slotLabel" id="slotLabel2a">empty</span><br />
@@ -1161,7 +1162,7 @@ var ui = {
   slotConfigForm: null,
   slotConfigDialog: null,
   lockedDialog: null,
-  lockedDialogGo: null,
+  lockedDialogDuo: null,
   workingDialog: null,
   disconnectedDialog: null,
   main: null,
@@ -1194,8 +1195,8 @@ var initializeWindow = function () {
   ui.firmwareForm = document["firmwareForm"];
 
   ui.getLockedDialog = (ok) =>
-    ok.getDeviceType() === DEVICE_TYPES.GO
-      ? ui.lockedDialogGo
+    ok.getDeviceType() === DEVICE_TYPES.DUO
+      ? ui.lockedDialogDuo
       : ui.lockedDialog;
 
   enableIOControls(false);
