@@ -47,7 +47,7 @@ const copyBuiltApp = function () {
 
 const prepareOsSpecificThings = function () {
     // Info.plist
-    console.log(`Doing OSX-specific things...`);
+    console.log('Doing OSX-specific things...');
     let info = projectDir.read('resources/osx/Info.plist');
     info = replace(info, {
         productName: manifest.productName,

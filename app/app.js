@@ -47,7 +47,7 @@ chrome.app.runtime.onLaunched.addListener(function() {
         outerBounds: { width: 1024, height: 768 }
       });
 });
-
+    
 var onDevicesEnumerated = async function (devices) {
   if (chrome.runtime.lastError) {
     console.error("onDevicesEnumerated ERROR:", chrome.runtime.lastError);
@@ -103,25 +103,27 @@ if (typeof nw == 'undefined') {
 
         chrome.hid.getDevices(deviceInfo, onDevicesEnumerated);
     }
-} else {
+} else if (!localStorage.hasOwnProperty('autoLaunch')) {
+    // default autoLaunch to true if first time running app
     const AutoLaunch = require('auto-launch');
-    const autoLaunch = new AutoLaunch({
-        name: 'OnlyKey',
+    const appPath = require('./scripts/non-renderer-app-path');
+    const appName = appPath.includes('nwjs Helper') ? 'OnlyKey-dev' : 'OnlyKey';
+    const userPreferences = require('./scripts/userPreferences.js');
+    const os = require('os');
+    const osx = os.platform() === 'darwin';
+    const autoLaunchOptions = {
+        name: appName,
         isHidden: true
-    });
+    };
 
-    // read localStorage setting or default to true if first time running app
-    const enableAutoLaunch = localStorage.hasOwnProperty('autoLaunch') ? !!localStorage.autoLaunch : localStorage.autoLaunch = true;
+    if (osx) {
+        autoLaunchOptions.path = appPath;
+        autoLaunchOptions.isHidden = false;
+    }
 
-    autoLaunch.isEnabled()
-        .then(isEnabled => {
-            if (isEnabled && !enableAutoLaunch) {
-                autoLaunch.disable();
-            } else if(!isEnabled && enableAutoLaunch) {
-                autoLaunch.enable();
-            }
-        })
-        .catch(console.error);
+    const autoLaunch = new AutoLaunch(autoLaunchOptions);
+    autoLaunch.enable();
+    userPreferences.autoLaunch = true;
 }
 
 function setTime(connectionId) {
