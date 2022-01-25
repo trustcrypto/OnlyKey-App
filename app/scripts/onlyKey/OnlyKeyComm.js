@@ -1001,6 +1001,7 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
+  console.info(`lastChar ${lastChar}`);
   switch (lastChar) {
     case "g":
       deviceType = DEVICE_TYPES.GO;
