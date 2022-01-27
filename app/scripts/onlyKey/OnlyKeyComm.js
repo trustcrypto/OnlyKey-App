@@ -11,6 +11,7 @@ let fwchecked = false;
 let dialog;
 let myOnlyKey;
 let onlyKeyConfigWizard;
+let devicePin;
 
 const DEVICE_TYPES = {
   CLASSIC: "classic",
@@ -1001,8 +1002,11 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
   let deviceType;
+  devicePin = true;
+
   switch (lastChar) {
     case "n":
+      devicePin = false;
     case "p":
       deviceType = DEVICE_TYPES.DUO;
       document.getElementById("slot-config-btns").innerHTML = `
