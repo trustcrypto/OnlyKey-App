@@ -2006,29 +2006,20 @@ function saveBackupFile(e) {
   e && e.preventDefault && e.preventDefault();
   ui.backupForm.setError("");
 
-  var backupData = ui.backupForm.backupData.value.trim();
+  const backupData = ui.backupForm.backupData.value.trim();
   if (backupData) {
-    d = new Date();
-    dMonth = d.getMonth() + 1;
-    dDate = d.getDate();
-    dYear = d.getFullYear();
-    dHour = d.getHours() + 1 < 12 ? d.getHours() : d.getHours() - 12;
-    dMinutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-    dM = d.getHours() + 1 < 12 ? "AM" : "PM";
-    df =
-      dMonth +
-      "-" +
-      dDate +
-      "-" +
-      dYear +
-      "-" +
-      dHour +
-      "-" +
-      dMinutes +
-      "-" +
-      dM;
-    var filename = "onlykey-backup-" + df + ".txt";
-    var blob = new Blob([backupData], {
+    const d = new Date();
+    const dYear = d.getFullYear(),
+          dMonth = strPad(d.getMonth() + 1, 2, 0),
+          dDate = strPad(d.getDate(), 2, 0),          
+          dHour = strPad(d.getHours(), 2, 0),
+          dMinutes = strPad(d.getMinutes(), 2, 0);
+
+    const df = `${dYear}-${dMonth}-${dDate}T${dHour}-${dMinutes}`;
+          
+    // format as onlykey-backup-2022-01-31T22-09.txt
+    const filename = `onlykey-backup-${df}.txt`;
+    const blob = new Blob([backupData], {
       type: "text/plain;charset=utf-8",
     });
     saveAs(blob, filename); // REQUIRES FileSaver.js polyfill
@@ -2675,12 +2666,12 @@ function hexStringtoByteArray(hexString) {
   return result;
 }
 
-function strPad(str, places, char) {
-  while (str.length < places) {
-    str = "" + (char || 0) + str;
+function strPad(str, places, char='0') {
+  let s = str.toString();
+  while (s.length < places) {
+    s = `${char}${s}`;
   }
-
-  return str;
+  return s;
 }
 
 // http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript
