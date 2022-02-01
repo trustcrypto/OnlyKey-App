@@ -62,8 +62,9 @@ if (chrome.passwordsPrivate) {
           document.getElementById('step2-text').innerHTML = `
             <h3>Change PINs</h3>
             <p>
-              Make sure to choose PINs that you will not forget and that only you know.
-              It is also good to keep a secure backup of your PINs somewhere in case you forget.
+              Make sure to choose a device PIN that you will not forget and that only you know.
+              Once set, it is required to know your device PIN to unlock your OnlyKey so keep a 
+              secure backup of your PIN somewhere in case you forget.
             </p>
             <p>
               DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and,
@@ -75,26 +76,18 @@ if (chrome.passwordsPrivate) {
               I understand and accept the above risk.
             </label>
             <p>
-              <strong>Enter 7-16 digits for each PIN:</strong>
+              <strong>Enter a 7-10 digit PIN code using ONLY the numbers 1 - 6. Using the numbers 1 - 6 allows 
+              you to physically enter the PIN onto OnlyKey itself in the event that OnlyKey App is unavailable:</strong>
             </p>
             <div class='flex-container'>
               <div class='flex-item col-3'>
                 <p class='center'>
-                  <u>Primary Profile</u><br/>
-                  <input type='password' id='duoPrimaryPin' name='duoPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
+                  <u>Device PIN/u><br/>
+                  <input type='password' id='duoPrimaryPin' name='duoPrimaryPin' required maxlength='16' placeholder='Device PIN' /><br/>
                   <input type='password' id='duoPrimaryPinConfirm' name='duoPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
                   [required]
                 </p>
                 <p id='duoPrimaryPinErrors' class='form-error'></p>
-              </div>
-              <div class='flex-item col-3'>
-                <p class='center'>
-                  <u>Secondary Profile</u><br/>
-                  <input type='password' id='duoSecondaryPin' name='duoSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
-                  <input type='password' id='duoSecondaryPinConfirm' name='duoSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                  [optional]
-                </p>
-                <p id='duoSecondaryPinErrors' class='form-error'></p>
               </div>
               <div class='flex-item col-3'>
                 <p class='center'>

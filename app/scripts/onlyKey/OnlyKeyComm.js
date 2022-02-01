@@ -501,13 +501,13 @@ function handleGetLabels(err, msg) {
     msg.indexOf("|") !== 2 ||
     typeof slotNum !== "number" ||
     slotNum < 1 ||
-    slotNum > 12
+    slotNum > 24
   ) {
     myOnlyKey.listen(handleGetLabels);
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 12 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
+    if (slotNum < 24 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
       myOnlyKey.listen(handleGetLabels);
     }
   }
@@ -1010,6 +1010,9 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
     case "p":
       deviceType = DEVICE_TYPES.DUO;
       document.getElementById("slot-config-btns").innerHTML = `
+      </td>
+      <td class="okduo-photo-cell" rowspan="1"></td>
+      <td>
       <tr>
         <td>
           <span class="slotLabel" id="slotLabel1a">empty</span>
@@ -1017,50 +1020,77 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
           <span class="slotLabel" id="slotLabel1b">empty</span>
           <input type="button" id="slot1bConfig" value="1b" />
         </td>
-        <td class="okduo-photo-cell"></td>
         <td>
-          <input type="button" id="slot2aConfig" value="2a" />
-          <span class="slotLabel" id="slotLabel2a">empty</span><br />
-          <input type="button" id="slot2bConfig" value="2b" />
-          <span class="slotLabel" id="slotLabel2b">empty</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center">
-          <input type="button" id="slot3aConfig" value="3a" />
-          <span class="slotLabel" id="slotLabel3a">empty</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center">
-          <input type="button" id="slot3bConfig" value="3b" />
+          <input type="button" id="slot2aConfig" value="3a" />
+          <span class="slotLabel" id="slotLabel3a">empty</span><br />
+          <input type="button" id="slot2bConfig" value="3b" />
           <span class="slotLabel" id="slotLabel3b">empty</span>
         </td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center">
-        <input type="button" id="show_additional_slots" value="Show Additional Slots TODO hide below by default" />
-        <br>Hold 7 sec for "c", hold 10 sec for "d"
+        <td>
+          <input type="button" id="slot3aConfig" value="2a" />
+          <span class="slotLabel" id="slotLabel2a">empty</span><br />
+          <input type="button" id="slot3bConfig" value="2b" />
+          <span class="slotLabel" id="slotLabel2b">empty</span>
         </td>
       </tr>
       <tr>
         <td>
           <span class="slotLabel" id="slotLabel4a">empty</span>
-          <input type="button" id="slot4aConfig" value="1c" /><br />
+          <input type="button" id="slot4aConfig" value="1a" /><br />
           <span class="slotLabel" id="slotLabel4b">empty</span>
-          <input type="button" id="slot4bConfig" value="1d" />
+          <input type="button" id="slot4bConfig" value="1b" />
         </td>
-        <td align="center">
-          <input type="button" id="slot6aConfig" value="3c" />
+        <td>
+          <input type="button" id="slot6aConfig" value="3a" />
           <span class="slotLabel" id="slotLabel6a">empty</span><br />
-          <input type="button" id="slot6bConfig" value="3d" />
+          <input type="button" id="slot6bConfig" value="3b" />
           <span class="slotLabel" id="slotLabel6b">empty</span>
         </td>
         <td>
-          <span class="slotLabel" id="slotLabel5a">empty</span>
-          <input type="button" id="slot5aConfig" value="2c" /><br />
+          <input type="button" id="slot5aConfig" value="2a" />
+          <span class="slotLabel" id="slotLabel5a">empty</span><br />
+          <input type="button" id="slot5bConfig" value="2b" />
           <span class="slotLabel" id="slotLabel5b">empty</span>
-          <input type="button" id="slot5bConfig" value="2d" />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span class="slotLabel" id="slotLabel7a">empty</span>
+          <input type="button" id="slot1aConfig" value="1a" /><br />
+          <span class="slotLabel" id="slotLabel7b">empty</span>
+          <input type="button" id="slot1bConfig" value="1b" />
+        </td>
+        <td>
+          <input type="button" id="slot9aConfig" value="3a" />
+          <span class="slotLabel" id="slotLabel9a">empty</span><br />
+          <input type="button" id="slot9bConfig" value="3b" />
+          <span class="slotLabel" id="slotLabel9b">empty</span>
+        </td>
+        <td>
+          <input type="button" id="slot8aConfig" value="2a" />
+          <span class="slotLabel" id="slotLabel8a">empty</span><br />
+          <input type="button" id="slot8bConfig" value="2b" />
+          <span class="slotLabel" id="slotLabel8b">empty</span>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <span class="slotLabel" id="slotLabel10a">empty</span>
+          <input type="button" id="slot1aConfig" value="1a" /><br />
+          <span class="slotLabel" id="slotLabel10b">empty</span>
+          <input type="button" id="slot1bConfig" value="1b" />
+        </td>
+        <td>
+          <input type="button" id="slot12aConfig" value="3a" />
+          <span class="slotLabel" id="slotLabel12a">empty</span><br />
+          <input type="button" id="slot12bConfig" value="3b" />
+          <span class="slotLabel" id="slotLabel12b">empty</span>
+        </td>
+        <td>
+          <input type="button" id="slot11aConfig" value="2a" />
+          <span class="slotLabel" id="slotLabel11a">empty</span><br />
+          <input type="button" id="slot11bConfig" value="2b" />
+          <span class="slotLabel" id="slotLabel11b">empty</span>
         </td>
       </tr>
     `;
