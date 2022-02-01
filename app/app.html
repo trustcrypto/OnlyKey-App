@@ -1320,9 +1320,12 @@
       </div>
       <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
       <nav>
-        <a id="basic-slot-config" href="" class="active">Basic Login</a>
+        <a id="basic-slot-config" href="" class="active">
+          <span class="hide-no-pin">Basic Login</span>
+          <span class="no-pin-only">Static Password</span>
+        </a>
         <a id="mfa-slot-config" href="">Multi-factor</a>
-        <a id="advanced-slot-config" href="">Full Configuration (Advanced)</a>
+        <a id="advanced-slot-config" href="" class="hide-no-pin">Full Configuration (Advanced)</a>
       </nav>
       <form name="slot-config-form" id="slot-config-form">
         <p>
@@ -1396,7 +1399,7 @@
               />
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="advanced-option hide-no-pin">
             <td>
               <label>
                 <input type="radio" name="tabReturn4" value="1" />
@@ -1408,7 +1411,7 @@
               </label>
             </td>
           </tr>
-          <tr class="basic-option">
+          <tr class="basic-option hide-no-pin">
             <td>
               <label>
                 <input
@@ -1430,7 +1433,7 @@
               />
             </td>
           </tr>
-          <tr class="basic-option">
+          <tr class="basic-option hide-no-pin">
             <td>
               <label>
                 <input type="radio" name="tabReturn1" value="1" />

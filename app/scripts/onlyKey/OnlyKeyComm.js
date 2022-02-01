@@ -11,7 +11,6 @@ let fwchecked = false;
 let dialog;
 let myOnlyKey;
 let onlyKeyConfigWizard;
-let devicePin;
 
 const DEVICE_TYPES = {
   CLASSIC: "classic",
@@ -181,6 +180,7 @@ function OnlyKey(params = {}) {
 
   Object.assign(this, params.deviceInfo); // vendorId, productId, maxInputReportSize, etc
 
+  this.devicePinSet = true;
   this.fwUpdateSupport = false;
 
   this.isBootloader = false;
@@ -1001,12 +1001,12 @@ OnlyKey.prototype.getVersion = function () {
 OnlyKey.prototype.setDeviceType = function (version = "") {
   if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
+  this.devicePinSet = true;
   let deviceType;
-  devicePin = true;
 
   switch (lastChar) {
     case "n":
-      devicePin = false;
+      this.devicePinSet = false;
     case "p":
       deviceType = DEVICE_TYPES.DUO;
       document.getElementById("slot-config-btns").innerHTML = `

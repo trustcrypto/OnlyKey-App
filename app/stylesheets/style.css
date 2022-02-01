@@ -531,3 +531,15 @@ input.caution {
 .disclaimer {
   font-size: small;
 }
+
+.no-pin-set .hide-no-pin {
+  display: none;
+}
+
+.no-pin-only {
+  display: none;
+}
+
+.no-pin-set .no-pin-only {
+  display: initial;
+}

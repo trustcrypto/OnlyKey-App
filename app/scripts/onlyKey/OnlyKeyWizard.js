@@ -319,6 +319,7 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.uiInit = function () {
     const deviceType = this.onlyKey.getDeviceType();
+    const { devicePinSet } = this.onlyKey;
     const main = document.getElementById('main');
     const deviceTypes = Object.values(DEVICE_TYPES);
     // const deviceTypes = ['classic', 'duo'];
@@ -326,6 +327,8 @@ if (chrome.passwordsPrivate) {
       main.classList.remove(`ok-${type}`);
     });
     deviceType && main.classList.add(`ok-${deviceType}`);
+
+    document.body.classList[`${devicePinSet ? 'remove' : 'add'}`]('no-pin-set');
 
     this.initForm = document['init-panel'];
     document.getElementById('step8-2-text').innerHTML = `
