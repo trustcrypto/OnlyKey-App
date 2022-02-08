@@ -1537,7 +1537,7 @@ function initSlotConfigForm() {
 
 function showSlotConfigForm(e) {
   const slotId = e.target.value;
-  const slotUniqueId = e.target.dataset.slotId; // "data-slot-id" attribute
+  const slotUniqueId = e.target.dataset.slotId || e.target.value; // prefer "data-slot-id" attribute
   myOnlyKey.currentSlotId = slotUniqueId;
   const slotLabel = document.getElementById('slotLabel' + slotUniqueId).innerText;
   ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
