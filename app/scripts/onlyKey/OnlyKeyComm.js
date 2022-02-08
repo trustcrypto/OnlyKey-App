@@ -83,7 +83,6 @@ const chromeHid = {
 
   // chrome.hid.receive(integer connectionId, function callback)
   receive: function (connectionId, callback) {
-    // console.log('>>> receive called with', arguments);
     if (connectionId === "mockConnection") {
       if (this._pendingReceive) {
         throw "There must not be multiple pending receives.";
@@ -113,7 +112,6 @@ const chromeHid = {
 
   // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
   send: function (connectionId, reportId, data, callback) {
-    // console.log('>>> send called with', arguments);
     if (connectionId === "mockConnection") {
       this._sent.push(arguments);
 
@@ -462,15 +460,10 @@ OnlyKey.prototype.setTime = async function (callback) {
   this.sendMessage(options, this.sendMessage(options, callback));
 };
 
-OnlyKey.prototype.getLabels = async function (callback) {
+OnlyKey.prototype.getLabels = async function () {
   this.labels = "";
   await wait(900);
-  this.sendMessage(
-    {
-      msgId: "OKGETLABELS",
-    },
-    handleGetLabels
-  );
+  this.sendMessage({ msgId: "OKGETLABELS" }, handleGetLabels);
 };
 
 function handleGetLabels(err, msg) {
@@ -486,23 +479,23 @@ function handleGetLabels(err, msg) {
   }
 
   // if second char of response is a pipe, theses are labels
-  var msgParts = msg.split("|");
-  var slotNum = parseInt(msgParts[0], 10);
+  const msgParts = msg.split("|");
+  let slotNum = msgParts[0];
+  switch (slotNum) {
+    case '1a': slotNum = 20; break;
+    case '1a': slotNum = 21; break;
+    case '1c': slotNum = 22; break;
+    case '1d': slotNum = 23; break;
+    case '1e': slotNum = 24; break;
+    default: slotNum = parseInt(slotNum, 10); break;
+  }
+
   if (
     msg.includes("Error not in config mode") ||
-    myOnlyKey.getLastMessage("received") ==
-      "Error not in config mode, hold button 6 down for 5 sec"
+    myOnlyKey.getLastMessage("received") == "Error not in config mode, hold button 6 down for 5 sec"
   ) {
-    this.setLastMessage(
-      "received",
-      "Error not in config mode, hold button 6 down for 5 sec"
-    );
-  } else if (
-    msg.indexOf("|") !== 2 ||
-    typeof slotNum !== "number" ||
-    slotNum < 1 ||
-    slotNum > 24
-  ) {
+    this.setLastMessage("received", "Error not in config mode, hold button 6 down for 5 sec");
+  } else if (msg.indexOf("|") !== 2 || typeof slotNum !== "number" || slotNum < 1 || slotNum > 24) {
     myOnlyKey.listen(handleGetLabels);
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
@@ -638,10 +631,10 @@ OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
-  slot = slot || this.getSlotNum();
+OnlyKey.prototype.wipeSlot = function (slotArg, field, callback) {
+  let slot = slotArg || this.getSlotNum();
   if (typeof slot !== "number") slot = this.getSlotNum(slot);
-  var options = {
+  const options = {
     msgId: "OKWIPESLOT",
     slotId: slot,
     fieldId: field || null,
@@ -649,10 +642,11 @@ OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.getSlotNum = function (slotId) {
-  slotId = slotId || this.currentSlotId;
-  var parts = slotId.split("");
-  return parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 0 : 6);
+OnlyKey.prototype.getSlotNum = function (slotIdArg) {
+  const slotId = slotIdArg || this.currentSlotId;
+  const maxSlotInteger = this.getDeviceType() === DEVICE_TYPES.CLASSIC ? 6 : 12;
+  const slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : maxSlotInteger);
+  return slotNum;
 };
 
 OnlyKey.prototype.setYubiAuth = function (
@@ -1212,9 +1206,7 @@ var enumerateDevices = function () {
       productId,
     };
 
-    console.log(
-      `Checking for devices with vendorId ${vendorId} and productId ${productId}...`
-    );
+    console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`);
 
     chromeHid.getDevices(deviceInfo, onDevicesEnumerated);
   }
@@ -1400,7 +1392,7 @@ var handleMessage = async function (err, msg) {
       updateUI = true;
 
       // special handling if last message sent was PIN-related
-      if (myOnlyKey.getDeviceType === DEVICE_TYPES.CLASSIC) {
+      if (myOnlyKey.getDeviceType() === DEVICE_TYPES.CLASSIC) {
         switch (myOnlyKey.getLastMessage("sent")) {
           case "OKSETPIN":
           case "OKSETPIN2":
@@ -1446,7 +1438,7 @@ var handleMessage = async function (err, msg) {
       }
       if (myOnlyKey.isLocked) {
         myOnlyKey.isLocked = false;
-        myOnlyKey.getLabels(pollForInput);
+        myOnlyKey.getLabels();
         updateUI = true;
       }
     }
@@ -1524,30 +1516,34 @@ function toggleConfigPanel(e) {
 }
 
 function initSlotConfigForm() {
-  var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName("input"));
-  configBtns.forEach(function (btn, i) {
-    var labelIndex = myOnlyKey.getSlotNum(btn.value);
-    var labelText = myOnlyKey.labels[labelIndex - 1] || "empty";
+  const deviceType = myOnlyKey.getDeviceType();
+  const deviceBtns = ui.slotConfigBtns.getElementsByClassName(`ok-${deviceType}`)[0];
+  const configBtns = Array.from(deviceBtns.getElementsByTagName('input'));
+  configBtns.forEach((btn, i) => {
+    const slotId = btn.dataset.slotId || btn.value; // prefer data-slot-id
+    const labelIndex = myOnlyKey.getSlotNum(slotId);
+    const labelText = myOnlyKey.labels[labelIndex - 1] || 'empty';
     onlyKeyConfigWizard.setSlotLabel(i, labelText);
-    btn.addEventListener("click", showSlotConfigForm);
+    btn.addEventListener('click', showSlotConfigForm);
   });
   ui.slotConfigDialog
-    .getElementsByClassName("slot-config-close")[0]
-    .addEventListener("click", closeSlotConfigForm);
-  ui.slotConfigDialog.addEventListener("close", () => {
+    .getElementsByClassName('slot-config-close')[0]
+    .addEventListener('click', closeSlotConfigForm);
+  ui.slotConfigDialog.addEventListener('close', () => {
     document.getElementById('slotConfigErrors').innerHTML = '';
     ui.slotConfigForm.reset()
   });
 }
 
 function showSlotConfigForm(e) {
-  var slotId = e.target.value;
-  myOnlyKey.currentSlotId = slotId;
-  var slotLabel = document.getElementById("slotLabel" + slotId).innerText;
-  ui.slotConfigDialog.getElementsByClassName("slotId")[0].innerText = slotId;
+  const slotId = e.target.value;
+  const slotUniqueId = e.target.dataset.slotId; // "data-slot-id" attribute
+  myOnlyKey.currentSlotId = slotUniqueId;
+  const slotLabel = document.getElementById('slotLabel' + slotUniqueId).innerText;
+  ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
 
-  document.getElementById("txtSlotLabel").value =
-    slotLabel.toLowerCase() === "empty" ? "" : slotLabel;
+  document.getElementById('txtSlotLabel').value =
+    slotLabel.toLowerCase() === 'empty' ? '' : slotLabel;
   dialog.open(ui.slotConfigDialog);
   initSlotConfigForm();
   e && e.preventDefault && e.preventDefault();

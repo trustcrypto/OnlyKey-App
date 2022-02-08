@@ -315,7 +315,6 @@ if (chrome.passwordsPrivate) {
     const { devicePinSet } = this.onlyKey;
     const main = document.getElementById('main');
     const deviceTypes = Object.values(DEVICE_TYPES);
-    // const deviceTypes = ['classic', 'duo'];
     deviceTypes.forEach(type => {
       main.classList.remove(`ok-${type}`);
     });
@@ -1296,13 +1295,16 @@ if (chrome.passwordsPrivate) {
   };
 
   Wizard.prototype.setSlotLabel = function (slot, label) {
-    var slotLabel;
+    const configBtnsContainer = document.getElementById('slot-config-btns');
+    const deviceType = this.onlyKey.getDeviceType();
+    const rootElement = configBtnsContainer.getElementsByClassName(`ok-${deviceType}`)[0];
+    let slotLabel;
     if (typeof slot === 'number') {
-      var slotLabels = Array.from(document.getElementsByClassName('slotLabel'));
+      const slotLabels = Array.from(rootElement.getElementsByClassName('slotLabel'));
       slotLabel = slotLabels[slot];
     } else {
       slot = slot.toLowerCase();
-      slotLabel = document.getElementById('slotLabel' + slot);
+      slotLabel = rootElement.getElementById('slotLabel' + slot);
     }
 
     if (!slotLabel) return;
