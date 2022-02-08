@@ -82,7 +82,7 @@ if (chrome.passwordsPrivate) {
             <div class='flex-container'>
               <div class='flex-item col-3'>
                 <p class='center'>
-                  <u>Device PIN/u><br/>
+                  <u>Device PIN</u><br/>
                   <input type='password' id='duoPrimaryPin' name='duoPrimaryPin' required maxlength='16' placeholder='Device PIN' /><br/>
                   <input type='password' id='duoPrimaryPinConfirm' name='duoPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
                   [required]
@@ -1317,13 +1317,11 @@ if (chrome.passwordsPrivate) {
     }
   };
 
-  Wizard.prototype.validatDuoPins = function () {
+  Wizard.prototype.validateDuoPins = function () {
     const pin1 = document.getElementById('duoPrimaryPin').value;
     const pin1Confirm = document.getElementById('duoPrimaryPinConfirm').value;
     const pin1Errors = [];
-    const pin2 = document.getElementById('duoSecondaryPin').value;
-    const pin2Confirm = document.getElementById('duoSecondaryPinConfirm').value;
-    const pin2Errors = [];
+    const pin2 = []; // Only primary pin used by OnlyKey DUO
     const pin3 = document.getElementById('duoSDPin').value;
     const pin3Confirm = document.getElementById('duoSDPinConfirm').value;
     const pin3Errors = [];
@@ -1339,20 +1337,14 @@ if (chrome.passwordsPrivate) {
     pin1.match(/\D/g) && pin1Errors.push(numeralErrorStr);
     pin1.length < minPinLength && pin1Errors.push(lengthErrorStr);
 
-    pin2 && pin2 !== pin2Confirm && pin2Errors.push(mismatchErrorStr);
-    pin2.match(/\D/g) && pin2Errors.push(numeralErrorStr);
-    pin2 && pin2.length < minPinLength && pin2Errors.push(lengthErrorStr);
-    pin2 && pin2 == pin1 && pin2Errors.push('Secondary PIN cannot match Primary.');
-
     pin3 && pin3 !== pin3Confirm && pin3Errors.push(mismatchErrorStr);
     pin3.match(/\D/g) && pin3Errors.push(numeralErrorStr);
     pin3 && pin3.length < minPinLength && pin3Errors.push(lengthErrorStr);
-    pin3 && (pin3 == pin1 || pin3 == pin2) && pin3Errors.push('SD PIN cannot match others.');
+    pin3 && (pin3 == pin1) && pin3Errors.push('SD PIN cannot match others.');
 
     let errorsFound = false;
     [
       { errors: pin1Errors, containerId: 'duoPrimaryPinErrors' },
-      { errors: pin2Errors, containerId: 'duoSecondaryPinErrors' },
       { errors: pin3Errors, containerId: 'duoSdPinErrors' }
     ].forEach(pinForm => {
       document.getElementById(pinForm.containerId).innerHTML = '';
