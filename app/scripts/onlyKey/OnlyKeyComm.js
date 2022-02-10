@@ -483,7 +483,7 @@ function handleGetLabels(err, msg) {
   let slotNum = msgParts[0];
   switch (slotNum) {
     case '1a': slotNum = 20; break;
-    case '1a': slotNum = 21; break;
+    case '1b': slotNum = 21; break;
     case '1c': slotNum = 22; break;
     case '1d': slotNum = 23; break;
     case '1e': slotNum = 24; break;
