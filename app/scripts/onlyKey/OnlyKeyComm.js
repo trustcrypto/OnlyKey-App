@@ -483,7 +483,7 @@ function handleGetLabels(err, msg) {
   let slotNum = msgParts[0];
   switch (slotNum) {
     case '1a': slotNum = 20; break;
-    case '1a': slotNum = 21; break;
+    case '1b': slotNum = 21; break;
     case '1c': slotNum = 22; break;
     case '1d': slotNum = 23; break;
     case '1e': slotNum = 24; break;
@@ -962,6 +962,12 @@ OnlyKey.prototype.setbackupKeyMode = function (backupKeyMode) {
 
 OnlyKey.prototype.setTypeSpeed = function (typeSpeed) {
   this.setSlot("XX", "TYPESPEED", typeSpeed, async () => {
+    return await this.listenforvalue("set keyboard typespeed");
+  });
+};
+
+OnlyKey.prototype.setSlotTypeSpeed = function (slot, typeSpeed) {
+  this.setSlot(slot, "TYPESPEED", typeSpeed, async () => {
     return await this.listenforvalue("set keyboard typespeed");
   });
 };
@@ -2467,7 +2473,8 @@ function submitWipeMode(e, wipeMode) {
 function submitTypeSpeed(e) {
   e && e.preventDefault && e.preventDefault();
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
-
+  console.info('typeSpeed');
+  console.info(typeSpeed);
   if (typeof typeSpeed !== "number" || typeSpeed < 1) {
     typeSpeed = 4; //Default type speed
   }
