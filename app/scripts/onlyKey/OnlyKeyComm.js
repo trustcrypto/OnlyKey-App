@@ -1001,6 +1001,8 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   switch (lastChar) {
     case "n":
       this.devicePinSet = false;
+      deviceType = DEVICE_TYPES.DUO;
+      break;
     case "p":
       deviceType = DEVICE_TYPES.DUO;
       break;
