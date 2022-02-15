@@ -1473,13 +1473,13 @@ var handleMessage = async function (err, msg) {
   } else if (myOnlyKey.fwUpdateSupport) {
     //Firmware load in app with config mode
     firmwaretext.innerHTML =
-      `<p><u>Step 1</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>
+      `<p><u>Step 1</u>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your current PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
       <p><u>Step 2</u>. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p>
-      <p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
+      <p><u>Step 3</u>. The OnlyKey will flash white while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
     step8text.innerHTML =
-      "To set a new passphrase on your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+      "To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your current PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
     step9text.innerHTML =
-      "To set a new passphrase on your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+      "To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your current PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
   } else {
     //Firmware load not supported in app
     firmwaretext.innerHTML =
@@ -2249,7 +2249,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                               .getLastMessage("received")
                               .indexOf("UNINITIALIZEDv") >= 0 ||
                             window.confirm(
-                              "To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware."
+                              "To load new firmware file to your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your current PIN to enter config mode. You will notice the OnlyKey flashes red in config mode. Click OK to load new firmware."
                             )
                           ) {
                             if (req.responseContent.body) {
