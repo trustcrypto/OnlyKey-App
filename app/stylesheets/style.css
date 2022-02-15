@@ -554,13 +554,12 @@ input.caution {
   width: 25px;
   border-radius: 15px;
   margin: 0 4px;
-  box-shadow: 0px 1px 2px 1px rgb(0 0 0 / 60%);
-  opacity: .4;
+  box-shadow: 0px 1px 2px 0px rgb(0 0 0 / 80%);
   cursor: pointer;
 }
 
 .profile-btn:hover {
-  opacity: .8;
+  transform: scale(1.1);
 }
 
 [data-profile-value='green'] { background-color: green; }
@@ -568,10 +567,18 @@ input.caution {
 [data-profile-value='yellow'] { background-color: yellow; }
 [data-profile-value='purple'] { background-color: purple; }
 
-[data-profile-id='green'] [data-profile-value='green'] { opacity: 1; }
-[data-profile-id='blue'] [data-profile-value='blue'] { opacity: 1; }
-[data-profile-id='yellow'] [data-profile-value='yellow'] { opacity: 1; }
-[data-profile-id='purple'] [data-profile-value='purple'] { opacity: 1; }
+[data-profile-id='green'] [data-profile-value='green'] {
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+}
+[data-profile-id='blue'] [data-profile-value='blue'] {
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+}
+[data-profile-id='yellow'] [data-profile-value='yellow'] {
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+}
+[data-profile-id='purple'] [data-profile-value='purple'] {
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+}
 
 tr.profile-slots { display: none; }
 
