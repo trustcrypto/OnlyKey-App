@@ -903,6 +903,10 @@ if (chrome.passwordsPrivate) {
       yubiSlotPublicId: {
         input: form.yubiSlotPublicId,
         msgId: 'YUBIAUTH'
+      },
+      slotTypespeed: {
+        input: form.slotTypespeed,
+        msgId: 'TYPESPEED'
       }
     };
 
@@ -917,7 +921,9 @@ if (chrome.passwordsPrivate) {
             isChecked = true;
             if ((fieldMap[field].input).name == 'txtSlotUrl' || (fieldMap[field].input).name == 'txtPassword' || (fieldMap[field].input).name == 'txtUserName') {
               formValue = ('' + (fieldMap[field].input).value);
-            } else {
+            } else if ((fieldMap[field].input).name == 'slotTypespeed') {
+              formValue = parseInt(form['slotTypeSpeed'].value, 10);
+            }  else {
               formValue = ('' + (fieldMap[field].input).value).trim();
             }
 

@@ -978,6 +978,12 @@ OnlyKey.prototype.setTypeSpeed = function (typeSpeed) {
   });
 };
 
+OnlyKey.prototype.setSlotTypeSpeed = function (slot, typeSpeed) {
+  this.setSlot(slot, "TYPESPEED", typeSpeed, async () => {
+    return await this.listenforvalue("set keyboard typespeed");
+  });
+};
+
 OnlyKey.prototype.setLedBrightness = function (ledBrightness) {
   this.setSlot("XX", "LEDBRIGHTNESS", ledBrightness, async () => {
     return await this.listenforvalue("set LED brightness");
@@ -2482,7 +2488,8 @@ function submitWipeMode(e, wipeMode) {
 function submitTypeSpeed(e) {
   e && e.preventDefault && e.preventDefault();
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
-
+  console.info('typeSpeed');
+  console.info(typeSpeed);
   if (typeof typeSpeed !== "number" || typeSpeed < 1) {
     typeSpeed = 4; //Default type speed
   }
