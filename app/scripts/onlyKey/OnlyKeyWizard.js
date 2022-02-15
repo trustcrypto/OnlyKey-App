@@ -60,10 +60,10 @@ if (chrome.passwordsPrivate) {
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
           document.getElementById('step2-text').innerHTML = `
-            <h3>Change PINs</h3>
+            <h3>Set or Change PINs</h3>
             <p>
               Make sure to choose a device PIN that you will not forget and that only you know.
-              Once set, it is required to know your device PIN to unlock your OnlyKey so keep a 
+              Once set, it is required to know your device PIN to unlock your OnlyKey DUO so keep a 
               secure backup of your PIN somewhere in case you forget.
             </p>
             <p>
@@ -76,8 +76,17 @@ if (chrome.passwordsPrivate) {
               I understand and accept the above risk.
             </label>
             <p>
-              <strong>Enter a 7-10 digit PIN code using ONLY the numbers 1 - 6. Using the numbers 1 - 6 allows 
-              you to physically enter the PIN onto OnlyKey itself in the event that OnlyKey App is unavailable:</strong>
+              Enter a 7-10 digit PIN code using ONLY the numbers 1 - 6. Using the numbers 1 - 6 allows 
+              you to physically enter the PIN onto OnlyKey in the event that you don't have the OnlyKey App is available. 
+            </p>
+            <p>
+              Example of a <em>good</em> PIN: '32536145'
+            </p>
+            <p>
+              Examples of <em>bad</em> PINs: '1234567' '1111112' '1231231'
+            </p>
+            <p>
+              Once set, your PIN can be entered via the OnlyKey App or by physically touching device buttons. Touch buttons 1, 2, 3 to enter a 1, 2, 3 and hold (for 1 second) buttons 1, 2, 3 to enter a 4, 5, 6.
             </p>
             <div class='flex-container'>
               <div class='flex-item col-3'>
@@ -91,10 +100,10 @@ if (chrome.passwordsPrivate) {
               </div>
               <div class='flex-item col-3'>
                 <p class='center'>
-                  <u>Self-Destruct</u><br/>
+                  <u>Self-Destruct  </u><br/>
                   <input type='password' id='duoSDPin' name='duoSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
                   <input type='password' id='duoSDPinConfirm' name='duoSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                  [optional]
+                  [optional, for wiping device and factory reset]
                 </p>
                 <p id='duoSdPinErrors' class='form-error'></p>
               </div>
