@@ -303,7 +303,7 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
   }
 
   if (slotId !== null) {
-    bytes[cursor] = strPad(slotId, 2, 0);
+    bytes[cursor] = strPad(slotId, 2, 0);   
     cursor++;
   }
 
@@ -644,8 +644,20 @@ OnlyKey.prototype.wipeSlot = function (slotArg, field, callback) {
 
 OnlyKey.prototype.getSlotNum = function (slotIdArg) {
   const slotId = slotIdArg || this.currentSlotId;
-  const maxSlotInteger = this.getDeviceType() === DEVICE_TYPES.CLASSIC ? 6 : 12;
-  const slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : maxSlotInteger);
+  var slotNum;
+  if (this.getDeviceType() === DEVICE_TYPES.DUO) {
+    if (parseInt(slotId, 10) <= 3) {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 3);
+    } else if (parseInt(slotId, 10) <= 6) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 3 : 6);
+    } else if (parseInt(slotId, 10) <= 9) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 6 : 9);
+    } else if (parseInt(slotId, 10) <= 12) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 9 : 12);
+    }
+  } else {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 6);
+  }
   return slotNum;
 };
 
