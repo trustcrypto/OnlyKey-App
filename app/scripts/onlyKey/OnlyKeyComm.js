@@ -1013,7 +1013,7 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
       deviceType = DEVICE_TYPES.CLASSIC;
       break;
     default:
-      this.setDeviceType(version);
+      this.setTime(pollForInput);
       }
   }
   console.info(`Setting deviceType to ${deviceType}`);
