@@ -571,8 +571,30 @@ if (chrome.passwordsPrivate) {
     };
     // END PRIVATE KEY SELECTOR
 
+    // reset DUO profile switcher
+    if (deviceType === DEVICE_TYPES.DUO) {
+      this.setDuoProfile('green');
+      const profileSwitcher = document.getElementById('profile-switch');
+      Array.from(profileSwitcher.getElementsByClassName('profile-btn')).forEach(btn => {
+        console.log({ btn });
+        btn.removeEventListener('click', profileSwitchClickHandler);
+        btn.addEventListener('click', profileSwitchClickHandler.bind(this));
+      });
+    }
+
     this.setActiveStepUI();
   };
+
+  function profileSwitchClickHandler(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    const profileLabel = evt.target.dataset.profileValue;
+    this.setDuoProfile(profileLabel);
+  }
+
+  Wizard.prototype.setDuoProfile = function (profileLabel) {
+    document.getElementById('duo-slots').setAttribute('data-profile-id', profileLabel);
+  }
 
   Wizard.prototype.checkInitialized = function () {
     const isInitialized = this.onlyKey && this.onlyKey.isInitialized;

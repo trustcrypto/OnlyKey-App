@@ -402,11 +402,22 @@
               </tr>
             </table>
 
-            <table class="device-specific ok-duo">
+            <table id="duo-slots" class="device-specific ok-duo">
+              <tr>
+                <td colspan="3">
+                  <div id="profile-switch" class="flex-container">
+                    <span>Profile: </span>
+                    <span class="profile-btn" data-profile-value="green"></span>
+                    <span class="profile-btn" data-profile-value="blue"></span>
+                    <span class="profile-btn" data-profile-value="yellow"></span>
+                    <span class="profile-btn" data-profile-value="purple"></span>
+                  </div>
+                </td>
+              </tr>
               <tr>
                 <td colspan=3 class="okduo-photo-cell" rowspan="1"></td>
               </tr>
-              <tr class="profile-green">
+              <tr class="profile-slots profile-green">
                 <td>
                   <input type="button" id="slot1aConfig" data-slot-id="1a" value="1a" />
                   <span class="slotLabel" id="slotLabel1a">empty</span><br />
@@ -426,7 +437,7 @@
                   <span class="slotLabel" id="slotLabel2b">empty</span>
                 </td>
               </tr>
-              <tr class="profile-blue">
+              <tr class="profile-slots profile-blue">
                 <td>
                   <input type="button" id="slot4aConfig" data-slot-id="4a" value="1a" />
                   <span class="slotLabel" id="slotLabel4a">empty</span><br />
@@ -446,7 +457,7 @@
                   <span class="slotLabel" id="slotLabel5b">empty</span>
                 </td>
               </tr>
-              <tr class="profile-yellow">
+              <tr class="profile-slots profile-yellow">
                 <td>
                   <input type="button" id="slot7aConfig" data-slot-id="7a" value="1a" />
                   <span class="slotLabel" id="slotLabel7a">empty</span><br />
@@ -466,7 +477,7 @@
                   <span class="slotLabel" id="slotLabel8b">empty</span>
                 </td>
               </tr>
-              <tr class="profile-purple">
+              <tr class="profile-slots profile-purple">
                 <td>
                   <input type="button" id="slot10aConfig" data-slot-id="10a" value="1a" />
                   <span class="slotLabel" id="slotLabel10a">empty</span><br />
