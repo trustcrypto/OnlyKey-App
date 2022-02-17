@@ -47,7 +47,7 @@
         <div id="stepContent">
           <div class="step" id="Step1">
             <h2>
-              OnlyKey Setup <a
+              OnlyKey<span class="device-specific ok-duo"> DUO</span> Setup <a
               href="https://docs.crp.to/usersguide.html#onlykey-setup"
               class="external tooltip fade"
               data-tooltip="Setup of OnlyKey includes things like setting PINs and backup passphrase. These can be changed later in the OnlyKey app."
@@ -61,17 +61,18 @@
               checking this box:
               <input type="checkbox" id="advancedSetup" />
             </p>
-            <p class="init-only">
-              Your OnlyKey is ready to use! Use options below to 
-              change PINs or backup passhrase.
-              <br /><br />
-              <span class="strong"><p style="color:red">Before selecting an option below,
-              you must first put your OnlyKey into config mode</p></span>
-              For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and
-              release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
-              release. The light will turn off and if a PIN has been set re-enter your current
-              PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.
-            </p>
+            <div class="init-only">
+              <p>Your OnlyKey<span class="device-specific ok-duo"> DUO</span> is ready to use! Use the options below to change PINs or backup passhrase.</p>
+              <p class="critical-text">Before selecting an option below,
+              you must first put your OnlyKey<span class="device-specific ok-duo"> DUO</span> into config mode.</p>
+              <p>
+                <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+                <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+                The light will turn off.
+                <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
+                You will notice the OnlyKey flashes red in config mode.
+          </p>
+            </div>
             <table>
               <tr>
                 <td class="uninit-only device-specific ok-classic ok-duo">
@@ -801,12 +802,14 @@
               for generating an OpenPGP key with Keybase.
             </p>
             <p>
-              Before loading a key, <span class="strong">you must first put your OnlyKey into
-              config mode</span>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and
-              release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
-              release. The light will turn off and if a PIN has been set re-enter your current
-              PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.
-            </p>
+              Before loading a key, <span class="strong">you must first put your OnlyKey into config mode</span>.
+              <br/><br/>
+              <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+              <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+              The light will turn off.
+              <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
+              You will notice the OnlyKey flashes red in config mode.
+    </p>
           </div>
           <div class="flex-item">
             <form id="rsaForm" name="rsaForm" class="auth-form">
@@ -986,14 +989,16 @@
                   key you used to create the backup.
                 </p>
                 <p>
-                  <u>Step 2</u>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and
-                  release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
-                  release. The light will turn off and if a PIN has been set re-enter your current
-                  PIN to enter config mode. You will notice the OnlyKey flashes red in config mode. 
-                  Click [Choose File], select your backup file, then click [Restore to OnlyKey].
+                  <u>Step 2</u>.
+                  <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+                  <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+                  The light will turn off.
+                  <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
+                  You will notice the OnlyKey flashes red in config mode.
                 </p>
+                <p><u>Step 3</u>. Click [Choose File], select your backup file, then click [Restore to OnlyKey].</p>
                 <p>
-                  <u>Step 3</u>. The OnlyKey light will be yellow while
+                  <u>Step 4</u>. The OnlyKey light will be yellow while
                   restoring your backup, then will automatically reboot when
                   restoring is complete.
                 </p>

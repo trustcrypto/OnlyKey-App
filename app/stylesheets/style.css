@@ -392,6 +392,11 @@ nav > a.active {
   margin-top: 1em;
 }
 
+.critical-text {
+  color: #ED4245;
+  font-weight: bold;
+}
+
 #advanced-panel h2 {
   margin-top: 0;
 }

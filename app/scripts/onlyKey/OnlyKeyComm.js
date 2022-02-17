@@ -644,7 +644,7 @@ OnlyKey.prototype.wipeSlot = function (slotArg, field, callback) {
 
 OnlyKey.prototype.getSlotNum = function (slotIdArg) {
   const slotId = slotIdArg || this.currentSlotId;
-  var slotNum;
+  let slotNum;
   if (this.getDeviceType() === DEVICE_TYPES.DUO) {
     if (parseInt(slotId, 10) <= 3) {
     slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 3);
@@ -1479,7 +1479,11 @@ var handleMessage = async function (err, msg) {
   } else if (myOnlyKey.fwUpdateSupport) {
     //Firmware load in app with config mode
     firmwaretext.innerHTML =
-      `<p><u>Step 1</u>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>
+      `<p><u>Step 1</u>.
+      <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+      <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+      The light will turn off. If a PIN was previously set, re-enter the PIN to enter config mode.
+      You will notice the OnlyKey flashes red in config mode.</p>
       <p><u>Step 2</u>. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p>
       <p><u>Step 3</u>. The OnlyKey will flash white while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
     step8text.innerHTML =
