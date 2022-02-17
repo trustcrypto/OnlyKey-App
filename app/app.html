@@ -65,11 +65,12 @@
               Your OnlyKey is ready to use! Use options below to 
               change PINs or backup passhrase.
               <br /><br />
-              Before selecting an option below,
-              <span class="strong">you must first put your OnlyKey into config mode</span>.
-              To do this, hold down the #6 button on your OnlyKey for 5+ seconds and
-              release. The OnlyKey light will turn off. Re-enter your current
-              primary PIN to enter config mode and notice the OnlyKey flashes red.
+              <span class="strong"><p style="color:red">Before selecting an option below,
+              you must first put your OnlyKey into config mode</p></span>
+              For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and
+              release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
+              release. The light will turn off and if a PIN has been set re-enter your current
+              PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.
             </p>
             <table>
               <tr>
@@ -96,7 +97,7 @@
                 </td>
                 <td class="init-only device-specific ok-duo">
                   <button id="SetPINS" type="button">
-                    Change OnlyKey DUO PINs
+                    Set or Change OnlyKey DUO PINs
                   </button>
                 </td>
               </tr>
@@ -801,10 +802,10 @@
             </p>
             <p>
               Before loading a key, <span class="strong">you must first put your OnlyKey into
-              config mode</span>. To do this hold down the #6 button on your OnlyKey
-              for 5+ seconds and release. The OnlyKey light will turn off.
-              Re-enter your current primary PIN to enter config mode and notice
-              the OnlyKey flashes red.
+              config mode</span>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and
+              release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
+              release. The light will turn off and if a PIN has been set re-enter your current
+              PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.
             </p>
           </div>
           <div class="flex-item">
@@ -985,10 +986,11 @@
                   key you used to create the backup.
                 </p>
                 <p>
-                  <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+
-                  seconds and release. The OnlyKey light will turn off. Re-enter
-                  your PIN to enter config mode. Click [Choose File], select
-                  your backup file, then click [Restore to OnlyKey].
+                  <u>Step 2</u>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and
+                  release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
+                  release. The light will turn off and if a PIN has been set re-enter your current
+                  PIN to enter config mode. You will notice the OnlyKey flashes red in config mode. 
+                  Click [Choose File], select your backup file, then click [Restore to OnlyKey].
                 </p>
                 <p>
                   <u>Step 3</u>. The OnlyKey light will be yellow while
@@ -1616,6 +1618,30 @@
                 <input type="radio" name="tabReturn2" value="1" />
                 Tab after Password
               </label>
+            </td>
+          </tr>
+          <tr class="basic-option">
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="slotTypespeed"
+                  name="slotTypespeed"
+                  value="true"
+                  />
+              </label>
+                <b>Keyboard Type Speed</b>
+                <input
+                  type="number"
+                  id="slotTypeSpeed"
+                  name="slotTypeSpeed"
+                  min="1"
+                  max="10"
+                  placeholder="1 - 10"
+                  style="width: 50px"
+                />
+                <br />
+                (1 = slowest, 4 = default, 10 = fastest)
             </td>
           </tr>
           <tr class="advanced-option">

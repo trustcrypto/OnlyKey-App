@@ -289,7 +289,7 @@ td.ok-photo-cell {
 
 /* configure OnlyKey DUO photo background */
 td.okduo-photo-cell {
-  background: transparent url(/images/placeholder-go-photo.jpg) no-repeat 50% 0%;
+  background: transparent url(/images/duo-photo.jpg) no-repeat 50% 0%;
   background-size: contain;
   padding-top: 10px;
   position: relative;

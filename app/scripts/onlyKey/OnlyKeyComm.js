@@ -303,7 +303,7 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
   }
 
   if (slotId !== null) {
-    bytes[cursor] = strPad(slotId, 2, 0);
+    bytes[cursor] = strPad(slotId, 2, 0);   
     cursor++;
   }
 
@@ -644,8 +644,20 @@ OnlyKey.prototype.wipeSlot = function (slotArg, field, callback) {
 
 OnlyKey.prototype.getSlotNum = function (slotIdArg) {
   const slotId = slotIdArg || this.currentSlotId;
-  const maxSlotInteger = this.getDeviceType() === DEVICE_TYPES.CLASSIC ? 6 : 12;
-  const slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : maxSlotInteger);
+  var slotNum;
+  if (this.getDeviceType() === DEVICE_TYPES.DUO) {
+    if (parseInt(slotId, 10) <= 3) {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 3);
+    } else if (parseInt(slotId, 10) <= 6) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 3 : 6);
+    } else if (parseInt(slotId, 10) <= 9) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 6 : 9);
+    } else if (parseInt(slotId, 10) <= 12) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 9 : 12);
+    }
+  } else {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 6);
+  }
   return slotNum;
 };
 
@@ -966,6 +978,12 @@ OnlyKey.prototype.setTypeSpeed = function (typeSpeed) {
   });
 };
 
+OnlyKey.prototype.setSlotTypeSpeed = function (slot, typeSpeed) {
+  this.setSlot(slot, "TYPESPEED", typeSpeed, async () => {
+    return await this.listenforvalue("set keyboard typespeed");
+  });
+};
+
 OnlyKey.prototype.setLedBrightness = function (ledBrightness) {
   this.setSlot("XX", "LEDBRIGHTNESS", ledBrightness, async () => {
     return await this.listenforvalue("set LED brightness");
@@ -998,6 +1016,9 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   this.devicePinSet = true;
   let deviceType;
 
+  if (version.includes("BOOTLOADER")) {
+    deviceType = "UNINITIALIZED";
+  } else {
   switch (lastChar) {
     case "n":
       this.devicePinSet = false;
@@ -1007,12 +1028,10 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
       deviceType = DEVICE_TYPES.DUO;
       break;
     case "c":
+      deviceType = DEVICE_TYPES.CLASSIC;
+      break;
     default:
-      if (version.includes("BOOTLOADER")) {
-        deviceType = "UNINITIALIZED";
-      } else {
-        deviceType = DEVICE_TYPES.CLASSIC;
-        // throw Error(`Unable to determine deviceType from version ${version}`);
+      this.setTime(pollForInput);
       }
   }
   console.info(`Setting deviceType to ${deviceType}`);
@@ -1460,13 +1479,13 @@ var handleMessage = async function (err, msg) {
   } else if (myOnlyKey.fwUpdateSupport) {
     //Firmware load in app with config mode
     firmwaretext.innerHTML =
-      `<p><u>Step 1</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>
+      `<p><u>Step 1</u>. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>
       <p><u>Step 2</u>. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p>
-      <p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
+      <p><u>Step 3</u>. The OnlyKey will flash white while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
     step8text.innerHTML =
-      "To set a new passphrase on your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+      "To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
     step9text.innerHTML =
-      "To set a new passphrase on your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+      "To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
   } else {
     //Firmware load not supported in app
     firmwaretext.innerHTML =
@@ -2236,7 +2255,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                               .getLastMessage("received")
                               .indexOf("UNINITIALIZEDv") >= 0 ||
                             window.confirm(
-                              "To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware."
+                              "To load new firmware file to your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode. Click OK to load new firmware."
                             )
                           ) {
                             if (req.responseContent.body) {
@@ -2469,7 +2488,8 @@ function submitWipeMode(e, wipeMode) {
 function submitTypeSpeed(e) {
   e && e.preventDefault && e.preventDefault();
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
-
+  console.info('typeSpeed');
+  console.info(typeSpeed);
   if (typeof typeSpeed !== "number" || typeSpeed < 1) {
     typeSpeed = 4; //Default type speed
   }
