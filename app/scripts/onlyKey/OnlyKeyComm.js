@@ -1016,9 +1016,6 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
   this.devicePinSet = true;
   let deviceType;
 
-  if (version.includes("BOOTLOADER")) {
-    deviceType = "UNINITIALIZED";
-  } else {
   switch (lastChar) {
     case "n":
       this.devicePinSet = false;
@@ -1031,9 +1028,16 @@ OnlyKey.prototype.setDeviceType = function (version = "") {
       deviceType = DEVICE_TYPES.CLASSIC;
       break;
     default:
-      this.setTime(pollForInput);
-      }
-  }
+      if (version.includes("BOOTLOADER")) {
+        deviceType = "UNINITIALIZED";
+      } else if (version.includes("INITIALIZED-D")) {
+        deviceType = DEVICE_TYPES.DUO;
+      } else if (version.includes("INITIALIZED")) {
+        deviceType = DEVICE_TYPES.CLASSIC;
+      } else {
+        window.location.reload();
+      }      
+    }
   console.info(`Setting deviceType to ${deviceType}`);
   this.deviceType = deviceType;
   onlyKeyConfigWizard.init(this);
