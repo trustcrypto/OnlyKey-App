@@ -554,30 +554,35 @@ input.caution {
   width: 25px;
   border-radius: 15px;
   margin: 0 4px;
-  box-shadow: 0px 1px 2px 0px rgb(0 0 0 / 80%);
+  box-shadow: 0px 1px 3px 0px rgb(0 0 0 / 60%);
   cursor: pointer;
 }
 
-.profile-btn:hover {
-  transform: scale(1.1);
-}
+[data-profile-id='green'] .profile-btn:not([data-profile-value='green']):hover { transform: scale(1.05); }
+[data-profile-id='blue'] .profile-btn:not([data-profile-value='blue']):hover { transform: scale(1.05); }
+[data-profile-id='yellow'] .profile-btn:not([data-profile-value='yellow']):hover { transform: scale(1.05); }
+[data-profile-id='purple'] .profile-btn:not([data-profile-value='purple']):hover { transform: scale(1.05); }
 
-[data-profile-value='green'] { background-color: green; }
-[data-profile-value='blue'] { background-color: blue; }
-[data-profile-value='yellow'] { background-color: yellow; }
-[data-profile-value='purple'] { background-color: purple; }
+[data-profile-value='green'] { background: radial-gradient(#00cc00, #008000); }
+[data-profile-value='blue'] { background: radial-gradient(#8080ff, #0000ff); }
+[data-profile-value='yellow'] { background: radial-gradient(#ffee99, #ffd700); }
+[data-profile-value='purple'] { background: radial-gradient(#ff00ff, #800080); }
 
 [data-profile-id='green'] [data-profile-value='green'] {
-  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 20%) inset;
+  margin-top: 1px;
 }
 [data-profile-id='blue'] [data-profile-value='blue'] {
-  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 20%) inset;
+  margin-top: 1px;
 }
 [data-profile-id='yellow'] [data-profile-value='yellow'] {
-  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 20%) inset;
+  margin-top: 1px;
 }
 [data-profile-id='purple'] [data-profile-value='purple'] {
-  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 60%) inset;
+  box-shadow: 0px 1px 2px 2px rgb(0 0 0 / 20%) inset;
+  margin-top: 1px;
 }
 
 tr.profile-slots { display: none; }
