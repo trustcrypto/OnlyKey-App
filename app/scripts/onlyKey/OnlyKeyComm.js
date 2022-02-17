@@ -645,21 +645,20 @@ OnlyKey.prototype.wipeSlot = function (slotArg, field, callback) {
 OnlyKey.prototype.getSlotNum = function (slotIdArg) {
   const slotId = slotIdArg || this.currentSlotId;
   let slotNum;
-  var parts = slotId.split("");
   if (slotId=='XX') {
     slotNum = 0;
   } else if (this.getDeviceType() === DEVICE_TYPES.DUO) {
-    if (parseInt(parts[0], 10) <= 3) {
-    slotNum = parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 0 : 3);
-    } else if (parseInt(parts[0], 10) <= 6) { 
-      slotNum = parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 3 : 6);
-    } else if (parseInt(parts[0], 10) <= 9) { 
-      slotNum = parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 6 : 9);
-    } else if (parseInt(parts[0], 10) <= 12) { 
-      slotNum = parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 9 : 12);
+    if (parseInt(slotId, 10) <= 3) {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 3);
+    } else if (parseInt(slotId, 10) <= 6) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 3 : 6);
+    } else if (parseInt(slotId, 10) <= 9) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 6 : 9);
+    } else if (parseInt(slotId, 10) <= 12) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 9 : 12);
+    } else {
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 6);
     }
-  } else {
-    slotNum = parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 0 : 6);
   }
   return slotNum;
 };
