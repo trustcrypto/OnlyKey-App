@@ -494,7 +494,7 @@ function handleGetLabels(err, msg) {
     msg.includes("Error not in config mode") ||
     myOnlyKey.getLastMessage("received") == "Error not in config mode, hold button 6 down for 5 sec"
   ) {
-    this.setLastMessage("received", "Error not in config mode, hold button 6 down for 5 sec");
+    myOnlyKey.setLastMessage("received", "Error not in config mode, hold button 6 down for 5 sec");
   } else if (msg.indexOf("|") !== 2 || typeof slotNum !== "number" || slotNum < 1 || slotNum > 24) {
     myOnlyKey.listen(handleGetLabels);
   } else {
@@ -656,9 +656,9 @@ OnlyKey.prototype.getSlotNum = function (slotIdArg) {
       slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 6 : 9);
     } else if (parseInt(slotId, 10) <= 12) { 
       slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 9 : 12);
-    } else {
-      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 6);
     }
+  } else {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 6);
   }
   return slotNum;
 };
