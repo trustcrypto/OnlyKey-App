@@ -492,9 +492,9 @@ function handleGetLabels(err, msg) {
 
   if (
     msg.includes("Error not in config mode") ||
-    myOnlyKey.getLastMessage("received") == "Error not in config mode, hold button 6 down for 5 sec"
+    myOnlyKey.getLastMessage("received") == "Error not in config mode"
   ) {
-    myOnlyKey.setLastMessage("received", "Error not in config mode, hold button 6 down for 5 sec");
+    myOnlyKey.setLastMessage("received", "Error not in config mode");
   } else if (msg.indexOf("|") !== 2 || typeof slotNum !== "number" || slotNum < 1 || slotNum > 24) {
     myOnlyKey.listen(handleGetLabels);
   } else {
@@ -749,7 +749,7 @@ OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
     onlyKeyConfigWizard.initForm.reset();
     await wait(300);
     await listenForMessageIncludes2(
-      "Error not in config mode, hold button 6 down for 5 sec",
+      "Error not in config mode",
       "Success"
     );
     cb(err);
@@ -782,7 +782,7 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
             submitFirmwareData(temparray, function (err) {
               //First send one message to kick OnlyKey (in config mode) into bootloader
               console.info("Firmware file sent to OnlyKey");
-              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE"
             });
           } else {
             await loadFirmware();
@@ -2107,7 +2107,7 @@ function submitFirmwareForm(e) {
               ui.firmwareForm.reset();
               ui.firmwareForm.setError("Firmware file sent to OnlyKey");
 
-              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE"
             });
           } else {
             await loadFirmware();
@@ -2293,7 +2293,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                                     "Working... Do not remove OnlyKey"
                                   );
                                   console.info("Firmware file sent to OnlyKey");
-                                  myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                                  myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE"
                                 }
                               );
                               resolve();
