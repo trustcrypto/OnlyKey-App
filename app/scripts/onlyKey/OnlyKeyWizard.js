@@ -585,7 +585,6 @@ if (chrome.passwordsPrivate) {
       this.setDuoProfile('green');
       const profileSwitcher = document.getElementById('profile-switch');
       Array.from(profileSwitcher.getElementsByClassName('profile-btn')).forEach(btn => {
-        console.log({ btn });
         btn.removeEventListener('click', profileSwitchClickHandler);
         btn.addEventListener('click', profileSwitchClickHandler.bind(this));
       });

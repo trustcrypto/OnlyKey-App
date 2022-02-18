@@ -1479,7 +1479,7 @@ var handleMessage = async function (err, msg) {
   if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized) {
     //Firmware load in app without config mode
     firmwaretext.innerHTML =
-      "To load a new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p>The OnlyKey will restart automatically when firmware load is complete.";
+      "To load a new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Next].</p><p>The OnlyKey will restart automatically when firmware load is complete.";
     step8text.innerHTML = " ";
     step9text.innerHTML = " ";
   } else if (myOnlyKey.fwUpdateSupport) {
