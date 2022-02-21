@@ -357,8 +357,8 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
     bytes
   );
 
-  chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
-    if (msgId != "OKFWUPDATE") await wait(100);
+  chromeHid.send(this.connection, reportId, bytes.buffer, function () {
+    // if (msgId != "OKFWUPDATE") await wait(100);
     if (chrome.runtime.lastError) {
       console.error(
         "ERROR SENDING" + (msgId ? " " + msgId : "") + ":",
@@ -468,7 +468,7 @@ OnlyKey.prototype.getLabels = async function () {
 
 function handleGetLabels(err, msg) {
   msg = typeof msg === "string" ? msg.trim() : "";
-  console.info("HandleGetLabels msg:", msg);
+  console.info(`HandleGetLabels msg: ${msg}`);
   if (myOnlyKey.getLastMessage("sent") !== "OKGETLABELS") {
     return;
   }
@@ -827,18 +827,18 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
             "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
           submitRestoreData(contents, async function (err) {
             if (err) {
-              _this.setLastMessage(error);
+              _this.setLastMessage("received", error);
               throw Error(error);
             }
 
-            _this.setLastMessage("Backup file sent to OnlyKey, please wait...");
+            _this.setLastMessage("received", "Backup file sent to OnlyKey, please wait...");
             await wait(10000);
             step10text.innerHTML = "";
             cb();
           });
         } else {
           const error = "Incorrect backup data format.";
-          _this.setLastMessage(error);
+          _this.setLastMessage("received", error);
           throw Error(error);
         }
       };
@@ -850,11 +850,11 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
     var contents = "000000000";
     submitRestoreData(contents, function (err) {
       if (err) {
-        _this.setLastMessage(error);
+        _this.setLastMessage("received", error);
         throw Error(error);
       }
 
-      _this.setLastMessage("Backup file sent to OnlyKey.");
+      _this.setLastMessage("received", "Backup file sent to OnlyKey.");
       cb();
     });
   }
@@ -1332,7 +1332,7 @@ var pollForInput = function (optionsParam, callbackParam) {
       msg = readBytes(new Uint8Array(data));
     }
 
-    console.info("RECEIVED:", msg);
+    console.info(`RECEIVED: ${msg}\nLast message sent: ${myOnlyKey.getLastMessage('sent')}`);
     myOnlyKey.setDeviceType(msg);
 
     if (msg.length > 1 && msg !== "OK" && !options.flush) {
