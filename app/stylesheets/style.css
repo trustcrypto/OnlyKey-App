@@ -31,7 +31,7 @@ body {
   color: #333;
 }
 
-button, input[type="button"] {
+button, input[type="button"], input[type="submit"] {
   font-family: BodyFont, monospace;
   font-size: 110%;
   background-color: #237BCD;
@@ -42,6 +42,7 @@ button, input[type="button"] {
 
 button:hover,
 input[type="button"]:hover,
+input[type="submit"]:hover,
 input[type="checkbox"]:hover,
 input[type="radio"]:hover {
   cursor: pointer

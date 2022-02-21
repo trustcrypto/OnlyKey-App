@@ -1368,7 +1368,13 @@
 
     <dialog id="locked-dialog-duo" class="silver-gradient-bg">
       <h1>Your OnlyKey DUO is locked</h1>
-      <p id="locked-text-duo"></p>
+      <p>
+        <h3>Please enter your PIN</h3>
+        <form name="unlockOkDuoForm" id="unlockOkDuoForm">
+          <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
+          <input type="submit" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
+        </form>
+      </p>
     </dialog>
 
     <dialog id="slot-wipe-confirm">

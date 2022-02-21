@@ -63,7 +63,7 @@ if (chrome.passwordsPrivate) {
             <h3>Set or Change PINs</h3>
             <p>
               Make sure to choose a device PIN that you will not forget and that only you know.
-              Once set, it is required to know your device PIN to unlock your OnlyKey DUO so keep a 
+              Once set, it is required to know your device PIN to unlock your OnlyKey DUO, so keep a 
               secure backup of your PIN somewhere in case you forget.
             </p>
             <p>
@@ -77,7 +77,7 @@ if (chrome.passwordsPrivate) {
             </label>
             <p>
               Enter a 7-10 digit PIN code using ONLY the numbers 1 - 6. Using the numbers 1 - 6 allows 
-              you to physically enter the PIN onto OnlyKey in the event that you don't have the OnlyKey App is available. 
+              you to physically enter the PIN onto OnlyKey in the event that the OnlyKey App is not available. 
             </p>
             <p>
               Example of a <em>good</em> PIN: '32536145'
@@ -86,7 +86,7 @@ if (chrome.passwordsPrivate) {
               Examples of <em>bad</em> PINs: '1234567' '1111112' '1231231'
             </p>
             <p>
-              Once set, your PIN can be entered via the OnlyKey App or by physically touching device buttons. Touch buttons 1, 2, 3 to enter a 1, 2, 3 and hold (for 1 second) buttons 1, 2, 3 to enter a 4, 5, 6.
+              Once set, your PIN can be entered via the OnlyKey App or by physically touching device buttons. Touch buttons 1, 2, 3 to enter 1, 2, 3 and hold (for 1 second) buttons 1, 2, 3 to enter 4, 5, 6.
             </p>
             <div class='flex-container'>
               <div class='flex-item col-3'>
@@ -524,13 +524,6 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
-    document.getElementById('locked-text-duo').innerHTML = `
-    <h3>Please enter your PIN</h3>
-    <form name="unlockOkDuoForm" id="unlockOkDuoForm">
-      <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
-      <input type="button" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
-    </form>
-    `;
     document.getElementById('locked-text').innerHTML = `
     <h3>Please enter your PIN</h3>
     `;
