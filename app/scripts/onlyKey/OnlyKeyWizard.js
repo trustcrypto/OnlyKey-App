@@ -524,9 +524,9 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
-    document.getElementById('locked-text').innerHTML = `
-    <h3>Please enter your PIN</h3>
-    `;
+
+    document.getElementById("locked-text-duo").classList.remove("hide");
+    document.getElementById("max-pin-attempts-duo").classList.add("hide");
     this.unlockOkDuoPinInput = document.getElementById('unlockOkDuoPin');
     this.unlockOkDuoSubmitBtn = document.getElementById('unlockOkDuoSubmit');
     this.unlockOkDuoSubmitBtn.onclick = e => {

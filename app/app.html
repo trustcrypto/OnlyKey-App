@@ -1363,17 +1363,20 @@
 
     <dialog id="locked-dialog" class="silver-gradient-bg">
       <h1>Your OnlyKey is locked</h1>
-      <p id="locked-text"></p>
+      <h3>Please enter your PIN</h3>
     </dialog>
 
     <dialog id="locked-dialog-duo" class="silver-gradient-bg">
       <h1>Your OnlyKey DUO is locked</h1>
-      <p>
+      <div id="locked-text-duo">
         <h3>Please enter your PIN</h3>
         <form name="unlockOkDuoForm" id="unlockOkDuoForm">
           <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
           <input type="submit" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
         </form>
+      </div>
+      <p id="max-pin-attempts-duo" class="hide">
+        To prevent lockout, OnlyKey only permits 3 failed PIN attempts at a time.<br/><br/>Please remove and reinsert OnlyKey to try again.        
       </p>
     </dialog>
 

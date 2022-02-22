@@ -602,17 +602,14 @@ OnlyKey.prototype.sendPin_DUO = function (pins, callback) {
           .getLastMessage("received")
           .indexOf("Error password attempts for this session exceeded") === 0
       ) {
-        document.getElementById("locked-text-duo").innerHTML =
-          "To prevent lockout OnlyKey only permits 3 failed PIN attempts at a time, please remove and reinsert OnlyKey to try again.";
+        // max pin attempts dialog
+        document.getElementById("locked-text-duo").classList.add("hide");
+        document.getElementById("max-pin-attempts-duo").classList.remove("hide");
         console.info("PIN attempts exeeded");
       } else {
-        document.getElementById("locked-text-duo").innerHTML = `
-      <h3>Please enter your PIN</h3>
-      <form name="unlockOkDuoForm" id="unlockOkDuoForm">
-        <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
-        <input type="button" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
-      </form>
-      `;
+        // normal PIN dialog
+        document.getElementById("locked-text-duo").classList.remove("hide");
+        document.getElementById("max-pin-attempts-duo").classList.add("hide");
       }
       return callback();
     }
