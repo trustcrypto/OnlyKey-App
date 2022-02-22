@@ -501,13 +501,13 @@ function handleGetLabels(err, msg) {
     msg.indexOf("|") !== 2 ||
     typeof slotNum !== "number" ||
     slotNum < 1 ||
-    slotNum > 24
+    slotNum > 12
   ) {
     myOnlyKey.listen(handleGetLabels);
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 24 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
+    if (slotNum < 12 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
       myOnlyKey.listen(handleGetLabels);
     }
   }
