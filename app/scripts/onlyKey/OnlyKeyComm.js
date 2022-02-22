@@ -357,8 +357,8 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
     bytes
   );
 
-  chromeHid.send(this.connection, reportId, bytes.buffer, function () {
-    // if (msgId != "OKFWUPDATE") await wait(100);
+  chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
+    if (msgId != "OKFWUPDATE") await wait(100);
     if (chrome.runtime.lastError) {
       console.error(
         "ERROR SENDING" + (msgId ? " " + msgId : "") + ":",
@@ -500,8 +500,14 @@ function handleGetLabels(err, msg) {
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 24 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
-      myOnlyKey.listen(handleGetLabels);
+    if (myOnlyKey.getDeviceType() === DEVICE_TYPES.DUO) {
+      if (slotNum < 24 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
+        myOnlyKey.listen(handleGetLabels);
+      }
+    } else {
+      if (slotNum < 12 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
+        myOnlyKey.listen(handleGetLabels);
+      }
     }
   }
 }
