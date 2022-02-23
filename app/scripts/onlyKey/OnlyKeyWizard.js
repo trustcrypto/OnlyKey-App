@@ -112,7 +112,7 @@ if (chrome.passwordsPrivate) {
         },
         exitFn: (cb) => {
           const pins = this.validateDuoPins();
-          pins && this.onlyKey.sendPin_DUO(pins, cb);
+          pins && this.onlyKey.sendPin_DUO(pins, true, cb);
         }
       },
       Step8: { // backup passphrase
@@ -527,19 +527,18 @@ if (chrome.passwordsPrivate) {
 
     document.getElementById("locked-text-duo").classList.remove("hide");
     document.getElementById("max-pin-attempts-duo").classList.add("hide");
+    document.getElementById("incorrect-pin-duo").classList.add("hide");
     this.unlockOkDuoPinInput = document.getElementById('unlockOkDuoPin');
     this.unlockOkDuoSubmitBtn = document.getElementById('unlockOkDuoSubmit');
     this.unlockOkDuoSubmitBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      this.onlyKey.sendPin_DUO([this.unlockOkDuoPinInput.value], (err, msg) => {
-        // this.onlyKey.listen(function (err, msg) {
+      this.onlyKey.sendPin_DUO([this.unlockOkDuoPinInput.value], false, function (err, msg) {
         if (err) {
           console.dir({
             UNLOCK_ERR: err
           });
           throw Error('error');
         }
-        // });
       });
     };
 

@@ -579,7 +579,7 @@ OnlyKey.prototype.sendSetPin2 = function (callback) {
   );
 };
 
-OnlyKey.prototype.sendPin_DUO = function (pins, callback) {
+OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
   // if only 1 pin is sent, just send those pin chars as a login attempt
   // otherwise, concatenate all PINs sent and fill with null (hex 0)
   const pinCount = pins.length;
@@ -589,12 +589,15 @@ OnlyKey.prototype.sendPin_DUO = function (pins, callback) {
   let pinBytes = new Array(pinBytesLength).fill(0);
   pins.forEach((pin, i) => {
     if (typeof pin !== "string") pin = "";
-    // PIN chars should only be ascii 0-9
+    // PIN chars should only be ascii 1-7
     // add 48 to send as DEC
     pin
       .split("")
       .forEach((char, j) => (pinBytes[i * 16 + j] = 48 + Number(char)));
   });
+  if (setpin==true) {
+    pinBytes.unshift(255); 
+  }
   this.sendPinMessage(
     {
       // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
@@ -612,10 +615,19 @@ OnlyKey.prototype.sendPin_DUO = function (pins, callback) {
         document.getElementById("locked-text-duo").classList.add("hide");
         document.getElementById("max-pin-attempts-duo").classList.remove("hide");
         console.info("PIN attempts exeeded");
+      } else if (
+        myOnlyKey
+          .getLastMessage("received")
+          .indexOf("INITIALIZED-D") === 0
+      ) {
+        // incorrect pin dialog
+        document.getElementById("incorrect-pin-duo").classList.remove("hide");
+        console.info("Incorrect PIN attempt");
       } else {
         // normal PIN dialog
         document.getElementById("locked-text-duo").classList.remove("hide");
         document.getElementById("max-pin-attempts-duo").classList.add("hide");
+        document.getElementById("incorrect-pin-duo").classList.add("hide");
       }
       return callback();
     }
@@ -1383,6 +1395,9 @@ var pollForInput = function (optionsParam, callbackParam) {
           myOnlyKey.fwUpdateSupport,
           version
         ));
+    } else if (msg.indexOf("INITIALIZED-D") >= 0) {
+      myOnlyKey.isLocked = true;
+      pollForInput();
     }
 
     return await callback(null, msg);
