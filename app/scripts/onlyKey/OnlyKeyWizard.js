@@ -618,6 +618,7 @@ if (chrome.passwordsPrivate) {
           throw Error('error');
         }
       });
+      this.unlockOkDuoPinInput.value = null;
     };
 
     // BEGIN PRIVATE KEY SELECTOR

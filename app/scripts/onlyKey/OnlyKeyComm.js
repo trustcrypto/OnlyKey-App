@@ -544,6 +544,10 @@ OnlyKey.prototype.sendPinMessage = function (
   if (deviceType === DEVICE_TYPES.DUO) {
     messageParams.contents = pin;
     messageParams.contentType = "DEC";
+    if (myOnlyKey.isLocked == true) {
+      messageParams.poll = true;
+      cb = callback;
+    }
   }
   this.sendMessage(messageParams, cb);
   console.info("last messages");
@@ -597,14 +601,16 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
   });
   if (setpin==true) {
     pinBytes.unshift(255); 
-  }
+  } 
   this.sendPinMessage(
     {
       // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
       msgId: "OKSETPIN",
       pin: pinBytes,
     },
-    async () => {
+    async function () {
+      console.info('sendPin_DUO last message');
+      console.info(myOnlyKey.getLastMessage("received"));
       // Check if PIN attempts exceeded
       if (
         myOnlyKey
@@ -614,6 +620,7 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
         // max pin attempts dialog
         document.getElementById("locked-text-duo").classList.add("hide");
         document.getElementById("max-pin-attempts-duo").classList.remove("hide");
+        document.getElementById("incorrect-pin-duo").classList.add("hide");
         console.info("PIN attempts exeeded");
       } else if (
         myOnlyKey
@@ -621,7 +628,11 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
           .indexOf("INITIALIZED-D") === 0
       ) {
         // incorrect pin dialog
-        document.getElementById("incorrect-pin-duo").classList.remove("hide");
+        document.getElementById("locked-text-duo").classList.remove("hide");
+        document.getElementById("max-pin-attempts-duo").classList.add("hide");
+        setTimeout(function() {
+          document.getElementById("incorrect-pin-duo").classList.remove("hide");
+        }, 1500); 
         console.info("Incorrect PIN attempt");
       } else {
         // normal PIN dialog
