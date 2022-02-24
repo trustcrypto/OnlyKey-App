@@ -494,7 +494,84 @@ if (chrome.passwordsPrivate) {
     this.slotWipe = document.getElementById('slotWipe');
     this.slotWipe.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      document.getElementById('wipeCurrentSlotId').innerText = this.onlyKey.currentSlotId;
+      if (deviceType === DEVICE_TYPES.DUO) {
+        switch(this.onlyKey.currentSlotId) {
+          case '1a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 1a'
+            break;
+          case '1b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 1b'
+            break;      
+          case '2a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 2a'
+            break;
+          case '2b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 2b'
+            break;    
+          case '3a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 3a'
+            break;
+          case '3b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 3b'
+            break;    
+          case '4a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 1a'
+            break;
+          case '4b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 1b'
+            break;      
+          case '5a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 2a'
+            break;
+          case '5b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 2b'
+            break;    
+          case '6a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 3a'
+            break;
+          case '6b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 3b'
+            break;   
+          case '7a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 1a'
+            break;
+          case '7b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 1b'
+            break;      
+          case '8a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 2a'
+            break;
+          case '8b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 2b'
+            break;    
+          case '9a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 3a'
+            break;
+          case '9b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 3b'
+            break;    
+          case '10a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 1a'
+            break;
+          case '10b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 1b'
+            break;      
+          case '11a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 2a'
+            break;
+          case '11b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 2b'
+            break;    
+          case '12a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 3a'
+            break;
+          case '12b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 3b'
+              break;  
+        } 
+      } else {
+        document.getElementById('wipeCurrentSlotId').innerText = this.onlyKey.currentSlotId;
+      }
       this.dialog.open(this.slotWipeConfirmDialog, true);
     };
 
