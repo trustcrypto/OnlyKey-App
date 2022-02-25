@@ -544,7 +544,7 @@ OnlyKey.prototype.sendPinMessage = function (
   if (deviceType === DEVICE_TYPES.DUO) {
     messageParams.contents = pin;
     messageParams.contentType = "DEC";
-    if (myOnlyKey.isLocked == true) {
+    if (myOnlyKey.isLocked == true && myOnlyKey.isInitialized == true) {
       messageParams.poll = true;
       cb = callback;
     }
@@ -632,7 +632,7 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
         document.getElementById("max-pin-attempts-duo").classList.add("hide");
         setTimeout(function() {
           document.getElementById("incorrect-pin-duo").classList.remove("hide");
-        }, 1500); 
+        }, 2000); 
         console.info("Incorrect PIN attempt");
       } else {
         // normal PIN dialog
