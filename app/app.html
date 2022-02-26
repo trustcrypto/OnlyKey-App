@@ -66,8 +66,9 @@
               <p class="critical-text">Before selecting an option below,
               you must first put your OnlyKey<span class="device-specific ok-duo"> DUO</span> into config mode.</p>
               <p>
-                <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
-                <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+                To do this
+                <span class="device-specific ok-classic">hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+                <span class="device-specific ok-duo">hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
                 The light will turn off.
                 <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
                 You will notice the OnlyKey flashes red in config mode.
@@ -347,11 +348,11 @@
         /></a>
         </h2>
         <p>
-          Slots are where you store login information. There are 12 slots in
-          your profile, and each slot can store a login URL, Username, Password,
-          and two-factor.
+          Slots are where you store login information such as a login URL, username, password,
+          and two-factor.           
+
           <a href="" data-dialog="slotExamples"
-            >Click here to see common use examples</a
+            >Click here for more information and to see common use examples</a
           >.
         </p>
         <hr />
@@ -803,8 +804,9 @@
             <p>
               Before loading a key, <span class="strong">you must first put your OnlyKey into config mode</span>.
               <br/><br/>
-              <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
-              <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+              To do this
+              <span class="device-specific ok-classic">hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+              <span class="device-specific ok-duo">hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
               The light will turn off.
               <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
               You will notice the OnlyKey flashes red in config mode.
@@ -1817,9 +1819,13 @@
     <dialog id="slotExamples" class="white">
       <a href="" class="dialog-close">cancel [x]</a>
       <br />
+        Slots correspond to the buttons on OnlyKey, for example pressing button #1
+        will type login information from slot [1a] and holding button #1 for 1 second with type login 
+        information from slot [1b].
+        <span class="device-specific ok-duo">Press both buttons #1 and #2 at the same time for slot 3.</span>
       <div>
         <h2>Example #1</h2>
-        Configure button 1 tap (touch for less than 1 sec) to automatically type
+        Configure button 1 press (touch for less than 1 sec) to automatically type
         a password:
         <br />
         <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click
@@ -1831,7 +1837,10 @@
         <img class="moveimage" src="/images/regular/keyboard.svg" />
         Enter/re-enter password and click [Set Slot]
       </div>
-
+      <span class="device-specific ok-duo">OnlyKey DUO only supports static-password OR Multi-Factor (MFA) 
+        when a device PIN has not been set. A device PIN can be set from the OnlyKey App Setup tab and 
+        provides extra physical security. Once a device PIN has been enabled additional login information
+        such as username and URL may be added to slots.</span>
       <div>
         <h2>Example #2</h2>
         Configure button 1 long-press (touch more than 1 sec) to type a username
