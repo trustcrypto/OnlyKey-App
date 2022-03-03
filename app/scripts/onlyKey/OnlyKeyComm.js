@@ -1599,7 +1599,8 @@ function showSlotConfigForm(e) {
   const slotId = e.target.value;
   const slotUniqueId = e.target.dataset.slotId || e.target.value; // prefer "data-slot-id" attribute
   myOnlyKey.currentSlotId = slotUniqueId;
-  const slotLabel = document.getElementById('slotLabel' + slotUniqueId).innerText;
+  const deviceSlots = document.getElementById(`${myOnlyKey.deviceType}-slots`);
+  const slotLabel = deviceSlots.querySelector(`#slotLabel${slotUniqueId}`).innerText;
   ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
 
   document.getElementById('txtSlotLabel').value =
