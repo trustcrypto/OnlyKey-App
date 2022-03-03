@@ -432,13 +432,13 @@ nav > a.active {
   position: absolute;
 }
 
-#main.ok-classic .ok-classic {
+body.ok-classic .ok-classic {
   position: relative;
   opacity: 1;
   line-height: normal;
 }
 
-#main.ok-duo .ok-duo {
+body.ok-duo .ok-duo {
   position: relative;
   opacity: 1;
   line-height: normal;

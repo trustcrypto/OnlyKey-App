@@ -323,12 +323,11 @@ if (chrome.passwordsPrivate) {
   Wizard.prototype.uiInit = function () {
     const deviceType = this.onlyKey.getDeviceType();
     const { devicePinSet } = this.onlyKey;
-    const main = document.getElementById('main');
     const deviceTypes = Object.values(DEVICE_TYPES);
     deviceTypes.forEach(type => {
-      main.classList.remove(`ok-${type}`);
+      document.body.classList.remove(`ok-${type}`);
     });
-    deviceType && main.classList.add(`ok-${deviceType}`);
+    deviceType && document.body.classList.add(`ok-${deviceType}`);
 
     document.body.classList[`${devicePinSet ? 'remove' : 'add'}`]('no-pin-set');
 
