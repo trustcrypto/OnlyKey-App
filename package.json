@@ -1,8 +1,8 @@
 {
   "name": "OnlyKey",
   "productName": "OnlyKey App",
-  "version": "5.3.4",
-  "version_name": "5.3.4",
+  "version": "5.3.5",
+  "version_name": "5.3.5",
   "description": "Setup and configure OnlyKey",
   "main": "app.js",
   "scripts": {
