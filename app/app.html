@@ -47,12 +47,18 @@
         <div id="stepContent">
           <div class="step" id="Step1">
             <h2>
-              OnlyKey Setup <a
+              <span class="device-specific ok-duo">OnlyKey DUO Setup <a
+              href="https://docs.crp.to/duousersguide.html#onlykey-setup"
+              class="external tooltip fade"
+              data-tooltip="Setup of OnlyKey includes things like setting PINs and backup passphrase. These can be changed later in the OnlyKey app."
+              ><img class="moveimage" src="/images/solid/rocket.svg" width="15px"
+            /></a></span>
+            <span class="device-specific ok-classic">OnlyKey Setup <a
               href="https://docs.crp.to/usersguide.html#onlykey-setup"
               class="external tooltip fade"
               data-tooltip="Setup of OnlyKey includes things like setting PINs and backup passphrase. These can be changed later in the OnlyKey app."
               ><img class="moveimage" src="/images/solid/rocket.svg" width="15px"
-            /></a>
+            /></a></span>
             </h2>
             <p class="uninit-only">
               Begin the Guided Setup wizard by clicking [Next] at bottom. Or, if
@@ -61,22 +67,25 @@
               checking this box:
               <input type="checkbox" id="advancedSetup" />
             </p>
-            <p class="init-only">
-              Your OnlyKey is ready to use! You can change the Backup
-              Passphrase/Key or change PINs below at any time.
-              <br /><br />
-              Before selecting an option below,
-              <span class="strong">you must first put your OnlyKey into config mode</span>.
-              To do this, hold down the #6 button on your OnlyKey for 5+ seconds and
-              release. The OnlyKey light will turn off. Re-enter your current
-              primary PIN to enter config mode and notice the OnlyKey flashes red.
-            </p>
+            <div class="init-only">
+              <p>Your OnlyKey<span class="device-specific ok-duo"> DUO</span> is ready to use! Use the options below to change PINs or backup passhrase.</p>
+              <p class="critical-text">Before selecting an option below,
+              you must first put your OnlyKey<span class="device-specific ok-duo"> DUO</span> into config mode.</p>
+              <p>
+                To do this
+                <span class="device-specific ok-classic">hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+                <span class="device-specific ok-duo">hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+                The light will turn off.
+                <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
+                You will notice the OnlyKey flashes red in config mode.
+          </p>
+            </div>
             <table>
               <tr>
-                <td class="uninit-only device-specific ok-classic ok-go">
+                <td class="uninit-only device-specific ok-classic ok-duo">
                   <button id="LoadFirmware" type="button">Load Firmware</button>
                 </td>
-                <td class="init-only device-specific ok-classic ok-go">
+                <td class="init-only device-specific ok-classic ok-duo">
                   <button id="SetBackup" type="button">
                     Set Backup Passphrase
                   </button>
@@ -94,9 +103,9 @@
                     Change Self-Destruct PIN
                   </button>
                 </td>
-                <td class="init-only device-specific ok-go">
+                <td class="init-only device-specific ok-duo">
                   <button id="SetPINS" type="button">
-                    Change OnlyKey DUO PINs
+                    Set or Change OnlyKey DUO PINs
                   </button>
                 </td>
               </tr>
@@ -284,8 +293,7 @@
                 [Next].
               </p>
               <p>
-                Your OnlyKey will light up amber while restoring the backup file
-                and automatically reboot when restoring is complete.
+                Restore can take up to 1 minute to complete, your OnlyKey will automatically reboot when restoring is complete.
               </p>
               <p>
                 If you do not have a backup file to restore then setup is
@@ -338,25 +346,35 @@
 
       <div id="slot-panel" class="hide panel">
         <h2>
+          <span class="device-specific ok-duo">
           Configure Slots <a
-          href="https://docs.crp.to/usersguide.html#all-about-slots"
+          href="https://docs.crp.to/duousersguide.html#all-about-slots"
           class="external tooltip fade"
           data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and multi-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
           ><img class="moveimage" src="/images/solid/cogs.svg" width="19px"
         /></a>
+          </span>
+          <span class="device-specific ok-classic">
+            Configure Slots <a
+            href="https://docs.crp.to/usersguide.html#all-about-slots"
+            class="external tooltip fade"
+            data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and multi-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
+            ><img class="moveimage" src="/images/solid/cogs.svg" width="19px"
+          /></a>
+          </span>
         </h2>
         <p>
-          Slots are where you store login information. There are 12 slots in
-          your profile, and each slot can store a login URL, Username, Password,
-          and two-factor.
+          Slots are where you store login information such as a login URL, username, password,
+          and two-factor.           
+
           <a href="" data-dialog="slotExamples"
-            >Click here to see common use examples</a
+            >Click here for more information and to see common use examples</a
           >.
         </p>
         <hr />
         <div class="flex-container">
-          <div class="flex-item">
-            <table id="slot-config-btns">
+          <div id="slot-config-btns" class="flex-item">
+            <table id="classic-slots" class="device-specific ok-classic">
               <tr>
                 <td align="right">
                   <span class="slotLabel" id="slotLabel1a">empty</span>
@@ -401,6 +419,103 @@
                 </td>
               </tr>
             </table>
+
+            <table id="duo-slots" class="device-specific ok-duo">
+              <tr>
+                <td colspan="3">
+                  <div id="profile-switch" class="flex-container">
+                    <span>Profile: </span>
+                    <span class="profile-btn" data-profile-value="green"></span>
+                    <span class="profile-btn" data-profile-value="blue"></span>
+                    <span class="profile-btn" data-profile-value="yellow"></span>
+                    <span class="profile-btn" data-profile-value="purple"></span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td colspan=3 class="okduo-photo-cell" rowspan="1"></td>
+              </tr>
+              <tr class="profile-slots profile-green">
+                <td>
+                  <input type="button" id="slot1aConfig" data-slot-id="1a" value="1a" />
+                  <span class="slotLabel" id="slotLabel1a">empty</span><br />
+                  <input type="button" id="slot1bConfig" data-slot-id="1b" value="1b" />
+                  <span class="slotLabel" id="slotLabel1b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot3aConfig" data-slot-id="3a" value="3a" />
+                  <span class="slotLabel" id="slotLabel3a">empty</span><br />
+                  <input type="button" id="slot3bConfig" data-slot-id="3b" value="3b" />
+                  <span class="slotLabel" id="slotLabel3b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot2aConfig" data-slot-id="2a" value="2a" />
+                  <span class="slotLabel" id="slotLabel2a">empty</span><br />
+                  <input type="button" id="slot2bConfig" data-slot-id="2b" value="2b" />
+                  <span class="slotLabel" id="slotLabel2b">empty</span>
+                </td>
+              </tr>
+              <tr class="profile-slots profile-blue">
+                <td>
+                  <input type="button" id="slot4aConfig" data-slot-id="4a" value="1a" />
+                  <span class="slotLabel" id="slotLabel4a">empty</span><br />
+                  <input type="button" id="slot4bConfig" data-slot-id="4b" value="1b" />
+                  <span class="slotLabel" id="slotLabel4b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot6aConfig" data-slot-id="6a" value="3a" />
+                  <span class="slotLabel" id="slotLabel6a">empty</span><br />
+                  <input type="button" id="slot6bConfig" data-slot-id="6b" value="3b" />
+                  <span class="slotLabel" id="slotLabel6b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot5aConfig" data-slot-id="5a" value="2a" />
+                  <span class="slotLabel" id="slotLabel5a">empty</span><br />
+                  <input type="button" id="slot5bConfig" data-slot-id="5b" value="2b" />
+                  <span class="slotLabel" id="slotLabel5b">empty</span>
+                </td>
+              </tr>
+              <tr class="profile-slots profile-yellow">
+                <td>
+                  <input type="button" id="slot7aConfig" data-slot-id="7a" value="1a" />
+                  <span class="slotLabel" id="slotLabel7a">empty</span><br />
+                  <input type="button" id="slot7bConfig" data-slot-id="7b" value="1b" />
+                  <span class="slotLabel" id="slotLabel7b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot9aConfig" data-slot-id="9a" value="3a" />
+                  <span class="slotLabel" id="slotLabel9a">empty</span><br />
+                  <input type="button" id="slot9bConfig" data-slot-id="9b" value="3b" />
+                  <span class="slotLabel" id="slotLabel9b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot8aConfig" data-slot-id="8a" value="2a" />
+                  <span class="slotLabel" id="slotLabel8a">empty</span><br />
+                  <input type="button" id="slot8bConfig" data-slot-id="8b" value="2b" />
+                  <span class="slotLabel" id="slotLabel8b">empty</span>
+                </td>
+              </tr>
+              <tr class="profile-slots profile-purple">
+                <td>
+                  <input type="button" id="slot10aConfig" data-slot-id="10a" value="1a" />
+                  <span class="slotLabel" id="slotLabel10a">empty</span><br />
+                  <input type="button" id="slot10bConfig" data-slot-id="10b" value="1b" />
+                  <span class="slotLabel" id="slotLabel10b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot12aConfig" data-slot-id="12a" value="3a" />
+                  <span class="slotLabel" id="slotLabel12a">empty</span><br />
+                  <input type="button" id="slot12bConfig" data-slot-id="12b" value="3b" />
+                  <span class="slotLabel" id="slotLabel12b">empty</span>
+                </td>
+                <td>
+                  <input type="button" id="slot11aConfig" data-slot-id="11a" value="2a" />
+                  <span class="slotLabel" id="slotLabel11a">empty</span><br />
+                  <input type="button" id="slot11bConfig" data-slot-id="11b" value="2b" />
+                  <span class="slotLabel" id="slotLabel11b">empty</span>
+                </td>
+              </tr>
+            </table>
           </div>
         </div>
         <hr />
@@ -408,6 +523,18 @@
           Set a label on your slot and it will show up above to help you
           remember. If you are unsure about slot settings, test it out first by
           browsing to the login page and use a keyboard to login.
+          <span class="device-specific ok-duo">
+          <a
+            href="https://docs.crp.to/duousersguide.html#all-about-slots"
+            class="external"
+            >Learn more about slots
+            <img
+              class="moveimage"
+              src="/images/solid/external-link-alt.svg"
+              style="margin-left: 0.5em" /></a
+          >.
+         </span>
+         <span class="device-specific ok-classic">
           <a
             href="https://docs.crp.to/usersguide.html#all-about-slots"
             class="external"
@@ -417,6 +544,7 @@
               src="/images/solid/external-link-alt.svg"
               style="margin-left: 0.5em" /></a
           >.
+         </span>
         </p>
       </div>
 
@@ -703,12 +831,15 @@
               for generating an OpenPGP key with Keybase.
             </p>
             <p>
-              Before loading a key, <span class="strong">you must first put your OnlyKey into
-              config mode</span>. To do this hold down the #6 button on your OnlyKey
-              for 5+ seconds and release. The OnlyKey light will turn off.
-              Re-enter your current primary PIN to enter config mode and notice
-              the OnlyKey flashes red.
-            </p>
+              Before loading a key, <span class="strong">you must first put your OnlyKey into config mode</span>.
+              <br/><br/>
+              To do this
+              <span class="device-specific ok-classic">hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+              <span class="device-specific ok-duo">hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+              The light will turn off.
+              <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
+              You will notice the OnlyKey flashes red in config mode.
+    </p>
           </div>
           <div class="flex-item">
             <form id="rsaForm" name="rsaForm" class="auth-form">
@@ -888,14 +1019,16 @@
                   key you used to create the backup.
                 </p>
                 <p>
-                  <u>Step 2</u>. Hold down the #6 button on your OnlyKey for 5+
-                  seconds and release. The OnlyKey light will turn off. Re-enter
-                  your PIN to enter config mode. Click [Choose File], select
-                  your backup file, then click [Restore to OnlyKey].
+                  <u>Step 2</u>.
+                  <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+                  <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+                  The light will turn off.
+                  <span class="device-specific ok-duo">If a PIN was previously set, re-enter the PIN to enter config mode.</span>
+                  You will notice the OnlyKey flashes red in config mode.
                 </p>
+                <p><u>Step 3</u>. Click [Choose File], select your backup file, then click [Restore to OnlyKey].</p>
                 <p>
-                  <u>Step 3</u>. The OnlyKey light will be yellow while
-                  restoring your backup, then will automatically reboot when
+                  <u>Step 4</u>. Restore can take up to 1 minute to complete, the OnlyKey will automatically reboot when
                   restoring is complete.
                 </p>
               </fieldset>
@@ -1162,7 +1295,7 @@
                 data-tooltip="Securely encrypt messages in the browser using OnlyKey."
                 >Encrypt Messages <img class="moveimage" src="/images/solid/lock.svg" width="50px"
                 />
-              </span></a>
+              </a></span>
             </button>
             <button type="button" >
               <span class="h2">
@@ -1173,7 +1306,7 @@
                   data-tooltip="Securely decrypt OpenPGP encrypted messages in the browser using OnlyKey"
                   >Decrypt Messages <img class="moveimage" src="/images/solid/unlock.svg" width="50px"
                   />
-              </span></a>
+              </a></span>
             </button>
             <br>
             <br>
@@ -1185,7 +1318,7 @@
                   data-tooltip="Securely encrypt files in the browser using OnlyKey."
                   >Encrypt Files <img class="moveimage" src="/images/solid/file-archive.svg" width="40px"
                   />
-              </span></a>
+              </a></span>
             </button>
             <button type="button" >
               <span class="h2">
@@ -1196,7 +1329,7 @@
                   data-tooltip="Securely decrypt OpenPGP encrypted files in the browser using OnlyKey."
                   >Decrypt Files <img class="moveimage" src="/images/solid/file-alt.svg" width="40px"
                   />
-              </span></a>
+              </a></span>
             </button>
           </div>
         </div>
@@ -1220,7 +1353,7 @@
               /> <img class="moveimage" src="/images/solid/file-code.svg" width="50px"
               /> <img class="moveimage" src="/images/solid/code-branch.svg" width="50px"
               />
-            </span></a>
+            </a></span>
           </button>
           <br>
           <br>
@@ -1233,7 +1366,7 @@
               data-tooltip="Provides a way to securely use OnlyKey for SSH authentication on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH."
               >OnlyKey SSH Agent <img class="moveimage" src="/images/solid/terminal.svg" width="50px"
               />
-            </span></a>
+            </a></span>
           </button>
         </div>
       </div>
@@ -1259,12 +1392,24 @@
 
     <dialog id="locked-dialog" class="silver-gradient-bg">
       <h1>Your OnlyKey is locked</h1>
-      <p id="locked-text"></p>
+      <h3>Please enter your PIN</h3>
     </dialog>
 
-    <dialog id="locked-dialog-go" class="silver-gradient-bg">
+    <dialog id="locked-dialog-duo" class="silver-gradient-bg">
       <h1>Your OnlyKey DUO is locked</h1>
-      <p id="locked-text-go"></p>
+      <div id="locked-text-duo">
+        <h3>Please enter your PIN</h3>
+        <form name="unlockOkDuoForm" id="unlockOkDuoForm">
+          <input type="password" name="unlockOkDuoPin" id="unlockOkDuoPin" />
+          <input type="submit" name="unlockOkDuoSubmit" id="unlockOkDuoSubmit" value="Unlock" />
+        </form>
+      </div>
+      <p id="max-pin-attempts-duo" class="hide">
+        To prevent lockout, OnlyKey only permits 3 failed PIN attempts at a time.<br/><br/>Please remove and reinsert OnlyKey to try again.        
+      </p>
+      <p id="incorrect-pin-duo" class="hide">
+        Incorrect PIN entered<br/><br/>Please try again.        
+      </p>
     </dialog>
 
     <dialog id="slot-wipe-confirm">
@@ -1320,9 +1465,12 @@
       </div>
       <h2>OnlyKey Slot <span class="slotId">1a</span> Configuration</h2>
       <nav>
-        <a id="basic-slot-config" href="" class="active">Basic Login</a>
+        <a id="basic-slot-config" href="" class="active">
+          <span class="hide-no-pin">Basic Login</span>
+          <span class="no-pin-only">Static Password</span>
+        </a>
         <a id="mfa-slot-config" href="">Multi-factor</a>
-        <a id="advanced-slot-config" href="">Full Configuration (Advanced)</a>
+        <a id="advanced-slot-config" href="" class="hide-no-pin">Full Configuration (Advanced)</a>
       </nav>
       <form name="slot-config-form" id="slot-config-form">
         <p>
@@ -1396,7 +1544,7 @@
               />
             </td>
           </tr>
-          <tr class="advanced-option">
+          <tr class="advanced-option hide-no-pin">
             <td>
               <label>
                 <input type="radio" name="tabReturn4" value="1" />
@@ -1408,7 +1556,7 @@
               </label>
             </td>
           </tr>
-          <tr class="basic-option">
+          <tr class="basic-option hide-no-pin">
             <td>
               <label>
                 <input
@@ -1430,7 +1578,7 @@
               />
             </td>
           </tr>
-          <tr class="basic-option">
+          <tr class="basic-option hide-no-pin">
             <td>
               <label>
                 <input type="radio" name="tabReturn1" value="1" />
@@ -1516,6 +1664,30 @@
                 <input type="radio" name="tabReturn2" value="1" />
                 Tab after Password
               </label>
+            </td>
+          </tr>
+          <tr class="basic-option">
+            <td>
+              <label>
+                <input
+                  type="checkbox"
+                  id="slotTypespeed"
+                  name="slotTypespeed"
+                  value="true"
+                  />
+              </label>
+                <b>Keyboard Type Speed</b>
+                <input
+                  type="number"
+                  id="slotTypeSpeed"
+                  name="slotTypeSpeed"
+                  min="1"
+                  max="10"
+                  placeholder="1 - 10"
+                  style="width: 50px"
+                />
+                <br />
+                (1 = slowest, 4 = default, 10 = fastest)
             </td>
           </tr>
           <tr class="advanced-option">
@@ -1676,9 +1848,13 @@
     <dialog id="slotExamples" class="white">
       <a href="" class="dialog-close">cancel [x]</a>
       <br />
+        Slots correspond to the buttons on OnlyKey, for example pressing button #1
+        will type login information from slot [1a] and holding button #1 for 1 second with type login 
+        information from slot [1b].
+        <span class="device-specific ok-duo">Press both buttons #1 and #2 at the same time for slot 3.</span>
       <div>
         <h2>Example #1</h2>
-        Configure button 1 tap (touch for less than 1 sec) to automatically type
+        Configure button 1 press (touch for less than 1 sec) to automatically type
         a password:
         <br />
         <img class="moveimage" src="/images/solid/mouse-pointer.svg" /> Click
@@ -1690,7 +1866,10 @@
         <img class="moveimage" src="/images/regular/keyboard.svg" />
         Enter/re-enter password and click [Set Slot]
       </div>
-
+      <span class="device-specific ok-duo">OnlyKey DUO only supports static-password OR Multi-Factor (MFA) 
+        when a device PIN has not been set. A device PIN can be set from the OnlyKey App Setup tab and 
+        provides extra physical security. Once a device PIN has been enabled additional login information
+        such as username and URL may be added to slots.</span>
       <div>
         <h2>Example #2</h2>
         Configure button 1 long-press (touch more than 1 sec) to type a username

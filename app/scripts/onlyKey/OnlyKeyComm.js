@@ -14,7 +14,7 @@ let onlyKeyConfigWizard;
 
 const DEVICE_TYPES = {
   CLASSIC: "classic",
-  GO: "go",
+  DUO: "duo",
 };
 
 const SUPPORTED_DEVICES = [
@@ -83,7 +83,6 @@ const chromeHid = {
 
   // chrome.hid.receive(integer connectionId, function callback)
   receive: function (connectionId, callback) {
-    // console.log('>>> receive called with', arguments);
     if (connectionId === "mockConnection") {
       if (this._pendingReceive) {
         throw "There must not be multiple pending receives.";
@@ -113,7 +112,6 @@ const chromeHid = {
 
   // chrome.hid.send(integer connectionId, integer reportId, ArrayBuffer data, function callback)
   send: function (connectionId, reportId, data, callback) {
-    // console.log('>>> send called with', arguments);
     if (connectionId === "mockConnection") {
       this._sent.push(arguments);
 
@@ -180,6 +178,7 @@ function OnlyKey(params = {}) {
 
   Object.assign(this, params.deviceInfo); // vendorId, productId, maxInputReportSize, etc
 
+  this.devicePinSet = true;
   this.fwUpdateSupport = false;
 
   this.isBootloader = false;
@@ -304,7 +303,7 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
   }
 
   if (slotId !== null) {
-    bytes[cursor] = strPad(slotId, 2, 0);
+    bytes[cursor] = strPad(slotId, 2, 0);   
     cursor++;
   }
 
@@ -461,20 +460,15 @@ OnlyKey.prototype.setTime = async function (callback) {
   this.sendMessage(options, this.sendMessage(options, callback));
 };
 
-OnlyKey.prototype.getLabels = async function (callback) {
+OnlyKey.prototype.getLabels = async function () {
   this.labels = "";
   await wait(900);
-  this.sendMessage(
-    {
-      msgId: "OKGETLABELS",
-    },
-    handleGetLabels
-  );
+  this.sendMessage({ msgId: "OKGETLABELS" }, handleGetLabels);
 };
 
 function handleGetLabels(err, msg) {
   msg = typeof msg === "string" ? msg.trim() : "";
-  console.info("HandleGetLabels msg:", msg);
+  console.info(`HandleGetLabels msg: ${msg}`);
   if (myOnlyKey.getLastMessage("sent") !== "OKGETLABELS") {
     return;
   }
@@ -485,29 +479,35 @@ function handleGetLabels(err, msg) {
   }
 
   // if second char of response is a pipe, theses are labels
-  var msgParts = msg.split("|");
-  var slotNum = parseInt(msgParts[0], 10);
+  const msgParts = msg.split("|");
+  let slotNum = msgParts[0];
+  switch (slotNum) {
+    case '1a': slotNum = 20; break;
+    case '1b': slotNum = 21; break;
+    case '1c': slotNum = 22; break;
+    case '1d': slotNum = 23; break;
+    case '1e': slotNum = 24; break;
+    default: slotNum = parseInt(slotNum, 10); break;
+  }
+
   if (
     msg.includes("Error not in config mode") ||
-    myOnlyKey.getLastMessage("received") ==
-      "Error not in config mode, hold button 6 down for 5 sec"
+    myOnlyKey.getLastMessage("received") == "Error not in config mode"
   ) {
-    this.setLastMessage(
-      "received",
-      "Error not in config mode, hold button 6 down for 5 sec"
-    );
-  } else if (
-    msg.indexOf("|") !== 2 ||
-    typeof slotNum !== "number" ||
-    slotNum < 1 ||
-    slotNum > 12
-  ) {
+    myOnlyKey.setLastMessage("received", "Error not in config mode");
+  } else if (msg.indexOf("|") !== 2 || typeof slotNum !== "number" || slotNum < 1 || slotNum > 24) {
     myOnlyKey.listen(handleGetLabels);
   } else {
     myOnlyKey.labels[slotNum - 1] = msgParts[1];
     initSlotConfigForm();
-    if (slotNum < 12 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
-      myOnlyKey.listen(handleGetLabels);
+    if (myOnlyKey.getDeviceType() === DEVICE_TYPES.DUO) {
+      if (slotNum < 24 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
+        myOnlyKey.listen(handleGetLabels);
+      }
+    } else {
+      if (slotNum < 12 && (msg.indexOf("|") == 2 || msg.indexOf("|") == 3)) {
+        myOnlyKey.listen(handleGetLabels);
+      }
     }
   }
 }
@@ -541,9 +541,13 @@ OnlyKey.prototype.sendPinMessage = function (
   }
 
   const deviceType = myOnlyKey.getDeviceType();
-  if (deviceType === DEVICE_TYPES.GO) {
+  if (deviceType === DEVICE_TYPES.DUO) {
     messageParams.contents = pin;
     messageParams.contentType = "DEC";
+    if (myOnlyKey.isLocked == true && myOnlyKey.isInitialized == true) {
+      messageParams.poll = true;
+      cb = callback;
+    }
   }
   this.sendMessage(messageParams, cb);
   console.info("last messages");
@@ -579,7 +583,7 @@ OnlyKey.prototype.sendSetPin2 = function (callback) {
   );
 };
 
-OnlyKey.prototype.sendPin_GO = function (pins, callback) {
+OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
   // if only 1 pin is sent, just send those pin chars as a login attempt
   // otherwise, concatenate all PINs sent and fill with null (hex 0)
   const pinCount = pins.length;
@@ -589,36 +593,52 @@ OnlyKey.prototype.sendPin_GO = function (pins, callback) {
   let pinBytes = new Array(pinBytesLength).fill(0);
   pins.forEach((pin, i) => {
     if (typeof pin !== "string") pin = "";
-    // PIN chars should only be ascii 0-9
+    // PIN chars should only be ascii 1-7
     // add 48 to send as DEC
     pin
       .split("")
       .forEach((char, j) => (pinBytes[i * 16 + j] = 48 + Number(char)));
   });
+  if (setpin==true) {
+    pinBytes.unshift(255); 
+  } 
   this.sendPinMessage(
     {
       // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
       msgId: "OKSETPIN",
       pin: pinBytes,
     },
-    async () => {
+    async function () {
+      console.info('sendPin_DUO last message');
+      console.info(myOnlyKey.getLastMessage("received"));
       // Check if PIN attempts exceeded
       if (
         myOnlyKey
           .getLastMessage("received")
           .indexOf("Error password attempts for this session exceeded") === 0
       ) {
-        document.getElementById("locked-text-go").innerHTML =
-          "To prevent lockout OnlyKey only permits 3 failed PIN attempts at a time, please remove and reinsert OnlyKey to try again.";
+        // max pin attempts dialog
+        document.getElementById("locked-text-duo").classList.add("hide");
+        document.getElementById("max-pin-attempts-duo").classList.remove("hide");
+        document.getElementById("incorrect-pin-duo").classList.add("hide");
         console.info("PIN attempts exeeded");
+      } else if (
+        myOnlyKey
+          .getLastMessage("received")
+          .indexOf("INITIALIZED-D") === 0
+      ) {
+        // incorrect pin dialog
+        document.getElementById("locked-text-duo").classList.remove("hide");
+        document.getElementById("max-pin-attempts-duo").classList.add("hide");
+        setTimeout(function() {
+          document.getElementById("incorrect-pin-duo").classList.remove("hide");
+        }, 2000); 
+        console.info("Incorrect PIN attempt");
       } else {
-        document.getElementById("locked-text-go").innerHTML = `
-      <h3>Please enter your PIN</h3>
-      <form name="unlockOkGoForm" id="unlockOkGoForm">
-        <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
-        <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
-      </form>
-      `;
+        // normal PIN dialog
+        document.getElementById("locked-text-duo").classList.remove("hide");
+        document.getElementById("max-pin-attempts-duo").classList.add("hide");
+        document.getElementById("incorrect-pin-duo").classList.add("hide");
       }
       return callback();
     }
@@ -637,10 +657,10 @@ OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
-  slot = slot || this.getSlotNum();
+OnlyKey.prototype.wipeSlot = function (slotArg, field, callback) {
+  let slot = slotArg || this.getSlotNum();
   if (typeof slot !== "number") slot = this.getSlotNum(slot);
-  var options = {
+  const options = {
     msgId: "OKWIPESLOT",
     slotId: slot,
     fieldId: field || null,
@@ -648,10 +668,25 @@ OnlyKey.prototype.wipeSlot = function (slot, field, callback) {
   this.sendMessage(options, callback);
 };
 
-OnlyKey.prototype.getSlotNum = function (slotId) {
-  slotId = slotId || this.currentSlotId;
-  var parts = slotId.split("");
-  return parseInt(parts[0], 10) + (parts[1].toLowerCase() === "a" ? 0 : 6);
+OnlyKey.prototype.getSlotNum = function (slotIdArg) {
+  const slotId = slotIdArg || this.currentSlotId;
+  let slotNum;
+  if (slotId=='XX') {
+    slotNum = 0;
+  } else if (this.getDeviceType() === DEVICE_TYPES.DUO) {
+    if (parseInt(slotId, 10) <= 3) {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 3);
+    } else if (parseInt(slotId, 10) <= 6) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 3 : 6);
+    } else if (parseInt(slotId, 10) <= 9) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 6 : 9);
+    } else if (parseInt(slotId, 10) <= 12) { 
+      slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 9 : 12);
+    }
+  } else {
+    slotNum = parseInt(slotId, 10) + (slotId.match(/a|b/)[0] === 'a' ? 0 : 6);
+  }
+  return slotNum;
 };
 
 OnlyKey.prototype.setYubiAuth = function (
@@ -740,7 +775,7 @@ OnlyKey.prototype.setBackupPassphrase = async function (passphrase, cb) {
     onlyKeyConfigWizard.initForm.reset();
     await wait(300);
     await listenForMessageIncludes2(
-      "Error not in config mode, hold button 6 down for 5 sec",
+      "Error not in config mode",
       "Success"
     );
     cb(err);
@@ -773,7 +808,7 @@ OnlyKey.prototype.submitFirmware = function (fileSelector, cb) {
             submitFirmwareData(temparray, function (err) {
               //First send one message to kick OnlyKey (in config mode) into bootloader
               console.info("Firmware file sent to OnlyKey");
-              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE"
             });
           } else {
             await loadFirmware();
@@ -818,18 +853,18 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
             "<img src='/images/Pacman-0.8s-200px.gif' height='40' width='40'><br><br>";
           submitRestoreData(contents, async function (err) {
             if (err) {
-              _this.setLastMessage(error);
+              _this.setLastMessage("received", error);
               throw Error(error);
             }
 
-            _this.setLastMessage("Backup file sent to OnlyKey, please wait...");
+            _this.setLastMessage("received", "Backup file sent to OnlyKey, please wait...");
             await wait(10000);
             step10text.innerHTML = "";
             cb();
           });
         } else {
           const error = "Incorrect backup data format.";
-          _this.setLastMessage(error);
+          _this.setLastMessage("received", error);
           throw Error(error);
         }
       };
@@ -841,11 +876,11 @@ OnlyKey.prototype.submitRestore = function (fileSelector, cbArg) {
     var contents = "000000000";
     submitRestoreData(contents, function (err) {
       if (err) {
-        _this.setLastMessage(error);
+        _this.setLastMessage("received", error);
         throw Error(error);
       }
 
-      _this.setLastMessage("Backup file sent to OnlyKey.");
+      _this.setLastMessage("received", "Backup file sent to OnlyKey.");
       cb();
     });
   }
@@ -971,6 +1006,12 @@ OnlyKey.prototype.setTypeSpeed = function (typeSpeed) {
   });
 };
 
+OnlyKey.prototype.setSlotTypeSpeed = function (slot, typeSpeed) {
+  this.setSlot(slot, "TYPESPEED", typeSpeed, async () => {
+    return await this.listenforvalue("set keyboard typespeed");
+  });
+};
+
 OnlyKey.prototype.setLedBrightness = function (ledBrightness) {
   this.setSlot("XX", "LEDBRIGHTNESS", ledBrightness, async () => {
     return await this.listenforvalue("set LED brightness");
@@ -1000,120 +1041,31 @@ OnlyKey.prototype.getVersion = function () {
 OnlyKey.prototype.setDeviceType = function (version = "") {
   if (this.getDeviceType()) return; // only allow setting deviceType once
   const lastChar = version[version.length - 1].toLowerCase();
+  this.devicePinSet = true;
   let deviceType;
+
   switch (lastChar) {
-    case "g":
-      deviceType = DEVICE_TYPES.GO;
-      document.getElementById("slot-config-btns").innerHTML = `
-      <tr>
-        <td>
-          <span class="slotLabel" id="slotLabel1a">empty</span>
-          <input type="button" id="slot1aConfig" value="1a" /><br />
-          <span class="slotLabel" id="slotLabel1b">empty</span>
-          <input type="button" id="slot1bConfig" value="1b" />
-        </td>
-        <td class="okgo-photo-cell"></td>
-        <td>
-          <input type="button" id="slot2aConfig" value="2a" />
-          <span class="slotLabel" id="slotLabel2a">empty</span><br />
-          <input type="button" id="slot2bConfig" value="2b" />
-          <span class="slotLabel" id="slotLabel2b">empty</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center">
-          <input type="button" id="slot3aConfig" value="3a" />
-          <span class="slotLabel" id="slotLabel3a">empty</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center">
-          <input type="button" id="slot3bConfig" value="3b" />
-          <span class="slotLabel" id="slotLabel3b">empty</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="3" align="center">
-        <input type="button" id="show_additional_slots" value="Show Additional Slots TODO hide below by default" />
-        <br>Hold 7 sec for "c", hold 10 sec for "d"
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <span class="slotLabel" id="slotLabel4a">empty</span>
-          <input type="button" id="slot4aConfig" value="1c" /><br />
-          <span class="slotLabel" id="slotLabel4b">empty</span>
-          <input type="button" id="slot4bConfig" value="1d" />
-        </td>
-        <td align="center">
-          <input type="button" id="slot6aConfig" value="3c" />
-          <span class="slotLabel" id="slotLabel6a">empty</span><br />
-          <input type="button" id="slot6bConfig" value="3d" />
-          <span class="slotLabel" id="slotLabel6b">empty</span>
-        </td>
-        <td>
-          <span class="slotLabel" id="slotLabel5a">empty</span>
-          <input type="button" id="slot5aConfig" value="2c" /><br />
-          <span class="slotLabel" id="slotLabel5b">empty</span>
-          <input type="button" id="slot5bConfig" value="2d" />
-        </td>
-      </tr>
-    `;
+    case "n":
+      this.devicePinSet = false;
+      deviceType = DEVICE_TYPES.DUO;
+      break;
+    case "p":
+      deviceType = DEVICE_TYPES.DUO;
       break;
     case "c":
+      deviceType = DEVICE_TYPES.CLASSIC;
+      break;
     default:
       if (version.includes("BOOTLOADER")) {
         deviceType = "UNINITIALIZED";
-      } else {
+      } else if (version.includes("INITIALIZED-D")) {
+        deviceType = DEVICE_TYPES.DUO;
+      } else if (version.includes("INITIALIZED")) {
         deviceType = DEVICE_TYPES.CLASSIC;
-        document.getElementById("slot-config-btns").innerHTML = `
-        <tr>
-          <td align="right">
-            <span class="slotLabel" id="slotLabel1a">empty</span>
-            <input type="button" id="slot1aConfig" value="1a" /><br />
-            <span class="slotLabel" id="slotLabel1b">empty</span>
-            <input type="button" id="slot1bConfig" value="1b" />
-          </td>
-          <td class="ok-photo-cell" rowspan="3"></td>
-          <td>
-            <input type="button" id="slot2aConfig" value="2a" />
-            <span class="slotLabel" id="slotLabel2a">empty</span><br />
-            <input type="button" id="slot2bConfig" value="2b" />
-            <span class="slotLabel" id="slotLabel2b">empty</span>
-          </td>
-        </tr>
-        <tr>
-          <td align="right">
-            <span class="slotLabel" id="slotLabel3a">empty</span>
-            <input type="button" id="slot3aConfig" value="3a" /><br />
-            <span class="slotLabel" id="slotLabel3b">empty</span>
-            <input type="button" id="slot3bConfig" value="3b" />
-          </td>
-          <td>
-            <input type="button" id="slot4aConfig" value="4a" />
-            <span class="slotLabel" id="slotLabel4a">empty</span><br />
-            <input type="button" id="slot4bConfig" value="4b" />
-            <span class="slotLabel" id="slotLabel4b">empty</span>
-          </td>
-        </tr>
-        <tr>
-          <td align="right">
-            <span class="slotLabel" id="slotLabel5a">empty</span>
-            <input type="button" id="slot5aConfig" value="5a" /><br />
-            <span class="slotLabel" id="slotLabel5b">empty</span>
-            <input type="button" id="slot5bConfig" value="5b" />
-          </td>
-          <td>
-            <input type="button" id="slot6aConfig" value="6a" />
-            <span class="slotLabel" id="slotLabel6a">empty</span><br />
-            <input type="button" id="slot6bConfig" value="6b" />
-            <span class="slotLabel" id="slotLabel6b">empty</span>
-          </td>
-        </tr>
-      `;
-        // throw Error(`Unable to determine deviceType from version ${version}`);
-      }
-  }
+      } else {
+        window.location.reload();
+      }      
+    }
   console.info(`Setting deviceType to ${deviceType}`);
   this.deviceType = deviceType;
   onlyKeyConfigWizard.init(this);
@@ -1161,7 +1113,7 @@ var ui = {
   slotConfigForm: null,
   slotConfigDialog: null,
   lockedDialog: null,
-  lockedDialogGo: null,
+  lockedDialogDuo: null,
   workingDialog: null,
   disconnectedDialog: null,
   main: null,
@@ -1194,8 +1146,8 @@ var initializeWindow = function () {
   ui.firmwareForm = document["firmwareForm"];
 
   ui.getLockedDialog = (ok) =>
-    ok.getDeviceType() === DEVICE_TYPES.GO
-      ? ui.lockedDialogGo
+    ok.getDeviceType() === DEVICE_TYPES.DUO
+      ? ui.lockedDialogDuo
       : ui.lockedDialog;
 
   enableIOControls(false);
@@ -1307,9 +1259,7 @@ var enumerateDevices = function () {
       productId,
     };
 
-    console.log(
-      `Checking for devices with vendorId ${vendorId} and productId ${productId}...`
-    );
+    console.log(`Checking for devices with vendorId ${vendorId} and productId ${productId}...`);
 
     chromeHid.getDevices(deviceInfo, onDevicesEnumerated);
   }
@@ -1408,7 +1358,7 @@ var pollForInput = function (optionsParam, callbackParam) {
       msg = readBytes(new Uint8Array(data));
     }
 
-    console.info("RECEIVED:", msg);
+    console.info(`RECEIVED: ${msg}\nLast message sent: ${myOnlyKey.getLastMessage('sent')}`);
     myOnlyKey.setDeviceType(msg);
 
     if (msg.length > 1 && msg !== "OK" && !options.flush) {
@@ -1456,6 +1406,9 @@ var pollForInput = function (optionsParam, callbackParam) {
           myOnlyKey.fwUpdateSupport,
           version
         ));
+    } else if (msg.indexOf("INITIALIZED-D") >= 0) {
+      myOnlyKey.isLocked = true;
+      pollForInput();
     }
 
     return await callback(null, msg);
@@ -1495,7 +1448,7 @@ var handleMessage = async function (err, msg) {
       updateUI = true;
 
       // special handling if last message sent was PIN-related
-      if (myOnlyKey.getDeviceType === DEVICE_TYPES.CLASSIC) {
+      if (myOnlyKey.getDeviceType() === DEVICE_TYPES.CLASSIC) {
         switch (myOnlyKey.getLastMessage("sent")) {
           case "OKSETPIN":
           case "OKSETPIN2":
@@ -1541,7 +1494,7 @@ var handleMessage = async function (err, msg) {
       }
       if (myOnlyKey.isLocked) {
         myOnlyKey.isLocked = false;
-        myOnlyKey.getLabels(pollForInput);
+        myOnlyKey.getLabels();
         updateUI = true;
       }
     }
@@ -1555,19 +1508,23 @@ var handleMessage = async function (err, msg) {
   if (myOnlyKey.isBootloader || !myOnlyKey.isInitialized) {
     //Firmware load in app without config mode
     firmwaretext.innerHTML =
-      "To load a new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p><p>The OnlyKey will restart automatically when firmware load is complete.";
+      "To load a new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Next].</p><p>The OnlyKey will restart automatically when firmware load is complete.";
     step8text.innerHTML = " ";
     step9text.innerHTML = " ";
   } else if (myOnlyKey.fwUpdateSupport) {
     //Firmware load in app with config mode
     firmwaretext.innerHTML =
-      `<p><u>Step 1</u>. Hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>
+      `<p><u>Step 1</u>.
+      <span class="device-specific ok-classic">Hold down button #6 on your OnlyKey for 5+ seconds and release.</span>
+      <span class="device-specific ok-duo">Hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</span>
+      The light will turn off. If a PIN was previously set, re-enter the PIN to enter config mode.
+      You will notice the OnlyKey flashes red in config mode.</p>
       <p><u>Step 2</u>. Click [Choose File], select your firmware file, then click [Load Firmware to OnlyKey].</p>
-      <p><u>Step 3</u>. The OnlyKey will flash yellow while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
+      <p><u>Step 3</u>. The OnlyKey will flash white while loading your firmware, then will restart automatically when firmware load is complete.</p>`;
     step8text.innerHTML =
-      "To set a new passphrase on your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+      "To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
     step9text.innerHTML =
-      "To set a new passphrase on your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode.</p>";
+      "To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</p>";
   } else {
     //Firmware load not supported in app
     firmwaretext.innerHTML =
@@ -1619,30 +1576,35 @@ function toggleConfigPanel(e) {
 }
 
 function initSlotConfigForm() {
-  var configBtns = Array.from(ui.slotConfigBtns.getElementsByTagName("input"));
-  configBtns.forEach(function (btn, i) {
-    var labelIndex = myOnlyKey.getSlotNum(btn.value);
-    var labelText = myOnlyKey.labels[labelIndex - 1] || "empty";
+  const deviceType = myOnlyKey.getDeviceType();
+  const deviceBtns = ui.slotConfigBtns.getElementsByClassName(`ok-${deviceType}`)[0];
+  const configBtns = Array.from(deviceBtns.getElementsByTagName('input'));
+  configBtns.forEach((btn, i) => {
+    const slotId = btn.dataset.slotId || btn.value; // prefer data-slot-id
+    const labelIndex = myOnlyKey.getSlotNum(slotId);
+    const labelText = myOnlyKey.labels[labelIndex - 1] || 'empty';
     onlyKeyConfigWizard.setSlotLabel(i, labelText);
-    btn.addEventListener("click", showSlotConfigForm);
+    btn.addEventListener('click', showSlotConfigForm);
   });
   ui.slotConfigDialog
-    .getElementsByClassName("slot-config-close")[0]
-    .addEventListener("click", closeSlotConfigForm);
-  ui.slotConfigDialog.addEventListener("close", () => {
+    .getElementsByClassName('slot-config-close')[0]
+    .addEventListener('click', closeSlotConfigForm);
+  ui.slotConfigDialog.addEventListener('close', () => {
     document.getElementById('slotConfigErrors').innerHTML = '';
     ui.slotConfigForm.reset()
   });
 }
 
 function showSlotConfigForm(e) {
-  var slotId = e.target.value;
-  myOnlyKey.currentSlotId = slotId;
-  var slotLabel = document.getElementById("slotLabel" + slotId).innerText;
-  ui.slotConfigDialog.getElementsByClassName("slotId")[0].innerText = slotId;
+  const slotId = e.target.value;
+  const slotUniqueId = e.target.dataset.slotId || e.target.value; // prefer "data-slot-id" attribute
+  myOnlyKey.currentSlotId = slotUniqueId;
+  const deviceSlots = document.getElementById(`${myOnlyKey.deviceType}-slots`);
+  const slotLabel = deviceSlots.querySelector(`#slotLabel${slotUniqueId}`).innerText;
+  ui.slotConfigDialog.getElementsByClassName('slotId')[0].innerText = slotId;
 
-  document.getElementById("txtSlotLabel").value =
-    slotLabel.toLowerCase() === "empty" ? "" : slotLabel;
+  document.getElementById('txtSlotLabel').value =
+    slotLabel.toLowerCase() === 'empty' ? '' : slotLabel;
   dialog.open(ui.slotConfigDialog);
   initSlotConfigForm();
   e && e.preventDefault && e.preventDefault();
@@ -2005,29 +1967,20 @@ function saveBackupFile(e) {
   e && e.preventDefault && e.preventDefault();
   ui.backupForm.setError("");
 
-  var backupData = ui.backupForm.backupData.value.trim();
+  const backupData = ui.backupForm.backupData.value.trim();
   if (backupData) {
-    d = new Date();
-    dMonth = d.getMonth() + 1;
-    dDate = d.getDate();
-    dYear = d.getFullYear();
-    dHour = d.getHours() + 1 < 12 ? d.getHours() : d.getHours() - 12;
-    dMinutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
-    dM = d.getHours() + 1 < 12 ? "AM" : "PM";
-    df =
-      dMonth +
-      "-" +
-      dDate +
-      "-" +
-      dYear +
-      "-" +
-      dHour +
-      "-" +
-      dMinutes +
-      "-" +
-      dM;
-    var filename = "onlykey-backup-" + df + ".txt";
-    var blob = new Blob([backupData], {
+    const d = new Date();
+    const dYear = d.getFullYear(),
+          dMonth = strPad(d.getMonth() + 1, 2, 0),
+          dDate = strPad(d.getDate(), 2, 0),          
+          dHour = strPad(d.getHours(), 2, 0),
+          dMinutes = strPad(d.getMinutes(), 2, 0);
+
+    const df = `${dYear}-${dMonth}-${dDate}T${dHour}-${dMinutes}`;
+          
+    // format as onlykey-backup-2022-01-31T22-09.txt
+    const filename = `onlykey-backup-${df}.txt`;
+    const blob = new Blob([backupData], {
       type: "text/plain;charset=utf-8",
     });
     saveAs(blob, filename); // REQUIRES FileSaver.js polyfill
@@ -2184,7 +2137,7 @@ function submitFirmwareForm(e) {
               ui.firmwareForm.reset();
               ui.firmwareForm.setError("Firmware file sent to OnlyKey");
 
-              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+              myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE"
             });
           } else {
             await loadFirmware();
@@ -2342,7 +2295,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                               .getLastMessage("received")
                               .indexOf("UNINITIALIZEDv") >= 0 ||
                             window.confirm(
-                              "To load new firmware file to your OnlyKey, hold down the #6 button on your OnlyKey for 5+ seconds and release. The OnlyKey light will turn off. Re-enter your PIN to enter config mode. Once this is completed your OnlyKey will flash red and you may click OK to load new firmware."
+                              "To load new firmware file to your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode. Click OK to load new firmware."
                             )
                           ) {
                             if (req.responseContent.body) {
@@ -2370,7 +2323,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                                     "Working... Do not remove OnlyKey"
                                   );
                                   console.info("Firmware file sent to OnlyKey");
-                                  myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE, HOLD BUTTON 6 DOWN FOR 5 SEC"
+                                  myOnlyKey.listen(handleMessage); //OnlyKey will respond with "SUCCESSFULL FW LOAD REQUEST, REBOOTING..." or "ERROR NOT IN CONFIG MODE"
                                 }
                               );
                               resolve();
@@ -2575,7 +2528,8 @@ function submitWipeMode(e, wipeMode) {
 function submitTypeSpeed(e) {
   e && e.preventDefault && e.preventDefault();
   var typeSpeed = parseInt(ui.typeSpeedForm.okTypeSpeed.value, 10);
-
+  console.info('typeSpeed');
+  console.info(typeSpeed);
   if (typeof typeSpeed !== "number" || typeSpeed < 1) {
     typeSpeed = 4; //Default type speed
   }
@@ -2674,12 +2628,12 @@ function hexStringtoByteArray(hexString) {
   return result;
 }
 
-function strPad(str, places, char) {
-  while (str.length < places) {
-    str = "" + (char || 0) + str;
+function strPad(str, places, char='0') {
+  let s = str.toString();
+  while (s.length < places) {
+    s = `${char}${s}`;
   }
-
-  return str;
+  return s;
 }
 
 // http://stackoverflow.com/questions/39460182/decode-base64-to-hexadecimal-string-with-javascript

@@ -39,15 +39,15 @@ if (chrome.passwordsPrivate) {
       case 'classic':
         this.initClassicSteps();
         break;
-      case 'go':
+      case 'duo':
       default:
-        this.initGoSteps();
+        this.initDuoSteps();
         break;
     }
     console.log(`Wizard.initSteps() called with ${deviceType}`);
   };
 
-  Wizard.prototype.initGoSteps = function () {
+  Wizard.prototype.initDuoSteps = function () {
     this.steps = {
       Step1: {
         enterFn: this.setGuided.bind(this, true),
@@ -60,10 +60,11 @@ if (chrome.passwordsPrivate) {
         disclaimerTrigger: 'passcode1Disclaimer',
         enterFn: (cb) => {
           document.getElementById('step2-text').innerHTML = `
-            <h3>Change PINs</h3>
+            <h3>Set or Change PINs</h3>
             <p>
-              Make sure to choose PINs that you will not forget and that only you know.
-              It is also good to keep a secure backup of your PINs somewhere in case you forget.
+              Make sure to choose a device PIN that you will not forget and that only you know.
+              Once set, it is required to know your device PIN to unlock your OnlyKey DUO, so keep a 
+              secure backup of your PIN somewhere in case you forget.
             </p>
             <p>
               DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and,
@@ -75,42 +76,43 @@ if (chrome.passwordsPrivate) {
               I understand and accept the above risk.
             </label>
             <p>
-              <strong>Enter 7-16 digits for each PIN:</strong>
+              Enter a 7-10 digit PIN code using ONLY the numbers 1 - 6. Using the numbers 1 - 6 allows 
+              you to physically enter the PIN onto OnlyKey in the event that the OnlyKey App is not available. 
+            </p>
+            <p>
+              Example of a <em>good</em> PIN: '32536145'
+            </p>
+            <p>
+              Examples of <em>bad</em> PINs: '1234567' '1111112' '1231231'
+            </p>
+            <p>
+              Once set, your PIN can be entered via the OnlyKey App or by physically touching device buttons. Touch buttons 1, 2, 3 to enter 1, 2, 3 and hold (for 1 second) buttons 1, 2, 3 to enter 4, 5, 6.
             </p>
             <div class='flex-container'>
               <div class='flex-item col-3'>
                 <p class='center'>
-                  <u>Primary Profile</u><br/>
-                  <input type='password' id='goPrimaryPin' name='goPrimaryPin' required maxlength='16' placeholder='Primary PIN' /><br/>
-                  <input type='password' id='goPrimaryPinConfirm' name='goPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  <u>Device PIN</u><br/>
+                  <input type='password' id='duoPrimaryPin' name='duoPrimaryPin' required maxlength='16' placeholder='Device PIN' /><br/>
+                  <input type='password' id='duoPrimaryPinConfirm' name='duoPrimaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
                   [required]
                 </p>
-                <p id='goPrimaryPinErrors' class='form-error'></p>
+                <p id='duoPrimaryPinErrors' class='form-error'></p>
               </div>
               <div class='flex-item col-3'>
                 <p class='center'>
-                  <u>Secondary Profile</u><br/>
-                  <input type='password' id='goSecondaryPin' name='goSecondaryPin' required maxlength='16' placeholder='Secondary PIN' /><br/>
-                  <input type='password' id='goSecondaryPinConfirm' name='goSecondaryPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                  [optional]
+                  <u>Self-Destruct  </u><br/>
+                  <input type='password' id='duoSDPin' name='duoSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
+                  <input type='password' id='duoSDPinConfirm' name='duoSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
+                  [optional, for wiping device and factory reset]
                 </p>
-                <p id='goSecondaryPinErrors' class='form-error'></p>
-              </div>
-              <div class='flex-item col-3'>
-                <p class='center'>
-                  <u>Self-Destruct</u><br/>
-                  <input type='password' id='goSDPin' name='goSDPin' required maxlength='16' placeholder='Self-Destruct PIN' /><br/>
-                  <input type='password' id='goSDPinConfirm' name='goSDPinConfirm' required maxlength='16' placeholder='Confirm' /><br/>
-                  [optional]
-                </p>
-                <p id='goSdPinErrors' class='form-error'></p>
+                <p id='duoSdPinErrors' class='form-error'></p>
               </div>
             </div>
           `;
         },
         exitFn: (cb) => {
-          const pins = this.validateGoPins();
-          pins && this.onlyKey.sendPin_GO(pins, cb);
+          const pins = this.validateDuoPins();
+          pins && this.onlyKey.sendPin_DUO(pins, true, cb);
         }
       },
       Step8: { // backup passphrase
@@ -129,7 +131,8 @@ if (chrome.passwordsPrivate) {
           if (this.direction === NEXT) {
             if (!this.checkInitialized() && this.advancedSetup) {
               const backupKeyMode = this.initForm.backupKeyMode;
-              this.onlyKey.setbackupKeyMode(backupKeyMode.value, this.submitBackupKey.bind(this, cb));
+              this.onlyKey.setbackupKeyMode(backupKeyMode.value);
+              this.submitBackupKey(cb);
             } else {
               // not going to next step due to [Previous] click
               this.submitBackupKey(cb);
@@ -319,13 +322,14 @@ if (chrome.passwordsPrivate) {
 
   Wizard.prototype.uiInit = function () {
     const deviceType = this.onlyKey.getDeviceType();
-    const main = document.getElementById('main');
+    const { devicePinSet } = this.onlyKey;
     const deviceTypes = Object.values(DEVICE_TYPES);
-    // const deviceTypes = ['classic', 'go'];
     deviceTypes.forEach(type => {
-      main.classList.remove(`ok-${type}`);
+      document.body.classList.remove(`ok-${type}`);
     });
-    deviceType && main.classList.add(`ok-${deviceType}`);
+    deviceType && document.body.classList.add(`ok-${deviceType}`);
+
+    document.body.classList[`${devicePinSet ? 'remove' : 'add'}`]('no-pin-set');
 
     this.initForm = document['init-panel'];
     document.getElementById('step8-2-text').innerHTML = `
@@ -489,7 +493,84 @@ if (chrome.passwordsPrivate) {
     this.slotWipe = document.getElementById('slotWipe');
     this.slotWipe.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      document.getElementById('wipeCurrentSlotId').innerText = this.onlyKey.currentSlotId;
+      if (deviceType === DEVICE_TYPES.DUO) {
+        switch(this.onlyKey.currentSlotId) {
+          case '1a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 1a'
+            break;
+          case '1b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 1b'
+            break;      
+          case '2a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 2a'
+            break;
+          case '2b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 2b'
+            break;    
+          case '3a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 3a'
+            break;
+          case '3b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Green 3b'
+            break;    
+          case '4a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 1a'
+            break;
+          case '4b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 1b'
+            break;      
+          case '5a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 2a'
+            break;
+          case '5b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 2b'
+            break;    
+          case '6a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 3a'
+            break;
+          case '6b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Blue 3b'
+            break;   
+          case '7a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 1a'
+            break;
+          case '7b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 1b'
+            break;      
+          case '8a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 2a'
+            break;
+          case '8b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 2b'
+            break;    
+          case '9a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 3a'
+            break;
+          case '9b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Yellow 3b'
+            break;    
+          case '10a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 1a'
+            break;
+          case '10b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 1b'
+            break;      
+          case '11a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 2a'
+            break;
+          case '11b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 2b'
+            break;    
+          case '12a':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 3a'
+            break;
+          case '12b':
+            document.getElementById('wipeCurrentSlotId').innerText = 'Purple 3b'
+              break;  
+        } 
+      } else {
+        document.getElementById('wipeCurrentSlotId').innerText = this.onlyKey.currentSlotId;
+      }
       this.dialog.open(this.slotWipeConfirmDialog, true);
     };
 
@@ -520,30 +601,23 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
-    document.getElementById('locked-text-go').innerHTML = `
-    <h3>Please enter your PIN</h3>
-    <form name="unlockOkGoForm" id="unlockOkGoForm">
-      <input type="password" name="unlockOkGoPin" id="unlockOkGoPin" />
-      <input type="button" name="unlockOkGoSubmit" id="unlockOkGoSubmit" value="Unlock" />
-    </form>
-    `;
-    document.getElementById('locked-text').innerHTML = `
-    <h3>Please enter your PIN</h3>
-    `;
-    this.unlockOkGoPinInput = document.getElementById('unlockOkGoPin');
-    this.unlockOkGoSubmitBtn = document.getElementById('unlockOkGoSubmit');
-    this.unlockOkGoSubmitBtn.onclick = e => {
+
+    document.getElementById("locked-text-duo").classList.remove("hide");
+    document.getElementById("max-pin-attempts-duo").classList.add("hide");
+    document.getElementById("incorrect-pin-duo").classList.add("hide");
+    this.unlockOkDuoPinInput = document.getElementById('unlockOkDuoPin');
+    this.unlockOkDuoSubmitBtn = document.getElementById('unlockOkDuoSubmit');
+    this.unlockOkDuoSubmitBtn.onclick = e => {
       e && e.preventDefault && e.preventDefault();
-      this.onlyKey.sendPin_GO([this.unlockOkGoPinInput.value], (err, msg) => {
-        // this.onlyKey.listen(function (err, msg) {
+      this.onlyKey.sendPin_DUO([this.unlockOkDuoPinInput.value], false, function (err, msg) {
         if (err) {
           console.dir({
             UNLOCK_ERR: err
           });
           throw Error('error');
         }
-        // });
       });
+      this.unlockOkDuoPinInput.value = null;
     };
 
     // BEGIN PRIVATE KEY SELECTOR
@@ -576,8 +650,29 @@ if (chrome.passwordsPrivate) {
     };
     // END PRIVATE KEY SELECTOR
 
+    // reset DUO profile switcher
+    if (deviceType === DEVICE_TYPES.DUO) {
+      this.setDuoProfile('green');
+      const profileSwitcher = document.getElementById('profile-switch');
+      Array.from(profileSwitcher.getElementsByClassName('profile-btn')).forEach(btn => {
+        btn.removeEventListener('click', profileSwitchClickHandler);
+        btn.addEventListener('click', profileSwitchClickHandler.bind(this));
+      });
+    }
+
     this.setActiveStepUI();
   };
+
+  function profileSwitchClickHandler(evt) {
+    evt.stopPropagation();
+    evt.preventDefault();
+    const profileLabel = evt.target.dataset.profileValue;
+    this.setDuoProfile(profileLabel);
+  }
+
+  Wizard.prototype.setDuoProfile = function (profileLabel) {
+    document.getElementById('duo-slots').setAttribute('data-profile-id', profileLabel);
+  }
 
   Wizard.prototype.checkInitialized = function () {
     const isInitialized = this.onlyKey && this.onlyKey.isInitialized;
@@ -877,6 +972,10 @@ if (chrome.passwordsPrivate) {
       yubiSlotPublicId: {
         input: form.yubiSlotPublicId,
         msgId: 'YUBIAUTH'
+      },
+      slotTypespeed: {
+        input: form.slotTypespeed,
+        msgId: 'TYPESPEED'
       }
     };
 
@@ -891,7 +990,9 @@ if (chrome.passwordsPrivate) {
             isChecked = true;
             if ((fieldMap[field].input).name == 'txtSlotUrl' || (fieldMap[field].input).name == 'txtPassword' || (fieldMap[field].input).name == 'txtUserName') {
               formValue = ('' + (fieldMap[field].input).value);
-            } else {
+            } else if ((fieldMap[field].input).name == 'slotTypespeed') {
+              formValue = parseInt(form['slotTypeSpeed'].value, 10);
+            }  else {
               formValue = ('' + (fieldMap[field].input).value).trim();
             }
 
@@ -1300,13 +1401,16 @@ if (chrome.passwordsPrivate) {
   };
 
   Wizard.prototype.setSlotLabel = function (slot, label) {
-    var slotLabel;
+    const configBtnsContainer = document.getElementById('slot-config-btns');
+    const deviceType = this.onlyKey.getDeviceType();
+    const rootElement = configBtnsContainer.getElementsByClassName(`ok-${deviceType}`)[0];
+    let slotLabel;
     if (typeof slot === 'number') {
-      var slotLabels = Array.from(document.getElementsByClassName('slotLabel'));
+      const slotLabels = Array.from(rootElement.getElementsByClassName('slotLabel'));
       slotLabel = slotLabels[slot];
     } else {
       slot = slot.toLowerCase();
-      slotLabel = document.getElementById('slotLabel' + slot);
+      slotLabel = rootElement.getElementById('slotLabel' + slot);
     }
 
     if (!slotLabel) return;
@@ -1319,15 +1423,13 @@ if (chrome.passwordsPrivate) {
     }
   };
 
-  Wizard.prototype.validateGoPins = function () {
-    const pin1 = document.getElementById('goPrimaryPin').value;
-    const pin1Confirm = document.getElementById('goPrimaryPinConfirm').value;
+  Wizard.prototype.validateDuoPins = function () {
+    const pin1 = document.getElementById('duoPrimaryPin').value;
+    const pin1Confirm = document.getElementById('duoPrimaryPinConfirm').value;
     const pin1Errors = [];
-    const pin2 = document.getElementById('goSecondaryPin').value;
-    const pin2Confirm = document.getElementById('goSecondaryPinConfirm').value;
-    const pin2Errors = [];
-    const pin3 = document.getElementById('goSDPin').value;
-    const pin3Confirm = document.getElementById('goSDPinConfirm').value;
+    const pin2 = []; // Only primary pin used by OnlyKey DUO
+    const pin3 = document.getElementById('duoSDPin').value;
+    const pin3Confirm = document.getElementById('duoSDPinConfirm').value;
     const pin3Errors = [];
 
     const minPinLength = 7;
@@ -1341,21 +1443,15 @@ if (chrome.passwordsPrivate) {
     pin1.match(/\D/g) && pin1Errors.push(numeralErrorStr);
     pin1.length < minPinLength && pin1Errors.push(lengthErrorStr);
 
-    pin2 && pin2 !== pin2Confirm && pin2Errors.push(mismatchErrorStr);
-    pin2.match(/\D/g) && pin2Errors.push(numeralErrorStr);
-    pin2 && pin2.length < minPinLength && pin2Errors.push(lengthErrorStr);
-    pin2 && pin2 == pin1 && pin2Errors.push('Secondary PIN cannot match Primary.');
-
     pin3 && pin3 !== pin3Confirm && pin3Errors.push(mismatchErrorStr);
     pin3.match(/\D/g) && pin3Errors.push(numeralErrorStr);
     pin3 && pin3.length < minPinLength && pin3Errors.push(lengthErrorStr);
-    pin3 && (pin3 == pin1 || pin3 == pin2) && pin3Errors.push('SD PIN cannot match others.');
+    pin3 && (pin3 == pin1) && pin3Errors.push('SD PIN cannot match others.');
 
     let errorsFound = false;
     [
-      { errors: pin1Errors, containerId: 'goPrimaryPinErrors' },
-      { errors: pin2Errors, containerId: 'goSecondaryPinErrors' },
-      { errors: pin3Errors, containerId: 'goSdPinErrors' }
+      { errors: pin1Errors, containerId: 'duoPrimaryPinErrors' },
+      { errors: pin3Errors, containerId: 'duoSdPinErrors' }
     ].forEach(pinForm => {
       document.getElementById(pinForm.containerId).innerHTML = '';
       if (pinForm.errors.length) {
