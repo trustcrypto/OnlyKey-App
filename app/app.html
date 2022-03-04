@@ -47,12 +47,18 @@
         <div id="stepContent">
           <div class="step" id="Step1">
             <h2>
-              OnlyKey<span class="device-specific ok-duo"> DUO</span> Setup <a
+              <span class="device-specific ok-duo">OnlyKey DUO Setup <a
+              href="https://docs.crp.to/duousersguide.html#onlykey-setup"
+              class="external tooltip fade"
+              data-tooltip="Setup of OnlyKey includes things like setting PINs and backup passphrase. These can be changed later in the OnlyKey app."
+              ><img class="moveimage" src="/images/solid/rocket.svg" width="15px"
+            /></a></span>
+            <span class="device-specific ok-classic">OnlyKey Setup <a
               href="https://docs.crp.to/usersguide.html#onlykey-setup"
               class="external tooltip fade"
               data-tooltip="Setup of OnlyKey includes things like setting PINs and backup passphrase. These can be changed later in the OnlyKey app."
               ><img class="moveimage" src="/images/solid/rocket.svg" width="15px"
-            /></a>
+            /></a></span>
             </h2>
             <p class="uninit-only">
               Begin the Guided Setup wizard by clicking [Next] at bottom. Or, if
@@ -340,12 +346,22 @@
 
       <div id="slot-panel" class="hide panel">
         <h2>
+          <span class="device-specific ok-duo">
           Configure Slots <a
-          href="https://docs.crp.to/usersguide.html#all-about-slots"
+          href="https://docs.crp.to/duousersguide.html#all-about-slots"
           class="external tooltip fade"
           data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and multi-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
           ><img class="moveimage" src="/images/solid/cogs.svg" width="19px"
         /></a>
+          </span>
+          <span class="device-specific ok-classic">
+            Configure Slots <a
+            href="https://docs.crp.to/usersguide.html#all-about-slots"
+            class="external tooltip fade"
+            data-tooltip="On the OnlyKey you have multiple buttons and each button has two slots assigned that can be activated by holding the button for less than or more than one second. Each slot can be set with a Label, URL, Username, Password, and multi-factor authentication.  The slots that have not been configured have no label so they are shown as 'empty'."
+            ><img class="moveimage" src="/images/solid/cogs.svg" width="19px"
+          /></a>
+          </span>
         </h2>
         <p>
           Slots are where you store login information such as a login URL, username, password,
@@ -507,6 +523,18 @@
           Set a label on your slot and it will show up above to help you
           remember. If you are unsure about slot settings, test it out first by
           browsing to the login page and use a keyboard to login.
+          <span class="device-specific ok-duo">
+          <a
+            href="https://docs.crp.to/duousersguide.html#all-about-slots"
+            class="external"
+            >Learn more about slots
+            <img
+              class="moveimage"
+              src="/images/solid/external-link-alt.svg"
+              style="margin-left: 0.5em" /></a
+          >.
+         </span>
+         <span class="device-specific ok-classic">
           <a
             href="https://docs.crp.to/usersguide.html#all-about-slots"
             class="external"
@@ -516,6 +544,7 @@
               src="/images/solid/external-link-alt.svg"
               style="margin-left: 0.5em" /></a
           >.
+         </span>
         </p>
       </div>
 

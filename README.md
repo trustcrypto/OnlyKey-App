@@ -23,7 +23,7 @@ Just getting started with OnlyKey?
 
 *The app is required on all systems where OATH-TOTP (Google Authenticator) is used*
 
-For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html)
+For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html) or [OnlyKey DUO User's Guide](https://docs.crp.to/usersguide.html) 
 
 ## Installation
 
