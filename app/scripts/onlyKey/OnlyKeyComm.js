@@ -1366,7 +1366,7 @@ var pollForInput = function (optionsParam, callbackParam) {
           myOnlyKey.fwUpdateSupport,
           version
         ));
-    } else if (msg.indexOf("INITIALIZED-D") >= 0) {
+      } else if (msg.indexOf("INITIALIZED-D") >= 0) {
       myOnlyKey.isLocked = true;
     }
 
@@ -1453,7 +1453,7 @@ var handleMessage = async function (err, msg) {
       }
       if (myOnlyKey.isLocked) {
         myOnlyKey.isLocked = false;
-        myOnlyKey.getLabels();
+        myOnlyKey.setTime(myOnlyKey.getLabels.bind(myOnlyKey));
         updateUI = true;
       }
     }
