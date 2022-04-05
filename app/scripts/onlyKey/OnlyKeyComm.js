@@ -1368,6 +1368,7 @@ var pollForInput = function (optionsParam, callbackParam) {
         ));
       } else if (msg.indexOf("INITIALIZED-D") >= 0) {
       myOnlyKey.isLocked = true;
+      pollForInput();
     }
 
     return await callback(null, msg);
