@@ -183,6 +183,7 @@ function OnlyKey(params = {}) {
 
   this.isBootloader = false;
   this.isLocked = true;
+  this.isConfigMode = false;
 
   this.keyTypeModifiers = {
     Backup: 128, // 0x80
@@ -579,7 +580,7 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
   this.sendPinMessage({ msgId: "OKSETPIN", pin: pinBytes }, async function () {
     const msgReceived = myOnlyKey.getLastMessage("received");
     console.info(`sendPin_DUO last message received: ${msgReceived}`);
-    
+
     // Check if PIN attempts exceeded
     if (msgReceived.indexOf("Error password attempts for this session exceeded") === 0) {
       // max pin attempts dialog
@@ -1366,9 +1367,20 @@ var pollForInput = function (optionsParam, callbackParam) {
           myOnlyKey.fwUpdateSupport,
           version
         ));
-      } else if (msg.indexOf("INITIALIZED-D") >= 0) {
-      myOnlyKey.isLocked = true;
-      pollForInput();
+      if (myOnlyKey.isConfigMode == true) {
+        myOnlyKey.isLocked = false;
+        enableIOControls(true);
+      }
+    } else if (msg.indexOf("INITIALIZED-D") >= 0) {
+      if (myOnlyKey.isLocked == false || myOnlyKey.isConfigMode == true) { // Device was unlocked, now its locked, user is putting device in Config Mode
+        myOnlyKey.isLocked = true;
+        myOnlyKey.isConfigMode = true;
+        myOnlyKey.setTime(pollForInput);
+        enableIOControls(true);
+      } else {
+        myOnlyKey.isLocked = true;
+        myOnlyKey.setInitialized(true);
+      }
     }
 
     return await callback(null, msg);
