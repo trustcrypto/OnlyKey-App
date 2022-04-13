@@ -183,6 +183,7 @@ function OnlyKey(params = {}) {
 
   this.isBootloader = false;
   this.isLocked = true;
+  this.isConfigMode = false;
 
   this.keyTypeModifiers = {
     Backup: 128, // 0x80
@@ -357,6 +358,8 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
     bytes
   );
 
+  myOnlyKey.setLastMessage("sent", msgId);
+
   chromeHid.send(this.connection, reportId, bytes.buffer, async function () {
     if (msgId != "OKFWUPDATE") await wait(100);
     if (chrome.runtime.lastError) {
@@ -369,7 +372,6 @@ OnlyKey.prototype.sendMessage = function (options, callback) {
       );
       callback("ERROR SENDING PACKETS");
     } else {
-      myOnlyKey.setLastMessage("sent", msgId);
       callback(null, "OK");
     }
   });
@@ -512,10 +514,7 @@ function handleGetLabels(err, msg) {
   }
 }
 
-OnlyKey.prototype.sendPinMessage = function (
-  { msgId = "", pin = "", poll = true },
-  callback = () => {}
-) {
+OnlyKey.prototype.sendPinMessage = function ({ msgId="", pin="", poll=true }, callback=()=>{}) {
   this.pendingMessages[msgId] = !this.pendingMessages[msgId];
   var cb = poll ? pollForInput.bind(this, {}, callback) : callback;
   console.info(`sendPinMessage ${msgId}`);
@@ -523,10 +522,7 @@ OnlyKey.prototype.sendPinMessage = function (
     msgId,
   };
 
-  if (
-    myOnlyKey.getLastMessage("received") ==
-    "Error PIN is not between 7 - 10 digits"
-  ) {
+  if (myOnlyKey.getLastMessage("received") == "Error PIN is not between 7 - 10 digits") {
     this.setLastMessage("received", "Canceled");
     messageParams.msgId = "OKSETPIN";
     messageParams.poll = false;
@@ -536,8 +532,7 @@ OnlyKey.prototype.sendPinMessage = function (
     myOnlyKey.getLastMessage("received").includes("UNLOCKED") ||
     myOnlyKey.getLastMessage("received").includes("INITIALIZED")
   ) {
-    var cb2 = cb();
-    cb = pollForInput.bind(this, {}, cb2);
+    cb = pollForInput.bind(this, {}, cb);
   }
 
   const deviceType = myOnlyKey.getDeviceType();
@@ -550,37 +545,18 @@ OnlyKey.prototype.sendPinMessage = function (
     }
   }
   this.sendMessage(messageParams, cb);
-  console.info("last messages");
-  console.info(myOnlyKey.getLastMessageIndex("received", 0));
-  console.info(myOnlyKey.getLastMessageIndex("received", 1));
 };
 
 OnlyKey.prototype.sendSetPin = function (callback) {
-  console.info("sendSetPin");
-  this.sendPinMessage(
-    {
-      msgId: "OKSETPIN",
-    },
-    callback
-  );
+  this.sendPinMessage({ msgId: "OKSETPIN" }, callback);
 };
 
 OnlyKey.prototype.sendSetSDPin = function (callback) {
-  this.sendPinMessage(
-    {
-      msgId: "OKSETSDPIN",
-    },
-    callback
-  );
+  this.sendPinMessage({ msgId: "OKSETSDPIN" }, callback);
 };
 
 OnlyKey.prototype.sendSetPin2 = function (callback) {
-  this.sendPinMessage(
-    {
-      msgId: "OKSETPIN2",
-    },
-    callback
-  );
+  this.sendPinMessage({ msgId: "OKSETPIN2" }, callback);
 };
 
 OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
@@ -588,8 +564,7 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
   // otherwise, concatenate all PINs sent and fill with null (hex 0)
   const pinCount = pins.length;
   const bytesPerPin = 16;
-  const pinBytesLength =
-    pinCount === 1 ? pins[0].length : pinCount * bytesPerPin;
+  const pinBytesLength = pinCount === 1 ? pins[0].length : pinCount * bytesPerPin;
   let pinBytes = new Array(pinBytesLength).fill(0);
   pins.forEach((pin, i) => {
     if (typeof pin !== "string") pin = "";
@@ -602,47 +577,33 @@ OnlyKey.prototype.sendPin_DUO = function (pins, setpin, callback) {
   if (setpin==true) {
     pinBytes.unshift(255); 
   } 
-  this.sendPinMessage(
-    {
-      // msgId: pinCount === 1 ? 'OKPIN' : 'OKSETPIN',
-      msgId: "OKSETPIN",
-      pin: pinBytes,
-    },
-    async function () {
-      console.info('sendPin_DUO last message');
-      console.info(myOnlyKey.getLastMessage("received"));
-      // Check if PIN attempts exceeded
-      if (
-        myOnlyKey
-          .getLastMessage("received")
-          .indexOf("Error password attempts for this session exceeded") === 0
-      ) {
-        // max pin attempts dialog
-        document.getElementById("locked-text-duo").classList.add("hide");
-        document.getElementById("max-pin-attempts-duo").classList.remove("hide");
-        document.getElementById("incorrect-pin-duo").classList.add("hide");
-        console.info("PIN attempts exeeded");
-      } else if (
-        myOnlyKey
-          .getLastMessage("received")
-          .indexOf("INITIALIZED-D") === 0
-      ) {
-        // incorrect pin dialog
-        document.getElementById("locked-text-duo").classList.remove("hide");
-        document.getElementById("max-pin-attempts-duo").classList.add("hide");
-        setTimeout(function() {
-          document.getElementById("incorrect-pin-duo").classList.remove("hide");
-        }, 2000); 
-        console.info("Incorrect PIN attempt");
-      } else {
-        // normal PIN dialog
-        document.getElementById("locked-text-duo").classList.remove("hide");
-        document.getElementById("max-pin-attempts-duo").classList.add("hide");
-        document.getElementById("incorrect-pin-duo").classList.add("hide");
-      }
-      return callback();
+  this.sendPinMessage({ msgId: "OKSETPIN", pin: pinBytes }, async function () {
+    const msgReceived = myOnlyKey.getLastMessage("received");
+    console.info(`sendPin_DUO last message received: ${msgReceived}`);
+
+    // Check if PIN attempts exceeded
+    if (msgReceived.indexOf("Error password attempts for this session exceeded") === 0) {
+      // max pin attempts dialog
+      document.getElementById("locked-text-duo").classList.add("hide");
+      document.getElementById("max-pin-attempts-duo").classList.remove("hide");
+      document.getElementById("incorrect-pin-duo").classList.add("hide");
+      console.info("PIN attempts exeeded");
+    } else if (msgReceived.indexOf("INITIALIZED-D") === 0) {
+      // incorrect pin dialog
+      document.getElementById("locked-text-duo").classList.remove("hide");
+      document.getElementById("max-pin-attempts-duo").classList.add("hide");
+      setTimeout(function() {
+        document.getElementById("incorrect-pin-duo").classList.remove("hide");
+      }, 2000); 
+      console.info("Incorrect PIN attempt");
+    } else {
+      // normal PIN dialog
+      document.getElementById("locked-text-duo").classList.remove("hide");
+      document.getElementById("max-pin-attempts-duo").classList.add("hide");
+      document.getElementById("incorrect-pin-duo").classList.add("hide");
     }
-  );
+    return callback();
+  });
 };
 
 OnlyKey.prototype.setSlot = function (slotArg, field, value, callback) {
@@ -1406,9 +1367,20 @@ var pollForInput = function (optionsParam, callbackParam) {
           myOnlyKey.fwUpdateSupport,
           version
         ));
+      if (myOnlyKey.isConfigMode == true) {
+        myOnlyKey.isLocked = false;
+        enableIOControls(true);
+      }
     } else if (msg.indexOf("INITIALIZED-D") >= 0) {
-      myOnlyKey.isLocked = true;
-      pollForInput();
+      if (myOnlyKey.isLocked == false || myOnlyKey.isConfigMode == true) { // Device was unlocked, now its locked, user is putting device in Config Mode
+        myOnlyKey.isLocked = true;
+        myOnlyKey.isConfigMode = true;
+        myOnlyKey.setTime(pollForInput);
+        enableIOControls(true);
+      } else {
+        myOnlyKey.isLocked = true;
+        myOnlyKey.setInitialized(true);
+      }
     }
 
     return await callback(null, msg);
@@ -1494,7 +1466,7 @@ var handleMessage = async function (err, msg) {
       }
       if (myOnlyKey.isLocked) {
         myOnlyKey.isLocked = false;
-        myOnlyKey.getLabels();
+        myOnlyKey.setTime(myOnlyKey.getLabels.bind(myOnlyKey));
         updateUI = true;
       }
     }
