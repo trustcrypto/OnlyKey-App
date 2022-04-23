@@ -1726,7 +1726,7 @@ function submitEccForm(e) {
 
   var priv_type = "ECC";
 
-  if (type == 0) {
+  if (type == 9) {
     maxKeyLength = 40; // 20 hex pairs
     priv_type = "HMAC";
   }
