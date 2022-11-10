@@ -1,4 +1,4 @@
-document.querySelector('#main').addEventListener('click', evt => {
+const handler = evt => {
     const parent = (evt.path && evt.path[1]) || {};
     const href = evt.target && evt.target.href ? evt.target.href : parent.href;
 
@@ -8,4 +8,9 @@ document.querySelector('#main').addEventListener('click', evt => {
         evt.preventDefault && evt.preventDefault();
         evt.stopPropgation && evt.stopPropagation();
     }
-});
+};
+
+[
+    '#main',
+    '#udev-dialog',
+].forEach(sel => document.querySelector(sel).addEventListener('click', handler));
