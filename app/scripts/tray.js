@@ -6,21 +6,32 @@
   const userPreferences = require('./scripts/userPreferences.js');
   const settingsMenu = new nw.Menu();
   
-  const appPath = require('./scripts/non-renderer-app-path');
-  const appName = appPath.includes('nwjs Helper') ? 'OnlyKey-dev' : 'OnlyKey';
   const os = require('os');
   const osx = os.platform() === 'darwin';
   const linux = os.platform() === 'linux';
 
+  const appPath = osx ? require('./scripts/non-renderer-app-path') : process.execPath;
+  const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
+
+  const logParams = {
+    location: 'tray.js',
+    appPath,
+    appName,
+    os_platform: os.platform(),
+  }
+
+  console.info(logParams);
+
   const AutoLaunch = require("auto-launch");
+
+  // LINUX: adds "~/.config/autostart/nw.desktop" file when autoLaunch is enabled
   const autoLaunchOptions = {
-      name: appName,
-      isHidden: true
+      name: appName, // the AutoLaunch class overwrites this required prop! (see the "fixOpts" method)
+      isHidden: !(osx || linux), // this flag breaks the autoLaunch feature in Mac & Linux 
   };
 
   if (osx) {
       autoLaunchOptions.path = appPath;
-      autoLaunchOptions.isHidden = false;
   }
 
   const autoLaunch = new AutoLaunch(autoLaunchOptions);
@@ -84,7 +95,13 @@
   settingsMenu.append(autoLaunchMenuItem);
   settingsMenu.append(autoUpdateMenuItem);
   settingsMenu.append(autoUpdateFWMenuItem);
-  tray.menu = settingsMenu;
+  
+  // using setTimeout to counteract anomalies including empty tray menu
+  setTimeout(() => {
+    tray.menu = settingsMenu;
+    console.info({ ...logParams, tray });
+  }, 500);
+
 
   // discovered on linux that the menu item checked state does not live update
   function refreshMenuItem(menuItem, index) {

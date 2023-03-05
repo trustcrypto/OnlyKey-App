@@ -1,6 +1,7 @@
 const devApp = 'nwjs Helper.app';
 const prodApp = 'OnlyKey App.app';
 // path should use "nwjs Helper", not "nwjs Helper (Renderer)"
+console.log({ location: 'non-renderer-app-path.js', process_execPath: process.execPath })
 const tempPath = process.execPath.replace(/ \(Renderer\)/g, '');
 let appPath;
 if (tempPath.includes(prodApp)) {
