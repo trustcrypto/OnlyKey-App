@@ -28,6 +28,8 @@ var init = function (params={}) {
 };
 
 var copyRuntime = function () {
+    // this pulls all files and directories from node_modules/nw/nwjs
+    // and copies them into /opt/OnlyKey
     return projectDir.copyAsync(`${node_modules_dir}/nw/nwjs`, readyAppDir.path(), { overwrite: true });
 };
 
@@ -55,6 +57,24 @@ var prepareOsSpecificThings = function () {
     packDir.write('DEBIAN/postinst' , postinst, {mode: '755'});
 
     return Q();
+};
+
+var updateRuntimeFileMode = function () {
+    var deferred = Q.defer();
+
+    console.log('chmodding nwjs runtime...');
+
+    childProcess.exec('chmod -R 755 ' + readyAppDir.path(),
+        function (error, stdout, stderr) {
+            if (error || stderr) {
+                console.log("ERROR while chmodding nwjs runtime:");
+                console.log(error);
+                console.log(stderr);
+            }
+            deferred.resolve();
+        });
+
+    return deferred.promise;
 };
 
 var packToDebFile = function () {
@@ -102,6 +122,7 @@ var cleanClutter = function () {
 module.exports = function (params) {
     return init(params)
     .then(copyRuntime)
+    .then(updateRuntimeFileMode)
     .then(copyBuiltApp)
     .then(prepareOsSpecificThings)
     .then(packToDebFile)

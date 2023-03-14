@@ -1,45 +1,49 @@
 {
   "name": "OnlyKey",
   "productName": "OnlyKey App",
-  "version": "5.3.6",
-  "version_name": "5.3.6",
+  "version": "5.5.0",
+  "version_name": "5.5.0",
   "description": "Setup and configure OnlyKey",
   "main": "app.js",
   "scripts": {
     "build": "./node_modules/.bin/gulp build",
+    "build_win": ".\\node_modules\\.bin\\gulp build",
     "prerelease": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build -- --env=production",
+    "prerelease_win": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build_win -- --env=production",
     "release": "./node_modules/.bin/gulp release --env=production",
+    "release_win": ".\\node_modules\\.bin\\gulp release --env=production",
     "start": "node ./tasks/start",
     "pretest": "npm run-script build",
     "test": "mocha",
+    "testgulp": ".\\node_modules\\.bin\\gulp -v",
     "prechrome": "./node_modules/.bin/gulp build --env=chrome",
     "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
   },
   "dependencies": {
     "auto-launch": "^5.0.5",
     "js-sha256": "^0.9.0",
-    "nw": "^0.55.0",
-    "nw-autoupdater": "^1.1.8",
-    "request": "^2.88.0",
-    "sshpk": "^1.16.1"
+    "nw": "^0.71.1",
+    "nw-autoupdater": "^1.1.11",
+    "request": "^2.88.2",
+    "sshpk": "^1.17.0"
   },
   "devDependencies": {
-    "chai": "^4.2.0",
+    "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
-    "eslint": "^6.4.0",
-    "fs-jetpack": "^4.1.0",
+    "eslint": "^8.33.0",
+    "fs-jetpack": "^5.1.0",
     "gulp": "^4.0.2",
-    "gulp-sourcemaps": "^2.6.4",
-    "json": "^10.0.0",
-    "mocha": "^8.2.0",
+    "gulp-sourcemaps": "^3.0.0",
+    "json": "^11.0.0",
+    "mocha": "^10.2.0",
     "nw-dev": "^3.0.1",
     "q": "^1.5.1",
-    "selenium-webdriver": "^3.6.0",
-    "tree-kill": "^1.2.1",
-    "yargs": "^16.1.0"
+    "selenium-webdriver": "^4.8.0",
+    "tree-kill": "^1.2.2",
+    "yargs": "^17.6.2"
   },
   "optionalDependencies": {
-    "appdmg": "^0.6.0"
+    "appdmg": "^0.6.4"
   },
   "repository": {
     "type": "git",
@@ -57,7 +61,7 @@
   "author": "CryptoTrust <admin@crp.to>",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/trustcrypto/OnlyKey-App/issues"
+    "url": "https://onlykey.discourse.group/"
   },
   "homepage": "https://github.com/trustcrypto/OnlyKey-App#readme",
   "window": {
