@@ -1459,6 +1459,171 @@
       <div id="selectPrivateKeyError" class="form-error"></div>
     </dialog>
 
+    <dialog id="password-generator-dialog">
+      <h2>Strong Random Password Generator</h2>
+      <p>Generate complex, random password without the risk of a clipboard leak.<br/>
+      Make any necessary modifications before applying.</p>
+      <form name="password-generator-form" id="password-generator-form">
+        <table>
+          <tr class="universal-option">
+            <td colspan="2">
+              <input
+                type="text"
+                id="txtPassGen"
+                name="txtPassGen"
+                value=""
+                maxlength="56"
+                style="width: 100%;"
+              />
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td>
+              <label>
+                <input
+                  type="number"
+                  id="numPassGenLen"
+                  name="numPassGenLen"
+                  value="48"
+                  min="6"
+                  max="56"
+                />
+              Length (6-56)
+              </label> 
+            </td>
+            <td>
+              <input
+                type="button"
+                id="btnPassGen"
+                name="btnPassGen"
+                value="Generate New Password"
+              />
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenUpper"
+                  name="chkPassGenUpper"
+                  checked="checked"
+                />
+                Uppercase A-Z
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenLower"
+                  name="chkPassGenLower"
+                  checked="checked"
+                />
+                Lowercase a-z
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenDigits"
+                  name="chkPassGenDigits"
+                  checked="checked"
+                />
+                Digits 0-9
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenSpecial"
+                  name="chkPassGenSpecial"
+                  checked="checked"
+                />
+                Special ~!@#$%^&amp;*+=-_
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenPunct"
+                  name="chkPassGenPunct"
+                  checked="checked"
+                />
+                Punctuation &quot;&apos;;:,.?
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenBraces"
+                  name="chkPassGenBraces"
+                  checked="checked"
+                />
+                Braces (){}[]&lt;&gt;
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="checkbox"
+                  id="chkPassGenSpace"
+                  name="chkPassGenSpace"
+                />
+                Space
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td colspan="2">
+              <label>
+                <input
+                  type="text"
+                  id="txtPassGenOmit"
+                  name="txtPassGenOmit"
+                  value=""
+                />
+                Disallowed character list
+              </label>
+            </td>
+          </tr>
+          <tr class="universal-option">
+            <td>
+              <input
+                type="button"
+                id="passGenCancel"
+                name="passGenCancel"
+                value="Cancel"
+              />
+            </td>
+            <td>
+              <input
+                type="button"
+                id="passGenSubmit"
+                name="passGenSubmit"
+                value="Use Password"
+              />
+            </td>
+          </tr>
+        </table>
+      </form>
+    </dialog>
     <dialog id="slot-config-dialog" data-mode="basic" class="silver-gradient-bg">
       <div id="slot-config-top-links">
         <a href="" class="slot-config-close" title="Close">close &#9746;</a>
@@ -1635,6 +1800,14 @@
                 name="txtPassword"
                 value=""
                 maxlength="56"
+              />
+            </td>
+            <td>
+              <input
+                type="button"
+                id="btnLaunchPassGen"
+                name="btnLaunchPassGen"
+                value="Gen"
               />
             </td>
           </tr>
