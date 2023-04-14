@@ -621,12 +621,14 @@ if (chrome.passwordsPrivate) {
       e && e.preventDefault && e.preventDefault();
       this.dialog.close(this.passwordGeneratorDialog);
       this.setPassword(this.passwordGeneratorForm.txtPassGen.value);
+      this.passwordGeneratorForm.txtPassGen.value = "";
     };
 
     this.passGenCancel = document.getElementById('passGenCancel');
     this.passGenCancel.onclick = e => {
       e && e.preventDefault && e.preventDefault();
       this.dialog.close(this.passwordGeneratorDialog);
+      this.passwordGeneratorForm.txtPassGen.value = "";
     };
 
     document.getElementById("locked-text-duo").classList.remove("hide");
@@ -1219,10 +1221,20 @@ if (chrome.passwordsPrivate) {
     newPw = "";
 
     for (let i=0; i < pwLen; i++) {
-      newPw += charMap[crypto.randomInt(0, mapLen - 1)];
+      newChar = charMap[crypto.randomInt(0, mapLen - 1)];
+
+      // Ensure a space isn't used as the first or last character - likelihood of string trimming causing problems is too high
+      if ((i == 0 || i == pwLen - 1) && newChar === ' ') {
+        while (newChar !== ' ') {
+          newChar = charMap[crypto.randomInt(0, mapLen - 1)];
+        }
+      }
+
+      newPw += newChar;
     }
 
     form.txtPassGen.value = newPw;
+    newPw = "";
   }
 
   Wizard.prototype.setPassword = function (pw) {
