@@ -601,6 +601,35 @@ if (chrome.passwordsPrivate) {
       this.setSlot();
     };
 
+    this.passwordGeneratorForm = document['password-generator-form'];
+    this.passwordGeneratorDialog = document.getElementById('password-generator-dialog');
+
+    this.btnLaunchPassGen = document.getElementById('btnLaunchPassGen');
+    this.btnLaunchPassGen.onclick = e => {
+      e && e.preventDefault && e.preventDefault();
+      this.dialog.open(this.passwordGeneratorDialog, true);
+    };
+
+    this.btnPassGen = document.getElementById('btnPassGen');
+    this.btnPassGen.onclick = e => {
+      e && e.preventDefault && e.preventDefault();
+      this.generatePassword();
+    };
+
+    this.passGenSubmit = document.getElementById('passGenSubmit');
+    this.passGenSubmit.onclick = e => {
+      e && e.preventDefault && e.preventDefault();
+      this.dialog.close(this.passwordGeneratorDialog);
+      this.setPassword(this.passwordGeneratorForm.txtPassGen.value);
+      this.passwordGeneratorForm.txtPassGen.value = "";
+    };
+
+    this.passGenCancel = document.getElementById('passGenCancel');
+    this.passGenCancel.onclick = e => {
+      e && e.preventDefault && e.preventDefault();
+      this.dialog.close(this.passwordGeneratorDialog);
+      this.passwordGeneratorForm.txtPassGen.value = "";
+    };
 
     document.getElementById("locked-text-duo").classList.remove("hide");
     document.getElementById("max-pin-attempts-duo").classList.add("hide");
@@ -1140,6 +1169,82 @@ if (chrome.passwordsPrivate) {
     this.onlyKey.getLabels();
     this.dialog.close(this.slotConfigDialog);
   }
+
+  Wizard.prototype.generatePassword = function () {
+    const crypto = require("crypto");
+    const form = this.passwordGeneratorForm;
+    const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const lower = "abcedfghijklmnopqrstuvwxyz";
+    const digit = "0123456789";
+    const special = "~!@#$%^&*+=-_";
+    const punct = "\"\';:,.?";
+    const brace = "(){}[]<>";
+    const space = " ";
+
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+    }
+
+    pwLen = form.numPassGenLen.value;
+
+    charMap = "";
+
+    if (form.chkPassGenUpper.checked) {
+      charMap += upper;
+    }
+    if (form.chkPassGenLower.checked) {
+      charMap += lower;
+    }
+    if (form.chkPassGenDigits.checked) {
+      charMap += digit;
+    }
+    if (form.chkPassGenSpecial.checked) {
+      charMap += special;
+    }
+    if (form.chkPassGenPunct.checked) {
+      charMap += punct;
+    }
+    if (form.chkPassGenBraces.checked) {
+      charMap += brace;
+    }
+    if (form.chkPassGenSpace.checked) {
+      charMap += space;
+    }
+
+    if (form.txtPassGenOmit.value != "") {
+      badCharRegex = new RegExp('[' + escapeRegExp(form.txtPassGenOmit.value) + ']', 'gm');
+      charMap = charMap.replace(badCharRegex,'');
+    }
+
+    mapLen = charMap.length;
+
+    newPw = "";
+
+    for (let i=0; i < pwLen; i++) {
+      newChar = charMap[crypto.randomInt(0, mapLen - 1)];
+
+      // Ensure a space isn't used as the first or last character - likelihood of string trimming causing problems is too high
+      if ((i == 0 || i == pwLen - 1) && newChar === ' ') {
+        while (newChar !== ' ') {
+          newChar = charMap[crypto.randomInt(0, mapLen - 1)];
+        }
+      }
+
+      newPw += newChar;
+    }
+
+    form.txtPassGen.value = newPw;
+    newPw = "";
+  }
+
+  Wizard.prototype.setPassword = function (pw) {
+    const form = this.slotConfigForm;
+    form.txtPassword.value = pw;
+    form.txtPasswordConfirm.value = pw;
+    //Ensure any present or future validation events are fired
+    form.txtPassword.dispatchEvent(new Event('input', { 'bubbles': true }));
+    form.txtPasswordConfirm.dispatchEvent(new Event('input', { 'bubbles': true }));
+  };
 
   Wizard.prototype.getMode = function () {
     return this.initForm['ConfigMode'].value;
