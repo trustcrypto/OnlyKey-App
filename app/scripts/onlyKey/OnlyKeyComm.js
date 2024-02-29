@@ -6,6 +6,9 @@ if (desktopApp) {
   request = require("request");
 }
 
+const os = require('os');
+const linux = os.platform() === 'linux';
+
 let backupsigFlag = -1;
 let fwchecked = false;
 let dialog;
@@ -1077,6 +1080,7 @@ var ui = {
   lockedDialogDuo: null,
   workingDialog: null,
   disconnectedDialog: null,
+  udevDialog: null,
   main: null,
 };
 
@@ -1267,9 +1271,23 @@ var connectDevice = async function (device) {
 
   chromeHid.connect(deviceId, async function (connectInfo) {
     if (chrome.runtime.lastError) {
-      console.error("ERROR CONNECTING:", chrome.runtime.lastError);
+      console.error(`ERROR CONNECTING: ${chrome.runtime.lastError.message}`, device);
+      if (linux) {
+        dialog.open(ui.udevDialog);
+      } else {
+        if (confirm(`ERROR: ${chrome.runtime.lastError.message}\n\nRetry?`)) {
+          return await connectDevice(device);
+        }
+      }
     } else if (!connectInfo) {
       console.warn("Unable to connect to device.");
+      if (confirm(`ERROR: Unable to read device info.\n\nRetry?`)) {
+        return await connectDevice(device);
+      }
+    }
+
+    if (!connectInfo) {
+      return;
     }
 
     myOnlyKey.setConnection(connectInfo.connectionId);
