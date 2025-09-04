@@ -2231,7 +2231,7 @@ function checkForNewFW(checkForNewFW, fwUpdateSupport, version) {
                 if (thisver_mod == "c" || thisver_mod == "g") {
                   if (
                     window.confirm(
-                      "A new version of firware is available. Would you like to review the upgrade guide?"
+                      "A new version of firmware is available. Would you like to review the upgrade guide?"
                     )
                   ) {
                     const openMethod =
