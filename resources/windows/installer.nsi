@@ -1,12 +1,15 @@
 ; NSIS packaging/install script
 ; Docs: http://nsis.sourceforge.net/Docs/Contents.html
 
-!include LogicLib.nsh
-!include nsDialogs.nsh
+;--------------------------------
+;Include Modern UI
 
-; --------------------------------
-; Variables
-; --------------------------------
+  !include "MUI2.nsh"
+
+;--------------------------------
+;General
+
+  ;Name and file
 
 !define dest "{{dest}}"
 !define src "{{src}}"
@@ -19,19 +22,17 @@
 
 !define exec "nw.exe"
 
+; 64-bit ends up at HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\OnlyKey
 !define regkey "Software\${name}"
+; 64-bit ends up at HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\OnlyKey
 !define uninstkey "Software\Microsoft\Windows\CurrentVersion\Uninstall\${name}"
 
 !define uninstaller "uninstall.exe"
 
-; --------------------------------
-; Installation
-; --------------------------------
-
 SetCompressor lzma
 
 Name "${name}"
-Icon "${setupIcon}"
+Icon "${icon}"
 OutFile "${dest}"
 InstallDir "$PROGRAMFILES\${name}"
 InstallDirRegKey HKLM "${regkey}" ""
@@ -39,55 +40,48 @@ InstallDirRegKey HKLM "${regkey}" ""
 CRCCheck on
 SilentInstall normal
 
-XPStyle on
-ShowInstDetails nevershow
+ShowInstDetails hide
 AutoCloseWindow false
 WindowIcon off
 
-Caption "${productName} Setup"
+Caption "${productName} ${version} Setup"
 ; Don't add sub-captions to title bar
 SubCaption 3 " "
 SubCaption 4 " "
 
-Page custom welcome
-Page instfiles
+;--------------------------------
+;Interface Settings
 
-Var Image
-Var ImageHandle
+  !define MUI_ICON "${setupIcon}"
+  !define MUI_UNICON "${setupIcon}"
+  !define MUI_HEADERIMAGE
+  !define MUI_HEADERIMAGE_BITMAP "${banner}"
+  !define MUI_HEADERIMAGE_UNBITMAP "${banner}"
+  !define MUI_ABORTWARNING
 
-Function .onInit
+;--------------------------------
+;Pages
 
-    ; Extract banner image for welcome page
-    InitPluginsDir
-    ReserveFile "${banner}"
-    File /oname=$PLUGINSDIR\banner.bmp "${banner}"
+  !insertmacro MUI_PAGE_DIRECTORY
+  !insertmacro MUI_PAGE_INSTFILES
+  !insertmacro MUI_UNPAGE_CONFIRM
+  
+;--------------------------------
+;Languages
+ 
+  !insertmacro MUI_LANGUAGE "English"
 
-FunctionEnd
-
-; Custom welcome page
-Function welcome
-
-    nsDialogs::Create 1018
-    
-    ${NSD_CreateLabel} 185 1u 210 100% "Welcome to ${productName} version ${version} installer.$\r$\n$\r$\nClick install to begin."
-    
-    ${NSD_CreateBitmap} 0 0 170 210 ""
-    Pop $Image
-    ${NSD_SetImage} $Image $PLUGINSDIR\banner.bmp $ImageHandle
-
-    nsDialogs::Show
-
-    ${NSD_FreeImage} $ImageHandle
-
-FunctionEnd
+;--------------------------------
+;Installer Sections
 
 ; Installation declarations
 Section "Install"
     
     WriteRegStr HKLM "${regkey}" "Install_Dir" "$INSTDIR"
+    WriteRegStr HKLM "${regkey}" "DefaultIcon" "$INSTDIR\icon.ico"
     WriteRegStr HKLM "${uninstkey}" "DisplayName" "${name}"
-    WriteRegStr HKLM "${uninstkey}" "DisplayIcon" '"$INSTDIR\icon.ico"'
-    WriteRegStr HKLM "${uninstkey}" "UninstallString" '"$INSTDIR\${uninstaller}"'
+    WriteRegStr HKLM "${uninstkey}" "DisplayIcon" "$INSTDIR\icon.ico"
+    WriteRegStr HKLM "${uninstkey}" "UninstallString" "$INSTDIR\${uninstaller}"
     
     ; Remove all application files copied by previous installation
     RMDir /r "$INSTDIR"
@@ -104,14 +98,17 @@ Section "Install"
     
 SectionEnd
 
+;--------------------------------
+;Uninstaller Section
+
 ; --------------------------------
 ; Uninstaller
 ; --------------------------------
 
-ShowUninstDetails nevershow
+ShowUninstDetails hide
 
 UninstallCaption "Uninstall ${productName}"
-UninstallText "Don't like ${productName} anymore? Hit uninstall button."
+UninstallText "Follow the prompts to remove ${productName} from this computer."
 UninstallIcon "${icon}"
 
 UninstPage custom un.confirm un.confirmOnLeave
@@ -125,9 +122,9 @@ Function un.confirm
 
     nsDialogs::Create 1018
     
-    ${NSD_CreateLabel} 1u 1u 100% 24u "If you really want to remove ${productName} from your computer press uninstall button."
+    ${NSD_CreateLabel} 1u 1u 100% 24u "To finish removing ${productName} from your computer, press the [Uninstall] button below."
 
-    ${NSD_CreateCheckbox} 1u 35u 100% 10u "Remove also my ${productName} personal data"
+    ${NSD_CreateCheckbox} 1u 35u 100% 10u "Also remove my ${productName} personal settings"
     Pop $RemoveAppDataCheckbox
 
     nsDialogs::Show
