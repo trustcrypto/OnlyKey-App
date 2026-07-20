@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OnlyKey App</title>
+    <style>
+      /* Ensure the window background is clean before React loads */
+      body {
+        margin: 0;
+        background-color: #1a1a1a;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      // NW.js desktop bootstrap — must run in the main window (inject_js_start alone is unreliable).
+      if (typeof nw !== 'undefined') {
+        try {
+          var win = nw.Window.get();
+          var showWin = function () {
+            try {
+              if (localStorage.getItem('onlykeySuppressShow') === '1') return;
+              var fs = require('fs');
+              var path = require('path');
+              if (fs.existsSync(path.join(nw.App.startPath, 'tmp', 'suppress-show.json'))) return;
+            } catch (e) {}
+            if (win.isMinimized && win.restore) win.restore();
+            if (!win.isVisible) win.show(true);
+            win.focus();
+          };
+          showWin();
+          win.on('focus', showWin);
+          win.on('restore', showWin);
+
+          var appRoot = nw.App.startPath;
+          require(require('path').join(appRoot, 'desktopBg.cjs')).start();
+
+          if ((nw.App.argv || []).some(function (arg) {
+            return arg.indexOf('--devtools') !== -1 || arg.indexOf('--onlykey-tray-debug') !== -1;
+          })) {
+            try {
+              win.showDevTools();
+            } catch (devtoolsError) {
+              console.warn('Main DevTools failed (SDK build required):', devtoolsError);
+            }
+          }
+        } catch (e) {
+          console.error('NW desktop bootstrap failed:', e);
+        }
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

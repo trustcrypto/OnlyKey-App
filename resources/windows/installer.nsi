@@ -16,6 +16,8 @@
 !define name "{{name}}"
 !define productName "{{productName}}"
 !define version "{{version}}"
+!define versionQuad "{{versionQuad}}"
+!define companyName "{{companyName}}"
 !define icon "{{icon}}"
 !define setupIcon "{{setupIcon}}"
 !define banner "{{banner}}"
@@ -70,6 +72,14 @@ SubCaption 4 " "
 ;Languages
  
   !insertmacro MUI_LANGUAGE "English"
+
+VIProductVersion ${versionQuad}
+VIAddVersionKey /LANG=${LANG_ENGLISH} ProductName "${productName}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} CompanyName "${companyName}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} LegalCopyright "Copyright (c) ${companyName}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} FileVersion "${version}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} ProductVersion "${version}"
+VIAddVersionKey /LANG=${LANG_ENGLISH} FileDescription "${productName} ${version} Setup"
 
 ;--------------------------------
 ;Installer Sections

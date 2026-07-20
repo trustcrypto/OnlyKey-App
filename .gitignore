@@ -2,8 +2,12 @@ node_modules
 *.log
 .DS_Store
 Thumbs.db
-/build/
+/dist/
 /releases/
 /tmp/
-/release_node_modules/
+/coverage/
+/playwright-report/
+/test-results/
+/agent-tools/
+/terminals/
 package-lock.json

@@ -1,28 +1,5 @@
 {
-  "name": "OnlyKey Configuration",
-  "manifest_version": 2,
-  "version": "5.6.0",
-  "version_name": "5.6.0",
-  "minimum_chrome_version": "45.0.2439.3",
-  "app": {
-    "background": {
-      "scripts": ["app.js"],
-      "persistent": false
-    }
-  },
-  "permissions": [
-    "hid",
-    {
-      "usbDevices": [
-        { "vendorId": 5824, "productId": 1158 },
-        { "vendorId": 7504, "productId": 24828 }
-      ]
-    }
-  ],
-  "icons": {
-    "16": "resources/onlykey_logo_16.png",
-    "48": "resources/onlykey_logo_48.png",
-    "128": "resources/onlykey_logo_128.png"
-  },
+  "name": "OnlyKey",
+  "version": "5.7.0",
   "manifestUrl": "https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json"
 }

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tray Menu When Hidden Harness</title>
+  </head>
+  <body>
+    <script>
+      (async function runHarness() {
+        const fs = require('fs');
+        const path = require('path');
+
+        const resultArg = (nw.App.argv || []).find((arg) => arg.startsWith('--onlykey-test-result='));
+        const resultPath = resultArg
+          ? resultArg.slice('--onlykey-test-result='.length)
+          : path.join(nw.App.startPath, 'tmp', 'desktop-test-result.json');
+
+        const result = {
+          ok: false,
+          scenario: 'tray-menu-when-hidden',
+          state: null,
+          error: null,
+        };
+
+        function finish(exitCode) {
+          fs.mkdirSync(path.dirname(resultPath), { recursive: true });
+          fs.writeFileSync(resultPath, JSON.stringify(result, null, 2));
+          if (exitCode !== 0) {
+            nw.App.quit();
+            setTimeout(() => process.exit(exitCode), 200);
+          }
+        }
+
+        const { createTrayTestHelpers } = require(path.join(
+          nw.App.startPath,
+          'tests/desktop/tray-test-helpers.js'
+        ));
+        const { waitForTrayReady, waitUntil } = createTrayTestHelpers(nw, fs, path);
+
+        try {
+          const desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs'));
+          desktop.start();
+
+          await waitForTrayReady(8000);
+
+          const win = nw.Window.get();
+          desktop.setSuppressShow(true);
+          win.hide();
+          await new Promise((resolve) => setTimeout(resolve, 300));
+
+          const hiddenBeforeMenu = !win.isVisible;
+          // Main renderer is hidden/throttled — same path as a broken in-main tray would need:
+          // write tray-command.json and let the tray host poll it (menu uses direct handler in host).
+          const commandPath = path.join(nw.App.startPath, 'tmp', 'tray-command.json');
+          fs.mkdirSync(path.dirname(commandPath), { recursive: true });
+          fs.writeFileSync(commandPath, JSON.stringify({ command: 'show', ts: Date.now() }));
+
+          await waitUntil(() => nw.Window.get().isVisible !== false, 5000, 'window restore after tray show');
+          await waitUntil(() => !desktop.readSuppressShow(), 3000, 'suppress flag cleared after tray show');
+
+          result.state = desktop.getTestState();
+          result.state.hiddenBeforeMenu = hiddenBeforeMenu;
+          result.state.visibleAfterMenuShow = nw.Window.get().isVisible !== false;
+          result.state.suppressCleared = !desktop.readSuppressShow();
+          result.state.menuShowPath = 'tray-command-json-from-main-while-hidden';
+
+          result.ok =
+            result.state.trayInMainContext &&
+            hiddenBeforeMenu &&
+            result.state.visibleAfterMenuShow &&
+            result.state.suppressCleared;
+
+          finish(result.ok ? 0 : 1);
+
+          if (result.ok) {
+            // Quit via the same background command path.
+            desktop.dispatchTrayCommand('quit');
+          }
+        } catch (error) {
+          result.error = String(error);
+          finish(1);
+        }
+      })();
+    </script>
+  </body>
+</html>

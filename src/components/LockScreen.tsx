@@ -1,0 +1,105 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { useDeviceStore } from '../store/useDeviceStore';
+import { DeviceType } from '../api/device/types';
+
+const LockScreen: React.FC = () => {
+  const { deviceType, device, isLocked, isConnected, isConfigMode, pinError, activeTab } = useDeviceStore();
+  const [pin, setPin] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [classicUnlockActive, setClassicUnlockActive] = useState(false);
+  const classicUnlockStarted = useRef(false);
+
+  const isDuo = deviceType === DeviceType.DUO;
+  const isClassic = deviceType === DeviceType.CLASSIC;
+
+  useEffect(() => {
+    if (!isConnected || !isLocked || isConfigMode || !device || !isClassic) {
+      classicUnlockStarted.current = false;
+      setClassicUnlockActive(false);
+      return;
+    }
+
+    if (classicUnlockStarted.current) return;
+    classicUnlockStarted.current = true;
+    setClassicUnlockActive(true);
+
+    device.beginClassicPinEntry()
+      .catch((err) => console.error('Classic unlock handshake failed:', err))
+      .finally(() => {
+        classicUnlockStarted.current = false;
+        setClassicUnlockActive(false);
+      });
+  }, [isConnected, isLocked, isConfigMode, device, isClassic]);
+
+  if (!isConnected || !isLocked || isConfigMode || activeTab === 'tools') return null;
+
+  const handleUnlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!device || !pin) return;
+
+    setIsSubmitting(true);
+    try {
+      await device.setPin(pin);
+      setPin('');
+    } catch (err) {
+      console.error('Unlock failed', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const pinAttemptsExceeded = pinError?.includes('password attempts');
+  const incorrectPin = pinError?.includes('Incorrect PIN') || pinError?.includes('INITIALIZED-D');
+
+  return (
+    <div
+      data-testid="lock-screen"
+      className="absolute inset-0 bg-ok-dark/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300"
+    >
+      <h2 className="text-2xl font-bold mb-2">
+        {isDuo ? 'OnlyKey DUO Locked' : 'OnlyKey Locked'}
+      </h2>
+
+      {isDuo ? (
+        <div className="w-full max-w-xs space-y-4">
+          {pinAttemptsExceeded ? (
+            <p className="text-red-400 text-sm">PIN attempts exceeded for this session. Unplug and replug your OnlyKey.</p>
+          ) : incorrectPin ? (
+            <p className="text-red-400 text-sm">Incorrect PIN. Please try again.</p>
+          ) : (
+            <p className="text-gray-400 text-sm mb-6">Please enter your PIN below to unlock your device.</p>
+          )}
+          <form onSubmit={handleUnlock} className="space-y-4">
+            <input
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="Enter PIN"
+              disabled={isSubmitting || pinAttemptsExceeded}
+              autoFocus
+              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-center text-xl tracking-[0.5em] focus:border-ok-blue focus:ring-1 focus:ring-ok-blue outline-none transition-all placeholder:tracking-normal placeholder:text-sm"
+            />
+            <button
+              type="submit"
+              disabled={isSubmitting || !pin || pinAttemptsExceeded}
+              className="w-full py-3 bg-ok-blue hover:bg-blue-600 disabled:opacity-50 disabled:hover:bg-ok-blue transition-colors rounded-xl font-bold"
+            >
+              {isSubmitting ? 'Unlocking...' : 'Unlock Device'}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="space-y-4 max-w-sm">
+          <p className="text-gray-400 text-sm">
+            Enter your PIN on the OnlyKey six-button keypad.
+          </p>
+          <div className="inline-block px-4 py-2 bg-white/5 rounded-full text-xs text-gray-500 animate-pulse">
+            {classicUnlockActive ? 'Waiting for PIN on device…' : 'Ready for PIN on device…'}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LockScreen;

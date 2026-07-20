@@ -1,46 +1,88 @@
 {
   "name": "OnlyKey",
   "productName": "OnlyKey App",
-  "version": "5.6.0",
-  "version_name": "5.6.0",
+  "version": "5.7.0",
+  "version_name": "5.7.0",
   "description": "Setup and configure OnlyKey",
-  "main": "app.js",
+  "main": "dist/index.html",
   "scripts": {
-    "build": "./node_modules/.bin/gulp build",
-    "build_win": ".\\node_modules\\.bin\\gulp build",
-    "prerelease": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build -- --env=production",
-    "prerelease_win": "rm -rf ./node_modules/* && npm install --production && rm -rf ./release_node_modules && mkdir release_node_modules && cd release_node_modules && mkdir node_modules && cd .. && cp -R ./node_modules/* ./release_node_modules/node_modules && npm install && npm run build_win -- --env=production",
-    "release": "./node_modules/.bin/gulp release --env=production",
-    "release_win": ".\\node_modules\\.bin\\gulp release --env=production",
-    "start": "node ./tasks/start",
-    "pretest": "npm run-script build",
-    "test": "mocha",
-    "testgulp": ".\\node_modules\\.bin\\gulp -v",
-    "prechrome": "./node_modules/.bin/gulp build --env=chrome",
-    "chrome": "echo 'Please run something like:'; echo \"chrome --load-and-launch-app=$(pwd)/build\""
+    "dev": "vite",
+    "dev:server": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && node scripts/start-desktop.mjs --dev-server\"",
+    "start": "vite build && node scripts/start-desktop.mjs",
+    "start:fresh": "vite build && node scripts/start-desktop.mjs --user-data-dir=./tmp/user-data-fresh",
+    "start:debug": "vite build && node scripts/start-desktop.mjs --devtools --onlykey-tray-debug --user-data-dir=./tmp/user-data-fresh",
+    "start:watch": "vite build && concurrently -n build,nw \"vite build --watch\" \"node scripts/start-desktop.mjs --devtools\"",
+    "build": "vite build",
+    "audit:release": "npm audit",
+    "release": "node scripts/release.mjs",
+    "test": "vitest run",
+    "test:desktop": "vitest run --project desktop",
+    "verify:tray": "node scripts/verify-tray.mjs",
+    "verify:tray-menu": "node scripts/tray-menu-smoke.mjs",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:report": "node scripts/coverage-report.mjs"
   },
+  "permissions": [
+    "hid",
+    {
+      "usbDevices": [
+        {
+          "vendorId": 5824,
+          "productId": 1158
+        },
+        {
+          "vendorId": 7504,
+          "productId": 24828
+        },
+        {
+          "vendorId": 7504,
+          "productId": 24908
+        },
+        {
+          "vendorId": 7504,
+          "productId": 24910
+        },
+        {
+          "vendorId": 8352,
+          "productId": 16913
+        }
+      ]
+    }
+  ],
+  "node-remote": "http://localhost:5173/*",
+  "chromium-args": "--disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling",
   "dependencies": {
     "auto-launch": "^5.0.5",
     "js-sha256": "^0.9.0",
-    "nw": "^0.84.0",
     "nw-autoupdater": "^1.1.11",
-    "request": "^2.88.2",
-    "sshpk": "^1.17.0"
+    "openpgp": "^6.3.1",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sshpk": "^1.17.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "chai": "^4.3.7",
-    "chai-as-promised": "^7.1.1",
-    "eslint": "^8.33.0",
-    "fs-jetpack": "^5.1.0",
-    "gulp": "^4.0.2",
-    "gulp-sourcemaps": "^3.0.0",
-    "json": "^11.0.0",
-    "mocha": "^10.2.0",
-    "nw-dev": "^3.0.1",
-    "q": "^1.5.1",
-    "selenium-webdriver": "^4.8.0",
-    "tree-kill": "^1.2.2",
-    "yargs": "^17.6.2"
+    "@tailwindcss/vite": "^4.2.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/chrome": "^0.1.37",
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/ui": "^4.0.18",
+    "concurrently": "^9.2.1",
+    "happy-dom": "^20.10.6",
+    "nw": "0.104.1",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18",
+    "wait-on": "^9.0.4"
   },
   "optionalDependencies": {
     "appdmg": "^0.6.4"
@@ -68,16 +110,11 @@
     "icon": "icon.png",
     "show": true,
     "toolbar": true,
-    "width": 1000,
-    "height": 600,
+    "width": 1024,
+    "height": 768,
     "min_width": 800,
     "min_height": 400,
-    "position": "center"
-  },
-  "icons": {
-    "256": "icon.png"
-  },
-  "window.icon": {
-    "icon": "icon.png"
+    "position": "center",
+    "inject_js_start": "desktopInject.js"
   }
 }

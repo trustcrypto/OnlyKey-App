@@ -1,0 +1,252 @@
+/// <reference types="chrome" />
+
+import { TransportInterface, DeviceFilter } from './Transport.interface';
+
+const BETA8_USAGE_PAGE = 0xFFAB; // 65451
+const BETA8_SERIAL = '1000000000';
+
+export class ChromeHidTransport implements TransportInterface {
+  static isAvailable(): boolean {
+    return typeof chrome !== 'undefined' && !!chrome.hid?.getDevices;
+  }
+  private connectionId: number | null = null;
+  private deviceId: number | null = null;
+  private connectedDevice: DeviceFilter | null = null;
+  private receiveCallback: ((data: Uint8Array) => void) | null = null;
+  private disconnectCallback: (() => void) | null = null;
+  private deviceAddedCallback: (() => void) | null = null;
+  private isListening = false;
+
+  private onDeviceRemovedListener = (deviceId: number) => {
+    if (this.deviceId === deviceId) {
+      console.log('ChromeHidTransport: Device removed:', deviceId);
+      this.handleDisconnection();
+    }
+  };
+
+  constructor() {
+    if (typeof chrome === 'undefined' || !chrome.hid) return;
+
+    if ((chrome.hid as any).onDeviceRemoved) {
+      (chrome.hid as any).onDeviceRemoved.addListener(this.onDeviceRemovedListener);
+    }
+
+    if ((chrome.hid as any).onDeviceAdded) {
+      (chrome.hid as any).onDeviceAdded.addListener((device: chrome.hid.Device) => {
+        console.log('ChromeHidTransport: Device added:', device.vendorId, device.productId, device.productName);
+        if (!this.connectionId && this.deviceAddedCallback) {
+          this.deviceAddedCallback();
+        }
+      });
+    }
+  }
+
+  onDeviceAdded(callback: () => void): void {
+    this.deviceAddedCallback = callback;
+  }
+
+  static async listPermittedDevices(): Promise<chrome.hid.Device[]> {
+    if (!ChromeHidTransport.isAvailable()) return [];
+    return new Promise((resolve) => {
+      chrome.hid.getDevices({}, (devices) => resolve(devices || []));
+    });
+  }
+
+  async connect(filter: DeviceFilter | DeviceFilter[]): Promise<void> {
+    if (!ChromeHidTransport.isAvailable()) {
+      throw new Error(
+        'HID API unavailable. Use "npm start" (loads dist/) for real hardware — "npm run dev:server" is UI-only.'
+      );
+    }
+
+    const filters = Array.isArray(filter) ? filter : [filter];
+    console.log('Attempting to connect with filters:', filters);
+
+    for (const deviceFilter of filters) {
+      const device = await this.findDevice(deviceFilter);
+      if (device) {
+        await this.openConnection(device);
+        return;
+      }
+    }
+
+    throw new Error('Device not found');
+  }
+
+  private getDevices(filters?: DeviceFilter[]): Promise<chrome.hid.Device[]> {
+    return new Promise((resolve, reject) => {
+      const options = filters?.length ? { filters } : {};
+      chrome.hid.getDevices(options, (devices) => {
+        if (chrome.runtime.lastError) {
+          return reject(new Error(chrome.runtime.lastError.message || 'Unknown getDevices error'));
+        }
+        resolve(devices || []);
+      });
+    });
+  }
+
+  /**
+   * Mirrors v5.5 device selection: Beta 8+ uses FFAB + serial 1000000000;
+   * older Classic devices use any matching VID/PID with a different serial.
+   */
+  private selectDevice(devices: chrome.hid.Device[], filter: DeviceFilter): chrome.hid.Device | null {
+    const matches = devices.filter(
+      (d) => d.vendorId === filter.vendorId && d.productId === filter.productId
+    );
+
+    if (!matches.length) return null;
+
+    for (const device of matches) {
+      const serial = device.serialNumber ?? '';
+      const usagePages = (device.collections ?? []).map((c) => c.usagePage);
+
+      if (filter.productId === 0xB001) return device;
+
+      if (usagePages.includes(BETA8_USAGE_PAGE) && serial === BETA8_SERIAL) {
+        return device;
+      }
+
+      if (serial !== BETA8_SERIAL) {
+        return device;
+      }
+    }
+
+    console.warn('ChromeHidTransport: fallback HID interface for', filter);
+    return matches[0];
+  }
+
+  private async findDevice(filter: DeviceFilter): Promise<chrome.hid.Device | null> {
+    try {
+      const filtered = await this.getDevices([filter]);
+      console.log(`HID devices for ${filter.vendorId.toString(16)}/${filter.productId.toString(16)}:`, filtered);
+      const selected = this.selectDevice(filtered, filter);
+      if (selected) return selected;
+    } catch (err) {
+      console.warn('Filtered getDevices failed:', err);
+    }
+
+    try {
+      const all = await this.getDevices();
+      console.log('All HID devices (fallback):', all);
+      return this.selectDevice(all, filter);
+    } catch (err) {
+      console.warn('Unfiltered getDevices failed:', err);
+      return null;
+    }
+  }
+
+  private openConnection(device: chrome.hid.Device): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.deviceId = device.deviceId;
+      console.log('Connecting to device:', device.deviceId, 'Product:', device.productName);
+
+      chrome.hid.connect(device.deviceId, (connectInfo) => {
+        if (chrome.runtime.lastError) {
+          const message = chrome.runtime.lastError.message || 'Unknown connect error';
+          console.error('chrome.hid.connect error:', message);
+          this.deviceId = null;
+          return reject(new Error(message));
+        }
+        if (!connectInfo) {
+          console.error('Connection failed: No connectInfo returned');
+          this.deviceId = null;
+          return reject(new Error('Connection failed'));
+        }
+
+        console.log('Connected successfully. ConnectionId:', connectInfo.connectionId);
+        this.connectionId = connectInfo.connectionId;
+        this.connectedDevice = { vendorId: device.vendorId, productId: device.productId };
+        this.startListening();
+        resolve();
+      });
+    });
+  }
+
+  async disconnect(): Promise<void> {
+    if (this.connectionId !== null) {
+      return new Promise((resolve) => {
+        chrome.hid.disconnect(this.connectionId!, () => {
+          this.connectionId = null;
+          this.deviceId = null;
+          this.connectedDevice = null;
+          this.isListening = false;
+          resolve();
+        });
+      });
+    }
+  }
+
+  private handleDisconnection() {
+    if (this.connectionId !== null) {
+      chrome.hid.disconnect(this.connectionId, () => {});
+    }
+    this.connectionId = null;
+    this.deviceId = null;
+    this.connectedDevice = null;
+    this.isListening = false;
+    if (this.disconnectCallback) {
+      this.disconnectCallback();
+    }
+  }
+
+  async send(reportId: number, data: Uint8Array): Promise<void> {
+    if (this.connectionId === null) {
+      throw new Error('Not connected');
+    }
+
+    return new Promise((resolve, reject) => {
+      chrome.hid.send(this.connectionId!, reportId, data.buffer as ArrayBuffer, () => {
+        if (chrome.runtime.lastError) {
+          const errMsg = chrome.runtime.lastError.message || '';
+          if (errMsg.includes('disconnected') || errMsg.includes('not found') || errMsg.includes('invalid connection')) {
+            this.handleDisconnection();
+          }
+          return reject(new Error(errMsg || 'Unknown send error'));
+        }
+        resolve();
+      });
+    });
+  }
+
+  onReceive(callback: (data: Uint8Array) => void): void {
+    this.receiveCallback = callback;
+  }
+
+  onDisconnect(callback: () => void): void {
+    this.disconnectCallback = callback;
+  }
+
+  getConnectedDevice(): DeviceFilter | null {
+    return this.connectedDevice;
+  }
+
+  private startListening() {
+    if (this.isListening || this.connectionId === null) return;
+    this.isListening = true;
+
+    const poll = () => {
+      if (!this.isListening || this.connectionId === null) return;
+
+      chrome.hid.receive(this.connectionId, (reportId, data) => {
+        if (chrome.runtime.lastError) {
+          const errMsg = chrome.runtime.lastError.message || '';
+          console.warn('Receive error:', errMsg);
+          if (errMsg.includes('disconnected') || errMsg.includes('not found') || errMsg.includes('invalid connection')) {
+            this.handleDisconnection();
+            return;
+          }
+          setTimeout(poll, 100);
+          return;
+        }
+
+        if (data && this.receiveCallback) {
+          this.receiveCallback(new Uint8Array(data));
+        }
+
+        poll();
+      });
+    };
+
+    poll();
+  }
+}
