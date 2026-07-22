@@ -10,4 +10,4 @@ Thumbs.db
 /test-results/
 /agent-tools/
 /terminals/
-package-lock.json
+# Keep package-lock.json committed so installs and npm audit stay reproducible.

@@ -2,7 +2,11 @@ name: Test
 
 on:
   push:
-    branches: [main, master, 'refactor/**']
+    branches:
+      - main
+      - master
+      - 'refactor/**'
+      - 'release/**'
   pull_request:
 
 jobs:
@@ -10,10 +14,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit (fail on high/critical)
+        run: npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit / UI tests
+        run: npm run test:unit
+        env:
+          VITE_MOCK_DEVICE: 'true'
+
+      # Full `npm test` also runs desktop project; NW GUI tests need a display.
+      # Unit project covers protocol + React without NW.
+
+  # Optional: desktop bootstrap static checks (no GUI) can be added later.

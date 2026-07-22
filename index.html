@@ -17,6 +17,14 @@
   <body>
     <div id="root"></div>
     <script>
+      // NW.js / Chromium may not expose Node Buffer on window; js-sha256 and similar expect it.
+      if (typeof nw !== 'undefined' && typeof Buffer === 'undefined') {
+        try {
+          window.Buffer = require('buffer').Buffer;
+        } catch (e) {
+          console.warn('Buffer polyfill failed:', e);
+        }
+      }
       // NW.js desktop bootstrap — must run in the main window (inject_js_start alone is unreliable).
       if (typeof nw !== 'undefined') {
         try {

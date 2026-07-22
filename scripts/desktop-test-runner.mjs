@@ -1,7 +1,10 @@
-#!/usr/bin/env node
 /**
  * Launches NW.js against a desktop test harness and returns structured results.
  * Used by vitest desktop integration tests and `npm run test:desktop`.
+ *
+ * Note: no shebang — Vitest/Vite keep `#!/usr/bin/env node` in transformed ESM
+ * and then fail with "SyntaxError: Invalid or unexpected token".
+ * Run with: node scripts/desktop-test-runner.mjs
  */
 import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';

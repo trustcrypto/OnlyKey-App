@@ -58,16 +58,22 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     });
   }
 
-  private abortPendingRequest(reason = 'Device disconnected'): void {
+  private abortPendingRequest(reason = 'Device disconnected', soft = false): void {
     if (!this.pendingRequest) return;
     clearTimeout(this.pendingRequest.timer);
-    const { reject } = this.pendingRequest;
+    const { resolve, reject } = this.pendingRequest;
     this.pendingRequest = null;
-    reject(new Error(reason));
+    if (soft) {
+      // Soft-complete so in-flight awaits (e.g. getLabels during test teardown) do not
+      // surface as unhandled rejections.
+      resolve({ type: 'text', text: reason });
+    } else {
+      reject(new Error(reason));
+    }
   }
 
   private resetDeviceState(): void {
-    this.abortPendingRequest();
+    this.abortPendingRequest('Device disconnected', true);
     this.requestQueue = [];
     this.isProcessingQueue = false;
     this.fetchingLabels = false;
