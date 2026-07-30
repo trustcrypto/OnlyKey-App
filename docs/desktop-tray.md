@@ -40,6 +40,17 @@ Chromium may throttle a **hidden** main renderer; tray menus can stop firing aft
 
 If hide-to-tray regresses menu clicks, next step is **minimize-to-tray** (stay visible to OS, drop from taskbar) rather than another host window.
 
+## Linux empty right-click menu
+
+On Cinnamon/Mint/GNOME StatusNotifier, **never** mutate an already-assigned tray menu with `menu.remove()` / `menu.insert()` after `tray.menu = menu`. That pattern (used to refresh checkbox state after async `autoLaunch.isEnabled()`) leaves an **empty** context menu while `tray-ready.json` still reports 6 labels.
+
+Correct pattern (see `buildTrayMenu` / `assignTrayMenu` in `desktopBg.cjs`):
+
+1. Resolve auto-launch enabled state **before** first menu paint.
+2. Build a full `nw.Menu` with final checkbox values.
+3. Assign `tray.menu` once (re-assign on Linux after ~250ms).
+4. On preference toggles, **rebuild** a new menu and reassign — do not remove/insert in place.
+
 ## File IPC
 
 | File | Purpose |

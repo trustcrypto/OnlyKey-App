@@ -1,0 +1,28 @@
+#!/bin/bash
+# OnlyKey desktop launcher.
+# NW/Chromium is single-instance: a second Exec just attaches and exits unless
+# the running app handles App.on('open'). We still start via nw; if a prior
+# instance is alive, Chromium forwards the open event and our desktopBg shows
+# the window. If the singleton is stale, clear locks and start fresh.
+set -euo pipefail
+
+APP_DIR="/opt/OnlyKey"
+NW_BIN="${APP_DIR}/nw"
+USER_DATA="${XDG_CONFIG_HOME:-$HOME/.config}/OnlyKey"
+APP_TMP="${USER_DATA}/app-tmp"
+
+mkdir -p "${APP_TMP}"
+
+# Drop a show request for the running instance's 50ms command poll (belt+suspenders).
+printf '{"command":"show","ts":%s}\n' "$(date +%s%3N)" > "${APP_TMP}/tray-command.json" 2>/dev/null || true
+
+# Stale singleton after a crash blocks launch with "Opening in existing browser session"
+# and no live process. If no nw is alive for this app, clear locks.
+if ! pgrep -f "${NW_BIN} ${APP_DIR}" >/dev/null 2>&1; then
+  rm -f "${USER_DATA}/SingletonLock" \
+        "${USER_DATA}/SingletonSocket" \
+        "${USER_DATA}/SingletonCookie" 2>/dev/null || true
+fi
+
+cd "${APP_DIR}"
+exec "${NW_BIN}" "${APP_DIR}" "$@"

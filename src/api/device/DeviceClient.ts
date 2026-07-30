@@ -16,6 +16,8 @@ export interface DeviceClient extends EventEmitter {
   ): Promise<void>;
   setPin(pin?: string): Promise<void>;
   beginClassicPinEntry(): Promise<void>;
+  /** Probe lock state via OKSETTIME (INITIALIZED* vs UNLOCKED*). */
+  refreshStatus(): Promise<void>;
   setPin2(): Promise<void>;
   setSDPin(): Promise<void>;
   sendPinDUO(pins: string[], setPin?: boolean): Promise<void>;
@@ -25,7 +27,7 @@ export interface DeviceClient extends EventEmitter {
   wipeYubiAuth(): Promise<void>;
   setPrivateKey(slot: number, type: number, key: Uint8Array | number[] | string): Promise<void>;
   wipePrivateKey(slot: number): Promise<void>;
-  restore(restoreData: string): Promise<void>;
+  restore(restoreData: string, onProgress?: (pct: number) => void): Promise<void>;
   firmwareUpdate(firmwareBlocks: string[], onProgress?: (pct: number) => void): Promise<void>;
   triggerBootloader(): Promise<void>;
   loadFirmwareBlocks(blocks: string[], onProgress?: (pct: number) => void): Promise<void>;

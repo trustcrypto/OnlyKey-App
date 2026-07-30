@@ -24,7 +24,7 @@ const BACKUP_RSA_SLOTS = [
 ];
 
 const Setup: React.FC = () => {
-  const { device, deviceType, isLocked, isConfigMode } = useDeviceStore();
+  const { device, deviceType, isLocked, isConfigMode, setWorking } = useDeviceStore();
   const [guided, setGuided] = useState(false);
   const [advancedSetup, setAdvancedSetup] = useState(false);
   const [classicStep, setClassicStep] = useState<ClassicStep>('Step1');
@@ -144,7 +144,19 @@ const Setup: React.FC = () => {
     run(async () => {
       const hex = parseBackupData(await file.text());
       if (!hex) throw new Error('Could not parse backup file.');
-      await device!.restore(hex);
+      setWorking(true, 'Preparing restore…', 0);
+      try {
+        await device!.restore(hex, (pct) => {
+          const label =
+            pct >= 95
+              ? 'Applying backup on OnlyKey…'
+              : `Sending backup to OnlyKey… ${Math.round(pct)}%`;
+          setWorking(true, label, pct);
+        });
+        setWorking(true, 'Restore complete — remove and reinsert OnlyKey', 100);
+      } finally {
+        setWorking(false);
+      }
       if (guided) {
         isDuo ? resetToStep1() : setClassicStep('Step11');
       } else {

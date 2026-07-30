@@ -15,7 +15,33 @@ const userPreferences = require('./userPreferences.cjs');
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
 
 function tmpDir() {
-  return path.join(nw.App.startPath, 'tmp');
+  // Dev checkouts can write under startPath/tmp. The installed deb lives in
+  // root-owned /opt/OnlyKey, so fall back to a per-user writable directory.
+  const candidates = [];
+  try {
+    if (typeof nw !== 'undefined' && nw.App && nw.App.startPath) {
+      candidates.push(path.join(nw.App.startPath, 'tmp'));
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    candidates.push(path.join(os.homedir(), '.config', 'OnlyKey', 'app-tmp'));
+  } catch {
+    // ignore
+  }
+  candidates.push(path.join(os.tmpdir(), 'onlykey-app'));
+
+  for (const dir of candidates) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.accessSync(dir, fs.constants.W_OK);
+      return dir;
+    } catch {
+      // try next
+    }
+  }
+  return path.join(os.tmpdir(), 'onlykey-app');
 }
 
 function trayReadyPath() {
@@ -61,6 +87,7 @@ const state = {
   menuLabels: [],
   mainStarted: false,
   backgroundStarted: false,
+  secondInstanceBound: false,
   commandPoll: null,
   lastCommandTs: null,
   mainAppWindow: null,
@@ -479,6 +506,38 @@ function showMainWindow() {
   dispatchTrayCommand('show');
 }
 
+/**
+ * Chromium single-instance: a second desktop-menu launch does not start a new
+ * process — it prints "Opening in existing browser session" and exits. Without
+ * App.on('open'), the already-running (often hide-to-tray) window never appears,
+ * so the launcher looks broken. Reopen covers macOS dock clicks.
+ */
+function bindSecondInstanceShow() {
+  if (state.secondInstanceBound) return;
+  state.secondInstanceBound = true;
+
+  const onSecondLaunch = (cmdline) => {
+    trayLog('second-instance launch', { cmdline: String(cmdline || '') });
+    try {
+      executeShowMainWindow();
+    } catch (error) {
+      console.error('second-instance show failed:', error);
+    }
+  };
+
+  try {
+    nw.App.on('open', onSecondLaunch);
+  } catch (error) {
+    console.error('nw.App.on(open) failed:', error);
+  }
+  try {
+    // macOS: click dock icon while running
+    nw.App.on('reopen', onSecondLaunch);
+  } catch {
+    // not available on all platforms
+  }
+}
+
 function quitApp() {
   dispatchTrayCommand('quit');
 }
@@ -516,30 +575,23 @@ function attachToAppWindows() {
   });
 }
 
-function refreshMenuItem(menu, menuItem, index) {
-  if (!linux) return;
-  menu.remove(menuItem);
-  menu.insert(menuItem, index);
-  if (state.tray) state.tray.menu = menu;
+/**
+ * Linux StatusNotifier/AppIndicator (Cinnamon/Mint/GNOME): mutating an assigned
+ * tray menu with remove()/insert() often leaves an EMPTY right-click menu.
+ * Always build a fresh Menu and reassign tray.menu instead.
+ */
+function assignTrayMenu(menu) {
+  state.menu = menu;
+  if (!state.tray) return;
+  try {
+    // Some NW/Linux builds only refresh when the property is replaced.
+    state.tray.menu = menu;
+  } catch (error) {
+    console.error('assignTrayMenu failed:', error);
+  }
 }
 
-async function initTray() {
-  if (state.tray) return;
-
-  const appPath = process.execPath;
-  const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
-  let autoLaunch = null;
-  try {
-    const AutoLaunch = require('auto-launch');
-    autoLaunch = new AutoLaunch({
-      name: appName,
-      path: appPath,
-      isHidden: !(osx || linux),
-    });
-  } catch (error) {
-    console.error('AutoLaunch init skipped:', error);
-  }
-
+function buildTrayMenu(autoLaunch) {
   const settingsMenu = new nw.Menu();
 
   const showWindowMenuItem = new nw.MenuItem({
@@ -554,51 +606,58 @@ async function initTray() {
   const autoLaunchMenuItem = new nw.MenuItem({
     label: 'Auto-launch app on system login',
     type: 'checkbox',
-    checked: userPreferences.autoLaunch,
+    checked: !!userPreferences.autoLaunch,
     click: function () {
-      if (!autoLaunch) return;
-      userPreferences.autoLaunch = !userPreferences.autoLaunch;
+      if (!autoLaunch) {
+        // Keep checkbox in sync with reality when auto-launch is unavailable.
+        autoLaunchMenuItem.checked = false;
+        userPreferences.autoLaunch = false;
+        return;
+      }
+      const next = !userPreferences.autoLaunch;
+      userPreferences.autoLaunch = next;
       autoLaunch
         .isEnabled()
         .then((isEnabled) => {
-          if (isEnabled && !userPreferences.autoLaunch) autoLaunch.disable();
-          else if (!isEnabled && userPreferences.autoLaunch) autoLaunch.enable();
-          refreshMenuItem(settingsMenu, autoLaunchMenuItem, 2);
+          if (isEnabled && !next) return autoLaunch.disable();
+          if (!isEnabled && next) return autoLaunch.enable();
+          return undefined;
         })
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => {
+          // Rebuild so Linux tray picks up the new checked state.
+          assignTrayMenu(buildTrayMenu(autoLaunch));
+        });
     },
   });
 
   const autoUpdateMenuItem = new nw.MenuItem({
     label: 'Automatically check for app updates',
     type: 'checkbox',
-    checked: userPreferences.autoUpdate,
+    checked: !!userPreferences.autoUpdate,
     click: function () {
       userPreferences.autoUpdate = !userPreferences.autoUpdate;
-      autoUpdateMenuItem.checked = userPreferences.autoUpdate;
-      refreshMenuItem(settingsMenu, autoUpdateMenuItem, 3);
+      assignTrayMenu(buildTrayMenu(autoLaunch));
     },
   });
 
   const autoUpdateFWMenuItem = new nw.MenuItem({
     label: 'Automatically check for firmware updates',
     type: 'checkbox',
-    checked: userPreferences.autoUpdateFW,
+    checked: !!userPreferences.autoUpdateFW,
     click: function () {
       userPreferences.autoUpdateFW = !userPreferences.autoUpdateFW;
-      autoUpdateFWMenuItem.checked = userPreferences.autoUpdateFW;
-      refreshMenuItem(settingsMenu, autoUpdateFWMenuItem, 4);
+      assignTrayMenu(buildTrayMenu(autoLaunch));
     },
   });
 
   const closeToTrayMenuItem = new nw.MenuItem({
     label: 'Hide to system tray when window is closed',
     type: 'checkbox',
-    checked: userPreferences.closeToTray,
+    checked: !!userPreferences.closeToTray,
     click: function () {
       userPreferences.closeToTray = !userPreferences.closeToTray;
-      closeToTrayMenuItem.checked = userPreferences.closeToTray;
-      refreshMenuItem(settingsMenu, closeToTrayMenuItem, 5);
+      assignTrayMenu(buildTrayMenu(autoLaunch));
     },
   });
 
@@ -629,10 +688,45 @@ async function initTray() {
     'Quit OnlyKey App',
   ];
 
+  return settingsMenu;
+}
+
+async function initTray() {
+  if (state.tray) return;
+
+  const appPath = process.execPath;
+  const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
+  let autoLaunch = null;
+  try {
+    const AutoLaunch = require('auto-launch');
+    autoLaunch = new AutoLaunch({
+      name: appName,
+      // Prefer the launcher wrapper when installed under /opt so login restart
+      // goes through the same path as the desktop entry.
+      path: fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
+        ? path.join(path.dirname(appPath), 'onlykey-launch')
+        : appPath,
+      isHidden: !(osx || linux),
+    });
+  } catch (error) {
+    console.error('AutoLaunch init skipped:', error);
+  }
+
+  // Resolve OS auto-launch state BEFORE first menu paint. Doing it afterward and
+  // calling remove()/insert() emptied the Linux tray menu (Cinnamon/Mint).
+  if (autoLaunch) {
+    try {
+      const enabled = await autoLaunch.isEnabled();
+      userPreferences.autoLaunch = !!enabled;
+    } catch {
+      // auto-launch may not be supported on all platforms
+    }
+  }
+
+  const settingsMenu = buildTrayMenu(autoLaunch);
   const iconPath = resolveTrayIconPath();
-  const tray = new nw.Tray({ icon: iconPath });
+  const tray = new nw.Tray({ icon: iconPath, title: linux ? 'OnlyKey' : undefined });
   state.tray = tray;
-  state.menu = settingsMenu;
   if (!linux) tray.tooltip = 'OnlyKey Configuration App settings';
 
   if (!osx) {
@@ -642,20 +736,19 @@ async function initTray() {
     });
   }
 
-  tray.menu = settingsMenu;
+  assignTrayMenu(settingsMenu);
   trayLog('initTray complete', { iconPath, menuItems: state.menuLabels.length });
-
   markTrayReady(true);
 
-  if (autoLaunch) {
-    try {
-      const autoLaunchEnabledInOSAtLaunch = await autoLaunch.isEnabled();
-      userPreferences.autoLaunch = autoLaunchEnabledInOSAtLaunch;
-      autoLaunchMenuItem.checked = !!autoLaunchEnabledInOSAtLaunch;
-      refreshMenuItem(settingsMenu, autoLaunchMenuItem, 2);
-    } catch {
-      // auto-launch may not be supported on all platforms
-    }
+  // Re-assign once more on next tick — some Linux tray hosts register the icon
+  // asynchronously and drop the first menu attachment.
+  if (linux) {
+    setTimeout(() => {
+      if (state.tray && state.menu) {
+        assignTrayMenu(state.menu);
+        trayLog('linux tray menu reassigned');
+      }
+    }, 250);
   }
 }
 
@@ -744,6 +837,7 @@ function start() {
   trayLog('start main window', { href: windowHref(mainWin) });
 
   bindWindowCloseHandler(mainWin);
+  bindSecondInstanceShow();
   attachToAppWindows();
   startCommandPolling();
 

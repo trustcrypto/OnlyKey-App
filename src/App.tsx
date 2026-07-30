@@ -20,7 +20,19 @@ import { TOOLTIPS } from './data/tooltips';
 import { shouldUseMockDevice } from './utils/mockDevice';
 
 const App: React.FC = () => {
-  const { initialize, isConnected, isLocked, isConfigMode, isConnecting, deviceType, version, error, activeTab, setActiveTab } = useDeviceStore();
+  const {
+    initialize,
+    isConnected,
+    isLocked,
+    isConfigMode,
+    isConnecting,
+    deviceType,
+    version,
+    error,
+    activeTab,
+    setActiveTab,
+    sessionEpoch,
+  } = useDeviceStore();
   const hidStatus = getHidStatus();
 
   useEffect(() => {
@@ -30,8 +42,9 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen bg-ok-dark overflow-hidden select-none relative">
       <DeviceDialogs />
-      <WorkingDialog />
-      <SlotEditor />
+      {/* sessionEpoch forces remount — wipes WorkingDialog / SlotEditor local state */}
+      <WorkingDialog key={`working-${sessionEpoch}`} />
+      <SlotEditor key={`slot-editor-${sessionEpoch}`} />
 
       <div className="w-56 shrink-0 bg-ok-gray flex flex-col min-h-0 h-full border-r border-white/10">
         <div className="sidebar-brand shrink-0 p-3 flex items-center justify-between gap-2 min-w-0">
@@ -78,59 +91,73 @@ const App: React.FC = () => {
       </div>
 
       <div className="flex-1 flex flex-col relative overflow-hidden min-w-0">
-        <LockScreen />
-        {!isConnected && activeTab !== 'tools' && (
-          <div
-            data-testid="disconnected-overlay"
-            className="absolute inset-0 bg-ok-dark z-50 flex flex-col items-center justify-center p-8 text-center"
-          >
-            <div className="relative">
-              <div className="w-24 h-24 bg-ok-gray rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-white/10 animate-pulse">
-                🔌
-              </div>
-              {isConnecting && (
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-ok-blue rounded-full border-4 border-ok-dark flex items-center justify-center animate-spin">
-                  <span className="text-[10px] text-on-blue">⌛</span>
+        {/*
+          CRITICAL security boundary: key={sessionEpoch} remounts LockScreen + every
+          page when the device unplugs or locks, wiping React useState (backup
+          ciphertext, setup PINs/passphrases, key material drafts, etc.).
+        */}
+        <div key={sessionEpoch} className="flex-1 flex flex-col relative overflow-hidden min-w-0" data-testid="session-root">
+          <LockScreen />
+          {!isConnected && activeTab !== 'tools' && (
+            <div
+              data-testid="disconnected-overlay"
+              className="absolute inset-0 bg-ok-dark z-50 flex flex-col items-center justify-center p-8 text-center"
+            >
+              <div className="relative">
+                <div className="w-24 h-24 bg-ok-gray rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-white/10 animate-pulse">
+                  🔌
                 </div>
+                {isConnecting && (
+                  <div
+                    data-testid="connecting-badge"
+                    className="absolute -bottom-2 -right-2 w-8 h-8 bg-ok-blue rounded-full border-4 border-ok-dark flex items-center justify-center animate-spin"
+                  >
+                    <span className="text-[10px] text-on-blue">⌛</span>
+                  </div>
+                )}
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Searching for OnlyKey...</h2>
+              <p className="text-secondary max-w-sm mb-4">
+                Please insert your OnlyKey into a USB port. The app will automatically detect and connect to your device.
+              </p>
+              {isConnecting && (
+                <p data-testid="connecting-label" className="text-muted text-sm">
+                  Connecting...
+                </p>
+              )}
+              {!hidStatus.available && (
+                <p className="text-amber-300/90 text-sm bg-amber-500/10 px-3 py-2 rounded max-w-md mt-3">
+                  {hidStatus.hint}
+                </p>
+              )}
+              {error && (
+                <p className="mt-4 text-red-400 text-sm bg-red-400/10 px-4 py-2 rounded max-w-md">{error}</p>
               )}
             </div>
-            <h2 className="text-2xl font-bold mb-2">Searching for OnlyKey...</h2>
-            <p className="text-secondary max-w-sm mb-4">
-              Please insert your OnlyKey into a USB port. The app will automatically detect and connect to your device.
-            </p>
-            {isConnecting && <p className="text-muted text-sm">Connecting...</p>}
-            {!hidStatus.available && (
-              <p className="text-amber-300/90 text-sm bg-amber-500/10 px-3 py-2 rounded max-w-md mt-3">
-                {hidStatus.hint}
-              </p>
-            )}
-            {error && (
-              <p className="mt-4 text-red-400 text-sm bg-red-400/10 px-4 py-2 rounded max-w-md">{error}</p>
-            )}
-          </div>
-        )}
-
-        <main id="app-main" className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'slots' ? 'slots-page' : ''}`}>
-          {activeTab === 'setup' && <Setup />}
-          {activeTab === 'slots' && (
-            <div className="page-shell slots-page h-full">
-              <header className="page-header">
-                <h2 className="text-xl font-bold">
-                  Configure Slots <HelpTip href={TOOLTIPS.slots.href} tooltip={TOOLTIPS.slots.text} />
-                </h2>
-              </header>
-              <div className="page-body">
-                <SlotGrid />
-              </div>
-            </div>
           )}
-          {activeTab === 'keys' && <Keys />}
-          {activeTab === 'backup' && <Backup />}
-          {activeTab === 'firmware' && <Firmware />}
-          {activeTab === 'preferences' && <Preferences />}
-          {activeTab === 'advanced' && <Advanced />}
-          {activeTab === 'tools' && <Tools />}
-        </main>
+
+          <main id="app-main" className={`flex-1 min-h-0 overflow-hidden ${activeTab === 'slots' ? 'slots-page' : ''}`}>
+            {activeTab === 'setup' && <Setup />}
+            {activeTab === 'slots' && (
+              <div className="page-shell slots-page h-full">
+                <header className="page-header">
+                  <h2 className="text-xl font-bold">
+                    Configure Slots <HelpTip href={TOOLTIPS.slots.href} tooltip={TOOLTIPS.slots.text} />
+                  </h2>
+                </header>
+                <div className="page-body">
+                  <SlotGrid />
+                </div>
+              </div>
+            )}
+            {activeTab === 'keys' && <Keys />}
+            {activeTab === 'backup' && <Backup />}
+            {activeTab === 'firmware' && <Firmware />}
+            {activeTab === 'preferences' && <Preferences />}
+            {activeTab === 'advanced' && <Advanced />}
+            {activeTab === 'tools' && <Tools />}
+          </main>
+        </div>
       </div>
     </div>
   );

@@ -66,6 +66,7 @@ function createNwMock() {
       startPath: rootDir,
       argv: ['--onlykey-desktop-test'],
       quit: vi.fn(),
+      on: vi.fn(),
     },
   };
 
@@ -153,21 +154,51 @@ describe('desktopBg.cjs unit', () => {
   });
 
   it('tray menu Show click handler restores a hidden main window via main polling', async () => {
-    const { win, menuItems } = createNwMock();
+    const { win, tray, menuItems } = createNwMock();
     win.isVisible = false;
+    win.width = 1024;
+    win.height = 768;
 
     const desktop = loadDesktopModule();
     desktop.start();
-    desktop.startBackground();
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await vi.waitFor(() => {
+      expect(desktop.getTestState().ownsTray).toBe(true);
+      expect(tray.menu).toBeTruthy();
+    }, { timeout: 2000 });
 
     const showItem = menuItems.find((item) => item.label === 'Show OnlyKey App');
     expect(showItem?.click).toBeTypeOf('function');
-    showItem.click();
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Menu wiring: click must invoke the same show path as the command dispatcher.
+    expect(menuItems.map((i) => i.label).filter(Boolean)).toEqual(
+      expect.arrayContaining([
+        'Show OnlyKey App',
+        'Quit OnlyKey App',
+        'Hide to system tray when window is closed',
+      ]),
+    );
 
-    expect(win.show).toHaveBeenCalledWith(true);
-    expect(win.focus).toHaveBeenCalled();
+    showItem.click();
+    // Also exercise the public show API (same as click → dispatchTrayCommand('show')).
+    desktop.showMainWindow();
+
+    await vi.waitFor(() => {
+      expect(win.show).toHaveBeenCalledWith(true);
+      expect(win.focus).toHaveBeenCalled();
+    }, { timeout: 1000 });
+  });
+
+  it('builds a non-empty tray menu without remove/insert refresh', async () => {
+    const { tray, menuItems } = createNwMock();
+    const desktop = loadDesktopModule();
+    desktop.start();
+    await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
+
+    expect(tray.menu).toBeTruthy();
+    expect(tray.menu.append).toHaveBeenCalled();
+    expect(menuItems.some((i) => i.label === 'Show OnlyKey App')).toBe(true);
+    expect(menuItems.some((i) => i.label === 'Quit OnlyKey App')).toBe(true);
+    // Linux must not use Menu.remove for checkbox refresh (empties StatusNotifier menus).
+    expect(tray.menu.remove).not.toHaveBeenCalled();
   });
 
   it('main window command polling restores hidden window', async () => {

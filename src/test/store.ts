@@ -21,6 +21,7 @@ type StoreSeed = Partial<
     | 'duoProfile'
     | 'isWorking'
     | 'workingMessage'
+    | 'workingProgress'
     | 'fwUpdateSupport'
     | 'firmwareCheck'
     | 'labels'
@@ -30,6 +31,7 @@ type StoreSeed = Partial<
     | 'showUdevDialog'
     | 'activeTab'
     | 'selectedSlotId'
+    | 'sessionEpoch'
     | 'device'
   >
 >;
@@ -46,9 +48,11 @@ export async function resetDeviceStoreForTests(): Promise<void> {
     isPolling: false,
     isWorking: false,
     workingMessage: 'Please wait…',
+    workingProgress: null,
     showUdevDialog: false,
     device: null,
     activeTab: 'setup',
+    sessionEpoch: 0,
   });
 }
 
@@ -78,6 +82,7 @@ export function createMockDeviceClient(overrides: Partial<DeviceClient> = {}): D
     setSlotFields: mockResolved(),
     setPin: mockResolved(),
     beginClassicPinEntry: mockResolved(),
+    refreshStatus: mockResolved(),
     setPin2: mockResolved(),
     setSDPin: mockResolved(),
     sendPinDUO: mockResolved(),

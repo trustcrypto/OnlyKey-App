@@ -13,7 +13,7 @@ import {
   supportsAppFirmwareUpdate,
   FirmwareCheckResult
 } from '../desktop/firmwareCheck';
-import { disconnectedDeviceSnapshot } from './deviceStateReset';
+import { disconnectedDeviceSnapshot, lockedSessionWipeSnapshot } from './deviceStateReset';
 
 interface DeviceState {
   isConnected: boolean;
@@ -33,6 +33,8 @@ interface DeviceState {
   duoProfile: DuoProfileId;
   isWorking: boolean;
   workingMessage: string;
+  /** 0–100 while a long job runs; null when indeterminate / inactive. */
+  workingProgress: number | null;
   fwUpdateSupport: boolean;
   firmwareCheck: FirmwareCheckResult | null;
   labels: Record<number, string>;
@@ -42,19 +44,36 @@ interface DeviceState {
   showUdevDialog: boolean;
   activeTab: 'setup' | 'slots' | 'keys' | 'backup' | 'firmware' | 'preferences' | 'advanced' | 'tools';
   selectedSlotId: number | null;
+  /**
+   * Bumped on disconnect and on unlocked→locked. App.tsx keys sensitive UI on
+   * this value so React remounts and drops page-local secrets (backup textarea,
+   * setup PINs, slot drafts, etc.).
+   */
+  sessionEpoch: number;
 }
+
+/** Options for store.connect(). */
+export type ConnectOptions = {
+  /**
+   * When true, flip `isConnecting` so the UI shows the hourglass / "Connecting..."
+   * state. Background HID probes (startup + 2s poll) must pass false — otherwise
+   * the overlay flickers in lockstep with the plug icon's 2s animate-pulse.
+   * Real plug events (onDeviceAdded) pass true.
+   */
+  announce?: boolean;
+};
 
 export interface DeviceStore extends DeviceState {
   device: DeviceClient | null;
   initialize: (useMock?: boolean) => Promise<void>;
-  connect: () => Promise<void>;
+  connect: (options?: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   startPolling: () => void;
   stopPolling: () => void;
   setActiveTab: (tab: DeviceState['activeTab']) => void;
   setSelectedSlot: (slotId: number | null) => void;
   setDuoProfile: (profile: DuoProfileId) => void;
-  setWorking: (active: boolean, message?: string) => void;
+  setWorking: (active: boolean, message?: string, progress?: number | null) => void;
   clearError: () => void;
   clearPinError: () => void;
   dismissUdevDialog: () => void;
@@ -74,6 +93,21 @@ const SUPPORTED_DEVICES = [
 
 let pollInterval: NodeJS.Timeout | null = null;
 let firmwareCheckInFlight: Promise<void> | null = null;
+/** In-flight connect mutex — separate from UI `isConnecting` so silent polls can run. */
+let connectInFlight = false;
+
+/** Default landing tab once a device is usable. */
+function defaultTabForDevice(state: {
+  isLocked: boolean;
+  isBootloader: boolean;
+  deviceType: DeviceType;
+}): DeviceState['activeTab'] {
+  if (state.isLocked || state.isBootloader) return 'setup';
+  // Brand-new keys still need the setup wizard.
+  if (state.deviceType === DeviceType.UNINITIALIZED) return 'setup';
+  // Initialized + unlocked (Classic/DUO, or type still refining) → Slots.
+  return 'slots';
+}
 
 /** Wait for label-driven device type identification before any blocking firmware UI. */
 async function waitForLabelIdentification(
@@ -136,6 +170,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   duoProfile: 'green',
   isWorking: false,
   workingMessage: 'Please wait…',
+  workingProgress: null,
   fwUpdateSupport: false,
   firmwareCheck: null,
   labels: {},
@@ -146,6 +181,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   device: null,
   activeTab: 'setup',
   selectedSlotId: null,
+  sessionEpoch: 0,
 
   initialize: async (useMock = false) => {
     if (get().device) return;
@@ -153,20 +189,54 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     const transport = useMock ? new MockTransport() : new ChromeHidTransport();
     if (transport instanceof ChromeHidTransport) {
       transport.onDeviceAdded(() => {
-        if (!get().isConnected && !get().isConnecting) void get().connect();
+        // Device just appeared — show Connecting... (not a silent background probe).
+        if (!get().isConnected && !connectInFlight) {
+          void get().connect({ announce: true });
+        }
       });
     }
     const device = new OnlyKeyDevice(transport);
 
     device.on('statusChange', async (state) => {
       if (!state.isConnected) {
-        set({ ...disconnectedDeviceSnapshot, isConnecting: get().isConnecting });
+        // CRITICAL: unplug / disconnect wipes all device session UI state.
+        set({
+          ...disconnectedDeviceSnapshot,
+          isConnecting: get().isConnecting,
+          activeTab: 'setup',
+          sessionEpoch: get().sessionEpoch + 1,
+        });
         return;
       }
 
+      const wasConnected = get().isConnected;
       const wasLocked = get().isLocked;
       const isNowLocked = state.isLocked;
       const fwSupport = supportsAppFirmwareUpdate(state.version);
+
+      // CRITICAL: unlocked → locked ends the UI session. Wipe secrets even though
+      // the USB connection may still be open (idle lock, user re-locked, etc.).
+      if (wasConnected && !wasLocked && isNowLocked) {
+        set({
+          ...lockedSessionWipeSnapshot,
+          isConnected: true,
+          isLocked: true,
+          isConfigMode: state.isConfigMode,
+          isBootloader: state.isBootloader,
+          deviceType: state.deviceType,
+          deviceTypeSource: state.deviceTypeSource,
+          usbProductId: state.usbProductId,
+          maxLabelSlot: 0,
+          lastStatusText: state.lastStatusText,
+          version: state.version,
+          devicePinSet: state.devicePinSet,
+          fwUpdateSupport: fwSupport,
+          // Never keep labels while locked — firmware may still return them.
+          labels: {},
+          sessionEpoch: get().sessionEpoch + 1,
+        });
+        return;
+      }
 
       set({
         isConnected: true,
@@ -181,9 +251,20 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         version: state.version,
         devicePinSet: state.devicePinSet,
         fwUpdateSupport: fwSupport,
-        labels: Object.fromEntries(state.labels),
+        // While locked, never surface label cache in the store.
+        labels: isNowLocked ? {} : Object.fromEntries(state.labels),
         error: null,
         pinError: null,
+        // First unlock / connect-while-unlocked of an initialized device → Slots.
+        ...(wasLocked && !isNowLocked
+          ? {
+              activeTab: defaultTabForDevice({
+                isLocked: false,
+                isBootloader: state.isBootloader,
+                deviceType: state.deviceType,
+              }),
+            }
+          : {}),
       });
 
       if (state.isBootloader && state.isConnected) {
@@ -219,17 +300,17 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     });
 
     device.on('labelUpdate', (slotId, label) => {
-      if (!get().isConnected || get().isRefreshingLabels) return;
+      if (!get().isConnected || get().isLocked || get().isRefreshingLabels) return;
       set((s) => ({ labels: { ...s.labels, [slotId]: label } }));
     });
 
     device.on('labelsRefreshed', (labels) => {
-      if (!get().isConnected) return;
+      if (!get().isConnected || get().isLocked) return;
       set({ labels: Object.fromEntries(labels) });
     });
 
     device.on('messageReceived', (message) => {
-      if (!get().isConnected) return;
+      if (!get().isConnected || get().isLocked) return;
       set((s) => ({
         recentMessages: [message, ...s.recentMessages].slice(0, 5),
       }));
@@ -237,7 +318,8 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
     set({ device });
     get().startPolling();
-    void get().connect();
+    // Startup probe: silent. Do not flash Connecting... while nothing is plugged in.
+    void get().connect({ announce: false });
   },
 
   resumePendingFirmware: async () => {
@@ -259,10 +341,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   setActiveTab: (activeTab) => set({ activeTab }),
   setSelectedSlot: (selectedSlotId) => set({ selectedSlotId }),
   setDuoProfile: (duoProfile) => set({ duoProfile }),
-  setWorking: (isWorking, message) => set({
-    isWorking,
-    workingMessage: message ?? (isWorking ? 'Please wait…' : 'Please wait…'),
-  }),
+  setWorking: (isWorking, message, progress) =>
+    set({
+      isWorking,
+      workingMessage: message ?? 'Please wait…',
+      workingProgress: isWorking && typeof progress === 'number' ? Math.max(0, Math.min(100, progress)) : null,
+    }),
 
   refreshLabels: async () => {
     const { device, isConnected, isLocked, isRefreshingLabels } = get();
@@ -280,9 +364,13 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     if (pollInterval) return;
     set({ isPolling: true });
 
+    // 2s probe interval matches Tailwind animate-pulse (2s). Must stay silent
+    // (announce: false) or the hourglass / "Connecting..." UI flickers every beat.
     pollInterval = setInterval(async () => {
       const { isConnected, isPolling, connect } = get();
-      if (!isConnected && isPolling) await connect();
+      if (!isConnected && isPolling && !connectInFlight) {
+        await connect({ announce: false });
+      }
     }, 2000);
   },
 
@@ -294,17 +382,27 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     set({ isPolling: false });
   },
 
-  connect: async () => {
+  connect: async (options = {}) => {
     const { device } = get();
-    if (!device) return;
+    if (!device || connectInFlight) return;
 
-    set({ isConnecting: true });
+    const announce = options.announce === true;
+    connectInFlight = true;
+    if (announce) set({ isConnecting: true });
+
     try {
       await device.connect(SUPPORTED_DEVICES);
       set({ error: null, pinError: null });
     } catch (e: any) {
       if (e.message === 'Device not found') {
-        set({ ...disconnectedDeviceSnapshot, isConnecting: false });
+        // Silent probe failure — wipe device fields but do not bump sessionEpoch
+        // on every 2s empty poll (would thrash React remounts while disconnected).
+        const hadSession = get().isConnected;
+        set({
+          ...disconnectedDeviceSnapshot,
+          isConnecting: false,
+          sessionEpoch: hadSession ? get().sessionEpoch + 1 : get().sessionEpoch,
+        });
         const permitted = await ChromeHidTransport.listPermittedDevices();
         const onlyKeyDevs = permitted.filter((d) =>
           SUPPORTED_DEVICES.some((f) => f.vendorId === d.vendorId && f.productId === d.productId)
@@ -321,6 +419,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         set({ error: e.message, showUdevDialog: showUdev });
       }
     } finally {
+      connectInFlight = false;
       if (get().isConnecting) set({ isConnecting: false });
     }
   },

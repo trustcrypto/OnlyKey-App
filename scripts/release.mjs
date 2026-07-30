@@ -39,6 +39,34 @@ function copyDir(src, dest) {
   }
 }
 
+/**
+ * NW.js tarballs ship lib/*.so and pak files as mode 600/700. When those land
+ * in /opt/OnlyKey owned by root, normal users cannot load libnw.so and the
+ * desktop launcher does nothing. Force world-readable (+ executable where
+ * needed) on the staged tree before packaging.
+ */
+function ensureWorldReadableTree(dir) {
+  const walk = (p) => {
+    const st = fs.statSync(p);
+    if (st.isDirectory()) {
+      fs.chmodSync(p, 0o755);
+      for (const entry of fs.readdirSync(p)) walk(path.join(p, entry));
+      return;
+    }
+    const base = path.basename(p);
+    const ext = path.extname(p).toLowerCase();
+    const needsExec =
+      base === 'nw' ||
+      base === 'nw.exe' ||
+      base === 'chrome_crashpad_handler' ||
+      ext === '.so' ||
+      /^lib.+\.so(\.\d+)*$/.test(base) ||
+      (st.mode & 0o111) !== 0;
+    fs.chmodSync(p, needsExec ? 0o755 : 0o644);
+  };
+  walk(dir);
+}
+
 function replaceTemplate(str, vars) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, String(v)), str);
 }
@@ -169,6 +197,9 @@ function stageApplication(manifest) {
     if (fs.existsSync(src)) copyDir(src, path.join(prodModules, dep));
   }
 
+  // Critical: NW runtime files often arrive mode 600/700; fix before package.
+  ensureWorldReadableTree(appDir);
+
   return appDir;
 }
 
@@ -224,6 +255,14 @@ async function buildLinuxDeb(appDir, manifest) {
   fs.mkdirSync(optApp, { recursive: true });
   copyDir(appDir, optApp);
 
+  // User-facing launcher wrapper (second-instance show + stale singleton cleanup)
+  const launchSrc = path.join(rootDir, 'resources', 'linux', 'onlykey-launch');
+  if (fs.existsSync(launchSrc)) {
+    const launchDest = path.join(optApp, 'onlykey-launch');
+    fs.copyFileSync(launchSrc, launchDest);
+    fs.chmodSync(launchDest, 0o755);
+  }
+
   // Desktop entry
   const desktopTpl = fs.readFileSync(path.join(rootDir, 'resources', 'linux', 'app.desktop'), 'utf8');
   const desktop = replaceTemplate(desktopTpl, {
@@ -268,7 +307,8 @@ async function buildLinuxDeb(appDir, manifest) {
     fs.chmodSync(postinstDest, 0o755);
   }
 
-  // Executable bit on nw binary
+  // Re-apply world-readable perms after deb tree copy (copyFileSync preserves modes).
+  ensureWorldReadableTree(optApp);
   const nwBin = path.join(optApp, 'nw');
   if (fs.existsSync(nwBin)) fs.chmodSync(nwBin, 0o755);
 

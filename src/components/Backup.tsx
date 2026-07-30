@@ -11,13 +11,14 @@ import { PseudoTabBar, PseudoTabPanel } from './ui/PseudoTabs';
 type BackupTab = 'backup' | 'restore';
 
 const Backup: React.FC = () => {
-  const { device, deviceType } = useDeviceStore();
+  const { device, deviceType, setWorking } = useDeviceStore();
   const isDuo = deviceType === DeviceType.DUO;
   const [activeTab, setActiveTab] = useState<BackupTab>('backup');
   const [backupData, setBackupData] = useState('');
   const [isRestoring, setIsRestoring] = useState(false);
   const [backupError, setBackupError] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
+  const [restoreSuccess, setRestoreSuccess] = useState<string | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -46,11 +47,26 @@ const Backup: React.FC = () => {
     if (!file || !device) return;
     setIsRestoring(true);
     setRestoreError(null);
+    setRestoreSuccess(null);
+    setWorking(true, 'Preparing restore…', 0);
     try {
-      await restoreBackupFromFile(device, file);
+      await restoreBackupFromFile(device, file, (pct) => {
+        const label =
+          pct >= 95
+            ? 'Applying backup on OnlyKey…'
+            : pct >= 100
+              ? 'Restore complete'
+              : `Sending backup to OnlyKey… ${Math.round(pct)}%`;
+        setWorking(true, label, pct);
+      });
+      setWorking(true, 'Restore complete — remove and reinsert OnlyKey', 100);
+      setRestoreSuccess(
+        'Backup loaded. Remove and reinsert your OnlyKey to finish the restore.',
+      );
     } catch (err: unknown) {
       setRestoreError(err instanceof Error ? err.message : String(err));
     } finally {
+      setWorking(false);
       setIsRestoring(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       setRestoreFile(null);
@@ -154,7 +170,8 @@ const Backup: React.FC = () => {
                 <u>Step 3</u>. Click [Choose File], select your backup file, then click [Restore to OnlyKey].
               </p>
               <p>
-                <u>Step 4</u>. Restore can take up to 1 minute to complete, the OnlyKey will automatically reboot when restoring is complete.
+                <u>Step 4</u>. A progress dialog shows while the backup is sent. Large restores can take
+                1–2 minutes. When finished, remove and reinsert the OnlyKey.
               </p>
             </StepFieldset>
             <input
@@ -168,6 +185,7 @@ const Backup: React.FC = () => {
               {isRestoring ? 'Restoring...' : 'Restore to OnlyKey'}
             </SetButton>
             {restoreError && <p className="critical-text">{restoreError}</p>}
+            {restoreSuccess && <p className="status-success text-sm">{restoreSuccess}</p>}
           </form>
         </PseudoTabPanel>
       </div>

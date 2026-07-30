@@ -162,3 +162,56 @@ it('should timeout if hardware does not respond', async () => {
 });
 */
 });
+
+  it('detects classic keypad unlock via refreshStatus OKSETTIME probe', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(device.state.isLocked).toBe(true);
+
+    // Simulate on-device unlock (keypad). Next OKSETTIME reports UNLOCKED.
+    transport.setLocked(false);
+    await device.refreshStatus();
+    expect(device.state.isLocked).toBe(false);
+  });
+
+  it('restore sends silent intermediate OKRESTORE packets then waits on final', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    transport.setConfigMode(true);
+    // setConfigMode forces locked=true in mock — unlock again for config ops that need unlocked+config
+    transport.setLocked(false);
+    transport.setConfigMode(true);
+    // Actually setConfigMode sets locked true. requireConfigMode default false so OK path works without config.
+    const t2 = new MockTransport({ deviceType: 'classic', startLocked: false, requireConfigMode: false });
+    const device = new OnlyKeyDevice(t2);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+
+    const sendSpy = vi.spyOn(t2, 'send');
+    // 60 bytes → one full intermediate (57) + final (3)
+    const hex = 'aa'.repeat(60);
+    await device.restore(hex);
+
+    // Two HID sends for restore (after connect's OKSETTIMEs)
+    const restoreSends = sendSpy.mock.calls
+      .map((c) => c[1] as Uint8Array)
+      .filter((p) => p[4] === MessageID.OKRESTORE);
+    expect(restoreSends.length).toBe(2);
+    expect(restoreSends[0][5]).toBe(0xff); // intermediate flag
+    expect(restoreSends[1][5]).toBe(3); // final length
+  });
+
+  it('restore rejects when not in config mode (requireConfigMode mock)', async () => {
+    const transport = new MockTransport({
+      deviceType: 'classic',
+      startLocked: false,
+      requireConfigMode: true,
+      unlockEntersConfigMode: false,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    // unlocked but not config mode
+    transport.setLocked(false);
+    transport.setConfigMode(false);
+
+    await expect(device.restore('aabbccdd')).rejects.toThrow(/config mode/i);
+  });

@@ -1,5 +1,25 @@
 #!/bin/bash
-# This `DEBIAN/postinst` script is run post-installation
+# Post-install for OnlyKey .deb
+set -e
 
+APP_DIR="/opt/OnlyKey"
 
-udevadm control --reload-rules
+# NW.js ships many runtime files as mode 600/700. After dpkg extract as root,
+# regular users cannot read libnw.so etc. and the app silently fails to start
+# from the desktop menu (Exec fails with "error while loading shared libraries").
+if [ -d "$APP_DIR" ]; then
+  chmod -R a+rX "$APP_DIR" || true
+  [ -f "$APP_DIR/nw" ] && chmod 755 "$APP_DIR/nw" || true
+  [ -f "$APP_DIR/chrome_crashpad_handler" ] && chmod 755 "$APP_DIR/chrome_crashpad_handler" || true
+fi
+
+if command -v udevadm >/dev/null 2>&1; then
+  udevadm control --reload-rules || true
+  udevadm trigger --subsystem-match=usb || true
+fi
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+fi
+
+exit 0

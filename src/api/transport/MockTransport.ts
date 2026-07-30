@@ -258,7 +258,17 @@ export class MockTransport implements TransportInterface {
   private async handleCommand(msgId: MessageID, packet: Uint8Array): Promise<void> {
     switch (msgId) {
       case MessageID.OKSETTIME:
-        this.emitText('OK');
+        // Real firmware (OKCONNECT/set_time) replies with INITIALIZED* / UNLOCKED*
+        // / UNINITIALIZED* — not a bare "OK". Tests and lock-polling depend on this.
+        if (this.isBootloader) {
+          this.emitText('BOOTLOADER');
+        } else if (this.deviceType === 'uninitialized') {
+          this.emitText(`UNINITIALIZEDv${this.version.replace(/^v/, '')}`);
+        } else if (this.isLocked) {
+          this.emitText(this.statusInitialized());
+        } else {
+          this.emitText(this.statusUnlocked());
+        }
         return;
 
       case MessageID.OKGETLABELS:
@@ -293,9 +303,28 @@ export class MockTransport implements TransportInterface {
         this.emitText(this.requireConfigOrOk('OK'));
         return;
 
-      case MessageID.OKRESTORE:
-        this.emitText(this.requireConfigOrOk('OK'));
+      case MessageID.OKRESTORE: {
+        // Match firmware: intermediate flag 0xFF is silent; last packet replies.
+        // Packet: [FF FF FF FF][msgId][flag][payload...]
+        const flag = packet[MESSAGE_HEADER.length + 1];
+        if (flag === 0xff) {
+          if (this.requireConfigMode && !this.isConfigMode && !this.isBootloader) {
+            this.emitText('Error not in config mode');
+          }
+          // else silent — real device returns nothing
+          return;
+        }
+        if (this.requireConfigMode && !this.isConfigMode && !this.isBootloader) {
+          this.emitText('Error not in config mode');
+          return;
+        }
+        this.emitText('Successfully loaded backup');
+        // Firmware also prints a second line then restarts; optional follow-up.
+        setTimeout(() => {
+          this.emitText('Remove and Reinsert OnlyKey to complete restore');
+        }, 5);
         return;
+      }
 
       case MessageID.OKFWUPDATE:
         this.handleFirmware(packet);

@@ -203,23 +203,45 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       const wasLocked = this.state.isLocked;
       const text = response.text ?? '';
 
+      // Explicit unlock/lock from firmware status strings. Do not rely solely on
+      // response.isLocked — defensive for any parser edge cases.
       if (text.includes('UNLOCKED')) {
-        if (this.state.isConfigMode) {
+        if (this.state.isLocked) {
+          this.state.isLocked = false;
+          stateChanged = true;
+        }
+        if (this.state.isConfigMode && !text.includes('INITIALIZED')) {
+          // Normal unlock leaves config mode; config-mode entry uses INITIALIZED.
           this.state.isConfigMode = false;
           stateChanged = true;
         }
       }
 
       if (text.includes('INITIALIZED-D')) {
-        if (!wasLocked || this.state.isConfigMode) {
-          this.state.isConfigMode = true;
+        // DUO locked status. Keep locked; only enter config-mode flag when we
+        // transition from unlocked (or already in config).
+        if (!this.state.isLocked) {
           this.state.isLocked = true;
           stateChanged = true;
         }
-      } else if (text.includes('INITIALIZED') && !text.includes('UNINITIALIZED')) {
+        if (!wasLocked || this.state.isConfigMode) {
+          if (!this.state.isConfigMode) {
+            this.state.isConfigMode = true;
+            stateChanged = true;
+          }
+        }
+      } else if (
+        text.includes('INITIALIZED') &&
+        !text.includes('UNINITIALIZED') &&
+        !text.includes('UNLOCKED')
+      ) {
+        // Classic locked (or unlocked→config). Never match inside UNLOCKED*.
+        if (!this.state.isLocked) {
+          this.state.isLocked = true;
+          stateChanged = true;
+        }
         if (!wasLocked && this.state.deviceType === DeviceType.CLASSIC) {
           this.state.isConfigMode = true;
-          this.state.isLocked = true;
           stateChanged = true;
         }
       }
@@ -509,6 +531,19 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
      await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes);
   }
 
+  /**
+   * One OKSETTIME probe. Firmware replies INITIALIZED* when locked and UNLOCKED*
+   * when unlocked. Used to detect keypad unlock — classic OnlyKey does not need
+   * (and ignores) OKSETPIN once initialized; unlock is entirely on-device.
+   */
+  public async refreshStatus(): Promise<void> {
+    const currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
+    const timeParts = currentEpochTime.match(/.{2}/g);
+    if (!timeParts) throw new Error('Failed to generate time parts');
+    const bytes = new Uint8Array(timeParts.map((p) => parseInt(p, 16)));
+    await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 5000);
+  }
+
   public async getLabels(): Promise<Map<number, string>> {
     this.fetchingLabels = true;
     this.lastLabelReceivedAt = Date.now();
@@ -557,8 +592,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   /**
-   * Classic OnlyKey: send OKSETPIN without PIN data and wait for hardware button entry.
-   * DUO uses setPin(pin) with digits instead.
+   * Classic OnlyKey PIN *setup* (first-use / config): send empty OKSETPIN and wait
+   * for hardware button entry confirmation. NOT used for normal unlock — once
+   * initialized, firmware ignores OKSETPIN unless in config mode; unlock is
+   * keypad-only and reported via OKSETTIME / unsolicited UNLOCKED.
    */
   public async beginClassicPinEntry(): Promise<void> {
     const res = await this.sendRequest(
@@ -567,7 +604,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       undefined,
       undefined,
       300000,
-      (r) => (r.text?.includes('UNLOCKED') ?? false) || r.type === 'error'
+      (r) =>
+        (r.text?.includes('UNLOCKED') ?? false) ||
+        (r.text?.toLowerCase().includes('successful pin') ?? false) ||
+        r.type === 'error'
     );
     if (res.type === 'error') throw new Error(res.error);
   }
@@ -651,16 +691,90 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   // --- Backup & Restore ---
-  public async restore(restoreData: string): Promise<void> {
+  /**
+   * Stream encrypted backup bytes via OKRESTORE.
+   *
+   * Firmware RESTORE() behavior (okcore.cpp):
+   * - Intermediate packets have slot/flag byte 0xFF and return with **no HID reply**.
+   * - The final packet (flag = payload length ≤ 57) decrypts/applies the blob and
+   *   prints success ("Successfully loaded backup" / "Remove and Reinsert…") or Error*.
+   *
+   * Waiting for a reply on intermediate packets caused
+   * "Request OKRESTORE timed out after 10000ms" even in config mode.
+   */
+  public async restore(
+    restoreData: string,
+    onProgress?: (pct: number) => void,
+  ): Promise<void> {
     const bytes = hexStringToByteArray(restoreData);
+    if (bytes.length === 0) {
+      throw new Error('Backup data is empty.');
+    }
+
     const maxPacketSize = 57;
-    
+    const totalPackets = Math.max(1, Math.ceil(bytes.length / maxPacketSize));
+    let packetIndex = 0;
+
+    const reportProgress = (phase: 'send' | 'apply') => {
+      if (!onProgress) return;
+      if (phase === 'apply') {
+        onProgress(100);
+        return;
+      }
+      // Reserve the last ~8% for final decrypt/apply on device.
+      const sendPct = Math.min(92, Math.round((packetIndex / totalPackets) * 92));
+      onProgress(sendPct);
+    };
+
     for (let i = 0; i < bytes.length; i += maxPacketSize) {
       const chunk = bytes.slice(i, i + maxPacketSize);
-      const isFinal = (i + maxPacketSize) >= bytes.length;
-      const packetHeader = isFinal ? (chunk.length).toString(16) : "FF";
-      
-      await this.sendRequest(MessageID.OKRESTORE, parseInt(packetHeader, 16), undefined, chunk);
+      const isFinal = i + maxPacketSize >= bytes.length;
+      // Firmware: buffer[5] == 0xFF → more packets; else buffer[5] = last chunk length.
+      const packetFlag = isFinal ? chunk.length : 0xff;
+      packetIndex += 1;
+
+      if (!isFinal) {
+        // Silent buffer packet — only surface async errors (wrong mode, locked, etc.).
+        await this.sendCommandWithoutConfirmation(
+          MessageID.OKRESTORE,
+          packetFlag,
+          undefined,
+          chunk,
+          200,
+        );
+        // Firmware comment: MCU can't keep up with tight memcpy loops.
+        await new Promise((r) => setTimeout(r, 30));
+        reportProgress('send');
+        continue;
+      }
+
+      reportProgress('send');
+      onProgress?.(95);
+
+      const res = await this.sendRequest(
+        MessageID.OKRESTORE,
+        packetFlag,
+        undefined,
+        chunk,
+        120_000,
+        (r) => {
+          const t = `${r.text ?? ''} ${r.error ?? ''}`.toLowerCase();
+          return (
+            t.includes('successfully loaded backup') ||
+            t.includes('remove and reinsert') ||
+            t.includes('error') ||
+            r.type === 'error'
+          );
+        },
+      );
+
+      if (res.type === 'error' || (res.error && /error/i.test(res.error))) {
+        throw new Error(OnlyKeyDevice.formatDeviceLockedError(res.error || res.text || 'Restore failed'));
+      }
+      if (res.text && /error/i.test(res.text)) {
+        throw new Error(OnlyKeyDevice.formatDeviceLockedError(res.text));
+      }
+      reportProgress('apply');
     }
   }
 

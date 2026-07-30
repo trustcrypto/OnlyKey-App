@@ -2,34 +2,54 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
 
+const LOCK_POLL_MS = 1500;
+
 const LockScreen: React.FC = () => {
-  const { deviceType, device, isLocked, isConnected, isConfigMode, pinError, activeTab } = useDeviceStore();
+  const { deviceType, device, isLocked, isConnected, isConfigMode, pinError, activeTab } =
+    useDeviceStore();
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [classicUnlockActive, setClassicUnlockActive] = useState(false);
-  const classicUnlockStarted = useRef(false);
+  const pollInFlight = useRef(false);
 
   const isDuo = deviceType === DeviceType.DUO;
-  const isClassic = deviceType === DeviceType.CLASSIC;
+  const isClassic = deviceType === DeviceType.CLASSIC || deviceType === DeviceType.UNKNOWN;
 
+  // Classic unlock is entirely on-device (6-button keypad). Firmware ignores OKSETPIN
+  // once initialized unless in config mode. Poll OKSETTIME so we notice UNLOCKED even
+  // if the single unsolicited unlock HID report was missed.
   useEffect(() => {
-    if (!isConnected || !isLocked || isConfigMode || !device || !isClassic) {
-      classicUnlockStarted.current = false;
+    if (!isConnected || !isLocked || isConfigMode || !device || isDuo) {
       setClassicUnlockActive(false);
       return;
     }
 
-    if (classicUnlockStarted.current) return;
-    classicUnlockStarted.current = true;
+    let cancelled = false;
     setClassicUnlockActive(true);
 
-    device.beginClassicPinEntry()
-      .catch((err) => console.error('Classic unlock handshake failed:', err))
-      .finally(() => {
-        classicUnlockStarted.current = false;
-        setClassicUnlockActive(false);
-      });
-  }, [isConnected, isLocked, isConfigMode, device, isClassic]);
+    const tick = async () => {
+      if (cancelled || pollInFlight.current) return;
+      pollInFlight.current = true;
+      try {
+        await device.refreshStatus();
+      } catch (err) {
+        console.error('Lock status poll failed:', err);
+      } finally {
+        pollInFlight.current = false;
+      }
+    };
+
+    void tick();
+    const id = window.setInterval(() => {
+      void tick();
+    }, LOCK_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      setClassicUnlockActive(false);
+    };
+  }, [isConnected, isLocked, isConfigMode, device, isDuo]);
 
   if (!isConnected || !isLocked || isConfigMode || activeTab === 'tools') return null;
 
@@ -41,6 +61,12 @@ const LockScreen: React.FC = () => {
     try {
       await device.setPin(pin);
       setPin('');
+      // DUO unlock reply is UNLOCKED* on the same request; also probe in case it was missed.
+      try {
+        await device.refreshStatus();
+      } catch {
+        // ignore probe errors; statusChange from setPin may already have unlocked
+      }
     } catch (err) {
       console.error('Unlock failed', err);
     } finally {
@@ -63,11 +89,15 @@ const LockScreen: React.FC = () => {
       {isDuo ? (
         <div className="w-full max-w-xs space-y-4">
           {pinAttemptsExceeded ? (
-            <p className="text-red-400 text-sm">PIN attempts exceeded for this session. Unplug and replug your OnlyKey.</p>
+            <p className="text-red-400 text-sm">
+              PIN attempts exceeded for this session. Unplug and replug your OnlyKey.
+            </p>
           ) : incorrectPin ? (
             <p className="text-red-400 text-sm">Incorrect PIN. Please try again.</p>
           ) : (
-            <p className="text-gray-400 text-sm mb-6">Please enter your PIN below to unlock your device.</p>
+            <p className="text-gray-400 text-sm mb-6">
+              Please enter your PIN below to unlock your device.
+            </p>
           )}
           <form onSubmit={handleUnlock} className="space-y-4">
             <input
@@ -93,7 +123,10 @@ const LockScreen: React.FC = () => {
           <p className="text-gray-400 text-sm">
             Enter your PIN on the OnlyKey six-button keypad.
           </p>
-          <div className="inline-block px-4 py-2 bg-white/5 rounded-full text-xs text-gray-500 animate-pulse">
+          <div
+            data-testid="classic-unlock-wait"
+            className="inline-block px-4 py-2 bg-white/5 rounded-full text-xs text-gray-500 animate-pulse"
+          >
             {classicUnlockActive ? 'Waiting for PIN on device…' : 'Ready for PIN on device…'}
           </div>
         </div>
