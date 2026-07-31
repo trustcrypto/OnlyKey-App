@@ -30,26 +30,50 @@ export interface MockTransportOptions {
 
 /** Confirmation substrings matched by OnlyKeyDevice preference helpers. */
 const FIELD_CONFIRMATIONS: Partial<Record<number, string>> = {
-  [FieldID.LOCKOUT]: 'set idle timeout',
-  [FieldID.WIPEMODE]: 'set Wipe Mode',
-  [FieldID.LED_BRIGHTNESS]: 'set LED brightness',
-  [FieldID.KBD_LAYOUT]: 'set keyboard layout',
-  [FieldID.TYPE_SPEED]: 'set keyboard typespeed',
-  [FieldID.LOCK_BUTTON]: 'set lock button',
-  [FieldID.DERIVED_CHALLENGE_MODE]: 'set challenge mode',
-  [FieldID.STORED_CHALLENGE_MODE]: 'set challenge mode',
-  [FieldID.HMAC_CHALLENGE_MODE]: 'set hmac challenge mode',
-  [FieldID.MODKEY_MODE]: 'set sysadmin mode',
-  [FieldID.BACKUPKEYMODE]: 'set backup key mode',
-  [FieldID.YUBIAUTH]: 'set AES Key',
-  [FieldID.SEC_PROFILE_MODE]: 'set security profile mode',
-  [FieldID.LABEL]: 'Success',
-  [FieldID.URL]: 'Success',
-  [FieldID.USERNAME]: 'Success',
-  [FieldID.PASSWORD]: 'Success',
+  [FieldID.LOCKOUT]: 'Successfully set idle timeout',
+  [FieldID.WIPEMODE]: 'Successfully set Wipe Mode',
+  [FieldID.LED_BRIGHTNESS]: 'Successfully set LED brightness',
+  [FieldID.KBD_LAYOUT]: 'Successfully set keyboard layout',
+  [FieldID.TYPE_SPEED]: 'Successfully set typespeed',
+  [FieldID.LOCK_BUTTON]: 'Successfully set lock button',
+  [FieldID.DERIVED_CHALLENGE_MODE]: 'Successfully set derived key challenge mode',
+  [FieldID.STORED_CHALLENGE_MODE]: 'Successfully set stored key challenge mode',
+  [FieldID.HMAC_CHALLENGE_MODE]: 'Successfully set HMAC Challenge Mode',
+  [FieldID.MODKEY_MODE]: 'Successfully set Sysadmin Mode',
+  [FieldID.BACKUPKEYMODE]: 'Successfully set Backup Key Mode',
+  [FieldID.YUBIAUTH]: 'Successfully set AES Key',
+  [FieldID.SEC_PROFILE_MODE]: 'Successfully set 2nd profile mode',
+  [FieldID.LABEL]: 'Successfully set Label',
+  [FieldID.URL]: 'Successfully set URL',
+  [FieldID.USERNAME]: 'Successfully set Username',
+  [FieldID.PASSWORD]: 'Successfully set Password',
   [FieldID.TFATYPE]: 'Success',
   [FieldID.TFAUSERNAME]: 'Success',
 };
+
+/**
+ * Standard Preferences (v5 / users guide): unlocked is enough — config mode not required.
+ * Firmware set_slot() does not gate these fields on configmode.
+ * (Note: firmware also has a blanket OKSETSLOT gate when Sysadmin/mod_keys is enabled.)
+ */
+const STANDARD_PREF_FIELDS = new Set<number>([
+  FieldID.LOCKOUT,
+  FieldID.TYPE_SPEED,
+  FieldID.KBD_LAYOUT,
+  FieldID.LED_BRIGHTNESS,
+  FieldID.LOCK_BUTTON,
+]);
+
+/** Advanced prefs / keys that firmware requires config mode (or first-use) for. */
+const CONFIG_MODE_FIELDS = new Set<number>([
+  FieldID.WIPEMODE,
+  FieldID.BACKUPKEYMODE,
+  FieldID.DERIVED_CHALLENGE_MODE,
+  FieldID.STORED_CHALLENGE_MODE,
+  FieldID.HMAC_CHALLENGE_MODE,
+  FieldID.MODKEY_MODE,
+  FieldID.YUBIAUTH,
+]);
 
 const DEFAULT_CLASSIC_LABELS: Record<number, string> = {
   1: 'Gmail',
@@ -378,15 +402,40 @@ export class MockTransport implements TransportInterface {
 
   private handleSetSlot(packet: Uint8Array): void {
     // Real device: config mode still reports as "locked" but accepts writes.
-    if (this.requireConfigMode && !this.isConfigMode && !this.isBootloader) {
-      this.emitText(this.isLocked ? 'Error device locked' : 'Error not in config mode');
-      return;
-    }
-
+    // Standard global prefs (type speed, layout, LED, lockout, lock button) do NOT
+    // require config mode. Advanced security prefs and slot content do when
+    // requireConfigMode is enabled.
     const slot = packet[MESSAGE_HEADER.length + 1] ?? GLOBAL_SLOT;
     const field = packet[MESSAGE_HEADER.length + 2] as FieldID;
     const valueBytes = packet.slice(MESSAGE_HEADER.length + 3);
     const valueText = this.bytesToAscii(valueBytes);
+
+    const isStandardPref = slot === GLOBAL_SLOT && STANDARD_PREF_FIELDS.has(field);
+    const needsConfig =
+      this.requireConfigMode &&
+      !this.isConfigMode &&
+      !this.isBootloader &&
+      !isStandardPref &&
+      (CONFIG_MODE_FIELDS.has(field) || slot > 0);
+
+    if (needsConfig) {
+      this.emitText(this.isLocked ? 'Error device locked' : 'Error not in config mode');
+      return;
+    }
+
+    if (this.isLocked && !this.isConfigMode && !this.isBootloader && !isStandardPref) {
+      // Unlocked check for non-standard writes when mock is locked
+      if (this.requireConfigMode || slot > 0) {
+        this.emitText('Error device locked');
+        return;
+      }
+    }
+
+    // Standard prefs still need unlocked (or config mode) on a real key.
+    if (isStandardPref && this.isLocked && !this.isConfigMode) {
+      this.emitText('Error device locked');
+      return;
+    }
 
     if (field === FieldID.LABEL && slot > 0) {
       const label = valueText.trim() || 'empty';
@@ -394,7 +443,7 @@ export class MockTransport implements TransportInterface {
     }
 
     if (field === FieldID.YUBIAUTH) {
-      this.emitText('set AES Key');
+      this.emitText('Successfully set AES Key, Private ID, and Public ID');
       return;
     }
 

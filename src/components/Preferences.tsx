@@ -16,13 +16,24 @@ const Preferences: React.FC = () => {
   const [led, setLed] = useState('');
   const [lockout, setLockout] = useState('');
   const [lockButton, setLockButton] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const run = async (action: () => Promise<unknown>) => {
-    if (!device) return;
+  const run = async (label: string, action: () => Promise<unknown>) => {
+    if (!device || busy) return;
+    setBusy(true);
+    setError(null);
+    setStatus(null);
     try {
       await action();
+      setStatus(`${label} saved.`);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error(err);
+      setError(msg);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -44,7 +55,12 @@ const Preferences: React.FC = () => {
           onChange={(e) => setTypeSpeed(e.target.value)}
           className="field-input field-input-narrow-pref"
         />
-        <SetButton onClick={() => run(() => device.setTypeSpeed(parseInt(typeSpeed, 10)))}>Set Type Speed</SetButton>
+        <SetButton
+          disabled={busy || !typeSpeed}
+          onClick={() => run('Type speed', () => device.setTypeSpeed(parseInt(typeSpeed, 10)))}
+        >
+          Set Type Speed
+        </SetButton>
       </PrefRow>
 
       <PrefRow title="Keyboard Layout" tooltip={TOOLTIPS.keyboardLayout}>
@@ -59,7 +75,9 @@ const Preferences: React.FC = () => {
             </option>
           ))}
         </select>
-        <SetButton onClick={() => run(() => device.setKbdLayout(layout))}>Set Layout</SetButton>
+        <SetButton disabled={busy} onClick={() => run('Keyboard layout', () => device.setKbdLayout(layout))}>
+          Set Layout
+        </SetButton>
       </PrefRow>
 
       <PrefRow
@@ -76,7 +94,12 @@ const Preferences: React.FC = () => {
           onChange={(e) => setLed(e.target.value)}
           className="field-input field-input-narrow-pref"
         />
-        <SetButton onClick={() => run(() => device.setLedBrightness(parseInt(led, 10)))}>Set Brightness</SetButton>
+        <SetButton
+          disabled={busy || !led}
+          onClick={() => run('LED brightness', () => device.setLedBrightness(parseInt(led, 10)))}
+        >
+          Set Brightness
+        </SetButton>
       </PrefRow>
     </>
   );
@@ -97,7 +120,12 @@ const Preferences: React.FC = () => {
           onChange={(e) => setLockout(e.target.value)}
           className="field-input field-input-lockout"
         />
-        <SetButton onClick={() => run(() => device.setLockout(parseInt(lockout, 10)))}>Set Lockout</SetButton>
+        <SetButton
+          disabled={busy || lockout === ''}
+          onClick={() => run('Lockout', () => device.setLockout(parseInt(lockout, 10)))}
+        >
+          Set Lockout
+        </SetButton>
       </PrefRow>
 
       <PrefRow
@@ -114,7 +142,12 @@ const Preferences: React.FC = () => {
           onChange={(e) => setLockButton(e.target.value)}
           className="field-input field-input-narrow-pref"
         />
-        <SetButton onClick={() => run(() => device.setLockButton(parseInt(lockButton, 10)))}>Set as Lock Button</SetButton>
+        <SetButton
+          disabled={busy || lockButton === ''}
+          onClick={() => run('Lock button', () => device.setLockButton(parseInt(lockButton, 10)))}
+        >
+          Set as Lock Button
+        </SetButton>
       </PrefRow>
     </>
   );
@@ -126,8 +159,12 @@ const Preferences: React.FC = () => {
         tooltip={TOOLTIPS.sysadminMode}
         description="Allow advanced keystroke combinations and system commands?"
       >
-        <SetButton onClick={() => run(() => device.setModKeyMode(1))}>Yes</SetButton>
-        <SetButton onClick={() => run(() => device.setModKeyMode(0))}>No</SetButton>
+        <SetButton disabled={busy} onClick={() => run('Sysadmin Mode', () => device.setModKeyMode(1))}>
+          Yes
+        </SetButton>
+        <SetButton disabled={busy} onClick={() => run('Sysadmin Mode', () => device.setModKeyMode(0))}>
+          No
+        </SetButton>
       </PrefRow>
 
       <PrefRow
@@ -135,8 +172,12 @@ const Preferences: React.FC = () => {
         tooltip={TOOLTIPS.hmacMode}
         description="Require a button press for HMAC challenge-response operations?"
       >
-        <SetButton onClick={() => run(() => device.setHmacChallengeMode(1))}>Yes</SetButton>
-        <SetButton onClick={() => run(() => device.setHmacChallengeMode(0))}>No</SetButton>
+        <SetButton disabled={busy} onClick={() => run('HMAC mode', () => device.setHmacChallengeMode(1))}>
+          Yes
+        </SetButton>
+        <SetButton disabled={busy} onClick={() => run('HMAC mode', () => device.setHmacChallengeMode(0))}>
+          No
+        </SetButton>
       </PrefRow>
 
       <PrefRow
@@ -151,7 +192,9 @@ const Preferences: React.FC = () => {
         }
         warning='WARNING - Once set to "Full Wipe" this cannot be changed.'
       >
-        <CautionButton onClick={() => run(() => device.setWipeMode(WIPE_MODE_FULL))}>Set Full Wipe Mode</CautionButton>
+        <CautionButton disabled={busy} onClick={() => run('Wipe mode', () => device.setWipeMode(WIPE_MODE_FULL))}>
+          Set Full Wipe Mode
+        </CautionButton>
       </PrefRow>
     </>
   );
@@ -163,8 +206,12 @@ const Preferences: React.FC = () => {
         tooltip={TOOLTIPS.challengeMode}
         description="Enable or disable challenge for derived keys (SSH/PGP)"
       >
-        <SetButton onClick={() => run(() => device.setDerivedChallengeMode(0))}>Challenge Code</SetButton>
-        <SetButton onClick={() => run(() => device.setDerivedChallengeMode(1))}>Button Press</SetButton>
+        <SetButton disabled={busy} onClick={() => run('Derived key mode', () => device.setDerivedChallengeMode(0))}>
+          Challenge Code
+        </SetButton>
+        <SetButton disabled={busy} onClick={() => run('Derived key mode', () => device.setDerivedChallengeMode(1))}>
+          Button Press
+        </SetButton>
       </PrefRow>
 
       <PrefRow
@@ -172,8 +219,12 @@ const Preferences: React.FC = () => {
         tooltip={TOOLTIPS.challengeMode}
         description="Enable or disable challenge for stored keys (SSH/PGP)"
       >
-        <SetButton onClick={() => run(() => device.setStoredChallengeMode(0))}>Challenge Code</SetButton>
-        <SetButton onClick={() => run(() => device.setStoredChallengeMode(1))}>Button Press</SetButton>
+        <SetButton disabled={busy} onClick={() => run('Stored key mode', () => device.setStoredChallengeMode(0))}>
+          Challenge Code
+        </SetButton>
+        <SetButton disabled={busy} onClick={() => run('Stored key mode', () => device.setStoredChallengeMode(1))}>
+          Button Press
+        </SetButton>
       </PrefRow>
 
       <PrefRow
@@ -186,7 +237,9 @@ const Preferences: React.FC = () => {
         }
         warning='WARNING - Once set to "Locked" this cannot be changed.'
       >
-        <CautionButton onClick={() => run(() => device.setBackupKeyMode(1))}>Lock Backup Key</CautionButton>
+        <CautionButton disabled={busy} onClick={() => run('Backup key mode', () => device.setBackupKeyMode(1))}>
+          Lock Backup Key
+        </CautionButton>
       </PrefRow>
     </>
   );
@@ -203,10 +256,32 @@ const Preferences: React.FC = () => {
             { id: 'advanced', label: 'Advanced' },
           ]}
           active={activeTab}
-          onChange={(id) => setActiveTab(id as PrefTab)}
+          onChange={(id) => {
+            setActiveTab(id as PrefTab);
+            setError(null);
+            setStatus(null);
+          }}
         />
 
+        {(status || error) && (
+          <div className="mb-3 space-y-1" data-testid="pref-feedback">
+            {status && (
+              <p className="status-success text-sm" data-testid="pref-status">
+                {status}
+              </p>
+            )}
+            {error && (
+              <p className="critical-text text-sm" data-testid="pref-error">
+                {error}
+              </p>
+            )}
+          </div>
+        )}
+
         <PseudoTabPanel id="standard" active={activeTab}>
+          <p className="text-muted text-sm mb-3" data-testid="pref-standard-note">
+            Standard preferences apply while your OnlyKey is unlocked. Config mode is not required.
+          </p>
           <div className="pref-panel">
             <div>{standardLeft}</div>
             <div>{standardRight}</div>
@@ -216,6 +291,8 @@ const Preferences: React.FC = () => {
         <PseudoTabPanel id="advanced" active={activeTab}>
           <p className="pref-advanced-note">
             These settings require your OnlyKey to be in <strong>config mode</strong>.
+            Enabling <strong>Sysadmin Mode</strong> also makes firmware require config mode for{' '}
+            <em>all</em> slot/preference writes (including Standard) until Sysadmin Mode is turned off.
           </p>
           <div className="pref-panel">
             <div>{advancedLeft}</div>

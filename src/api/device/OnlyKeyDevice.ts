@@ -158,8 +158,15 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   private static formatDeviceLockedError(message: string): string {
-    if (/device locked/i.test(message) || /not in config mode/i.test(message)) {
-      return 'OnlyKey must be in config mode (flashing red LED) for this operation. Being unlocked is not enough.';
+    if (/not in config mode/i.test(message)) {
+      return (
+        'OnlyKey must be in config mode (flashing red LED) for this operation. ' +
+        'If this was a standard preference (type speed, layout, LED, lockout, lock button), ' +
+        'disable Sysadmin Mode first — when Sysadmin Mode is on, firmware requires config mode for all OKSETSLOT writes.'
+      );
+    }
+    if (/device locked/i.test(message)) {
+      return 'OnlyKey is locked. Unlock your device and try again.';
     }
     return message;
   }
@@ -787,44 +794,86 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   // --- Preferences ---
+  /**
+   * Standard prefs use global slot XX and do not require config mode on firmware
+   * (unless Sysadmin/mod_keys mode is enabled — firmware then gates all OKSETSLOT).
+   * Match both v5 listen strings and real firmware "Successfully set …" text.
+   */
+  private matchPrefText(...needles: string[]) {
+    return (r: { text?: string; error?: string; type: string }) => {
+      const t = `${r.text ?? ''} ${r.error ?? ''}`.toLowerCase();
+      return needles.some((n) => t.includes(n.toLowerCase()));
+    };
+  }
+
   public async setLockout(minutes: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.LOCKOUT, [minutes], 10000, (r) => r.text?.toLowerCase().includes("idle timeout") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.LOCKOUT, [minutes], 10000,
+      this.matchPrefText('idle timeout', 'lockout'),
+    );
   }
 
   public async setWipeMode(mode: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.WIPEMODE, [mode], 10000, (r) => r.text?.toLowerCase().includes("wipe mode") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.WIPEMODE, [mode], 10000,
+      this.matchPrefText('wipe mode'),
+    );
   }
 
   public async setLedBrightness(brightness: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.LED_BRIGHTNESS, [brightness], 10000, (r) => r.text?.toLowerCase().includes("led brightness") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.LED_BRIGHTNESS, [brightness], 10000,
+      this.matchPrefText('led brightness', 'brightness'),
+    );
   }
 
   public async setKbdLayout(layout: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.KBD_LAYOUT, [layout], 10000, (r) => r.text?.toLowerCase().includes("keyboard layout") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.KBD_LAYOUT, [layout], 10000,
+      this.matchPrefText('keyboard layout', 'layout'),
+    );
   }
 
   public async setTypeSpeed(speed: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.TYPE_SPEED, [speed], 10000, (r) => r.text?.toLowerCase().includes("typespeed") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.TYPE_SPEED, [speed], 10000,
+      this.matchPrefText('typespeed', 'type speed', 'keyboard typespeed'),
+    );
   }
 
   public async setLockButton(button: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.LOCK_BUTTON, [button], 10000, (r) => r.text?.toLowerCase().includes("lock button") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.LOCK_BUTTON, [button], 10000,
+      this.matchPrefText('lock button'),
+    );
   }
 
   public async setDerivedChallengeMode(mode: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.DERIVED_CHALLENGE_MODE, [mode], 10000, (r) => r.text?.toLowerCase().includes("challenge mode") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.DERIVED_CHALLENGE_MODE, [mode], 10000,
+      this.matchPrefText('challenge mode', 'derived key challenge'),
+    );
   }
 
   public async setStoredChallengeMode(mode: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.STORED_CHALLENGE_MODE, [mode], 10000, (r) => r.text?.toLowerCase().includes("challenge mode") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.STORED_CHALLENGE_MODE, [mode], 10000,
+      this.matchPrefText('challenge mode', 'stored key challenge'),
+    );
   }
 
   public async setHmacChallengeMode(mode: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.HMAC_CHALLENGE_MODE, [mode], 10000, (r) => r.text?.toLowerCase().includes("hmac challenge mode") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.HMAC_CHALLENGE_MODE, [mode], 10000,
+      this.matchPrefText('hmac challenge mode', 'hmac'),
+    );
   }
 
   public async setModKeyMode(mode: number): Promise<void> {
-    await this.sendRequest(MessageID.OKSETSLOT, 'XX', FieldID.MODKEY_MODE, [mode], 10000, (r) => r.text?.toLowerCase().includes("sysadmin mode") ?? false);
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.MODKEY_MODE, [mode], 10000,
+      this.matchPrefText('sysadmin mode', 'modkey'),
+    );
   }
 
   public async setSecProfileMode(mode: number): Promise<void> {
@@ -833,7 +882,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
   public async setSlotTypeSpeed(slot: number, speed: number): Promise<void> {
     await this.sendRequest(MessageID.OKSETSLOT, slot, FieldID.TYPE_SPEED, [speed], 10000,
-      (r) => r.text?.toLowerCase().includes('typespeed') ?? false);
+      this.matchPrefText('typespeed', 'type speed'));
   }
 
   public async setSlotFields(slotId: number, fields: Array<{ fieldId: FieldID; value: string | number[] }>): Promise<void> {

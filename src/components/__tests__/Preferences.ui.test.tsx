@@ -43,9 +43,15 @@ describe('Preferences page', () => {
     renderWithProviders(<Preferences />);
 
     await user.click(screen.getByRole('tab', { name: 'Advanced' }));
-    expect(screen.getByText(/config mode/i)).toBeInTheDocument();
-    expect(screen.getByText('Sysadmin Mode')).toBeInTheDocument();
+    expect(screen.getByText(/these settings require your onlykey to be in/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Sysadmin Mode').length).toBeGreaterThan(0);
     expect(screen.getByText('Full Wipe Mode')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /set full wipe mode/i })).toBeInTheDocument();
+  });
+
+  it('notes that standard preferences do not need config mode', () => {
+    seedDeviceStore({ device: createMockDeviceClient() });
+    renderWithProviders(<Preferences />);
+    expect(screen.getByTestId('pref-standard-note')).toHaveTextContent(/config mode is not required/i);
   });
 });

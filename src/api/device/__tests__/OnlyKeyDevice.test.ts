@@ -122,7 +122,7 @@ describe('OnlyKeyDevice', () => {
     await expect(device.wipeYubiAuth()).rejects.toThrow(/config mode/i);
   });
 
-  it('maps device locked errors to config mode guidance', async () => {
+  it('maps device locked errors to unlock guidance (not config mode)', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);
 
@@ -134,7 +134,41 @@ describe('OnlyKeyDevice', () => {
       }, 10);
     });
 
-    await expect(device.wipePrivateKey(101)).rejects.toThrow(/config mode/i);
+    await expect(device.wipePrivateKey(101)).rejects.toThrow(/locked/i);
+  });
+
+  it('standard preferences succeed unlocked without config mode', async () => {
+    const transport = new MockTransport({
+      deviceType: 'classic',
+      startLocked: false,
+      requireConfigMode: true,
+      unlockEntersConfigMode: false,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    transport.setLocked(false);
+    transport.setConfigMode(false);
+
+    await expect(device.setTypeSpeed(4)).resolves.toBeUndefined();
+    await expect(device.setLockout(30)).resolves.toBeUndefined();
+    await expect(device.setLedBrightness(8)).resolves.toBeUndefined();
+    await expect(device.setKbdLayout(1)).resolves.toBeUndefined();
+    await expect(device.setLockButton(6)).resolves.toBeUndefined();
+  });
+
+  it('advanced preferences still need config mode when requireConfigMode', async () => {
+    const transport = new MockTransport({
+      deviceType: 'classic',
+      startLocked: false,
+      requireConfigMode: true,
+      unlockEntersConfigMode: false,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    transport.setLocked(false);
+    transport.setConfigMode(false);
+
+    await expect(device.setModKeyMode(1)).rejects.toThrow(/config mode/i);
   });
 
   it('keeps DUO device type after unlock without -D suffix', async () => {
