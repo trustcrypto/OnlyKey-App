@@ -27,18 +27,33 @@ function clearTrayArtifactsOnDisk() {
 
 function resolveNwExe() {
   const nwModuleDir = path.join(rootDir, 'node_modules', 'nw');
-  const runtimeDir = fs
-    .readdirSync(nwModuleDir)
-    .find((entry) => entry.startsWith('nwjs'));
+  const symlink = path.join(nwModuleDir, 'nwjs');
+  let runtimeDir = fs.existsSync(symlink) ? symlink : null;
+
+  if (!runtimeDir) {
+    const versioned = fs
+      .readdirSync(nwModuleDir)
+      .find((entry) => entry.startsWith('nwjs-v') && fs.statSync(path.join(nwModuleDir, entry)).isDirectory());
+    if (versioned) runtimeDir = path.join(nwModuleDir, versioned);
+  }
 
   if (!runtimeDir) {
     throw new Error('NW.js runtime not found. Run "npm install" first.');
   }
 
-  const exeName =
-    process.platform === 'win32' ? 'nw.exe' : process.platform === 'darwin' ? 'nwjs' : 'nw';
+  const exeRel =
+    process.platform === 'win32'
+      ? 'nw.exe'
+      : process.platform === 'darwin'
+        ? path.join('nwjs.app', 'Contents', 'MacOS', 'nwjs')
+        : 'nw';
 
-  return path.join(nwModuleDir, runtimeDir, exeName);
+  const exePath = path.join(runtimeDir, exeRel);
+  if (!fs.existsSync(exePath)) {
+    throw new Error(`NW.js binary not found at ${exePath}. Run "npm install" first.`);
+  }
+
+  return exePath;
 }
 
 function stopStaleNwInstances() {
