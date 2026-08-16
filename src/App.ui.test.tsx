@@ -3,7 +3,8 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import { renderWithProviders } from './test/render';
-import { getStoreState, seedConnectedClassicLocked, stubDeviceInitialize } from './test/store';
+import { DeviceType } from './api/device/types';
+import { getStoreState, seedConnectedClassicLocked, seedDeviceStore, stubDeviceInitialize } from './test/store';
 
 describe('App shell', () => {
   it('shows disconnected overlay on non-Tools tabs', () => {
@@ -43,6 +44,23 @@ describe('App shell', () => {
     expect(within(screen.getByTestId('sidebar-status')).getByText('Connected')).toBeInTheDocument();
     expect(screen.getByText('Locked')).toBeInTheDocument();
     expect(screen.queryByTestId('disconnected-overlay')).not.toBeInTheDocument();
+  });
+
+  it('reports a wiped device as Uninitialized, not Locked', () => {
+    stubDeviceInitialize();
+    seedDeviceStore({
+      isConnected: true,
+      isLocked: false,
+      isConfigMode: false,
+      deviceType: DeviceType.UNINITIALIZED,
+      version: 'v2.1.0-prod',
+      device: null,
+    });
+    renderWithProviders(<App />);
+
+    expect(screen.getByText('Uninitialized')).toBeInTheDocument();
+    expect(screen.queryByText('Locked')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('lock-screen')).not.toBeInTheDocument();
   });
 
   it('toggles light/dark theme from sidebar', async () => {

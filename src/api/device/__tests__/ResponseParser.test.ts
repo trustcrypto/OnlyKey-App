@@ -11,6 +11,16 @@ describe('ResponseParser', () => {
     return data;
   };
 
+  it('treats a wiped device as uninitialized, not locked', () => {
+    const data = stringToPacket('UNINITIALIZEDv2.1.0-prod');
+    const res = ResponseParser.parse(data);
+    expect(res.type).toBe('status');
+    expect(res.deviceType).toBe(DeviceType.UNINITIALIZED);
+    expect(res.isLocked).toBe(false);
+    expect(res.devicePinSet).toBe(false);
+    expect(res.version).toBe('v2.1.0-prod');
+  });
+
   it('should parse OnlyKey Classic initialization', () => {
     const data = stringToPacket('INITIALIZEDv2.1.0-prod');
     const res = ResponseParser.parse(data);

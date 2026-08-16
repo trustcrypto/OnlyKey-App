@@ -11,6 +11,11 @@ import {
 import { deviceTypeFromProductId } from '../firmwareConstants';
 
 describe('device type detection', () => {
+  it('recognizes UNINITIALIZED before the INITIALIZED substring', () => {
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv2.1.0-prod')).toBe(DeviceType.UNINITIALIZED);
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZED-Dv3.0.0-prod')).toBe(DeviceType.UNINITIALIZED);
+  });
+
   it('recognizes DUO from INITIALIZED-D and UNLOCKED-D', () => {
     expect(inferDeviceTypeFromStatusText('INITIALIZED-Dv3.0.0-prod')).toBe(DeviceType.DUO);
     expect(inferDeviceTypeFromStatusText('UNLOCKED-Dv3.0.0-prod')).toBe(DeviceType.DUO);

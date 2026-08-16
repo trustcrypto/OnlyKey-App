@@ -18,6 +18,7 @@ import DeviceMessages from './components/DeviceMessages';
 import { HelpTip } from './components/ui/HelpTip';
 import { TOOLTIPS } from './data/tooltips';
 import { shouldUseMockDevice } from './utils/mockDevice';
+import { DeviceType } from './api/device/types';
 
 const App: React.FC = () => {
   const {
@@ -82,7 +83,13 @@ const App: React.FC = () => {
                 {deviceType} {version}
               </div>
               <div className="sidebar-status-mode">
-                {isConfigMode ? 'Config mode' : isLocked ? 'Locked' : 'Unlocked'}
+                {isConfigMode
+                  ? 'Config mode'
+                  : deviceType === DeviceType.UNINITIALIZED
+                    ? 'Uninitialized'
+                    : isLocked
+                      ? 'Locked'
+                      : 'Unlocked'}
               </div>
               <DeviceMessages />
             </>

@@ -110,6 +110,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
     const canSet =
       current === DeviceType.UNKNOWN ||
+      nextType === DeviceType.UNINITIALIZED ||
+      nextType === DeviceType.BOOTLOADER ||
       (current === DeviceType.UNINITIALIZED &&
         (nextType === DeviceType.CLASSIC || nextType === DeviceType.DUO));
 

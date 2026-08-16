@@ -33,6 +33,18 @@ describe('OnlyKeyDevice', () => {
     expect(pinPacket[6]).toBe(50);
   });
 
+  it('classifies a wiped device as uninitialized and not locked', async () => {
+    const transport = new MockTransport();
+    const device = new OnlyKeyDevice(transport);
+
+    await device.connect({ vendorId: 0, productId: 0 });
+    (transport as any).simulateResponse('UNINITIALIZEDv2.1.0-prod');
+
+    expect(device.state.deviceType).toBe(DeviceType.UNINITIALIZED);
+    expect(device.state.isLocked).toBe(false);
+    expect(device.state.devicePinSet).toBe(false);
+  });
+
   it('keeps Classic device type after later DUO-looking unlock status', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);

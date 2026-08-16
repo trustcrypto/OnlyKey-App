@@ -60,6 +60,19 @@ describe('LockScreen', () => {
     expect(setPin).toHaveBeenCalledWith('123456');
   });
 
+  it('is hidden for an uninitialized wiped device', () => {
+    seedDeviceStore({
+      isConnected: true,
+      isLocked: false,
+      isConfigMode: false,
+      deviceType: DeviceType.UNINITIALIZED,
+      device: createMockDeviceClient(),
+      activeTab: 'setup',
+    });
+    renderWithProviders(<LockScreen />);
+    expect(screen.queryByTestId('lock-screen')).not.toBeInTheDocument();
+  });
+
   it('does not duplicate the sidebar logo', () => {
     seedDeviceStore({
       isConnected: true,

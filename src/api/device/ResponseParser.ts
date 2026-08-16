@@ -50,8 +50,8 @@ export class ResponseParser {
         text,
         version,
         deviceType: DeviceType.UNINITIALIZED,
-        isLocked: true,
-        devicePinSet: !isDuoNoPinFromStatusText(text),
+        isLocked: false,
+        devicePinSet: false,
       };
     }
 

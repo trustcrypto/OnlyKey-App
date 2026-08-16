@@ -19,7 +19,14 @@ const LockScreen: React.FC = () => {
   // once initialized unless in config mode. Poll OKSETTIME so we notice UNLOCKED even
   // if the single unsolicited unlock HID report was missed.
   useEffect(() => {
-    if (!isConnected || !isLocked || isConfigMode || !device || isDuo) {
+    if (
+      !isConnected ||
+      !isLocked ||
+      isConfigMode ||
+      !device ||
+      isDuo ||
+      deviceType === DeviceType.UNINITIALIZED
+    ) {
       setClassicUnlockActive(false);
       return;
     }
@@ -49,9 +56,17 @@ const LockScreen: React.FC = () => {
       window.clearInterval(id);
       setClassicUnlockActive(false);
     };
-  }, [isConnected, isLocked, isConfigMode, device, isDuo]);
+  }, [isConnected, isLocked, isConfigMode, device, isDuo, deviceType]);
 
-  if (!isConnected || !isLocked || isConfigMode || activeTab === 'tools') return null;
+  if (
+    !isConnected ||
+    !isLocked ||
+    isConfigMode ||
+    activeTab === 'tools' ||
+    deviceType === DeviceType.UNINITIALIZED
+  ) {
+    return null;
+  }
 
   const handleUnlock = async (e: React.FormEvent) => {
     e.preventDefault();

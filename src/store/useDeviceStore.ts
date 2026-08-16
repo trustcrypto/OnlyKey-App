@@ -102,9 +102,8 @@ function defaultTabForDevice(state: {
   isBootloader: boolean;
   deviceType: DeviceType;
 }): DeviceState['activeTab'] {
-  if (state.isLocked || state.isBootloader) return 'setup';
-  // Brand-new keys still need the setup wizard.
   if (state.deviceType === DeviceType.UNINITIALIZED) return 'setup';
+  if (state.isLocked || state.isBootloader) return 'setup';
   // Initialized + unlocked (Classic/DUO, or type still refining) → Slots.
   return 'slots';
 }
