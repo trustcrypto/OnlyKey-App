@@ -81,6 +81,13 @@ export const WIPE_MODES = [
 export const WIPE_MODE_FULL = 2;
 
 /**
+ * TFATYPE field (8): firmware stores buffer[7] as a 1-byte MFA type (okcore.h).
+ * Old app sent radio strings ("googleAuthOtp" / "YubikeyOtp"); only the first byte is stored.
+ */
+export const MFA_TYPE_GOOGLE_AUTH = 'g';
+export const MFA_TYPE_YUBI_OTP = 'Y';
+
+/**
  * NEXTKEY field encodings (okcore.cpp set_slot / OnlyKey.ino process_slot addchar bits).
  * NEXTKEY1 (16) & NEXTKEY2 (3): 0=none, 1=tab, 2=return
  * NEXTKEY4 (18) & NEXTKEY5 (19): 0=none, 1=tab

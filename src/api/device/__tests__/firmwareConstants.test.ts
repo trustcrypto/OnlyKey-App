@@ -3,6 +3,8 @@ import {
   KEYBOARD_LAYOUTS,
   isDuoNoPinVersion,
   NEXTKEY_AFTER_OTP_OPTIONS,
+  MFA_TYPE_GOOGLE_AUTH,
+  MFA_TYPE_YUBI_OTP,
 } from '../firmwareConstants';
 
 describe('firmwareConstants', () => {
@@ -20,5 +22,12 @@ describe('firmwareConstants', () => {
 
   it('encodes NEXTKEY3 after-OTP options per okcore.cpp case 6', () => {
     expect(NEXTKEY_AFTER_OTP_OPTIONS.map((o) => o.value)).toEqual(['0', '1', '2', '3']);
+  });
+
+  it('encodes TFATYPE as firmware MFA first-byte codes', () => {
+    expect(MFA_TYPE_GOOGLE_AUTH).toBe('g');
+    expect(MFA_TYPE_GOOGLE_AUTH.charCodeAt(0)).toBe(103);
+    expect(MFA_TYPE_YUBI_OTP).toBe('Y');
+    expect(MFA_TYPE_YUBI_OTP.charCodeAt(0)).toBe(89);
   });
 });
