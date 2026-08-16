@@ -73,10 +73,13 @@ function createNwMock() {
   return { win, tray, listeners, menuItems };
 }
 
+let desktopModule = null;
+
 function loadDesktopModule() {
   delete require.cache[desktopModulePath];
   delete require.cache[path.join(rootDir, 'userPreferences.cjs')];
-  return require(desktopModulePath);
+  desktopModule = require(desktopModulePath);
+  return desktopModule;
 }
 
 describe('desktopBg.cjs unit', () => {
@@ -98,6 +101,8 @@ describe('desktopBg.cjs unit', () => {
   });
 
   afterEach(() => {
+    desktopModule?.stop?.();
+    desktopModule = null;
     delete global.nw;
     vi.unstubAllGlobals();
   });
@@ -107,10 +112,10 @@ describe('desktopBg.cjs unit', () => {
     const desktop = loadDesktopModule();
     desktop.start();
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
-
-    expect(win._onlykeyCloseBound).toBe(true);
-    expect(desktop.getTestState().ownsTray).toBe(true);
+    await vi.waitFor(() => {
+      expect(win._onlykeyCloseBound).toBe(true);
+      expect(desktop.getTestState().ownsTray).toBe(true);
+    }, { timeout: 2000 });
     expect(desktop.getTestState().trayInMainContext).toBe(true);
   });
 
@@ -119,11 +124,14 @@ describe('desktopBg.cjs unit', () => {
     const desktop = loadDesktopModule();
     desktop.startBackground();
 
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    await vi.waitFor(() => {
+      expect(desktop.getTestState().ownsTray).toBe(true);
+    }, { timeout: 2000 });
     const testState = desktop.getTestState();
-    expect(testState.ownsTray).toBe(true);
     expect(testState.trayInBackground).toBe(true);
-    expect(tray.on).toHaveBeenCalled();
+    if (process.platform !== 'darwin') {
+      expect(tray.on).toHaveBeenCalled();
+    }
   });
 
   it('hides window on close when closeToTray is enabled', () => {

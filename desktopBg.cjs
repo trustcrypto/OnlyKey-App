@@ -89,12 +89,17 @@ const state = {
   backgroundStarted: false,
   secondInstanceBound: false,
   commandPoll: null,
+  windowPolls: [],
   lastCommandTs: null,
   mainAppWindow: null,
 };
 
 const osx = os.platform() === 'darwin';
 const linux = os.platform() === 'linux';
+
+function hasNw() {
+  return typeof nw !== 'undefined' && !!nw?.Window;
+}
 
 function isDesktopTestMode() {
   try {
@@ -479,7 +484,7 @@ function dispatchTrayCommand(command) {
 
 function pollTrayCommands() {
   // Only the main renderer runs start() and owns mainAppWindow.
-  if (!state.mainStarted) return;
+  if (!state.mainStarted || !hasNw()) return;
 
   let payload = null;
 
@@ -563,6 +568,7 @@ function bindWindowCloseHandler(win) {
 }
 
 function attachToAppWindows() {
+  if (!hasNw()) return;
   if (typeof nw.Window.getAll !== 'function') {
     bindWindowCloseHandler(nw.Window.get());
     return;
@@ -781,6 +787,7 @@ function startBackground(ctxWin) {
   markTrayReady(false);
 
   const launchTray = (attempt) => {
+    if (!hasNw()) return;
     initTray().catch((error) => {
       console.error(`Tray init failed in background (attempt ${attempt}):`, error);
       markTrayReady(false);
@@ -792,13 +799,7 @@ function startBackground(ctxWin) {
   launchTray(1);
 
   attachToAppWindows();
-
-  let polls = 0;
-  const poll = setInterval(() => {
-    attachToAppWindows();
-    polls += 1;
-    if (polls >= 40) clearInterval(poll);
-  }, 500);
+  startWindowPoll(() => attachToAppWindows(), 40);
 }
 
 function writeMainWindowMarker(win) {
@@ -814,7 +815,7 @@ function writeMainWindowMarker(win) {
 }
 
 function launchTrayInMain(attempt) {
-  if (ownsTray()) return;
+  if (!hasNw() || ownsTray()) return;
   initTray().catch((error) => {
     console.error(`Tray init failed in main window (attempt ${attempt}):`, error);
     markTrayReady(false);
@@ -845,17 +846,33 @@ function start() {
     launchTrayInMain(1);
   }
 
+  startWindowPoll(() => {
+    bindWindowCloseHandler(nw.Window.get());
+    attachToAppWindows();
+  }, 20);
+}
+
+function startWindowPoll(tick, maxPolls) {
   let polls = 0;
   const poll = setInterval(() => {
-    if (typeof nw === 'undefined') {
+    if (!hasNw()) {
       clearInterval(poll);
       return;
     }
-    bindWindowCloseHandler(nw.Window.get());
-    attachToAppWindows();
+    tick();
     polls += 1;
-    if (polls >= 20) clearInterval(poll);
+    if (polls >= maxPolls) clearInterval(poll);
   }, 500);
+  state.windowPolls.push(poll);
+}
+
+function stop() {
+  if (state.commandPoll) {
+    clearInterval(state.commandPoll);
+    state.commandPoll = null;
+  }
+  for (const poll of state.windowPolls) clearInterval(poll);
+  state.windowPolls = [];
 }
 
 function getTestState() {
@@ -894,6 +911,7 @@ function getTestState() {
 module.exports = {
   start,
   startBackground,
+  stop,
   clearTrayArtifacts,
   showMainWindow,
   quitApp,
