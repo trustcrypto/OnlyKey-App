@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Backup from '../Backup';
 import { DeviceType } from '../../api/device/types';
 import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
+import * as backupService from '../../services/backup/backupService';
 
 describe('Backup page', () => {
   it('is hidden without a device', () => {
@@ -54,5 +55,23 @@ describe('Backup page', () => {
 
     await user.click(verify);
     expect(screen.getByText(/does not support verification/i)).toBeInTheDocument();
+  });
+
+  it('restores a selected backup file', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    vi.spyOn(backupService, 'restoreBackupFromFile').mockResolvedValue(undefined);
+    seedDeviceStore({ device, deviceType: DeviceType.CLASSIC });
+    renderWithProviders(<Backup />);
+
+    await user.click(screen.getByRole('tab', { name: 'Restore' }));
+    const file = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+
+    await user.click(screen.getByRole('button', { name: /restore to onlykey/i }));
+    await waitFor(() => {
+      expect(backupService.restoreBackupFromFile).toHaveBeenCalled();
+    });
+    expect(screen.getByText(/backup loaded/i)).toBeInTheDocument();
   });
 });

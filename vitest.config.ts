@@ -11,6 +11,20 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'json-summary', 'html'],
+      reportsDirectory: './coverage',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'src/**/*.ui.test.{ts,tsx}',
+        'src/test/**',
+        'src/vite-env.d.ts',
+        'src/main.tsx',
+        'src/api/transport/HidTransport.ts',
+      ],
+    },
     projects: [
       {
         extends: true,
@@ -40,6 +54,7 @@ export default defineConfig({
               'src/test/**',
               'src/vite-env.d.ts',
               'src/main.tsx',
+              'src/api/transport/HidTransport.ts',
             ],
           },
         },

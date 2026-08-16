@@ -44,4 +44,48 @@ describe('Firmware page', () => {
     expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
     expect(device.triggerBootloader).toHaveBeenCalledTimes(1);
   });
+
+  it('is hidden without a device', () => {
+    seedDeviceStore({ device: null });
+    const { container } = renderWithProviders(<Firmware />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('shows outdated-firmware copy when in-app updates are unsupported', () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: false,
+      isBootloader: false,
+      version: 'v0.2-beta.6',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByText(/does not support this feature/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download latest firmware/i })).not.toBeInTheDocument();
+  });
+
+  it('loads firmware blocks directly while in bootloader mode', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    vi.spyOn(firmwareDownload, 'fetchLatestFirmwareRelease').mockResolvedValue({
+      version: 'v3.0.4',
+      blocks: ['aa', 'bb'],
+      downloadUrl: 'https://example.com/fw.txt',
+    });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: true,
+      isBootloader: true,
+      version: 'v3.0.0',
+    });
+    renderWithProviders(<Firmware />);
+
+    await user.click(screen.getByRole('button', { name: /download latest firmware/i }));
+    await waitFor(() => {
+      expect(device.loadFirmwareBlocks).toHaveBeenCalledWith(['aa', 'bb'], expect.any(Function));
+    });
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('ok-pending-firmware')).toBe(JSON.stringify(['aa', 'bb']));
+  });
 });

@@ -54,4 +54,23 @@ describe('Preferences page', () => {
     renderWithProviders(<Preferences />);
     expect(screen.getByTestId('pref-standard-note')).toHaveTextContent(/config mode is not required/i);
   });
+
+  it('saves layout, lockout, and advanced sysadmin mode', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({ device });
+    renderWithProviders(<Preferences />);
+
+    await user.click(screen.getByRole('button', { name: /set layout/i }));
+    expect(device.setKbdLayout).toHaveBeenCalledWith(0x01);
+
+    const lockoutSection = screen.getByText('Inactivity Lockout Timer').closest('section')!;
+    await user.type(within(lockoutSection).getByRole('spinbutton'), '15');
+    await user.click(screen.getByRole('button', { name: /set lockout/i }));
+    expect(device.setLockout).toHaveBeenCalledWith(15);
+
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+    await user.click(screen.getByRole('button', { name: /set full wipe mode/i }));
+    expect(device.setWipeMode).toHaveBeenCalled();
+  });
 });

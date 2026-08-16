@@ -48,10 +48,10 @@ const FEATURE_MATRIX = [
   { feature: 'Tools page', unit: '—', ui: 'Tools.ui.test' },
   { feature: 'Device messages sidebar', unit: 'recentMessages.ui.test', ui: 'DeviceMessages.ui.test' },
   { feature: 'HID / device protocol', unit: 'OnlyKeyDevice + ResponseParser', ui: '—' },
-  { feature: 'Setup wizard', unit: '—', ui: '— (untested)' },
-  { feature: 'Keys import', unit: '—', ui: '— (untested)' },
-  { feature: 'Firmware update UI', unit: 'firmwareConstants.test', ui: '— (untested)' },
-  { feature: 'Advanced page', unit: '—', ui: '— (untested)' },
+  { feature: 'Setup wizard', unit: '—', ui: 'Setup.ui.test' },
+  { feature: 'Keys import', unit: 'keyImport + keyParser', ui: 'Keys.ui.test' },
+  { feature: 'Firmware update UI', unit: 'firmwareDownload + firmwareCheck', ui: 'Firmware.ui.test' },
+  { feature: 'Advanced page', unit: '—', ui: 'Advanced.ui.test' },
 ];
 
 function pct(n) {

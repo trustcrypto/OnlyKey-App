@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { FieldID } from '../../../api/device/types';
 import { MFA_TYPE_GOOGLE_AUTH, MFA_TYPE_YUBI_OTP } from '../../../api/device/firmwareConstants';
 import { base32ToHex } from '../../../utils/base32';
-import { saveSlotConfig, type SlotFormState, type SlotEnabledState } from '../slotConfigService';
+import { DeviceType } from '../../../api/device/types';
+import {
+  saveSlotConfig,
+  validateDuoNoPinSlot,
+  wipeSlotData,
+  type SlotFormState,
+  type SlotEnabledState,
+} from '../slotConfigService';
 
 function emptyForm(overrides: Partial<SlotFormState> = {}): SlotFormState {
   return {
@@ -68,5 +75,113 @@ describe('saveSlotConfig', () => {
     expect(device.setSlot).toHaveBeenCalledWith(2, FieldID.TFATYPE, MFA_TYPE_YUBI_OTP);
     expect(device.setSlot).not.toHaveBeenCalledWith(2, FieldID.TFATYPE, '2');
     expect(device.setSlot).not.toHaveBeenCalledWith(2, FieldID.TFATYPE, '1');
+  });
+
+  it('writes label, url, username, password, delays, and next-keys when enabled', async () => {
+    const device = mockDevice();
+    await saveSlotConfig(
+      device as never,
+      3,
+      {
+        label: true,
+        url: true,
+        username: true,
+        password: true,
+        delay1: true,
+        nextKey1: true,
+        slotTypeSpeed: true,
+      },
+      emptyForm({
+        label: 'Work',
+        url: 'https://ex.test',
+        username: 'ada',
+        password: 'secret',
+        passwordConfirm: 'secret',
+        delay1: '2',
+        nextKey1: '1',
+        slotTypeSpeed: '4',
+      })
+    );
+
+    expect(device.setSlot).toHaveBeenCalledWith(3, FieldID.LABEL, 'Work');
+    expect(device.setSlot).toHaveBeenCalledWith(3, FieldID.URL, 'https://ex.test');
+    expect(device.setSlot).toHaveBeenCalledWith(3, FieldID.USERNAME, 'ada');
+    expect(device.setSlot).toHaveBeenCalledWith(3, FieldID.PASSWORD, 'secret');
+    expect(device.setSlot).toHaveBeenCalledWith(3, FieldID.DELAY1, '2');
+    expect(device.setSlot).toHaveBeenCalledWith(3, FieldID.NEXTKEY1, '1');
+    expect(device.setSlotTypeSpeed).toHaveBeenCalledWith(3, 4);
+  });
+
+  it('rejects mismatched passwords and mixed TOTP+Yubi', async () => {
+    const device = mockDevice();
+    await expect(
+      saveSlotConfig(
+        device as never,
+        1,
+        { password: true },
+        emptyForm({ password: 'a', passwordConfirm: 'b' })
+      )
+    ).rejects.toThrow(/do not match/);
+
+    await expect(
+      saveSlotConfig(
+        device as never,
+        1,
+        { totp: true, mfa: true },
+        emptyForm({
+          totpSecret: 'JBSWY3DPEHPK3PXP',
+          yubiPublicId: 'cc',
+          yubiPrivateId: '11',
+          yubiSecretKey: '22',
+        })
+      )
+    ).rejects.toThrow(/not both/);
+  });
+
+  it('rejects incomplete Yubi fields', async () => {
+    await expect(
+      saveSlotConfig(
+        mockDevice() as never,
+        1,
+        { mfa: true },
+        emptyForm({ yubiPublicId: 'cc' })
+      )
+    ).rejects.toThrow(/cannot be blank/);
+  });
+});
+
+describe('validateDuoNoPinSlot', () => {
+  it('allows mixed fields when a PIN is set or the device is Classic', () => {
+    expect(() =>
+      validateDuoNoPinSlot(DeviceType.CLASSIC, false, { password: true, totp: true }, emptyForm({
+        password: 'x',
+        totpSecret: 'abc',
+      }))
+    ).not.toThrow();
+    expect(() =>
+      validateDuoNoPinSlot(DeviceType.DUO, true, { username: true }, emptyForm())
+    ).not.toThrow();
+  });
+
+  it('blocks password+MFA and username/url on DUO without a PIN', () => {
+    expect(() =>
+      validateDuoNoPinSlot(
+        DeviceType.DUO,
+        false,
+        { password: true, totp: true },
+        emptyForm({ password: 'x', totpSecret: 'abc' })
+      )
+    ).toThrow(/not both/);
+    expect(() =>
+      validateDuoNoPinSlot(DeviceType.DUO, false, { username: true }, emptyForm())
+    ).toThrow(/Username and URL require a device PIN/);
+  });
+});
+
+describe('wipeSlotData', () => {
+  it('wipes the requested slot', async () => {
+    const wipeSlot = vi.fn().mockResolvedValue(undefined);
+    await wipeSlotData({ wipeSlot } as never, 6);
+    expect(wipeSlot).toHaveBeenCalledWith(6);
   });
 });

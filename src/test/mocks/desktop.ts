@@ -1,17 +1,16 @@
 import { vi } from 'vitest';
 
-vi.mock('../../desktop/firmwareCheck', () => ({
-  checkForNewFirmware: vi.fn(async (currentVersion: string) => ({
-    updateAvailable: false,
-    currentVersion,
-    fwUpdateSupport: false,
-  })),
-  getPendingFirmware: vi.fn(() => null),
-  clearPendingFirmware: vi.fn(),
-  supportsAppFirmwareUpdate: vi.fn(() => false),
-  storePendingFirmware: vi.fn(),
-  PENDING_FIRMWARE_KEY: 'ok-pending-firmware',
-}));
+vi.mock('../../desktop/firmwareCheck', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../desktop/firmwareCheck')>();
+  return {
+    ...actual,
+    checkForNewFirmware: vi.fn(async (currentVersion: string) => ({
+      updateAvailable: false,
+      currentVersion,
+      fwUpdateSupport: false,
+    })),
+  };
+});
 
 vi.mock('../../utils/hidStatus', () => ({
   getHidStatus: vi.fn(() => ({
