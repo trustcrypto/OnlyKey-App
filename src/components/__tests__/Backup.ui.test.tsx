@@ -19,7 +19,7 @@ describe('Backup page', () => {
     seedDeviceStore({ device: createMockDeviceClient(), deviceType: DeviceType.CLASSIC });
     renderWithProviders(<Backup />);
 
-    expect(screen.getByRole('heading', { name: 'Backup / Restore', exact: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Backup / Restore' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Backup' })).toHaveClass('pseudo-tab--active');
     expect(screen.getByText(/hold the #1 button down/i)).toBeInTheDocument();
 

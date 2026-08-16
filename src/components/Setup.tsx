@@ -448,7 +448,7 @@ const Setup: React.FC = () => {
           open={showPgpKeySelect}
           candidates={pgpCandidates}
           onClose={() => setShowPgpKeySelect(false)}
-          onSelect={(candidateId, slot) => loadPgpBackupKey(candidateId, slot)}
+          onConfirm={(candidateId: string, slot: number) => loadPgpBackupKey(candidateId, slot)}
         />
       </SetupShell>
     );
@@ -961,7 +961,7 @@ const Setup: React.FC = () => {
         open={showPgpKeySelect}
         candidates={pgpCandidates}
         onClose={() => setShowPgpKeySelect(false)}
-        onSelect={(candidateId, slot) => loadPgpBackupKey(candidateId, slot)}
+        onConfirm={(candidateId: string, slot: number) => loadPgpBackupKey(candidateId, slot)}
       />
     </SetupShell>
   );

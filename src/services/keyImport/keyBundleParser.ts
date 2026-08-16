@@ -33,10 +33,11 @@ async function parseOpenPgpBundle(pem: string, passcode: string): Promise<KeyCan
 
   const candidates: KeyCandidate[] = [];
 
-  const addPacket = (packet: { write: () => Uint8Array; algorithm?: string }, name: string, id: string) => {
+  const addPacket = (packet: { write: () => Uint8Array; algorithm?: unknown }, name: string, id: string) => {
     const raw = packet.write();
     const keyData = Array.from(new Uint8Array(raw));
-    const isRsa = packet.algorithm?.toLowerCase().includes('rsa') ?? keyData.length > 128;
+    const algo = String(packet.algorithm ?? '').toLowerCase();
+    const isRsa = algo.includes('rsa') || algo === '1' || algo === '2' || algo === '3' || (!algo && keyData.length > 128);
     candidates.push({
       id,
       name,

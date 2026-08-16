@@ -13,7 +13,6 @@ const LockScreen: React.FC = () => {
   const pollInFlight = useRef(false);
 
   const isDuo = deviceType === DeviceType.DUO;
-  const isClassic = deviceType === DeviceType.CLASSIC || deviceType === DeviceType.UNKNOWN;
 
   // Classic unlock is entirely on-device (6-button keypad). Firmware ignores OKSETPIN
   // once initialized unless in config mode. Poll OKSETTIME so we notice UNLOCKED even

@@ -227,7 +227,7 @@ export class ChromeHidTransport implements TransportInterface {
     const poll = () => {
       if (!this.isListening || this.connectionId === null) return;
 
-      chrome.hid.receive(this.connectionId, (reportId, data) => {
+      chrome.hid.receive(this.connectionId, (_reportId, data) => {
         if (chrome.runtime.lastError) {
           const errMsg = chrome.runtime.lastError.message || '';
           console.warn('Receive error:', errMsg);

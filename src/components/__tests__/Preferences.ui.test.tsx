@@ -16,7 +16,7 @@ describe('Preferences page', () => {
     seedDeviceStore({ device: createMockDeviceClient() });
     renderWithProviders(<Preferences />);
 
-    expect(screen.getByRole('heading', { name: 'Preferences', exact: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Preferences' })).toBeInTheDocument();
     expect(screen.getByText('Keyboard Type Speed')).toBeInTheDocument();
     expect(screen.getByText('Keyboard Layout')).toBeInTheDocument();
     expect(screen.getByText('Indicator Light (LED) Brightness')).toBeInTheDocument();

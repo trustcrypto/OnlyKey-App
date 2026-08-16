@@ -1,5 +1,5 @@
 import { sha256 } from 'js-sha256';
-import { ECC_SLOTS, RSA_SLOTS, isOpenPgpKey, isSshKey } from './keySlots';
+import { ECC_SLOTS, RSA_SLOTS, isSshKey } from './keySlots';
 import { loadSshpk } from './sshpkNode';
 
 export { ECC_SLOTS, KEY_SLOTS, RSA_SLOTS, isOpenPgpKey, isSshKey } from './keySlots';

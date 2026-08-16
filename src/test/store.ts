@@ -33,6 +33,7 @@ type StoreSeed = Partial<
     | 'selectedSlotId'
     | 'sessionEpoch'
     | 'device'
+    | 'refreshLabels'
   >
 >;
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import DeviceMessages from '../DeviceMessages';
 import { renderWithProviders } from '../../test/render';
 import { seedDeviceStore } from '../../test/store';

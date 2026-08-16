@@ -1,6 +1,7 @@
 type PreferenceKey = 'autoLaunch' | 'autoUpdate' | 'autoUpdateFW' | 'closeToTray';
 
-function getBoolean(value: string | null | undefined): boolean {
+function getBoolean(value: string | boolean | null | undefined): boolean {
+  if (typeof value === 'boolean') return value;
   return value !== 'false' && !!value;
 }
 

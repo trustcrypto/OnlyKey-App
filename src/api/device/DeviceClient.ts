@@ -1,9 +1,10 @@
-import type { EventEmitter } from 'events';
 import type { FieldID } from './types';
 import type { DeviceFilter } from '../transport/Transport.interface';
 
 /** Application-facing device API — UI and services depend on this, not OnlyKeyDevice. */
-export interface DeviceClient extends EventEmitter {
+export interface DeviceClient {
+  on(event: string, listener: (...args: unknown[]) => void): this;
+  emit(event: string, ...args: unknown[]): boolean;
   connect(filters: DeviceFilter | DeviceFilter[]): Promise<void>;
   disconnect(): Promise<void>;
   getLabels(): Promise<Map<number, string>>;
