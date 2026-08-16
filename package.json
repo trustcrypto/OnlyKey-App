@@ -131,5 +131,12 @@
     "min_height": 400,
     "position": "center",
     "inject_js_start": "desktopInject.js"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fs-xattr@0.3.1": true,
+    "fsevents@2.3.3": true,
+    "macos-alias@0.2.12": true,
+    "nw@0.104.1": true
   }
 }
