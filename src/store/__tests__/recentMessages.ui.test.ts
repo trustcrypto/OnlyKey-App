@@ -8,6 +8,7 @@ describe('recentMessages retention', () => {
     await resetDeviceStoreForTests();
     await useDeviceStore.getState().initialize(true);
     await waitForConnected();
+    useDeviceStore.setState({ isLocked: false });
 
     const { device } = useDeviceStore.getState();
     expect(device).toBeTruthy();

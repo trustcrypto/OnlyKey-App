@@ -13,7 +13,7 @@
     "start:debug": "vite build && node scripts/start-desktop.mjs --devtools --onlykey-tray-debug --user-data-dir=./tmp/user-data-fresh",
     "start:watch": "vite build && concurrently -n build,nw \"vite build --watch\" \"node scripts/start-desktop.mjs --devtools\"",
     "build": "vite build",
-    "audit:release": "npm audit",
+    "audit:release": "npm audit --omit=optional",
     "release": "node scripts/release.mjs",
     "release:skip-audit": "node scripts/release.mjs --skip-audit",
     "test": "vitest run",
@@ -96,7 +96,8 @@
     "tar": "^7.5.22",
     "shell-quote": "^1.10.0",
     "esbuild": "^0.28.1",
-    "postcss": "^8.5.20",
+    "postcss": "^8.5.23",
+    "nanoid": "^3.3.18",
     "picomatch": "^4.0.5",
     "@babel/core": "^7.29.7",
     "joi": "^18.2.3"

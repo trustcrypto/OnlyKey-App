@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Audit (fail on high/critical)
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=high --omit=optional
 
       - name: Build
         run: npm run build

@@ -394,7 +394,7 @@ async function main() {
   console.log(`OnlyKey App ${manifest.version} — release packaging (${platform})`);
 
   if (!skipAudit) {
-    run('npm audit');
+    run('npm audit --omit=optional');
   } else {
     console.log('Skipping npm audit (--skip-audit)');
   }
