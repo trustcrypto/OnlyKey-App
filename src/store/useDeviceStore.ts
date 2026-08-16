@@ -309,7 +309,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     });
 
     device.on('messageReceived', (message) => {
-      if (!get().isConnected || get().isLocked) return;
+      if (!get().isConnected) return;
+      const isStatus =
+        message.includes('UNLOCKED') ||
+        message.includes('INITIALIZED') ||
+        message.includes('BOOTLOADER');
+      if (get().isLocked && !isStatus) return;
       set((s) => ({
         recentMessages: [message, ...s.recentMessages].slice(0, 5),
       }));

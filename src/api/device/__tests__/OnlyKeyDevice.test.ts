@@ -221,6 +221,20 @@ it('should timeout if hardware does not respond', async () => {
     expect(device.state.isLocked).toBe(false);
   });
 
+  it('does not re-lock on a stale INITIALIZED echo after keypad unlock', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(device.state.isLocked).toBe(true);
+
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    expect(device.state.isLocked).toBe(false);
+
+    transport.simulateResponse('INITIALIZEDv2.1.0-prod');
+    expect(device.state.isLocked).toBe(false);
+    expect(device.state.isConfigMode).toBe(false);
+  });
+
   it('restore sends silent intermediate OKRESTORE packets then waits on final', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
     transport.setConfigMode(true);

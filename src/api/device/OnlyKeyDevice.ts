@@ -32,6 +32,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   private isProcessingQueue = false;
   private fetchingLabels = false;
   private lastLabelReceivedAt = 0;
+  private lastUnlockedAt = 0;
+  private statusProbe: Promise<void> | null = null;
 
   public state = {
     isConnected: false,
@@ -78,6 +80,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     this.isProcessingQueue = false;
     this.fetchingLabels = false;
     this.lastLabelReceivedAt = 0;
+    this.lastUnlockedAt = 0;
+    this.statusProbe = null;
     this.state = {
       isConnected: false,
       isLocked: true,
@@ -215,6 +219,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       // Explicit unlock/lock from firmware status strings. Do not rely solely on
       // response.isLocked — defensive for any parser edge cases.
       if (text.includes('UNLOCKED')) {
+        this.lastUnlockedAt = Date.now();
         if (this.state.isLocked) {
           this.state.isLocked = false;
           stateChanged = true;
@@ -245,19 +250,28 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         !text.includes('UNLOCKED')
       ) {
         // Classic locked (or unlocked→config). Never match inside UNLOCKED*.
-        if (!this.state.isLocked) {
-          this.state.isLocked = true;
-          stateChanged = true;
-        }
-        if (!wasLocked && this.state.deviceType === DeviceType.CLASSIC) {
-          this.state.isConfigMode = true;
-          stateChanged = true;
+        // Ignore INITIALIZED that arrives just after keypad unlock — leftover
+        // OKSETTIME replies from probes sent while the device was still locked.
+        const staleLockEcho = Date.now() - this.lastUnlockedAt < 2500;
+        if (!staleLockEcho) {
+          if (!this.state.isLocked) {
+            this.state.isLocked = true;
+            stateChanged = true;
+          }
+          if (!wasLocked && this.state.deviceType === DeviceType.CLASSIC) {
+            this.state.isConfigMode = true;
+            stateChanged = true;
+          }
         }
       }
 
       if (response.isLocked !== undefined && this.state.isLocked !== response.isLocked) {
-        this.state.isLocked = response.isLocked;
-        stateChanged = true;
+        const staleLockEcho =
+          response.isLocked === true && Date.now() - this.lastUnlockedAt < 2500;
+        if (!staleLockEcho) {
+          this.state.isLocked = response.isLocked;
+          stateChanged = true;
+        }
       }
       this.state.lastStatusText = text;
       if (this.applyDeviceTypeFromResponse(response.deviceType, 'status')) {
@@ -535,9 +549,9 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
      const bytes = new Uint8Array(timeParts.map(p => parseInt(p, 16)));
      // Send twice
-     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes);
+     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 10000, OnlyKeyDevice.isFirmwareStatus);
      await new Promise(r => setTimeout(r, 100));
-     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes);
+     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 10000, OnlyKeyDevice.isFirmwareStatus);
   }
 
   /**
@@ -546,11 +560,29 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
    * (and ignores) OKSETPIN once initialized; unlock is entirely on-device.
    */
   public async refreshStatus(): Promise<void> {
+    if (this.statusProbe) return this.statusProbe;
+    this.statusProbe = this.sendStatusProbe().finally(() => {
+      this.statusProbe = null;
+    });
+    return this.statusProbe;
+  }
+
+  private async sendStatusProbe(): Promise<void> {
     const currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
     const timeParts = currentEpochTime.match(/.{2}/g);
     if (!timeParts) throw new Error('Failed to generate time parts');
     const bytes = new Uint8Array(timeParts.map((p) => parseInt(p, 16)));
-    await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 5000);
+    await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 5000, OnlyKeyDevice.isFirmwareStatus);
+  }
+
+  private static isFirmwareStatus(res: DeviceResponse): boolean {
+    const text = res.text ?? '';
+    return (
+      res.type === 'status' ||
+      text.includes('UNLOCKED') ||
+      text.includes('INITIALIZED') ||
+      text.includes('BOOTLOADER')
+    );
   }
 
   public async getLabels(): Promise<Map<number, string>> {
