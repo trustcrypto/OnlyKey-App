@@ -6,72 +6,24 @@
  * and then fail with "SyntaxError: Invalid or unexpected token".
  * Run with: node scripts/desktop-test-runner.mjs
  */
-import { spawn, execSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  rootDir,
+  resolveNwExe,
+  stopStaleNwInstances,
+  setPackageMain,
+  restorePackageMain,
+  clearTrayArtifactsOnDisk,
+} from './nw-runtime.mjs';
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export { resolveNwExe };
+
 const packageJsonPath = path.join(rootDir, 'package.json');
 const resultPath = path.join(rootDir, 'tmp', 'desktop-test-result.json');
 const harnessEntry = 'tests/desktop/desktop.harness.html';
-
-export function resolveNwExe() {
-  const nwModuleDir = path.join(rootDir, 'node_modules', 'nw');
-  const symlink = path.join(nwModuleDir, 'nwjs');
-  let runtimeDir = fs.existsSync(symlink) ? symlink : null;
-
-  if (!runtimeDir) {
-    const versioned = fs
-      .readdirSync(nwModuleDir)
-      .find((entry) => entry.startsWith('nwjs-v') && fs.statSync(path.join(nwModuleDir, entry)).isDirectory());
-    if (versioned) runtimeDir = path.join(nwModuleDir, versioned);
-  }
-
-  if (!runtimeDir) {
-    throw new Error('NW.js runtime not found. Run "npm install" first.');
-  }
-
-  const exeRel =
-    process.platform === 'win32'
-      ? 'nw.exe'
-      : process.platform === 'darwin'
-        ? path.join('nwjs.app', 'Contents', 'MacOS', 'nwjs')
-        : 'nw';
-
-  const exePath = path.join(runtimeDir, exeRel);
-  if (!fs.existsSync(exePath)) {
-    throw new Error(`NW.js binary not found at ${exePath}. Run "npm install" first.`);
-  }
-
-  return exePath;
-}
-
-function stopStaleNwInstances() {
-  if (process.platform === 'win32') {
-    try {
-      execSync('taskkill /F /IM nw.exe', { stdio: 'ignore' });
-    } catch {
-      // No running instances.
-    }
-    return;
-  }
-
-  if (process.platform === 'darwin') {
-    try {
-      execSync('pkill -f nwjs', { stdio: 'ignore' });
-    } catch {
-      // No running instances.
-    }
-    return;
-  }
-
-  try {
-    execSync('pkill -f "nw ."', { stdio: 'ignore' });
-  } catch {
-    // No running instances.
-  }
-}
 
 function readPackageJson() {
   return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
@@ -79,25 +31,6 @@ function readPackageJson() {
 
 function writePackageJson(pkg) {
   fs.writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
-}
-
-function setPackageMain(entry) {
-  const pkg = readPackageJson();
-  const previousMain = pkg.main;
-  if (pkg.main !== entry) {
-    pkg.main = entry;
-    writePackageJson(pkg);
-  }
-  return previousMain;
-}
-
-function restorePackageMain(previousMain) {
-  if (!previousMain) return;
-  const pkg = readPackageJson();
-  if (pkg.main !== previousMain) {
-    pkg.main = previousMain;
-    writePackageJson(pkg);
-  }
 }
 
 function setPackageInjectJsEnd(injectJsEnd) {
@@ -165,17 +98,7 @@ export async function runDesktopHarness(options = {}) {
   fs.mkdirSync(userDataDir, { recursive: true });
   if (fs.existsSync(resultPath)) fs.rmSync(resultPath);
 
-  const tmpDir = path.join(rootDir, 'tmp');
-  for (const artifact of [
-    'suppress-show.json',
-    'tray-command.json',
-    'tray-ready.json',
-    'main-window.json',
-    'tray-debug.log',
-  ]) {
-    const artifactPath = path.join(tmpDir, artifact);
-    if (fs.existsSync(artifactPath)) fs.rmSync(artifactPath);
-  }
+  clearTrayArtifactsOnDisk();
 
   const previousMain = setPackageMain(entry);
   const previousInjectJsEnd =

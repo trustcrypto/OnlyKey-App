@@ -3,7 +3,7 @@ import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveNwExe } from './desktop-test-runner.mjs';
+import { resolveNwExe } from './nw-runtime.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packageJsonPath = path.join(rootDir, 'package.json');

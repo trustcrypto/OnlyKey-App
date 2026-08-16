@@ -15,6 +15,7 @@ import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveNwjsDir } from './nw-runtime.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -111,15 +112,6 @@ function resolveMakensis() {
     if (candidate === 'makensis' || fs.existsSync(candidate)) return candidate;
   }
   return 'makensis';
-}
-
-function resolveNwjsDir() {
-  const nwModuleDir = path.join(rootDir, 'node_modules', 'nw');
-  const symlink = path.join(nwModuleDir, 'nwjs');
-  if (fs.existsSync(symlink)) return symlink;
-  const versioned = fs.readdirSync(nwModuleDir).find((entry) => entry.startsWith('nwjs-v'));
-  if (versioned) return path.join(nwModuleDir, versioned);
-  throw new Error('NW.js runtime not found. Run "npm install" first.');
 }
 
 function buildProductionPackageJson(source) {

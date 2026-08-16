@@ -7,15 +7,10 @@ import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveNwExe } from './nw-runtime.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packageJsonPath = path.join(rootDir, 'package.json');
-
-function resolveNwExe() {
-  const nwModuleDir = path.join(rootDir, 'node_modules', 'nw');
-  const runtimeDir = fs.readdirSync(nwModuleDir).find((e) => e.startsWith('nwjs'));
-  return path.join(nwModuleDir, runtimeDir, 'nw.exe');
-}
 
 function stopNw() {
   try {
