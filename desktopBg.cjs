@@ -279,7 +279,6 @@ function pageLocationHref() {
 
 function isBackgroundPageContext(nwWin) {
   const pageHref = pageLocationHref();
-  if (pageHref.includes('desktopBg.html')) return true;
   if (pageHref.includes('_generated_background_page')) return true;
   if (!pageHref && !isMainAppWindow(nwWin)) return true;
   return !isMainAppWindow(nwWin);
@@ -287,8 +286,6 @@ function isBackgroundPageContext(nwWin) {
 
 function isTrayHostWindow(win) {
   if (!win) return false;
-  const href = windowHref(win);
-  if (href.includes('desktopBg.html')) return true;
   try {
     return win.width <= 2 && win.height <= 2;
   } catch {
@@ -817,7 +814,7 @@ function startCommandPolling() {
   state.commandPoll = setInterval(pollTrayCommands, 50);
 }
 
-/** bg-script entry — tray + menu. See docs/desktop-tray.md */
+/** Background-context entry used by unit tests. Production boots via start(). */
 function startBackground(ctxWin) {
   const nwWin = ctxWin || nw.Window.get();
   const pageHref = pageLocationHref();

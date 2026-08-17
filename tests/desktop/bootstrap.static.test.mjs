@@ -40,7 +40,7 @@ describe('desktop bootstrap static checks', () => {
     expect(pkg.devDependencies?.nw).toBe('0.104.1');
     expect(pkg.scripts?.['verify:tray']).toBe('node scripts/verify-tray.mjs');
     expect(fs.existsSync(path.join(rootDir, 'desktopBg.cjs'))).toBe(true);
-    expect(fs.existsSync(path.join(rootDir, 'desktopBg.html'))).toBe(true);
+    expect(fs.existsSync(path.join(rootDir, 'desktopInject.js'))).toBe(true);
     expect(fs.existsSync(path.join(rootDir, 'docs', 'desktop-tray.md'))).toBe(true);
     expect(fs.readFileSync(path.join(rootDir, 'desktopBg.cjs'), 'utf8')).toContain(
       'docs/desktop-tray.md'

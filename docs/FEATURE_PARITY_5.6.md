@@ -110,7 +110,7 @@ Legend: **Done** = present with real UI + device API · **Partial** = present bu
 | Item | Status | Evidence |
 |------|--------|----------|
 | NW entry / prod package | Done | `main.cjs`, `scripts/start-desktop.mjs`, `release.mjs` |
-| Tray | Done / verify | `tray.cjs`, `docs/desktop-tray.md`, verify scripts |
+| Tray | Done / verify | `desktopBg.cjs`, `desktopInject.js`, `docs/desktop-tray.md`, verify scripts |
 | Auto-launch / user prefs | Done / verify | `userPreferences.cjs`, desktop modules |
 | App auto-updater | Partial | `src/desktop/updater.ts` — confirm HTTPS + integrity before shipping |
 | Theme toggle | Done (new vs 5.6) | `ThemeToggle` |

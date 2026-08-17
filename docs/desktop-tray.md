@@ -22,7 +22,7 @@ The maintained reference is [nw-tray-example](https://github.com/nwutils/nw-tray
 | Off-screen 1×1 `show: true` host | **White blob** upper-left; menus still dead |
 | `hostWin.eval()` bootstrap | `require is not defined` — eval VM has no Node |
 
-Do **not** reintroduce a tray host window or `bg-script` without re-verifying on real Windows NW 0.105.
+Those experiment files were never shipped and are not in the tree. Do **not** reintroduce a tray host window or `bg-script` without re-verifying on real Windows NW 0.105.
 
 ## macOS packaged app
 

@@ -149,15 +149,9 @@ function buildProductionPackageJson(source) {
 
 /** Files that must ship next to package.json for desktop shell. */
 const DESKTOP_SHELL_FILES = [
-  'tray.cjs',
   'userPreferences.cjs',
-  'desktopClose.cjs',
-  'desktopRuntime.cjs',
   'desktopBg.cjs',
-  'desktopBgScript.cjs',
-  'desktopBg.html',
   'desktopInject.js',
-  'desktopNodeMain.cjs',
 ];
 
 function stageApplication(manifest) {
