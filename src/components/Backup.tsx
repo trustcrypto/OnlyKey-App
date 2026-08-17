@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
-import { verifyBackupData } from '../utils/backupVerify';
+import { extractBackupBlock, verifyBackupData } from '../utils/backupVerify';
 import { restoreBackupFromFile } from '../services/backup/backupService';
 import { TOOLTIPS } from '../data/tooltips';
 import { SetButton, StepFieldset } from './ui/forms';
@@ -14,7 +14,8 @@ const Backup: React.FC = () => {
   const { device, deviceType, setWorking } = useDeviceStore();
   const isDuo = deviceType === DeviceType.DUO;
   const [activeTab, setActiveTab] = useState<BackupTab>('backup');
-  const [backupData, setBackupData] = useState('');
+  const [hasBackupData, setHasBackupData] = useState(false);
+  const backupTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRestoring, setIsRestoring] = useState(false);
   const [backupError, setBackupError] = useState<string | null>(null);
   const [restoreError, setRestoreError] = useState<string | null>(null);
@@ -23,8 +24,10 @@ const Backup: React.FC = () => {
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const readBackupText = () => extractBackupBlock(backupTextareaRef.current?.value ?? '');
+
   const handleSave = () => {
-    const trimmed = backupData.trim();
+    const trimmed = readBackupText();
     if (!trimmed) {
       setBackupError('Backup data cannot be empty.');
       return;
@@ -75,8 +78,6 @@ const Backup: React.FC = () => {
 
   if (!device) return null;
 
-  const hasBackupData = backupData.trim().length > 0;
-
   return (
     <div className="page-shell">
       <header className="page-header">
@@ -116,9 +117,14 @@ const Backup: React.FC = () => {
             <label className="block">
               <span className="font-semibold">Backup data</span>
               <textarea
+                ref={backupTextareaRef}
                 rows={4}
-                value={backupData}
-                onChange={(e) => setBackupData(e.target.value)}
+                defaultValue=""
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                onInput={(e) => setHasBackupData(e.currentTarget.value.trim().length > 0)}
                 placeholder="DO NOT type in this field. Click inside here, then hold your OnlyKey button #1 for 5+ seconds."
                 className="field-input mt-1 font-mono text-sm w-full"
               />
@@ -127,7 +133,7 @@ const Backup: React.FC = () => {
               <SetButton
                 disabled={!hasBackupData}
                 onClick={() => {
-                  const result = verifyBackupData(backupData);
+                  const result = verifyBackupData(readBackupText());
                   if (result.valid) {
                     setVerifyMessage(result.message || 'Backup verified.');
                     setBackupError(null);

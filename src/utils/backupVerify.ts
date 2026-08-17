@@ -7,8 +7,19 @@ export interface BackupVerifyResult {
   message?: string;
 }
 
+const BACKUP_BEGIN = '-----BEGIN ONLYKEY BACKUP-----';
+const BACKUP_END = '-----END ONLYKEY BACKUP-----';
+
+export function extractBackupBlock(backupData: string): string {
+  const start = backupData.indexOf(BACKUP_BEGIN);
+  if (start < 0) return backupData.trim();
+  const end = backupData.indexOf(BACKUP_END, start);
+  if (end < 0) return backupData.slice(start).trim();
+  return backupData.slice(start, end + BACKUP_END.length).trim();
+}
+
 export function verifyBackupData(backupData: string): BackupVerifyResult {
-  const trimmed = backupData.trim();
+  const trimmed = extractBackupBlock(backupData);
   if (!trimmed) {
     return { valid: false, error: 'Backup data cannot be empty.' };
   }
