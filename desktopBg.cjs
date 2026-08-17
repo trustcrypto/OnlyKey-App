@@ -14,14 +14,54 @@ const userPreferences = require('./userPreferences.cjs');
 
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
 
-function tmpDir() {
-  // Dev checkouts can write under startPath/tmp. The installed deb lives in
-  // root-owned /opt/OnlyKey, so fall back to a per-user writable directory.
-  const candidates = [];
+function isLikelyAppRoot(dir) {
+  try {
+    return !!dir && dir !== path.parse(dir).root && fs.existsSync(path.join(dir, 'desktopBg.cjs'));
+  } catch {
+    return false;
+  }
+}
+
+function resolveAppRoot() {
+  const candidates = [__dirname];
   try {
     if (typeof nw !== 'undefined' && nw.App && nw.App.startPath) {
-      candidates.push(path.join(nw.App.startPath, 'tmp'));
+      candidates.push(nw.App.startPath);
     }
+  } catch {
+    // ignore
+  }
+  try {
+    if (os.platform() === 'darwin' && process.execPath) {
+      candidates.push(path.resolve(path.dirname(process.execPath), '..', 'Resources', 'app.nw'));
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    if (process.execPath) candidates.push(path.dirname(process.execPath));
+  } catch {
+    // ignore
+  }
+  try {
+    candidates.push(process.cwd());
+  } catch {
+    // ignore
+  }
+
+  for (const dir of candidates) {
+    if (isLikelyAppRoot(dir)) return dir;
+  }
+  return __dirname;
+}
+
+function tmpDir() {
+  // Dev checkouts can write under the app root. Installed copies under
+  // /Applications or /opt/OnlyKey are not writable, so fall back to a
+  // per-user directory. Do not treat Finder cwd `/` as the app root.
+  const candidates = [];
+  try {
+    candidates.push(path.join(resolveAppRoot(), 'tmp'));
   } catch {
     // ignore
   }
@@ -312,10 +352,21 @@ function forEachMainWindow(callback) {
 }
 
 function resolveTrayIconPath() {
-  const candidates = [
-    path.join(nw.App.startPath, 'resources', 'ok-tray-logo.png'),
-    path.join(nw.App.startPath, 'ok-tray-logo.png'),
-  ];
+  const roots = [resolveAppRoot(), __dirname];
+  try {
+    if (typeof nw !== 'undefined' && nw.App && nw.App.startPath) {
+      roots.push(nw.App.startPath);
+    }
+  } catch {
+    // ignore
+  }
+
+  const candidates = [];
+  for (const root of roots) {
+    if (!root) continue;
+    candidates.push(path.join(root, 'resources', 'ok-tray-logo.png'));
+    candidates.push(path.join(root, 'ok-tray-logo.png'));
+  }
 
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) {
@@ -323,7 +374,7 @@ function resolveTrayIconPath() {
     }
   }
 
-  throw new Error(`Tray icon missing under ${nw.App.startPath}`);
+  throw new Error(`Tray icon missing under ${resolveAppRoot()}`);
 }
 
 function revealWindow(win) {
@@ -731,7 +782,10 @@ async function initTray() {
 
   const settingsMenu = buildTrayMenu(autoLaunch);
   const iconPath = resolveTrayIconPath();
-  const tray = new nw.Tray({ icon: iconPath, title: linux ? 'OnlyKey' : undefined });
+  const trayOptions = { icon: iconPath };
+  if (linux) trayOptions.title = 'OnlyKey';
+  if (osx) trayOptions.iconsAreTemplates = false;
+  const tray = new nw.Tray(trayOptions);
   state.tray = tray;
   if (!linux) tray.tooltip = 'OnlyKey Configuration App settings';
 
@@ -876,7 +930,12 @@ function stop() {
 }
 
 function getTestState() {
-  const iconPath = path.join(nw.App.startPath, 'resources', 'ok-tray-logo.png');
+  let iconPath;
+  try {
+    iconPath = resolveTrayIconPath();
+  } catch {
+    iconPath = path.join(resolveAppRoot(), 'resources', 'ok-tray-logo.png');
+  }
   const win = nw.Window.get();
   const trayMeta = readTrayReadyMeta();
   const menuLabels =
@@ -924,5 +983,6 @@ module.exports = {
   isTrayReadyInBackground,
   isTrayReadyOnDisk,
   getTestState,
+  resolveAppRoot,
   _state: state,
 };

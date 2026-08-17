@@ -22,7 +22,7 @@ declare const nw: {
     };
     getAll?: (callback: (wins: Array<ReturnType<(typeof nw)['Window']['get']>>) => void) => void;
   };
-  Tray: new (options: { icon: string }) => {
+  Tray: new (options: { icon: string; title?: string; iconsAreTemplates?: boolean }) => {
     tooltip: string;
     menu: unknown;
     on: (event: string, callback: () => void) => void;

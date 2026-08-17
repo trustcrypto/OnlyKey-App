@@ -22,10 +22,15 @@
   win.on('restore', showWin);
 
   try {
-    var path = require('path');
-    var desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs'));
+    var desktop = require('./desktopBg.cjs');
     if (typeof desktop.start === 'function') desktop.start();
   } catch (error) {
-    console.error('Desktop bootstrap failed:', error);
+    try {
+      var path = require('path');
+      var desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs'));
+      if (typeof desktop.start === 'function') desktop.start();
+    } catch (error2) {
+      console.error('Desktop bootstrap failed:', error2);
+    }
   }
 })();

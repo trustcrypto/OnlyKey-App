@@ -1,10 +1,42 @@
 import { checkForAppUpdate } from './updater';
 import { bindWindowVisibilityHandlers } from './windowVisibility';
 
+function resolveAppRoot(): string {
+  const path = require('path') as typeof import('path');
+  const fs = require('fs') as typeof import('fs');
+  const candidates: string[] = [];
+  try {
+    if (nw.App?.startPath) candidates.push(nw.App.startPath);
+  } catch {
+    // ignore
+  }
+  try {
+    if (process.platform === 'darwin' && process.execPath) {
+      candidates.push(path.resolve(path.dirname(process.execPath), '..', 'Resources', 'app.nw'));
+    }
+  } catch {
+    // ignore
+  }
+  try {
+    if (process.execPath) candidates.push(path.dirname(process.execPath));
+  } catch {
+    // ignore
+  }
+  try {
+    candidates.push(process.cwd());
+  } catch {
+    // ignore
+  }
+  for (const dir of candidates) {
+    if (dir && fs.existsSync(path.join(dir, 'desktopBg.cjs'))) return dir;
+  }
+  return nw.App.startPath;
+}
+
 function ensureDesktopStarted(): void {
   try {
     const path = require('path') as typeof import('path');
-    const desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs')) as {
+    const desktop = require(path.join(resolveAppRoot(), 'desktopBg.cjs')) as {
       start?: () => void;
     };
     desktop.start?.();

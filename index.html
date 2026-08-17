@@ -44,7 +44,31 @@
           win.on('focus', showWin);
           win.on('restore', showWin);
 
-          var appRoot = nw.App.startPath;
+          var path = require('path');
+          var fs = require('fs');
+          var appRoot = (function () {
+            var candidates = [];
+            try { if (nw.App.startPath) candidates.push(nw.App.startPath); } catch (e) {}
+            try {
+              if (process.platform === 'darwin' && process.execPath) {
+                candidates.push(path.resolve(path.dirname(process.execPath), '..', 'Resources', 'app.nw'));
+              }
+            } catch (e) {}
+            try { if (process.execPath) candidates.push(path.dirname(process.execPath)); } catch (e) {}
+            try { candidates.push(process.cwd()); } catch (e) {}
+            try {
+              if (typeof __dirname !== 'undefined') {
+                candidates.push(__dirname);
+                candidates.push(path.resolve(__dirname, '..'));
+              }
+            } catch (e) {}
+            for (var i = 0; i < candidates.length; i++) {
+              if (candidates[i] && fs.existsSync(path.join(candidates[i], 'desktopBg.cjs'))) {
+                return candidates[i];
+              }
+            }
+            return nw.App.startPath;
+          })();
           require(require('path').join(appRoot, 'desktopBg.cjs')).start();
 
           if ((nw.App.argv || []).some(function (arg) {

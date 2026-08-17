@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createRequire } from 'node:module';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -35,6 +36,7 @@ function createNwMock() {
     on: vi.fn(),
     remove: vi.fn(),
   };
+  let trayOptions = null;
 
   function Menu() {
     this.append = vi.fn();
@@ -50,7 +52,8 @@ function createNwMock() {
     menuItems.push(this);
   }
 
-  function Tray() {
+  function Tray(options) {
+    trayOptions = options;
     return tray;
   }
 
@@ -70,7 +73,15 @@ function createNwMock() {
     },
   };
 
-  return { win, tray, listeners, menuItems };
+  return {
+    win,
+    tray,
+    listeners,
+    menuItems,
+    get trayOptions() {
+      return trayOptions;
+    },
+  };
 }
 
 let desktopModule = null;
@@ -193,6 +204,34 @@ describe('desktopBg.cjs unit', () => {
       expect(win.show).toHaveBeenCalledWith(true);
       expect(win.focus).toHaveBeenCalled();
     }, { timeout: 1000 });
+  });
+
+  it('omits tray title on macOS so the menu bar does not show "undefined"', async () => {
+    const mock = createNwMock();
+    const desktop = loadDesktopModule();
+    desktop.start();
+    await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
+
+    expect(mock.trayOptions?.icon).toMatch(/ok-tray-logo\.png$/);
+    expect(fs.existsSync(mock.trayOptions.icon)).toBe(true);
+    if (process.platform === 'darwin') {
+      expect(mock.trayOptions).not.toHaveProperty('title');
+      expect(mock.trayOptions.iconsAreTemplates).toBe(false);
+    } else if (process.platform === 'linux') {
+      expect(mock.trayOptions.title).toBe('OnlyKey');
+    } else {
+      expect(mock.trayOptions).not.toHaveProperty('title');
+    }
+  });
+
+  it('creates a tray when nw.App.startPath is not the app root', async () => {
+    const mock = createNwMock();
+    nw.App.startPath = '/';
+    const desktop = loadDesktopModule();
+    desktop.start();
+    await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
+    expect(mock.trayOptions?.icon).toContain('ok-tray-logo.png');
+    expect(fs.existsSync(mock.trayOptions.icon)).toBe(true);
   });
 
   it('builds a non-empty tray menu without remove/insert refresh', async () => {

@@ -18,6 +18,21 @@ describe('desktop bootstrap static checks', () => {
     expect(inject).toContain('desktop.start');
   });
 
+  it('desktopInject.js prefers a relative require so Finder launches still boot', () => {
+    const inject = fs.readFileSync(path.join(rootDir, 'desktopInject.js'), 'utf8');
+    expect(inject).toContain("require('./desktopBg.cjs')");
+  });
+
+  it('macOS Info.plist uses a unique bundle id', () => {
+    const plist = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'Info.plist'), 'utf8');
+    expect(plist).toContain('to.crp.onlykey');
+    expect(plist).not.toContain('com.intel.nw');
+  });
+
+  it('tray icon asset exists', () => {
+    expect(fs.existsSync(path.join(rootDir, 'resources', 'ok-tray-logo.png'))).toBe(true);
+  });
+
   it('package.json boots tray from inject_js_start (nw-tray-example pattern)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
     expect(pkg['bg-script']).toBeUndefined();

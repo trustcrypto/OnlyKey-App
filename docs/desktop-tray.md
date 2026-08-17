@@ -24,6 +24,12 @@ The maintained reference is [nw-tray-example](https://github.com/nwutils/nw-tray
 
 Do **not** reintroduce a tray host window or `bg-script` without re-verifying on real Windows NW 0.105.
 
+## macOS packaged app
+
+`nw.App.startPath` is cwd at process start. Finder launches set cwd to `/`, so `startPath/desktopBg.cjs` and `startPath/resources/ok-tray-logo.png` do not exist. Resolve the app root from `__dirname` / `Contents/Resources/app.nw`, and `require('./desktopBg.cjs')` from `desktopInject.js`.
+
+Do **not** pass `title: undefined` into `nw.Tray` — macOS draws that string next to the icon. Only set `title` on Linux. Color tray artwork needs `iconsAreTemplates: false`.
+
 ## Current rule
 
 1. `package.json` → `window.inject_js_start: desktopInject.js` calls `desktopBg.cjs` → `start()`.
