@@ -7,7 +7,7 @@
  *
  * Windows → releases/OnlyKey_<ver>.exe  (NSIS; requires makensis)
  * Linux   → releases/OnlyKey_<ver>_amd64.deb  (requires fakeroot + dpkg-deb)
- * macOS   → releases/OnlyKey_<ver>.dmg  (requires appdmg)
+ * macOS   → releases/OnlyKey_<ver>.dmg  (uses hdiutil)
  *
  * Always stages a runnable app bundle under tmp/release/<name>/ before packaging.
  */
@@ -35,8 +35,13 @@ function copyDir(src, dest) {
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
-    if (entry.isDirectory()) copyDir(srcPath, destPath);
-    else fs.copyFileSync(srcPath, destPath);
+    if (entry.isSymbolicLink()) {
+      fs.symlinkSync(fs.readlinkSync(srcPath), destPath);
+    } else if (entry.isDirectory()) {
+      copyDir(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
   }
 }
 
@@ -361,27 +366,23 @@ async function buildMacDmg(appDir, manifest) {
   const dmgName = `${manifest.name}_${manifest.version}.dmg`;
   const dmgPath = path.join(releasesDir, dmgName);
   if (fs.existsSync(dmgPath)) fs.unlinkSync(dmgPath);
+  fs.mkdirSync(releasesDir, { recursive: true });
 
-  const dmgTpl = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'appdmg.json'), 'utf8');
-  const dmgJson = replaceTemplate(dmgTpl, {
-    productName: manifest.productName,
-    appPath: finalAppDir.replace(/\\/g, '/'),
-    dmgIcon: path.join(rootDir, 'resources', 'osx', 'dmg-icon.icns').replace(/\\/g, '/'),
-    dmgBackground: path
-      .join(rootDir, 'resources', 'osx', 'dmg-background.png')
-      .replace(/\\/g, '/'),
-  });
-  const dmgConfigPath = path.join(tmpDir, 'appdmg.json');
-  fs.writeFileSync(dmgConfigPath, dmgJson);
+  const dmgStage = path.join(tmpDir, 'dmg-root');
+  if (fs.existsSync(dmgStage)) fs.rmSync(dmgStage, { recursive: true, force: true });
+  fs.mkdirSync(dmgStage, { recursive: true });
+  copyDir(finalAppDir, path.join(dmgStage, appBundleName));
+  fs.symlinkSync('/Applications', path.join(dmgStage, 'Applications'));
 
-  console.log('Building DMG with appdmg…');
+  console.log('Building DMG with hdiutil…');
   try {
-    run(`npx appdmg "${dmgConfigPath}" "${dmgPath}"`);
+    run(
+      `hdiutil create -volname "${manifest.productName}" -srcfolder "${dmgStage}" -ov -format UDZO "${dmgPath}"`
+    );
     console.log(`DMG ready: ${dmgPath}`);
     return dmgPath;
   } catch (err) {
-    console.warn('appdmg failed — is it installed? (optionalDependency appdmg)');
-    console.warn('Staged .app kept at:', finalAppDir);
+    console.warn('hdiutil failed — staged .app kept at:', finalAppDir);
     throw err;
   }
 }

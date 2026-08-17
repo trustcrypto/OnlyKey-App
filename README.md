@@ -66,7 +66,7 @@ To create releases:
 
 This will bundle the app and create an installer in the `releases/` subfolder.
 
-On Windows, you need [NSIS][nsis] installed and in your `%PATH%`. On macOS, `appdmg` is required.
+On Windows, you need [NSIS][nsis] installed and in your `%PATH%`. On macOS, `hdiutil` is used (built in).
 
 To run tests:
 

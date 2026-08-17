@@ -85,9 +85,6 @@
     "vitest": "^4.1.10",
     "wait-on": "^9.0.4"
   },
-  "optionalDependencies": {
-    "appdmg": "^0.6.4"
-  },
   "overrides": {
     "axios": "^1.18.1",
     "form-data": "^4.0.6",
@@ -134,9 +131,7 @@
   },
   "allowScripts": {
     "esbuild@0.28.1": true,
-    "fs-xattr@0.3.1": true,
     "fsevents@2.3.3": true,
-    "macos-alias@0.2.12": true,
     "nw@0.104.1": true
   }
 }
