@@ -18,7 +18,11 @@ const ConfigModeInstructions: React.FC = () => {
           <>hold down button #6 on your OnlyKey for 5+ seconds and release.</>
         )}{' '}
         The light will turn off.
-        {isDuo && <> If a PIN was previously set, re-enter the PIN to enter config mode.</>}
+        {isDuo ? (
+          <> If a PIN was previously set, re-enter the PIN to enter config mode.</>
+        ) : (
+          <> Enter your PIN.</>
+        )}
         {' '}You will notice the OnlyKey flashes red in config mode.
       </p>
     </>

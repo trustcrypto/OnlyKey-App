@@ -95,5 +95,5 @@ export function configModeTooltipText(deviceType: DeviceType): string {
   if (deviceType === DeviceType.DUO) {
     return 'Hold button #1 for 10+ seconds and release. The light turns off. If a PIN is set, re-enter it. The LED flashes red.';
   }
-  return 'Hold button #6 for 5+ seconds and release. The light turns off. The LED flashes red.';
+  return 'Hold button #6 for 5+ seconds and release. The light turns off. Enter your PIN. The LED flashes red.';
 }

@@ -18,7 +18,7 @@ const ConfigModeNotice: React.FC = () => {
         ) : (
           <>
             Hold button #6 on your OnlyKey for 5+ seconds and release. The light will turn off.
-            The device flashes red in config mode.
+            Enter your PIN. The device flashes red in config mode.
           </>
         )}
       </p>

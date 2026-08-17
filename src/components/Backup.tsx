@@ -169,7 +169,7 @@ const Backup: React.FC = () => {
                 {isDuo ? (
                   <>Hold down button #1 on your OnlyKey DUO for 10+ seconds and release. The light will turn off. If a PIN was previously set, re-enter the PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</>
                 ) : (
-                  <>Hold down button #6 on your OnlyKey for 5+ seconds and release. The light will turn off. You will notice the OnlyKey flashes red in config mode.</>
+                  <>Hold down button #6 on your OnlyKey for 5+ seconds and release. The light will turn off. Enter your PIN. You will notice the OnlyKey flashes red in config mode.</>
                 )}
               </p>
               <p>
