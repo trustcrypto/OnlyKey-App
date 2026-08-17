@@ -2,10 +2,10 @@
 
 **Baseline tree:** `onlykey-app-v6` (promoted branch `release/5.7.0-modern-rewrite`)  
 **Version:** **5.7.0** (renumbered from internal 6.0.0 label; not a protocol 6.x)  
-**Assessed:** 2026-07-19  
-**Method:** Source inventory of `src/`, desktop scripts, packaging, tests — **no prior parity markdown was found in-repo** (only `docs/desktop-tray.md`, `GEMINI.md`, `README.md`). This document is the new living checklist.
+**Assessed:** 2026-07-19 (source inventory) · **Status review:** 2026-08-17  
+**Method:** Source inventory of `src/`, desktop scripts, packaging, and automated tests. **Done is not a hardware sign-off.** Firmware load and app auto-update have mocked/unit coverage only; they have not been run on a real key or a published 5.7 update channel.
 
-Legend: **Done** = present with real UI + device API · **Partial** = present but gaps vs 5.6 · **Missing** = not found · **N/A** = intentional change / not product-critical
+Legend: **Done** = present with real UI + device API (unverified on hardware unless noted) · **Partial** = present but gaps vs 5.6 or untrusted for ship · **Unverified** = implemented in code, not exercised on device/channel · **Missing** = not found · **N/A** = intentional change / not product-critical
 
 ---
 
@@ -15,21 +15,21 @@ Legend: **Done** = present with real UI + device API · **Partial** = present bu
 |------|----------------|
 | Navigation / all tabs | **Done** (Setup, Slots, Keys, Backup, Firmware, Preferences, Advanced, Tools) |
 | Device connect / lock / time | **Done** (HID transport, mock, lock screen Classic+DUO, config mode state) |
-| Setup wizard Classic + DUO | **Done** (guided steps, PINs, backup key, restore, firmware handoff) |
+| Setup wizard Classic + DUO | **Done** (guided steps, PINs, backup key, restore; firmware handoff unverified) |
 | Slots (basic / MFA / advanced) | **Done** (full field set + password generator + wipe confirm) |
 | Keys (PGP / SSH PEM) | **Done** (import service, multi-key select, wipe) |
 | Backup / Restore | **Done** (capture textarea, verify hash, save file, restore service) |
-| Firmware | **Done** (file + download latest, bootloader kick, block stream, resume) |
+| Firmware | **Unverified** (UI + HID path exist; not loaded onto Classic/DUO) |
 | Preferences (standard + advanced) | **Done** (layouts, wipe/challenge/backup-lock modes) |
 | Advanced (Yubi AES + ECC/HMAC) | **Done** |
 | Tools (WebCrypt / Agent links) | **Done** |
 | Password generator | **Done** (clipboard-free dialog) |
-| Tray / auto-launch / updater | **Done / Partial** (tray + prefs scripts present; treat auto-update as verify-on-hardware) |
-| Packaging (NSIS etc.) | **Done** (`scripts/release.mjs`; prior test install used 6.0.0 artifact names) |
-| Automated tests | **Strong** (dozens of unit + UI tests; re-run after renumber) |
-| Hardware matrix | **Not signed off** in this doc |
+| Tray / auto-launch / updater | **Done / Partial** (tray + prefs exist; app updater is download-to-folder only) |
+| Packaging (NSIS etc.) | **Done** (`scripts/release.mjs`; artifacts named `OnlyKey_5.7.0.*`) |
+| Automated tests | **Strong** (193 UI/unit tests in 44 files as of 2026-08-17; desktop NW tests separate) |
+| Hardware matrix | **Not signed off** — firmware update and app update not run |
 
-**Bottom line:** Product surface area is **near full 5.6 parity in code**. Remaining work is quality/security gate (hardware, release renames, residual bugs, polish), not greenfield feature rebuild.
+**Bottom line:** Product surface area is **near full 5.6 parity in code**. Firmware load and app auto-update must not be treated as working until someone runs them on hardware / a real 5.7 channel. Remaining work is that quality/security gate, not a feature rebuild.
 
 ---
 
@@ -46,7 +46,7 @@ Legend: **Done** = present with real UI + device API · **Partial** = present bu
 | Backup key lock mode | Done | `setBackupKeyMode` |
 | Sec profile mode | Done | `setSecProfileMode` |
 | Restore during setup | Done | restore file + `parseBackupData` |
-| Firmware during setup | Done | firmware file + pending firmware store |
+| Firmware during setup | Unverified | firmware file + pending store — same untested path as Firmware tab |
 | Config-mode instructions | Done | `ConfigModeInstructions` / notices |
 
 ### Slots
@@ -82,10 +82,10 @@ Legend: **Done** = present with real UI + device API · **Partial** = present bu
 ### Firmware
 | Item | Status | Evidence |
 |------|--------|----------|
-| File pick + parse signed FW | Done | `parseFirmwareData` |
-| Bootloader kick + stream | Done | `triggerBootloader` / `loadFirmwareBlocks` |
-| Download latest | Done | `firmwareDownload.ts` |
-| Resume after reboot | Done | `firmwareCheck` pending store |
+| File pick + parse signed FW | Unverified | `parseFirmwareData` + Firmware tab — mocked UI tests only |
+| Bootloader kick + stream | Unverified | `triggerBootloader` / `loadFirmwareBlocks` — not run on a key |
+| Download latest | Unverified | `firmwareDownload.ts` fetches GitHub `Signed_OnlyKey_*_STD.txt`; no SHA-256 check |
+| Resume after reboot | Unverified | `sessionStorage` pending store — lost if the app window is closed |
 
 ### Preferences
 | Item | Status | Evidence |
@@ -112,37 +112,38 @@ Legend: **Done** = present with real UI + device API · **Partial** = present bu
 | NW entry / prod package | Done | `main.cjs`, `scripts/start-desktop.mjs`, `release.mjs` |
 | Tray | Done / verify | `desktopBg.cjs`, `desktopInject.js`, `docs/desktop-tray.md`, verify scripts |
 | Auto-launch / user prefs | Done / verify | `userPreferences.cjs`, desktop modules |
-| App auto-updater | Partial | `src/desktop/updater.ts` — confirm HTTPS + integrity before shipping |
+| App auto-updater | Partial | `updater.ts`: HTTPS manifest + download to temp + open folder. No hash/signature. Defaults **on**. Points at live 5.6 S3 `manifestUrl`. Never exercised for 5.7. |
 | Theme toggle | Done (new vs 5.6) | `ThemeToggle` |
 
 ---
 
 ## Known residual risks (not full feature absence)
 
-1. **Version / artifact renames** — code was labeled 6.0.0; branch + package now **5.7.0**. Ensure installer filenames, S3 manifest, and any leftover `OnlyKey_6.0.0.*` artifacts are updated before publish.
-2. **Searching spinner UX** — disconnected overlay still uses spinning emoji badge in `App.tsx` (same class of UI bug as the thin rewrite).
-3. **Preferences error UX** — some `run()` handlers only `console.error` (may need user-visible errors for security ops).
-4. **Hardware gate** — Classic + DUO matrix not recorded as passed in this repo.
-5. **Auto-update trust model** — re-audit before enabling for production.
+1. **Firmware load untested on hardware** — Classic and DUO file-load, bootloader kick, block stream, and resume have not been signed off. `autoUpdateFW` defaults on and will prompt from GitHub.
+2. **App updater untested and unsigned** — no installer integrity check; S3 channel is still the 5.6 `manifestUrl`. `autoUpdate` defaults on.
+3. **Searching spinner UX** — disconnected overlay still uses spinning emoji badge in `App.tsx`.
+4. **Preferences error UX** — some `run()` handlers only `console.error` (may need user-visible errors for security ops).
+5. **Hardware gate** — Classic + DUO matrix not recorded as passed in this repo.
 6. **Chrome App path** — desktop NW is primary; Chrome packaging is secondary/legacy.
 
 ---
 
-## Test snapshot (from prior v6 session logs)
+## Test snapshot
 
-Historical run in prior agent session reported **~96 tests / 25 files passing**. Re-run after renumber:
+`npx vitest run --project ui` on 2026-08-17: **193 tests / 44 files passed**. Desktop NW tests (`npm run test:desktop`) are separate and do not cover firmware load or app update.
 
 ```bash
-npm test
+npm run test:unit
 ```
 
 ---
 
 ## Release gate (carry-forward)
 
-- [ ] `npm test` green on `release/5.7.0-modern-rewrite`
+- [ ] `npm run test:unit` green on `release/5.7.0-modern-rewrite`
 - [ ] Version **5.7.0** consistent in package/manifest/release URLs
-- [ ] Hardware H1–H14 Classic + DUO
+- [ ] Firmware file-load + download-latest on lab Classic and DUO
+- [ ] App update against a real 5.7 HTTPS manifest (with integrity) before leaving `autoUpdate` on
 - [ ] Production package: no dev-only node-remote, no secret logging
 - [ ] Installer smoke on clean machine
 
