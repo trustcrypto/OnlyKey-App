@@ -108,7 +108,6 @@ const branchPct = totals.branches.total ? totals.branches.covered / totals.branc
 const fnPct = totals.functions.total ? totals.functions.covered / totals.functions.total : 0;
 
 const unitTestCount = UNIT_TESTS.reduce((n, t) => n + t.tests, 0);
-const uiTestCount = 62 - unitTestCount; // synced with vitest output; re-count below
 
 console.log('\n╔══════════════════════════════════════════════════════════════════╗');
 console.log('║              ONLYKEY APP — TEST COVERAGE REPORT                  ║');

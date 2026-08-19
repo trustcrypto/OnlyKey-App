@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      production-dependencies:
+        dependency-type: production
+      development-dependencies:
+        dependency-type: development
+    ignore:
+      # Windows tray menu clicks are broken in NW.js 0.105+.
+      # See docs/desktop-tray.md and the 0.104.1 pin in package.json.
+      - dependency-name: nw
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
