@@ -226,7 +226,7 @@ describe('desktopBg.cjs unit', () => {
 
   it('creates a tray when nw.App.startPath is not the app root', async () => {
     const mock = createNwMock();
-    nw.App.startPath = '/';
+    global.nw.App.startPath = '/';
     const desktop = loadDesktopModule();
     desktop.start();
     await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
@@ -269,7 +269,7 @@ describe('desktopBg.cjs unit', () => {
     vi.useFakeTimers();
     const { win } = createNwMock();
     let getAllCallback = null;
-    nw.Window.getAll = vi.fn((callback) => {
+    global.nw.Window.getAll = vi.fn((callback) => {
       getAllCallback = callback;
     });
 
@@ -281,9 +281,27 @@ describe('desktopBg.cjs unit', () => {
     expect(desktop.getTestState().quitting).toBe(true);
     vi.advanceTimersByTime(500);
     expect(win.close).toHaveBeenCalledWith(true);
-    expect(nw.App.quit).toHaveBeenCalled();
+    expect(global.nw.App.quit).toHaveBeenCalled();
 
     getAllCallback?.([win]);
     vi.useRealTimers();
+  });
+
+  it('does not touch nw after stop() tears the mock down', async () => {
+    const errors = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+      errors.push(args.map(String).join(' '));
+    });
+
+    createNwMock();
+    const desktop = loadDesktopModule();
+    desktop.start();
+    desktop.stop();
+    delete global.nw;
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    spy.mockRestore();
+
+    expect(errors.join('\n')).not.toMatch(/nw is not defined/);
   });
 });

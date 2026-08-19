@@ -132,6 +132,8 @@ const state = {
   windowPolls: [],
   lastCommandTs: null,
   mainAppWindow: null,
+  stopped: false,
+  pendingTimers: [],
 };
 
 const osx = os.platform() === 'darwin';
@@ -139,6 +141,20 @@ const linux = os.platform() === 'linux';
 
 function hasNw() {
   return typeof nw !== 'undefined' && !!nw?.Window;
+}
+
+function trayInitActive() {
+  return !state.stopped && hasNw();
+}
+
+function runLater(fn, delayMs) {
+  const id = setTimeout(() => {
+    state.pendingTimers = state.pendingTimers.filter((timer) => timer !== id);
+    if (!trayInitActive()) return;
+    fn();
+  }, delayMs);
+  state.pendingTimers.push(id);
+  return id;
 }
 
 function isDesktopTestMode() {
@@ -746,7 +762,7 @@ function buildTrayMenu(autoLaunch) {
 }
 
 async function initTray() {
-  if (state.tray) return;
+  if (state.tray || !trayInitActive()) return;
 
   const appPath = process.execPath;
   const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
@@ -771,11 +787,14 @@ async function initTray() {
   if (autoLaunch) {
     try {
       const enabled = await autoLaunch.isEnabled();
+      if (!trayInitActive()) return;
       userPreferences.autoLaunch = !!enabled;
     } catch {
       // auto-launch may not be supported on all platforms
     }
   }
+
+  if (!trayInitActive()) return;
 
   const settingsMenu = buildTrayMenu(autoLaunch);
   const iconPath = resolveTrayIconPath();
@@ -800,7 +819,7 @@ async function initTray() {
   // Re-assign once more on next tick — some Linux tray hosts register the icon
   // asynchronously and drop the first menu attachment.
   if (linux) {
-    setTimeout(() => {
+    runLater(() => {
       if (state.tray && state.menu) {
         assignTrayMenu(state.menu);
         trayLog('linux tray menu reassigned');
@@ -829,6 +848,7 @@ function startBackground(ctxWin) {
 
   if (state.backgroundStarted) return;
   state.backgroundStarted = true;
+  state.stopped = false;
   trayLog('startBackground', {
     nwGetHref: windowHref(nwWin),
     pageHref,
@@ -838,12 +858,13 @@ function startBackground(ctxWin) {
   markTrayReady(false);
 
   const launchTray = (attempt) => {
-    if (!hasNw()) return;
+    if (!trayInitActive()) return;
     initTray().catch((error) => {
+      if (!trayInitActive()) return;
       console.error(`Tray init failed in background (attempt ${attempt}):`, error);
       markTrayReady(false);
       if (attempt < 5) {
-        setTimeout(() => launchTray(attempt + 1), 1000);
+        runLater(() => launchTray(attempt + 1), 1000);
       }
     });
   };
@@ -866,12 +887,13 @@ function writeMainWindowMarker(win) {
 }
 
 function launchTrayInMain(attempt) {
-  if (!hasNw() || ownsTray()) return;
+  if (!trayInitActive() || ownsTray()) return;
   initTray().catch((error) => {
+    if (!trayInitActive()) return;
     console.error(`Tray init failed in main window (attempt ${attempt}):`, error);
     markTrayReady(false);
     if (attempt < 5) {
-      setTimeout(() => launchTrayInMain(attempt + 1), 1000);
+      runLater(() => launchTrayInMain(attempt + 1), 1000);
     }
   });
 }
@@ -880,6 +902,7 @@ function launchTrayInMain(attempt) {
 function start() {
   if (state.mainStarted) return;
   state.mainStarted = true;
+  state.stopped = false;
 
   clearTrayArtifacts();
 
@@ -918,12 +941,15 @@ function startWindowPoll(tick, maxPolls) {
 }
 
 function stop() {
+  state.stopped = true;
   if (state.commandPoll) {
     clearInterval(state.commandPoll);
     state.commandPoll = null;
   }
   for (const poll of state.windowPolls) clearInterval(poll);
   state.windowPolls = [];
+  for (const id of state.pendingTimers) clearTimeout(id);
+  state.pendingTimers = [];
 }
 
 function getTestState() {
