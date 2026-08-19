@@ -21,7 +21,7 @@
       if (!fs.existsSync(trayReadyPath())) return false;
       var meta = JSON.parse(fs.readFileSync(trayReadyPath(), 'utf8'));
       return meta.ready === true && meta.hasQuitMenuItem === true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -80,7 +80,7 @@
         if (result.ok) {
           try {
             desktop.dispatchTrayCommand('quit');
-          } catch (quitError) {
+          } catch {
             nw.App.quit();
           }
         } else {

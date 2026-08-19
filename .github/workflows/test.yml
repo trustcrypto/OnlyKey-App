@@ -7,9 +7,70 @@ on:
       - master
       - 'refactor/**'
       - 'release/**'
+      - 'ci/**'
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
 
 jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # No native postinstall (nw, esbuild) needed for tsc.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Lint
+        run: npm run lint
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Audit (fail on high/critical)
+        run: npm audit --audit-level=high --omit=optional
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -17,24 +78,28 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
+      # Unit/UI tests are happy-dom; skip the NW.js download.
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
-      - name: Audit (fail on high/critical)
-        run: npm audit --audit-level=high --omit=optional
+      - name: Rebuild esbuild
+        run: npm rebuild esbuild
 
       - name: Build
         run: npm run build
 
-      - name: Unit / UI tests
-        run: npm run test:unit
+      - name: Unit / UI tests with coverage
+        run: npm run test:unit -- --coverage
         env:
           VITE_MOCK_DEVICE: 'true'
 
-      # Full `npm test` also runs desktop project; NW GUI tests need a display.
-      # Unit project covers protocol + React without NW.
-
-  # Optional: desktop bootstrap static checks (no GUI) can be added later.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore

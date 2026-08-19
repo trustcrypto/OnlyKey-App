@@ -3,6 +3,29 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
+const coverage = {
+  provider: 'v8' as const,
+  reporter: ['text', 'text-summary', 'json-summary', 'html'],
+  reportsDirectory: './coverage',
+  include: ['src/**/*.{ts,tsx}'],
+  exclude: [
+    'src/**/*.{test,spec}.{ts,tsx}',
+    'src/**/*.ui.test.{ts,tsx}',
+    'src/test/**',
+    'src/vite-env.d.ts',
+    'src/main.tsx',
+    'src/api/transport/HidTransport.ts',
+  ],
+  // Floor is slightly below the current ~66/63/54/57 so CI fails on
+  // real regressions, not coverage jitter.
+  thresholds: {
+    lines: 60,
+    statements: 58,
+    functions: 50,
+    branches: 52,
+  },
+};
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -11,20 +34,7 @@ export default defineConfig({
     },
   },
   test: {
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'text-summary', 'json-summary', 'html'],
-      reportsDirectory: './coverage',
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/**/*.{test,spec}.{ts,tsx}',
-        'src/**/*.ui.test.{ts,tsx}',
-        'src/test/**',
-        'src/vite-env.d.ts',
-        'src/main.tsx',
-        'src/api/transport/HidTransport.ts',
-      ],
-    },
+    coverage,
     projects: [
       {
         extends: true,
@@ -43,20 +53,7 @@ export default defineConfig({
           clearMocks: true,
           css: true,
           fileParallelism: false,
-          coverage: {
-            provider: 'v8',
-            reporter: ['text', 'text-summary', 'json-summary', 'html'],
-            reportsDirectory: './coverage',
-            include: ['src/**/*.{ts,tsx}'],
-            exclude: [
-              'src/**/*.{test,spec}.{ts,tsx}',
-              'src/**/*.ui.test.{ts,tsx}',
-              'src/test/**',
-              'src/vite-env.d.ts',
-              'src/main.tsx',
-              'src/api/transport/HidTransport.ts',
-            ],
-          },
+          coverage,
         },
       },
       {

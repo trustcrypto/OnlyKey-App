@@ -11,7 +11,9 @@
       var fs = require('fs');
       var path = require('path');
       if (fs.existsSync(path.join(nw.App.startPath, 'tmp', 'suppress-show.json'))) return;
-    } catch (error) {}
+    } catch {
+      // suppress-show probe is best-effort
+    }
     if (win.isMinimized && win.restore) win.restore();
     if (!win.isVisible) win.show(true);
     win.focus();
@@ -21,13 +23,14 @@
   win.on('focus', showWin);
   win.on('restore', showWin);
 
+  var desktop;
   try {
-    var desktop = require('./desktopBg.cjs');
+    desktop = require('./desktopBg.cjs');
     if (typeof desktop.start === 'function') desktop.start();
-  } catch (error) {
+  } catch {
     try {
-      var path = require('path');
-      var desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs'));
+      var resolvedPath = require('path');
+      desktop = require(resolvedPath.join(nw.App.startPath, 'desktopBg.cjs'));
       if (typeof desktop.start === 'function') desktop.start();
     } catch (error2) {
       console.error('Desktop bootstrap failed:', error2);
