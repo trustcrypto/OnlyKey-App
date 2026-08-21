@@ -70,7 +70,7 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt'));
     expect(screen.getByRole('heading', { name: /re-enter pin on onlykey keypad/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /enter pin for second profile/i })).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt'));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await user.click(await screen.findByRole('button', { name: /don't want a second profile/i }));
     await user.click(await screen.findByRole('button', { name: /don't want a self-destruct pin/i }));
@@ -200,13 +200,17 @@ describe('Setup page', () => {
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /change secondary pin/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'prompt'));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'commit'));
+    expect(await screen.findByRole('heading', { name: /re-enter pin/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
 
     await user.click(screen.getByRole('button', { name: /change self-destruct pin/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin', 'prompt'));
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin', 'commit'));
   });
 
   it('loads firmware blocks immediately while in bootloader', async () => {
@@ -382,12 +386,10 @@ describe('Setup page', () => {
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /change primary pin/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt'));
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-
-    await waitFor(() => {
-      expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin');
-    });
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'commit'));
     expect(device.setPin).not.toHaveBeenCalled();
   });
 
@@ -569,7 +571,7 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt'));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /enter pin for second profile/i })).toBeInTheDocument();
     await user.click(screen.getByLabelText(/plausible deniability profile/i));
@@ -577,13 +579,14 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => {
       expect(device.setSecProfileMode).toHaveBeenCalledWith(2);
-      expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2');
+      expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'commit');
     });
+    expect(await screen.findByRole('heading', { name: /re-enter pin for second profile/i })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /self-destruct pin/i })).toBeInTheDocument();
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin', 'prompt'));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
   });
@@ -604,7 +607,7 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
-    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt'));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await user.click(await screen.findByRole('button', { name: /don't want a second profile/i }));
     await user.click(await screen.findByRole('button', { name: /don't want a self-destruct pin/i }));

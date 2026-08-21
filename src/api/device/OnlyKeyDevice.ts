@@ -679,12 +679,13 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   /**
-   * Classic OnlyKey PIN *setup* (first-use / config): send empty OKSETPIN and wait
-   * for hardware button entry confirmation. NOT used for normal unlock — once
-   * initialized, firmware ignores OKSETPIN unless in config mode; unlock is
-   * keypad-only and reported via OKSETTIME / unsolicited UNLOCKED.
+   * Classic PIN setup: empty OKSETPIN/PIN2/SDPIN. `prompt` matches "enter your PIN";
+   * `commit` matches "Successful PIN entry". Firmware is a four-message state machine.
    */
-  public async beginClassicPinEntry(which: 'pin' | 'pin2' | 'sdpin' = 'pin'): Promise<void> {
+  public async beginClassicPinEntry(
+    which: 'pin' | 'pin2' | 'sdpin' = 'pin',
+    phase: 'prompt' | 'commit' = 'prompt',
+  ): Promise<void> {
     const msgId =
       which === 'pin2' ? MessageID.OKSETPIN2 : which === 'sdpin' ? MessageID.OKSETSDPIN : MessageID.OKSETPIN;
     const res = await this.sendRequest(
@@ -695,13 +696,11 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       300000,
       (r) => {
         const text = (r.text ?? '').toLowerCase();
-        return (
-          (r.text?.includes('UNLOCKED') ?? false) ||
-          text.includes('successful pin') ||
-          text.includes('pin2 set') ||
-          text.includes('sd pin') ||
-          r.type === 'error'
-        );
+        if (r.type === 'error') return true;
+        if (phase === 'prompt') {
+          return text.includes('enter your pin') || text.includes('re-enter');
+        }
+        return text.includes('successful pin') || text.includes('successfully set pin');
       }
     );
     if (res.type === 'error') throw new Error(res.error);

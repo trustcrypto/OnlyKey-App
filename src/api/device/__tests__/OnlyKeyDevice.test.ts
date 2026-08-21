@@ -509,15 +509,19 @@ it('should timeout if hardware does not respond', async () => {
     const sendSpy = vi.spyOn(transport, 'send');
     sendSpy.mockClear();
 
-    await device.beginClassicPinEntry('pin');
+    await device.beginClassicPinEntry('pin', 'prompt');
     expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETPIN);
 
     sendSpy.mockClear();
-    await device.beginClassicPinEntry('pin2');
+    await device.beginClassicPinEntry('pin', 'commit');
+    expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETPIN);
+
+    sendSpy.mockClear();
+    await device.beginClassicPinEntry('pin2', 'prompt');
     expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETPIN2);
 
     sendSpy.mockClear();
-    await device.beginClassicPinEntry('sdpin');
+    await device.beginClassicPinEntry('sdpin', 'prompt');
     expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETSDPIN);
   });
 

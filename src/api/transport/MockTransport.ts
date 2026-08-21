@@ -111,6 +111,7 @@ export class MockTransport implements TransportInterface {
   private correctPin: string;
   private maxPinAttempts: number;
   private pinAttempts = 0;
+  private setupPinStep: Record<'pin' | 'pin2' | 'sdpin', number> = { pin: 0, pin2: 0, sdpin: 0 };
   private responseDelayMs: number;
   private binaryLabels: boolean;
   private verbose: boolean;
@@ -305,11 +306,11 @@ export class MockTransport implements TransportInterface {
         return;
 
       case MessageID.OKSETPIN2:
-        this.emitText(this.requireConfigOrOk('PIN2 set'));
+        this.emitClassicPinSetup('pin2');
         return;
 
       case MessageID.OKSETSDPIN:
-        this.emitText(this.requireConfigOrOk('SD PIN set'));
+        this.emitClassicPinSetup('sdpin');
         return;
 
       case MessageID.OKSETSLOT:
@@ -366,17 +367,22 @@ export class MockTransport implements TransportInterface {
     }
   }
 
+  private emitClassicPinSetup(which: 'pin' | 'pin2' | 'sdpin'): void {
+    this.setupPinStep[which] += 1;
+    const n = ((this.setupPinStep[which] - 1) % 4) + 1;
+    if (n === 1) this.emitText('OnlyKey is ready, enter your PIN');
+    else if (n === 2) this.emitText('Successful PIN entry');
+    else if (n === 3) this.emitText('OnlyKey is ready, re-enter your PIN to confirm');
+    else this.emitText('Successfully set PIN');
+  }
+
   private handleSetPin(packet: Uint8Array): void {
     // Payload starts after header+msgId (no slot/field for OKSETPIN)
     const payload = packet.slice(MESSAGE_HEADER.length + 1);
     const digits = this.decodePinDigits(payload);
 
-    // Empty packet / classic keypad entry: unlock after "hardware" success
     if (!digits) {
-      this.isLocked = false;
-      if (this.unlockEntersConfigMode) this.isConfigMode = true;
-      this.pinAttempts = 0;
-      this.emitText(this.statusUnlocked());
+      this.emitClassicPinSetup('pin');
       return;
     }
 

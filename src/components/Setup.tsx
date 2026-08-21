@@ -76,6 +76,9 @@ const Setup: React.FC = () => {
     isDuo ? setDuoStep('Step1') : setClassicStep('Step1');
   };
 
+  const pinPrompt = (which: 'pin' | 'pin2' | 'sdpin') => device!.beginClassicPinEntry(which, 'prompt');
+  const pinCommit = (which: 'pin' | 'pin2' | 'sdpin') => device!.beginClassicPinEntry(which, 'commit');
+
   const startGuided = () => {
     setGuided(true);
     setError(null);
@@ -83,13 +86,21 @@ const Setup: React.FC = () => {
       setDuoStep(advancedSetup ? 'Step2' : 'Step8');
     } else {
       setClassicStep('Step2');
+      void run(() => pinPrompt('pin'));
     }
   };
 
   const startUnguided = (step: ClassicStep | DuoStep) => {
     setGuided(false);
     setError(null);
-    isDuo ? setDuoStep(step as DuoStep) : setClassicStep(step as ClassicStep);
+    if (isDuo) {
+      setDuoStep(step as DuoStep);
+      return;
+    }
+    setClassicStep(step as ClassicStep);
+    if (step === 'Step2') void run(() => pinPrompt('pin'));
+    if (step === 'Step4') void run(() => pinPrompt('pin2'));
+    if (step === 'Step6') void run(() => pinPrompt('sdpin'));
   };
 
   const handleBackup = () =>
@@ -593,7 +604,10 @@ const Setup: React.FC = () => {
                 Second profile must be configured during initial setup and cannot be set up later.
                 <br />
                 <br />
-                <SetButton onClick={() => setClassicStep('Step6')}>
+                <SetButton onClick={() => {
+                  setClassicStep('Step6');
+                  void run(() => pinPrompt('sdpin'));
+                }}>
                   <b>I don&apos;t want a second profile, skip this step</b>
                 </SetButton>
               </p>
@@ -648,7 +662,10 @@ const Setup: React.FC = () => {
                 Second profile must be configured during initial setup and cannot be set up later.
                 <br />
                 <br />
-                <SetButton onClick={() => setClassicStep('Step6')}>
+                <SetButton onClick={() => {
+                  setClassicStep('Step6');
+                  void run(() => pinPrompt('sdpin'));
+                }}>
                   <b>I don&apos;t want a second profile, skip this step</b>
                 </SetButton>
               </p>
@@ -806,9 +823,9 @@ const Setup: React.FC = () => {
           onNext={() =>
             run(async () => {
               if (!passcode1Disclaimer) throw new Error('Please accept the disclaimer.');
-              await device!.beginClassicPinEntry('pin');
-              if (guided) setClassicStep('Step3');
-              else resetToStep1();
+              await pinCommit('pin');
+              setClassicStep('Step3');
+              await pinPrompt('pin');
             })
           }
           onCancel={resetToStep1}
@@ -820,9 +837,13 @@ const Setup: React.FC = () => {
         <StepNav
           onNext={() =>
             run(async () => {
-              await device!.beginClassicPinEntry('pin');
-              if (guided) setClassicStep('Step4');
-              else resetToStep1();
+              await pinCommit('pin');
+              if (guided) {
+                setClassicStep('Step4');
+                await pinPrompt('pin2');
+              } else {
+                resetToStep1();
+              }
             })
           }
           onCancel={resetToStep1}
@@ -835,9 +856,9 @@ const Setup: React.FC = () => {
             run(async () => {
               if (!isInitialized && !passcode3Disclaimer) throw new Error('Please accept the disclaimer.');
               if (!isInitialized && advancedSetup) await device!.setSecProfileMode(secProfileMode);
-              await device!.beginClassicPinEntry('pin2');
-              if (guided) setClassicStep('Step5');
-              else resetToStep1();
+              await pinCommit('pin2');
+              setClassicStep('Step5');
+              await pinPrompt('pin2');
             })
           }
           onCancel={resetToStep1}
@@ -849,9 +870,13 @@ const Setup: React.FC = () => {
         <StepNav
           onNext={() =>
             run(async () => {
-              await device!.beginClassicPinEntry('pin2');
-              if (guided) setClassicStep('Step6');
-              else resetToStep1();
+              await pinCommit('pin2');
+              if (guided) {
+                setClassicStep('Step6');
+                await pinPrompt('sdpin');
+              } else {
+                resetToStep1();
+              }
             })
           }
           onCancel={resetToStep1}
@@ -865,9 +890,9 @@ const Setup: React.FC = () => {
               if (!passcode2Disclaimer && (isInitialized || guided)) {
                 throw new Error('Please accept the disclaimer.');
               }
-              await device!.beginClassicPinEntry('sdpin');
-              if (guided) setClassicStep('Step7');
-              else resetToStep1();
+              await pinCommit('sdpin');
+              setClassicStep('Step7');
+              await pinPrompt('sdpin');
             })
           }
           onCancel={resetToStep1}
@@ -879,7 +904,7 @@ const Setup: React.FC = () => {
         <StepNav
           onNext={() =>
             run(async () => {
-              await device!.beginClassicPinEntry('sdpin');
+              await pinCommit('sdpin');
               if (guided) setClassicStep('Step8');
               else resetToStep1();
             })
