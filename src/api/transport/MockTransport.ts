@@ -538,10 +538,11 @@ export class MockTransport implements TransportInterface {
     }
 
     // Packet: [FF×4][OKFWUPDATE][flag][payload]
-    // flag 0xFF = intermediate chunk, silent (firmware does not reply).
-    // Any other flag is the last chunk of a block. Emit both follow-ups
-    // immediately: the app's single waiter matches NEXT BLOCK or SUCCESS.
+    // 5.6: every chunk ACKs RECEIVED OKFWUPDATE; last chunk of a hex line then
+    // NEXT BLOCK / SUCCESSFULLY LOADED FW. Last-chunk waiters match NEXT/SUCCESS
+    // only so RECEIVED is not consumed first.
     const flag = packet[MESSAGE_HEADER.length + 1];
+    this.emitText('RECEIVED OKFWUPDATE');
     if (flag === 0xff) return;
 
     this.emitText('NEXT BLOCK');

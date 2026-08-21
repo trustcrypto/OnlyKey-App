@@ -454,13 +454,15 @@ it('should timeout if hardware does not respond', async () => {
     expect(sendSpy.mock.calls.some((c) => (c[1] as Uint8Array)[4] === MessageID.OKSETTIME)).toBe(false);
   });
 
-  it('loadFirmwareBlocks waits for NEXT/SUCCESS on the last chunk of each block, not RECEIVED', async () => {
+  it('loadFirmwareBlocks waits for NEXT/SUCCESS on the last chunk of each block', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);
     await device.connect({ vendorId: 0, productId: 0 });
     expect(device.state.isBootloader).toBe(true);
     transport.sentPackets.length = 0;
     const progress: number[] = [];
+    const messages: string[] = [];
+    device.on('messageReceived', (m) => messages.push(m));
 
     await device.loadFirmwareBlocks(['aabbccdd', '11223344'], (pct) => progress.push(pct));
 
@@ -469,14 +471,18 @@ it('should timeout if hardware does not respond', async () => {
     expect(fw[0][5]).toBe(4);
     expect(fw[1][5]).toBe(4);
     expect(progress).toEqual([50, 100]);
+    expect(messages).toContain('RECEIVED OKFWUPDATE');
+    expect(messages).toEqual(expect.arrayContaining(['NEXT BLOCK', 'SUCCESSFULLY LOADED FW']));
   });
 
-  it('loadFirmwareBlocks sends silent 0xFF chunks for a multi-packet block', async () => {
+  it('loadFirmwareBlocks waits for RECEIVED OKFWUPDATE on intermediate 0xFF chunks', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);
     await device.connect({ vendorId: 0, productId: 0 });
     device.state.isBootloader = true;
     transport.sentPackets.length = 0;
+    const messages: string[] = [];
+    device.on('messageReceived', (m) => messages.push(m));
 
     const longBlock = 'ab'.repeat(58);
     await device.loadFirmwareBlocks([longBlock]);
@@ -485,6 +491,7 @@ it('should timeout if hardware does not respond', async () => {
     expect(fw).toHaveLength(2);
     expect(fw[0][5]).toBe(0xff);
     expect(fw[1][5]).toBe(1);
+    expect(messages.filter((m) => m === 'RECEIVED OKFWUPDATE').length).toBeGreaterThanOrEqual(1);
   });
 
   it('loadFirmwareBlocks rejects when the device is not in bootloader', async () => {

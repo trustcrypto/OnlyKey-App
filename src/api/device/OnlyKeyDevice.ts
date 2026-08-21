@@ -1021,6 +1021,9 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   public async loadFirmwareBlocks(blocks: string[], onProgress?: (pct: number) => void): Promise<void> {
+    if (!this.state.isBootloader) {
+      throw new Error('Device is not in bootloader.');
+    }
     const maxPacketSize = 57;
     for (let i = 0; i < blocks.length; i++) {
       const bytes = hexStringToByteArray(blocks[i]);
@@ -1031,11 +1034,24 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         const chunk = bytes.slice(j, j + maxPacketSize);
         const isFinalChunk = j + maxPacketSize >= bytes.length;
         if (!isFinalChunk) {
-          // Intermediate 0xFF packets are silent (same class as OKRESTORE / OKSETPRIV).
-          await this.sendCommandWithoutConfirmation(MessageID.OKFWUPDATE, 0xff, undefined, chunk, 200);
+          // 5.6 submitFirmwareData waits for RECEIVED OKFWUPDATE on every 57-byte chunk.
+          const res = await this.sendRequest(
+            MessageID.OKFWUPDATE,
+            0xff,
+            undefined,
+            chunk,
+            10_000,
+            (r) => {
+              const t = `${r.text ?? ''} ${r.error ?? ''}`.toLowerCase();
+              return r.type === 'error' || t.includes('received okfwupdate') || t.includes('error');
+            },
+          );
+          if (res.type === 'error' || (res.error && /error/i.test(res.error))) {
+            throw new Error(res.error || res.text || 'Firmware load failed');
+          }
           continue;
         }
-        // One waiter, registered before the last chunk of this block is sent.
+        // Do not match RECEIVED here — that would consume the ACK and drop NEXT BLOCK.
         await this.sendRequest(
           MessageID.OKFWUPDATE,
           chunk.length,
@@ -1044,7 +1060,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
           20_000,
           (r) => {
             const t = `${r.text ?? ''} ${r.error ?? ''}`.toLowerCase();
-            return t.includes(successText.toLowerCase());
+            return t.includes(successText.toLowerCase()) || r.type === 'error' || t.includes('error');
           },
         );
       }

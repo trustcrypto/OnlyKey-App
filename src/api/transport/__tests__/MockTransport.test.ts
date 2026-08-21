@@ -174,8 +174,9 @@ describe('MockTransport', () => {
 
     await device.loadFirmwareBlocks(['aa']);
 
-    expect(messages).toEqual(expect.arrayContaining(['NEXT BLOCK', 'SUCCESSFULLY LOADED FW']));
-    expect(messages).not.toContain('RECEIVED OKFWUPDATE');
+    expect(messages).toEqual(
+      expect.arrayContaining(['RECEIVED OKFWUPDATE', 'NEXT BLOCK', 'SUCCESSFULLY LOADED FW']),
+    );
   });
 
   it('emits text labels when binaryLabels is false', async () => {
@@ -214,17 +215,20 @@ describe('MockTransport', () => {
     expect(received.some((s) => s.includes('OK'))).toBe(true);
   });
 
-  it('stays silent on intermediate 0xFF firmware chunks', async () => {
+  it('ACKs intermediate 0xFF firmware chunks with RECEIVED OKFWUPDATE', async () => {
     const t = new MockTransport({ deviceType: 'bootloader' });
     await t.connect({ vendorId: 0, productId: 0 });
-    const received: Uint8Array[] = [];
-    t.onReceive((data) => received.push(data));
+    const received: string[] = [];
+    t.onReceive((data) => {
+      received.push(String.fromCharCode(...data.filter((b) => b >= 32 && b < 127)));
+    });
 
     const packet = new Uint8Array(64);
     packet.set([0xff, 0xff, 0xff, 0xff, MessageID.OKFWUPDATE, 0xff, 0xaa]);
     await t.send(0, packet);
 
-    expect(received).toHaveLength(0);
+    expect(received.some((s) => s.includes('RECEIVED OKFWUPDATE'))).toBe(true);
+    expect(received.some((s) => s.includes('NEXT BLOCK'))).toBe(false);
   });
 
   it('records sent packets for inspection', async () => {
