@@ -129,7 +129,11 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     return !isDuoNoPinVersion(this.state.version);
   }
 
-  /** Legacy OnlyKeyComm.setDeviceType: set once per connection; never flip Classic ↔ DUO via status. */
+  /**
+   * Set device type once from UNKNOWN, and allow Classic → DUO when firmware
+   * later proves DUO (v3 / INITIALIZED-D / slot > 12). Never DUO → Classic here —
+   * empty DUO profiles 3–4 stream only 12 labels and look like a Classic key.
+   */
   private applyDeviceTypeFromResponse(
     nextType: DeviceType | undefined,
     source = 'status',
@@ -143,7 +147,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       nextType === DeviceType.UNINITIALIZED ||
       nextType === DeviceType.BOOTLOADER ||
       (current === DeviceType.UNINITIALIZED &&
-        (nextType === DeviceType.CLASSIC || nextType === DeviceType.DUO));
+        (nextType === DeviceType.CLASSIC || nextType === DeviceType.DUO)) ||
+      (current === DeviceType.CLASSIC && nextType === DeviceType.DUO);
 
     if (!canSet) return false;
 
@@ -153,15 +158,13 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     return true;
   }
 
-  /** Label stream ended at slot 12 — correct a mistaken DUO classification. */
+  /** Idle 12-slot stream identifies Classic only when type is still unknown. */
   private setClassicFromLabels(source: string): boolean {
-    const current = this.state.deviceType;
-    if (current === DeviceType.CLASSIC) return false;
-    if (current !== DeviceType.DUO && current !== DeviceType.UNKNOWN) return false;
+    if (this.state.deviceType !== DeviceType.UNKNOWN) return false;
 
     this.state.deviceType = DeviceType.CLASSIC;
     this.state.deviceTypeSource = source;
-    console.log('OnlyKey device type corrected to classic via', source);
+    console.log('OnlyKey device type set: classic via', source);
     return true;
   }
 

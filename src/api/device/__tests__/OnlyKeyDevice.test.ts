@@ -45,19 +45,31 @@ describe('OnlyKeyDevice', () => {
     expect(device.state.devicePinSet).toBe(false);
   });
 
-  it('keeps Classic device type after later DUO-looking unlock status', async () => {
+  it('promotes a premature Classic to DUO on UNLOCKEDv3', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);
 
     await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
     device.state.deviceType = DeviceType.CLASSIC;
 
-    (transport as any).simulateResponse('UNLOCKEDv3.0.0-prod');
+    (transport as any).simulateResponse('UNLOCKEDv3.0.4-prodp');
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.isLocked).toBe(false);
+  });
+
+  it('keeps Classic on UNLOCKEDv2 even with a trailing p suffix', async () => {
+    const transport = new MockTransport();
+    const device = new OnlyKeyDevice(transport);
+
+    await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
+    device.state.deviceType = DeviceType.CLASSIC;
+
+    (transport as any).simulateResponse('UNLOCKEDv2.1.0-prodp');
     expect(device.state.deviceType).toBe(DeviceType.CLASSIC);
     expect(device.state.isLocked).toBe(false);
   });
 
-  it('does not promote Classic to DUO when label stream includes high slots', async () => {
+  it('promotes Classic to DUO when the label stream includes slot 13', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);
 
@@ -65,17 +77,35 @@ describe('OnlyKeyDevice', () => {
     device.state.deviceType = DeviceType.CLASSIC;
     device.state.labels.set(13, 'extra');
 
-    device['inferDeviceTypeFromLabels'](true);
-    expect(device.state.deviceType).toBe(DeviceType.CLASSIC);
+    expect(device['inferDeviceTypeFromLabels'](true)).toBe(true);
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
   });
 
-  it('corrects mistaken DUO to Classic when label stream ends at slot 12', async () => {
+  it('does not demote a status-identified DUO when 12 labels idle', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);
 
     await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
     device.state.deviceType = DeviceType.DUO;
     device.state.deviceTypeSource = 'status';
+
+    for (let slot = 1; slot <= 12; slot += 1) {
+      device.state.labels.set(slot, `slot${slot}`);
+    }
+
+    expect(device['inferDeviceTypeFromLabels'](true)).toBe(false);
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.deviceTypeSource).toBe('status');
+    expect(device.state.maxLabelSlot).toBe(12);
+  });
+
+  it('identifies Classic from a 12-slot idle only while type is still unknown', async () => {
+    const transport = new MockTransport();
+    const device = new OnlyKeyDevice(transport);
+
+    await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
+    device.state.deviceType = DeviceType.UNKNOWN;
+    device.state.deviceTypeSource = '';
 
     for (let slot = 1; slot <= 12; slot += 1) {
       device.state.labels.set(slot, `slot${slot}`);
@@ -133,6 +163,29 @@ describe('OnlyKeyDevice', () => {
     expect(labels.get(24)).toBe('s24');
     expect(device.state.deviceType).toBe(DeviceType.DUO);
     expect(device.state.maxLabelSlot).toBe(24);
+  });
+
+  it('getLabels plus UNLOCKEDv3 keeps a DUO that only has 12 slot labels', async () => {
+    const initialLabels: Record<number, string> = {};
+    for (let slot = 1; slot <= 12; slot += 1) initialLabels[slot] = `s${slot}`;
+    const transport = new MockTransport({
+      deviceType: 'duo',
+      startLocked: false,
+      version: 'v3.0.4-prodp',
+      binaryLabels: true,
+      initialLabels,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+
+    await device.getLabels();
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.maxLabelSlot).toBe(12);
+
+    transport.simulateResponse('UNLOCKEDv3.0.4-prodp');
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.isLocked).toBe(false);
   });
 
   it('does not downgrade DUO to Classic on later status messages', async () => {

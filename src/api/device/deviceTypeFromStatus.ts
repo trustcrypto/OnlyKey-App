@@ -62,8 +62,8 @@ export function inferDeviceTypeFromLabelSlotIds(slotIds: Iterable<number>): Devi
 }
 
 /**
- * Classic firmware streams exactly 12 slot labels then stops; DUO continues to 24.
- * After an idle gap with 12 labels and no slot > 12, treat the device as Classic.
+ * Classic firmware streams 12 slot labels then stops. DUO may also idle at 12
+ * when profiles 3–4 are empty — OnlyKeyDevice must not demote an existing DUO.
  */
 export function classicConfirmedByLabels(
   slotIds: Iterable<number>,
