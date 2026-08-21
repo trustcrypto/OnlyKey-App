@@ -1,5 +1,6 @@
 import { TransportInterface, DeviceFilter } from './Transport.interface';
 import { MessageID, FieldID, MESSAGE_HEADER, PACKET_SIZE, GLOBAL_SLOT } from '../device/types';
+import { hidLabelSlotByte } from '../device/ResponseParser';
 
 export type MockDeviceKind = 'classic' | 'duo' | 'uninitialized' | 'bootloader';
 
@@ -572,7 +573,7 @@ export class MockTransport implements TransportInterface {
   private emitBinaryLabel(slotId: number, label: string, force = false): void {
     if ((!this.connected && !force) || !this.receiveCallback) return;
     const data = new Uint8Array(PACKET_SIZE);
-    data[0] = slotId & 0xff;
+    data[0] = hidLabelSlotByte(slotId);
     data[1] = 124; // '|'
     for (let i = 0; i < label.length && i + 2 < PACKET_SIZE; i++) {
       data[i + 2] = label.charCodeAt(i);

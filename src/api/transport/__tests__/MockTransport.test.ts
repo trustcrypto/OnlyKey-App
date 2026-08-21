@@ -59,6 +59,24 @@ describe('MockTransport', () => {
     expect(labels.get(7)).toBe('Bank');
   });
 
+  it('emits firmware-coded HID slot bytes so slots 10–24 survive getLabels', async () => {
+    const t = new MockTransport({
+      binaryLabels: true,
+      initialLabels: { 10: 'Slack', 12: 'Bank', 20: 'Yellow', 24: 'Purple' },
+      responseDelayMs: 0,
+    });
+    const device = new OnlyKeyDevice(t);
+    await device.connect({ vendorId: 0, productId: 0 });
+    await device.setPin('1');
+
+    const labels = await device.getLabels();
+    expect(labels.get(10)).toBe('Slack');
+    expect(labels.get(12)).toBe('Bank');
+    expect(labels.get(20)).toBe('Yellow');
+    expect(labels.get(24)).toBe('Purple');
+    expect(labels.get(16)).toBeUndefined();
+  });
+
   it('emits preference confirmation strings for matchPredicate waits', async () => {
     const t = new MockTransport({ requireConfigMode: false });
     const device = new OnlyKeyDevice(t);

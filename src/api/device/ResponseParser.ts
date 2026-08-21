@@ -24,6 +24,35 @@ function extractVersionAfterPrefix(text: string, prefix: string, withV = true): 
   return text.replace(prefix, '').trim();
 }
 
+function byteToHex(value: number): string {
+  return (value < 16 ? '0' : '') + value.toString(16);
+}
+
+/** Firmware `get_slot_labels`: slots 1–9 as `i`, 10–24 as `i+6` (0x10–0x1E). */
+export function hidLabelSlotByte(slotId: number): number {
+  return slotId <= 9 ? slotId : slotId + 6;
+}
+
+/** 5.6 `handleGetLabels`: HID hex `1a`–`1e` are slots 20–24, not Classic buttons 1a/1b. */
+export function parseHidLabelSlotId(id: string): number {
+  switch (id.toLowerCase()) {
+    case '1a':
+      return 20;
+    case '1b':
+      return 21;
+    case '1c':
+      return 22;
+    case '1d':
+      return 23;
+    case '1e':
+      return 24;
+    default: {
+      const n = parseInt(id, 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+  }
+}
+
 export class ResponseParser {
   /**
    * Parses raw bytes from OnlyKey into a structured Response object.
@@ -34,6 +63,9 @@ export class ResponseParser {
     for (let i = 0; i < data.length; i++) {
       if (data[i] > 31 && data[i] < 127) {
         text += String.fromCharCode(data[i]);
+      } else if (i === 0 && data[0] > 0 && data[1] === 0x7C) {
+        // 5.6 readBytes: first byte of a label report is hex, not a raw 1–24 index.
+        text += byteToHex(data[0]);
       }
     }
 
@@ -117,37 +149,19 @@ export class ResponseParser {
       return { type: 'status', text, isLocked: true };
     }
 
-    let parsedSlotId: number | undefined;
-    let parsedLabel: string | undefined;
-
     const labelMatch = text.match(/^(\w+)\|(.*)/);
     if (labelMatch) {
-      parsedSlotId = this.parseSlotId(labelMatch[1]);
-      parsedLabel = labelMatch[2].trim();
-    } else if (data[0] > 0 && data[0] <= 24 && (data[1] === 124 || text.startsWith('|'))) {
-      parsedSlotId = data[0];
-      parsedLabel = text.startsWith('|') ? text.substring(1).trim() : text.trim();
-    }
-
-    if (parsedSlotId !== undefined && parsedLabel !== undefined) {
-      return {
-        type: 'label',
-        slotId: parsedSlotId,
-        label: parsedLabel,
-        text,
-      };
+      const slotId = parseHidLabelSlotId(labelMatch[1]);
+      if (slotId >= 1 && slotId <= 24) {
+        return {
+          type: 'label',
+          slotId,
+          label: labelMatch[2].trim(),
+          text,
+        };
+      }
     }
 
     return { type: 'text', text };
-  }
-
-  private static parseSlotId(id: string): number {
-    const map: Record<string, number> = {
-      '1a': 1, '2a': 2, '3a': 3, '4a': 4, '5a': 5, '6a': 6,
-      '1b': 7, '2b': 8, '3b': 9, '4b': 10, '5b': 11, '6b': 12,
-      '7a': 13, '8a': 14, '9a': 15, '10a': 16, '11a': 17, '12a': 18,
-      '7b': 19, '8b': 20, '9b': 21, '10b': 22, '11b': 23, '12b': 24,
-    };
-    return map[id.toLowerCase()] || parseInt(id, 10);
   }
 }

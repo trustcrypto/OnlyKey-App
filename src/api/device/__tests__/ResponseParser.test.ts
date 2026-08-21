@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ResponseParser } from '../ResponseParser';
+import { hidLabelSlotByte, parseHidLabelSlotId, ResponseParser } from '../ResponseParser';
 import { DeviceType } from '../types';
 
 describe('ResponseParser', () => {
@@ -67,12 +67,65 @@ describe('ResponseParser', () => {
     expect(res.label).toBe('GitHub Login');
   });
 
-  it('should parse logical Slot IDs (1a-6b)', () => {
+  it('maps HID hex 1a–1e to slots 20–24, not Classic buttons', () => {
     const data = stringToPacket('1a|Work VPN');
     const res = ResponseParser.parse(data);
     expect(res.type).toBe('label');
-    expect(res.slotId).toBe(1);
+    expect(res.slotId).toBe(20);
     expect(res.label).toBe('Work VPN');
+    expect(parseHidLabelSlotId('1e')).toBe(24);
+    expect(parseHidLabelSlotId('10')).toBe(10);
+  });
+
+  it('decodes firmware-coded binary label reports for slots 10, 12, 20, and 24', () => {
+    const firmwarePacket = (logicalSlot: number, label: string) => {
+      const data = new Uint8Array(64);
+      data[0] = hidLabelSlotByte(logicalSlot);
+      data[1] = 0x7c;
+      for (let i = 0; i < label.length; i++) data[i + 2] = label.charCodeAt(i);
+      return data;
+    };
+
+    expect(hidLabelSlotByte(9)).toBe(9);
+    expect(hidLabelSlotByte(10)).toBe(0x10);
+    expect(hidLabelSlotByte(12)).toBe(0x12);
+    expect(hidLabelSlotByte(20)).toBe(0x1a);
+    expect(hidLabelSlotByte(24)).toBe(0x1e);
+
+    expect(ResponseParser.parse(firmwarePacket(1, 'Gmail'))).toMatchObject({
+      type: 'label',
+      slotId: 1,
+      label: 'Gmail',
+    });
+    expect(ResponseParser.parse(firmwarePacket(10, 'Slack'))).toMatchObject({
+      type: 'label',
+      slotId: 10,
+      label: 'Slack',
+    });
+    expect(ResponseParser.parse(firmwarePacket(12, 'Bank'))).toMatchObject({
+      type: 'label',
+      slotId: 12,
+      label: 'Bank',
+    });
+    expect(ResponseParser.parse(firmwarePacket(20, 'Yellow'))).toMatchObject({
+      type: 'label',
+      slotId: 20,
+      label: 'Yellow',
+    });
+    expect(ResponseParser.parse(firmwarePacket(24, 'Purple'))).toMatchObject({
+      type: 'label',
+      slotId: 24,
+      label: 'Purple',
+    });
+  });
+
+  it('does not treat a raw slot-10 byte 0x0A as a firmware label', () => {
+    const data = new Uint8Array(64);
+    data[0] = 10;
+    data[1] = 0x7c;
+    data[2] = 'X'.charCodeAt(0);
+    const res = ResponseParser.parse(data);
+    expect(res.type).not.toBe('label');
   });
 
   it('treats BOOTLOADER as an unlocked status, not free text', () => {
