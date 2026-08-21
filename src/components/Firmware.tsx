@@ -24,7 +24,10 @@ const Firmware: React.FC = () => {
     if (!device) return;
 
     if (isBootloader) {
-      storePendingFirmware(blocks);
+      // Already in bootloader: load now. Do not persist pending — that is only
+      // for the kick → reconnect gap. Leftover pending would reflash on the next
+      // bootloader PID.
+      clearPendingFirmware();
       setStatus('Sending firmware blocks...');
       await device.loadFirmwareBlocks(blocks, setProgress);
       setStatus('Firmware load complete!');
