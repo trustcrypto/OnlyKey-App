@@ -86,6 +86,55 @@ describe('OnlyKeyDevice', () => {
     expect(device.state.deviceTypeSource).toBe('labels:classic-stream');
   });
 
+  it('keeps a USB-identified DUO when 24 labels arrive including slots above 12', async () => {
+    const transport = new MockTransport({ deviceType: 'duo', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+
+    for (let slot = 1; slot <= 24; slot += 1) {
+      device.state.labels.set(slot, `slot${slot}`);
+    }
+
+    expect(device['inferDeviceTypeFromLabels'](true)).toBe(false);
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.maxLabelSlot).toBe(24);
+  });
+
+  it('promotes UNKNOWN to DUO from slot 13 after snapshotting label keys', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    device.state.deviceType = DeviceType.UNKNOWN;
+    device.state.labels.set(1, 'Gmail');
+    device.state.labels.set(13, 'Yellow');
+
+    expect(device['inferDeviceTypeFromLabels'](true)).toBe(true);
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.deviceTypeSource).toBe('labels:slot>12');
+    expect(device.state.maxLabelSlot).toBe(13);
+  });
+
+  it('getLabels keeps a DUO typed from USB after a 24-slot firmware-coded stream', async () => {
+    const initialLabels: Record<number, string> = {};
+    for (let slot = 1; slot <= 24; slot += 1) initialLabels[slot] = `s${slot}`;
+    const transport = new MockTransport({
+      deviceType: 'duo',
+      startLocked: false,
+      binaryLabels: true,
+      initialLabels,
+      responseDelayMs: 0,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    const labels = await device.getLabels();
+    expect(labels.get(10)).toBe('s10');
+    expect(labels.get(20)).toBe('s20');
+    expect(labels.get(24)).toBe('s24');
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.maxLabelSlot).toBe(24);
+  });
+
   it('does not downgrade DUO to Classic on later status messages', async () => {
     const transport = new MockTransport();
     (transport as any).deviceType = 'duo';

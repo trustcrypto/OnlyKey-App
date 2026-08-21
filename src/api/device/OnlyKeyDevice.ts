@@ -166,7 +166,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   private inferDeviceTypeFromLabels(endedByIdle: boolean): boolean {
-    const slotIds = this.state.labels.keys();
+    const slotIds = [...this.state.labels.keys()];
     this.state.maxLabelSlot = maxLabelSlotId(slotIds);
 
     const duoFromSlots = inferDeviceTypeFromLabelSlotIds(slotIds);
