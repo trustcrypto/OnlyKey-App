@@ -63,9 +63,18 @@ export type ConnectOptions = {
   announce?: boolean;
 };
 
+export type PermittedHidDevice = { vendorId: number; productId: number; productName?: string };
+
+/** Options for store.initialize(). A boolean is still accepted as `useMock`. */
+export type InitializeOptions = {
+  useMock?: boolean;
+  device?: DeviceClient;
+  listPermittedDevices?: () => Promise<PermittedHidDevice[]>;
+};
+
 export interface DeviceStore extends DeviceState {
   device: DeviceClient | null;
-  initialize: (useMock?: boolean) => Promise<void>;
+  initialize: (useMockOrOptions?: boolean | InitializeOptions) => Promise<void>;
   connect: (options?: ConnectOptions) => Promise<void>;
   disconnect: () => Promise<void>;
   startPolling: () => void;
@@ -95,6 +104,14 @@ let pollInterval: NodeJS.Timeout | null = null;
 let firmwareCheckInFlight: Promise<void> | null = null;
 /** In-flight connect mutex — separate from UI `isConnecting` so silent polls can run. */
 let connectInFlight = false;
+let listPermittedDevicesFn: () => Promise<PermittedHidDevice[]> = async () => [];
+
+function parseInitializeOptions(
+  useMockOrOptions?: boolean | InitializeOptions,
+): InitializeOptions {
+  if (typeof useMockOrOptions === 'boolean') return { useMock: useMockOrOptions };
+  return useMockOrOptions ?? {};
+}
 
 /** Default landing tab once a device is usable. */
 function defaultTabForDevice(state: {
@@ -182,19 +199,29 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   selectedSlotId: null,
   sessionEpoch: 0,
 
-  initialize: async (useMock = false) => {
+  initialize: async (useMockOrOptions: boolean | InitializeOptions = false) => {
     if (get().device) return;
 
-    const transport = useMock ? new MockTransport() : new ChromeHidTransport();
-    if (transport instanceof ChromeHidTransport) {
-      transport.onDeviceAdded(() => {
-        // Device just appeared — show Connecting... (not a silent background probe).
-        if (!get().isConnected && !connectInFlight) {
-          void get().connect({ announce: true });
-        }
-      });
+    const options = parseInitializeOptions(useMockOrOptions);
+    const useMock = options.useMock === true;
+    listPermittedDevicesFn =
+      options.listPermittedDevices ??
+      (useMock || options.device
+        ? async () => []
+        : () => ChromeHidTransport.listPermittedDevices());
+
+    let device = options.device;
+    if (!device) {
+      const transport = useMock ? new MockTransport() : new ChromeHidTransport();
+      if (!useMock && transport instanceof ChromeHidTransport) {
+        transport.onDeviceAdded(() => {
+          if (!get().isConnected && !connectInFlight) {
+            void get().connect({ announce: true });
+          }
+        });
+      }
+      device = new OnlyKeyDevice(transport);
     }
-    const device = new OnlyKeyDevice(transport);
 
     device.on('statusChange', async (state) => {
       if (!state.isConnected) {
@@ -323,7 +350,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     set({ device });
     get().startPolling();
     // Startup probe: silent. Do not flash Connecting... while nothing is plugged in.
-    void get().connect({ announce: false });
+    await get().connect({ announce: false });
   },
 
   resumePendingFirmware: async () => {
@@ -407,7 +434,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
           isConnecting: false,
           sessionEpoch: hadSession ? get().sessionEpoch + 1 : get().sessionEpoch,
         });
-        const permitted = await ChromeHidTransport.listPermittedDevices();
+        const permitted = await listPermittedDevicesFn();
         const onlyKeyDevs = permitted.filter((d) =>
           SUPPORTED_DEVICES.some((f) => f.vendorId === d.vendorId && f.productId === d.productId)
         );
