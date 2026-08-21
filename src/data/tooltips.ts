@@ -1,5 +1,3 @@
-import { DeviceType } from '../api/device/types';
-
 /** Tooltip text and documentation links for the OnlyKey desktop app. */
 export const TOOLTIPS = {
   setup: {
@@ -90,10 +88,3 @@ export const TOOLTIPS = {
     text: 'Provides a way to securely use OnlyKey for SSH authentication on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH.',
   },
 } as const;
-
-export function configModeTooltipText(deviceType: DeviceType): string {
-  if (deviceType === DeviceType.DUO) {
-    return 'Hold button #1 for 10+ seconds and release. The light turns off. If a PIN is set, re-enter it. The LED flashes red.';
-  }
-  return 'Hold button #6 for 5+ seconds and release. The light turns off. Enter your PIN. The LED flashes red.';
-}

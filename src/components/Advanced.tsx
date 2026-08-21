@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { KEY_SLOTS } from '../api/device/keyParser';
 import { hexStringToByteArray } from '../api/device/utils';
-import { configModeTooltipText } from '../data/tooltips';
+import { CONFIG_MODE_REQUIRED, configModeTooltipText } from '../data/configMode';
 import { CautionButton, CriticalText, SetButton } from './ui/forms';
 import { Tooltip } from './ui/Tooltip';
 
@@ -20,9 +20,6 @@ const ECC_SLOTS = [
 ];
 
 const KEY_MODIFIERS = { Backup: 128, Signature: 64, Decryption: 32 };
-
-const CONFIG_MODE_REQUIRED =
-  'Put your OnlyKey in config mode (flashing red LED) before saving or wiping private keys.';
 
 const Advanced: React.FC = () => {
   const { device, deviceType, isConfigMode, setWorking } = useDeviceStore();
