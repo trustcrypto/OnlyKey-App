@@ -226,9 +226,9 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
     device.on('statusChange', async (state) => {
       if (!state.isConnected) {
-        // INITIALIZED during transport.connect is emitted before OnlyKeyDevice
-        // sets isConnected — do not treat that as an unplug.
-        if (connectInFlight) return;
+        // INITIALIZED during transport.connect has lastStatusText but isConnected
+        // is still false. A real unplug/resetDeviceState has an empty snapshot.
+        if (connectInFlight && state.lastStatusText) return;
         // CRITICAL: unplug / disconnect wipes all device session UI state.
         set({
           ...disconnectedDeviceSnapshot,
@@ -440,7 +440,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         void get().resumePendingFirmware();
       }
     } catch (e: any) {
-      if (e.message === 'Device not found') {
+      const msg = e.message ?? '';
+      if (
+        msg === 'Device not found' ||
+        /not connected/i.test(msg) ||
+        /disconnected/i.test(msg)
+      ) {
         // Silent probe failure — wipe device fields but do not bump sessionEpoch
         // on every 2s empty poll (would thrash React remounts while disconnected).
         const hadSession = get().isConnected;
