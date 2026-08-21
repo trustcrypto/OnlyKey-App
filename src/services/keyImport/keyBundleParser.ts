@@ -50,6 +50,14 @@ async function parseOpenPgpBundle(pem: string, passcode: string): Promise<KeyCan
   return candidates;
 }
 
+function autoSlotsForKind(kind: 'rsa' | 'ecc'): { signing: number; decryption: number } {
+  if (kind === 'ecc') {
+    // 5.6 confirmRsaKeySelect: slot 2/1 then +100 for ECC → 102 signature, 101 decryption.
+    return { signing: KEY_SLOTS.ecc[1], decryption: KEY_SLOTS.ecc[0] };
+  }
+  return { signing: SIGNING_SLOT, decryption: DECRYPTION_SLOT };
+}
+
 function buildAutoAssignments(candidates: KeyCandidate[]): KeyImportResult['assignments'] {
   if (candidates.length < 2) {
     const candidate = candidates[0];
@@ -59,8 +67,10 @@ function buildAutoAssignments(candidates: KeyCandidate[]): KeyImportResult['assi
 
   const signingKey = candidates.length > 2 ? candidates[2] : candidates[0];
   const decryptionKey = candidates[1];
-  const assignments = [{ candidate: signingKey, slot: SIGNING_SLOT }];
-  if (decryptionKey) assignments.push({ candidate: decryptionKey, slot: DECRYPTION_SLOT });
+  const kind = signingKey.kind === 'ecc' || decryptionKey?.kind === 'ecc' ? 'ecc' : 'rsa';
+  const slots = autoSlotsForKind(kind);
+  const assignments = [{ candidate: signingKey, slot: slots.signing }];
+  if (decryptionKey) assignments.push({ candidate: decryptionKey, slot: slots.decryption });
   return assignments;
 }
 

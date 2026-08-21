@@ -38,11 +38,14 @@ export async function importPemKey(
     assignments = bundle.assignments;
   }
 
+  const autoLoad = options.slotChoice === 99;
   for (const { candidate, slot } of assignments) {
     const type = applyPrivateKeyTypeModifiers(candidate.type, slot, candidate.kind, {
       setAsBackup: options.setAsBackup,
-      setAsSignature: options.setAsSignature,
-      setAsDecryption: options.setAsDecryption,
+      setAsSignature:
+        options.setAsSignature || (autoLoad && candidate.kind === 'ecc' && slot === 102),
+      setAsDecryption:
+        options.setAsDecryption || (autoLoad && candidate.kind === 'ecc' && slot === 101),
     });
     await device.setPrivateKey(slot, type, candidate.keyData);
   }

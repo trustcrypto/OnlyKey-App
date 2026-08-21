@@ -97,6 +97,25 @@ describe('parseKeyBundle', () => {
     expect(result.assignments[1].candidate.id).toBe('1');
   });
 
+  it('auto-assigns ECC OpenPGP bundles onto slots 102 and 101, not RSA 1/2', async () => {
+    const eccPacket = (fill: number) => ({
+      getAlgorithmInfo: () => ({ algorithm: 'ed25519' }),
+      privateParams: { seed: new Uint8Array(32).fill(fill) },
+    });
+    readPrivateKey.mockResolvedValue({});
+    decryptKey.mockResolvedValue({
+      keyPacket: eccPacket(1),
+      subkeys: [{ keyPacket: eccPacket(2) }],
+    });
+
+    const result = await parseKeyBundle('-----BEGIN PGP PRIVATE KEY BLOCK-----', 'pw', 99);
+    expect(result.assignments.map((a) => a.slot)).toEqual([102, 101]);
+    expect(result.assignments[0].candidate.kind).toBe('ecc');
+    expect(result.assignments[1].candidate.kind).toBe('ecc');
+    expect(result.assignments[0].candidate.id).toBe('0');
+    expect(result.assignments[1].candidate.id).toBe('1');
+  });
+
   it('requires a passcode for OpenPGP keys', async () => {
     await expect(parseKeyBundle('-----BEGIN PGP PRIVATE KEY BLOCK-----', '', 99)).rejects.toThrow(
       /Passcode is required/

@@ -42,6 +42,28 @@ describe('importPemKey', () => {
     expect(result).toEqual({ loadedCount: 1, usedSelection: false });
   });
 
+  it('ORs ECC auto-load signature and decryption flags onto slots 102 and 101', async () => {
+    const sign = { id: '0', name: 'Primary Key', type: 1, keyData: [1], kind: 'ecc' as const };
+    const decrypt = { id: '1', name: 'Subkey 1', type: 1, keyData: [2], kind: 'ecc' as const };
+    parseKeyBundle.mockResolvedValue({
+      requiresSelection: false,
+      assignments: [
+        { candidate: sign, slot: 102 },
+        { candidate: decrypt, slot: 101 },
+      ],
+      candidates: [sign, decrypt],
+    });
+
+    await importPemKey(device as never, {
+      pem: '-----BEGIN PGP PRIVATE KEY BLOCK-----',
+      passcode: 'pw',
+      slotChoice: 99,
+    });
+
+    expect(device.setPrivateKey).toHaveBeenCalledWith(102, 1 | 64, [1]);
+    expect(device.setPrivateKey).toHaveBeenCalledWith(101, 1 | 32, [2]);
+  });
+
   it('ORs the signature modifier when requested', async () => {
     const ecc = { id: '0', name: 'Primary Key', type: 1, keyData: [9], kind: 'ecc' as const };
     parseKeyBundle.mockResolvedValue({
