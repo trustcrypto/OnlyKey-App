@@ -22,6 +22,7 @@ describe('Firmware page', () => {
       version: 'v2.1.2',
       blocks: ['deadbeef'],
       downloadUrl: 'https://example.com/fw.txt',
+      sha256: 'abc',
     });
 
     seedDeviceStore({
@@ -71,6 +72,7 @@ describe('Firmware page', () => {
       version: 'v3.0.4',
       blocks: ['aa', 'bb'],
       downloadUrl: 'https://example.com/fw.txt',
+      sha256: 'abc',
     });
     seedDeviceStore({
       device,

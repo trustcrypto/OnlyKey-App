@@ -21,9 +21,13 @@ export function arrayToHexString(byteArray: Uint8Array | number[]): string {
 }
 
 export function hexStringToByteArray(hexString: string): number[] {
+  const hex = hexString.trim();
+  if (hex.length % 2 !== 0 || !/^[0-9a-fA-F]*$/.test(hex)) {
+    throw new Error('Invalid hex string.');
+  }
   const result: number[] = [];
-  for (let i = 0; i < hexString.length; i += 2) {
-    result.push(parseInt(hexString.substring(i, i + 2), 16));
+  for (let i = 0; i < hex.length; i += 2) {
+    result.push(parseInt(hex.substring(i, i + 2), 16));
   }
   return result;
 }
@@ -58,10 +62,13 @@ export function parseBackupData(contents: string): string {
 }
 
 export function parseFirmwareData(contents: string): string[] {
-  const lines = contents.split("\n");
-  // Remove header if present
-  if (lines[0].includes("BEGIN SIGNED FIRMWARE")) {
+  const lines = contents.split('\n');
+  if (lines[0]?.includes('BEGIN SIGNED FIRMWARE')) {
     lines.shift();
   }
-  return lines.map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith("--"));
+  const blocks = lines.map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith('--'));
+  for (const block of blocks) {
+    hexStringToByteArray(block);
+  }
+  return blocks;
 }

@@ -24,6 +24,11 @@ describe('device utils', () => {
     expect(hexStringToByteArray('000fff')).toEqual([0, 15, 255]);
   });
 
+  it('rejects invalid hex strings', () => {
+    expect(() => hexStringToByteArray('gg')).toThrow(/Invalid hex/);
+    expect(() => hexStringToByteArray('abc')).toThrow(/Invalid hex/);
+  });
+
   it('pads strings', () => {
     expect(strPad(7, 3)).toBe('007');
     expect(strPad('ab', 4, 'x')).toBe('xxab');
@@ -39,7 +44,11 @@ describe('device utils', () => {
   });
 
   it('parses firmware files and drops the signed header', () => {
-    const contents = '-----BEGIN SIGNED FIRMWARE-----\nabc\n\n-- skip\ndef\n';
-    expect(parseFirmwareData(contents)).toEqual(['abc', 'def']);
+    const contents = '-----BEGIN SIGNED FIRMWARE-----\naabbcc\n\n-- skip\nddee\n';
+    expect(parseFirmwareData(contents)).toEqual(['aabbcc', 'ddee']);
+  });
+
+  it('rejects firmware files with non-hex blocks', () => {
+    expect(() => parseFirmwareData('-----BEGIN SIGNED FIRMWARE-----\nnot-hex\n')).toThrow(/Invalid hex/);
   });
 });
