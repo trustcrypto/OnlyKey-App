@@ -962,26 +962,35 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   public async loadFirmwareBlocks(blocks: string[], onProgress?: (pct: number) => void): Promise<void> {
+    const maxPacketSize = 57;
     for (let i = 0; i < blocks.length; i++) {
-      const block = blocks[i];
-      const bytes = hexStringToByteArray(block);
-      const maxPacketSize = 57;
+      const bytes = hexStringToByteArray(blocks[i]);
+      const isLastBlock = i === blocks.length - 1;
+      const successText = isLastBlock ? 'SUCCESSFULLY LOADED FW' : 'NEXT BLOCK';
 
       for (let j = 0; j < bytes.length; j += maxPacketSize) {
         const chunk = bytes.slice(j, j + maxPacketSize);
-        const isFinalChunk = (j + maxPacketSize) >= bytes.length;
-        const packetHeader = isFinalChunk ? (chunk.length).toString(16) : 'FF';
-        await this.sendRequest(MessageID.OKFWUPDATE, parseInt(packetHeader, 16), undefined, chunk, 10000,
-          (r) => r.text?.includes('RECEIVED OKFWUPDATE') ?? false);
+        const isFinalChunk = j + maxPacketSize >= bytes.length;
+        if (!isFinalChunk) {
+          // Intermediate 0xFF packets are silent (same class as OKRESTORE / OKSETPRIV).
+          await this.sendCommandWithoutConfirmation(MessageID.OKFWUPDATE, 0xff, undefined, chunk, 200);
+          continue;
+        }
+        // One waiter, registered before the last chunk of this block is sent.
+        await this.sendRequest(
+          MessageID.OKFWUPDATE,
+          chunk.length,
+          undefined,
+          chunk,
+          20_000,
+          (r) => {
+            const t = `${r.text ?? ''} ${r.error ?? ''}`.toLowerCase();
+            return t.includes(successText.toLowerCase());
+          },
+        );
       }
 
       onProgress?.(Math.round(((i + 1) / blocks.length) * 100));
-
-      if (i < blocks.length - 1) {
-        await this.waitForMessage('NEXT BLOCK');
-      } else {
-        await this.waitForMessage('SUCCESSFULLY LOADED FW');
-      }
     }
   }
 }

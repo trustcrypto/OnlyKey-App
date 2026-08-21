@@ -141,6 +141,33 @@ describe('MockTransport', () => {
     await expect(device.loadFirmwareBlocks(['aabbccdd', '11223344'])).resolves.toBeUndefined();
   });
 
+  it('emits NEXT BLOCK and SUCCESS immediately on the last chunk of a firmware block', async () => {
+    const t = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(t);
+    await device.connect({ vendorId: 0, productId: 0 });
+    device.state.isBootloader = true;
+    const messages: string[] = [];
+    device.on('messageReceived', (m) => messages.push(m));
+
+    await device.loadFirmwareBlocks(['aa']);
+
+    expect(messages).toEqual(expect.arrayContaining(['NEXT BLOCK', 'SUCCESSFULLY LOADED FW']));
+    expect(messages).not.toContain('RECEIVED OKFWUPDATE');
+  });
+
+  it('stays silent on intermediate 0xFF firmware chunks', async () => {
+    const t = new MockTransport({ deviceType: 'bootloader' });
+    await t.connect({ vendorId: 0, productId: 0 });
+    const received: Uint8Array[] = [];
+    t.onReceive((data) => received.push(data));
+
+    const packet = new Uint8Array(64);
+    packet.set([0xff, 0xff, 0xff, 0xff, MessageID.OKFWUPDATE, 0xff, 0xaa]);
+    await t.send(0, packet);
+
+    expect(received).toHaveLength(0);
+  });
+
   it('records sent packets for inspection', async () => {
     const t = new MockTransport();
     const device = new OnlyKeyDevice(t);

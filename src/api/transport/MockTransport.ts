@@ -526,17 +526,15 @@ export class MockTransport implements TransportInterface {
       return;
     }
 
-    // Each FW chunk: ack immediately. After the app's sendRequest resolves it either
-    // waits for NEXT BLOCK (more blocks) or SUCCESSFULLY LOADED FW (last block).
-    // Emit both follow-ups: intermediate waits match NEXT; final waits ignore NEXT and match SUCCESS.
-    this.emitText('RECEIVED OKFWUPDATE');
-    const epoch = this.epoch;
-    void this.sleep(5).then(() => {
-      if (this.connected && epoch === this.epoch) this.emitText('NEXT BLOCK');
-    });
-    void this.sleep(15).then(() => {
-      if (this.connected && epoch === this.epoch) this.emitText('SUCCESSFULLY LOADED FW');
-    });
+    // Packet: [FF×4][OKFWUPDATE][flag][payload]
+    // flag 0xFF = intermediate chunk, silent (firmware does not reply).
+    // Any other flag is the last chunk of a block. Emit both follow-ups
+    // immediately: the app's single waiter matches NEXT BLOCK or SUCCESS.
+    const flag = packet[MESSAGE_HEADER.length + 1];
+    if (flag === 0xff) return;
+
+    this.emitText('NEXT BLOCK');
+    this.emitText('SUCCESSFULLY LOADED FW');
   }
 
   // --- Status helpers ---------------------------------------------------------

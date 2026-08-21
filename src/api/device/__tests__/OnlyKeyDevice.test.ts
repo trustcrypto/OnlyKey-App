@@ -353,6 +353,56 @@ it('should timeout if hardware does not respond', async () => {
     expect(fw).toBeTruthy();
   });
 
+  it('loadFirmwareBlocks waits for NEXT/SUCCESS on the last chunk of each block, not RECEIVED', async () => {
+    const transport = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    device.state.isBootloader = true;
+    transport.sentPackets.length = 0;
+    const progress: number[] = [];
+
+    await device.loadFirmwareBlocks(['aabbccdd', '11223344'], (pct) => progress.push(pct));
+
+    const fw = transport.sentPackets.filter((p) => p[4] === MessageID.OKFWUPDATE);
+    expect(fw).toHaveLength(2);
+    expect(fw[0][5]).toBe(4);
+    expect(fw[1][5]).toBe(4);
+    expect(progress).toEqual([50, 100]);
+  });
+
+  it('loadFirmwareBlocks sends silent 0xFF chunks for a multi-packet block', async () => {
+    const transport = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    device.state.isBootloader = true;
+    transport.sentPackets.length = 0;
+
+    const longBlock = 'ab'.repeat(58);
+    await device.loadFirmwareBlocks([longBlock]);
+
+    const fw = transport.sentPackets.filter((p) => p[4] === MessageID.OKFWUPDATE);
+    expect(fw).toHaveLength(2);
+    expect(fw[0][5]).toBe(0xff);
+    expect(fw[1][5]).toBe(1);
+  });
+
+  it('loadFirmwareBlocks rejects when the device is not in bootloader', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    await expect(device.loadFirmwareBlocks(['aabb'])).rejects.toThrow(/not in bootloader/i);
+  });
+
+  it('firmwareUpdate loads blocks when already in bootloader', async () => {
+    const transport = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    device.state.isBootloader = true;
+    transport.sentPackets.length = 0;
+    await device.firmwareUpdate(['deadbeef']);
+    expect(transport.sentPackets.some((p) => p[4] === MessageID.OKFWUPDATE && p[5] === 4)).toBe(true);
+  });
+
   it('beginClassicPinEntry waits on empty OKSETPIN / PIN2 / SDPIN', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
     const device = new OnlyKeyDevice(transport);
