@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyCandidate } from '../../services/keyImport/types';
 import { KEY_SLOTS } from '../../api/device/keyParser';
 
@@ -23,6 +23,15 @@ const PrivateKeySelectDialog: React.FC<PrivateKeySelectDialogProps> = ({
   const [selectedId, setSelectedId] = useState(candidates[0]?.id ?? '');
   const [slot, setSlot] = useState(SLOT_OPTIONS[0]?.value ?? 1);
 
+  useEffect(() => {
+    if (!open || !candidates.length) return;
+    const first = candidates[0];
+    setSelectedId(first.id);
+    setSlot(first.kind === 'ecc' ? KEY_SLOTS.ecc[0] : KEY_SLOTS.rsa[0]);
+  }, [open, candidates]);
+
+  const selected = candidates.find((c) => c.id === selectedId);
+
   if (!open || !candidates.length) return null;
 
   return (
@@ -40,7 +49,10 @@ const PrivateKeySelectDialog: React.FC<PrivateKeySelectDialogProps> = ({
                 type="radio"
                 name="keyCandidate"
                 checked={selectedId === candidate.id}
-                onChange={() => setSelectedId(candidate.id)}
+                onChange={() => {
+                  setSelectedId(candidate.id);
+                  setSlot(candidate.kind === 'ecc' ? KEY_SLOTS.ecc[0] : KEY_SLOTS.rsa[0]);
+                }}
                 className="accent-ok-blue"
               />
               <div>
@@ -67,8 +79,9 @@ const PrivateKeySelectDialog: React.FC<PrivateKeySelectDialogProps> = ({
         <div className="p-6 border-t border-white/5 flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10">Cancel</button>
           <button
-            onClick={() => onConfirm(selectedId, slot)}
-            className="px-4 py-2 rounded-lg bg-ok-blue hover:bg-blue-600 font-bold"
+            onClick={() => selected && onConfirm(selected.id, slot)}
+            disabled={!selected}
+            className="px-4 py-2 rounded-lg bg-ok-blue hover:bg-blue-600 font-bold disabled:opacity-50"
           >
             Load Key
           </button>

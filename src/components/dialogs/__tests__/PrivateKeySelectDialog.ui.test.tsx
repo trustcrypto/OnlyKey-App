@@ -31,4 +31,37 @@ describe('PrivateKeySelectDialog', () => {
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('preselects the first candidate and RSA slot 1 after opening from an empty mount', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    const { rerender } = renderWithProviders(
+      <PrivateKeySelectDialog open={false} candidates={[]} onClose={() => {}} onConfirm={onConfirm} />,
+    );
+    rerender(
+      <PrivateKeySelectDialog open candidates={candidates} onClose={() => {}} onConfirm={onConfirm} />,
+    );
+    await user.click(screen.getByRole('button', { name: /load key/i }));
+    expect(onConfirm).toHaveBeenCalledWith('0', 1);
+  });
+
+  it('defaults ECC candidates to slot 101 and resets when a new bundle opens', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    const ecc = [
+      { id: '0', name: 'ECC Primary', type: 1, keyData: [1], kind: 'ecc' as const },
+      { id: '1', name: 'ECC Subkey', type: 1, keyData: [2], kind: 'ecc' as const },
+    ];
+    const { rerender } = renderWithProviders(
+      <PrivateKeySelectDialog open candidates={candidates} onClose={() => {}} onConfirm={onConfirm} />,
+    );
+    rerender(
+      <PrivateKeySelectDialog open candidates={ecc} onClose={() => {}} onConfirm={onConfirm} />,
+    );
+    expect(screen.getByRole('combobox')).toHaveValue('101');
+    await user.click(screen.getByText('ECC Subkey'));
+    expect(screen.getByRole('combobox')).toHaveValue('101');
+    await user.click(screen.getByRole('button', { name: /load key/i }));
+    expect(onConfirm).toHaveBeenCalledWith('1', 101);
+  });
 });
