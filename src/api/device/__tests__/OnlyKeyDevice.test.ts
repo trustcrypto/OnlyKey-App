@@ -446,10 +446,12 @@ it('should timeout if hardware does not respond', async () => {
   it('connect on a bootloader transport sets isBootloader without a manual assignment', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);
+    const sendSpy = vi.spyOn(transport, 'send');
     await device.connect({ vendorId: 0, productId: 0xb001 });
     expect(device.state.isBootloader).toBe(true);
     expect(device.state.isLocked).toBe(false);
     expect(device.state.deviceType).toBe(DeviceType.BOOTLOADER);
+    expect(sendSpy.mock.calls.some((c) => (c[1] as Uint8Array)[4] === MessageID.OKSETTIME)).toBe(false);
   });
 
   it('loadFirmwareBlocks waits for NEXT/SUCCESS on the last chunk of each block, not RECEIVED', async () => {

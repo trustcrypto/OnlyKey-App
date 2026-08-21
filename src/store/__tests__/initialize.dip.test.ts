@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChromeHidTransport } from '../../api/transport/ChromeHidTransport';
+import { DeviceType } from '../../api/device/types';
 import { useDeviceStore } from '../useDeviceStore';
 import { createMockDeviceClient, resetDeviceStoreForTests } from '../../test/store';
 
@@ -22,6 +23,42 @@ describe('useDeviceStore.initialize DIP', () => {
     await useDeviceStore.getState().connect({ announce: false });
 
     expect(listPermitted).not.toHaveBeenCalled();
+  });
+
+  it('resumes pending firmware after connect finishes, not from statusChange', async () => {
+    const loadFirmwareBlocks = vi.fn().mockResolvedValue(undefined);
+    const listeners: Record<string, Function> = {};
+    const device = createMockDeviceClient({
+      loadFirmwareBlocks,
+      connect: vi.fn().mockResolvedValue(undefined),
+      on: vi.fn((event: string, fn: Function) => {
+        listeners[event] = fn;
+        return device;
+      }),
+    });
+    sessionStorage.setItem('ok-pending-firmware', JSON.stringify(['aa']));
+    await useDeviceStore.getState().initialize({ device, useMock: true });
+    useDeviceStore.setState({ isConnected: true });
+    await listeners.statusChange?.({
+      isConnected: true,
+      isLocked: false,
+      isConfigMode: false,
+      isBootloader: true,
+      deviceType: DeviceType.BOOTLOADER,
+      deviceTypeSource: 'usb',
+      usbProductId: 0xb001,
+      maxLabelSlot: 0,
+      lastStatusText: 'BOOTLOADER',
+      version: '',
+      devicePinSet: true,
+      labels: new Map(),
+    });
+    expect(loadFirmwareBlocks).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem('ok-pending-firmware')).toBe('["aa"]');
+
+    useDeviceStore.setState({ isBootloader: true });
+    await useDeviceStore.getState().connect({ announce: false });
+    expect(loadFirmwareBlocks).toHaveBeenCalledWith(['aa']);
   });
 
   it('resumes pending firmware while in bootloader', async () => {

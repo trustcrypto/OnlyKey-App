@@ -294,13 +294,6 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
           : {}),
       });
 
-      if (state.isBootloader && state.isConnected) {
-        const pending = getPendingFirmware();
-        if (pending?.length) {
-          void get().resumePendingFirmware();
-        }
-      }
-
       // Identify device type via labels before the firmware prompt can block the event loop.
       const shouldRefreshLabels =
         state.isConnected &&
@@ -438,6 +431,11 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     try {
       await device.connect(SUPPORTED_DEVICES);
       set({ error: null, pinError: null });
+      // Resume only after connect() finishes so OKSETTIME is not interleaved
+      // with OKFWUPDATE on the same HID queue.
+      if (get().isBootloader) {
+        void get().resumePendingFirmware();
+      }
     } catch (e: any) {
       if (e.message === 'Device not found') {
         // Silent probe failure — wipe device fields but do not bump sessionEpoch
