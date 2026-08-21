@@ -82,6 +82,23 @@ describe('importPemKey', () => {
     expect(device.setPrivateKey).toHaveBeenCalledWith(101, 1 | 64, [9]);
   });
 
+  it('does not tag a manual RSA-1 load as decryption', async () => {
+    parseKeyBundle.mockResolvedValue({
+      requiresSelection: false,
+      assignments: [{ candidate, slot: 1 }],
+      candidates: [candidate],
+    });
+
+    await importPemKey(device as never, {
+      pem: '-----BEGIN OPENSSH PRIVATE KEY-----',
+      passcode: '',
+      slotChoice: 1,
+      setAsBackup: true,
+    });
+
+    expect(device.setPrivateKey).toHaveBeenCalledWith(1, 2 | 128, [1, 2]);
+  });
+
   it('throws KEY_SELECTION_REQUIRED when the user must pick a subkey', async () => {
     parseKeyBundle.mockResolvedValue({
       requiresSelection: true,

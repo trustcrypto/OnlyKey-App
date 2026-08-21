@@ -46,6 +46,7 @@ export async function importPemKey(
         options.setAsSignature || (autoLoad && candidate.kind === 'ecc' && slot === 102),
       setAsDecryption:
         options.setAsDecryption || (autoLoad && candidate.kind === 'ecc' && slot === 101),
+      autoLoad,
     });
     await device.setPrivateKey(slot, type, candidate.keyData);
   }

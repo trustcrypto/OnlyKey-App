@@ -136,25 +136,28 @@ export function materialFromSshKey(key: {
   throw new Error('Unsupported SSH key type.');
 }
 
-/**
- * Combine the firmware size/curve type with Backup/Signature/Decryption flags.
- * RSA slot 1 is decryption and slot 2 is signature (5.6 confirmRsaKeySelect).
- * Backup (0x80) is not stored on the signature slot.
- */
+/** Combine size/curve type with Backup/Signature/Decryption flags. Auto Load only tags RSA 1/2 purpose and strips backup from the signature slot. */
 export function applyPrivateKeyTypeModifiers(
   baseType: number,
   slot: number,
   kind: 'rsa' | 'ecc',
-  flags: { setAsBackup?: boolean; setAsSignature?: boolean; setAsDecryption?: boolean } = {},
+  flags: {
+    setAsBackup?: boolean;
+    setAsSignature?: boolean;
+    setAsDecryption?: boolean;
+    autoLoad?: boolean;
+  } = {},
 ): number {
   let type = baseType;
-  if (kind === 'rsa') {
-    if (slot === 1) type |= KEY_TYPE_DECRYPTION;
-    if (slot === 2) type |= KEY_TYPE_SIGNATURE;
-  }
   if (flags.setAsDecryption) type |= KEY_TYPE_DECRYPTION;
   if (flags.setAsSignature) type |= KEY_TYPE_SIGNATURE;
   if (flags.setAsBackup) type |= KEY_TYPE_BACKUP;
-  if (slot === 2) type &= ~KEY_TYPE_BACKUP;
+  if (flags.autoLoad) {
+    if (kind === 'rsa') {
+      if (slot === 1) type |= KEY_TYPE_DECRYPTION;
+      if (slot === 2) type |= KEY_TYPE_SIGNATURE;
+    }
+    if (slot === 2 || slot === 102) type &= ~KEY_TYPE_BACKUP;
+  }
   return type;
 }

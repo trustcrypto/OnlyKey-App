@@ -234,12 +234,21 @@ describe('applyPrivateKeyTypeModifiers', () => {
     ).toBe(2 | KEY_TYPE_BACKUP | KEY_TYPE_SIGNATURE);
   });
 
-  it('marks RSA slot 1 decryption and slot 2 signature, stripping backup from slot 2', () => {
+  it('tags RSA 1/2 purpose and strips signature-slot backup only for Auto Load', () => {
     expect(applyPrivateKeyTypeModifiers(2, 1, 'rsa', { setAsBackup: true })).toBe(
-      2 | KEY_TYPE_DECRYPTION | KEY_TYPE_BACKUP,
+      2 | KEY_TYPE_BACKUP,
     );
     expect(applyPrivateKeyTypeModifiers(2, 2, 'rsa', { setAsBackup: true })).toBe(
+      2 | KEY_TYPE_BACKUP,
+    );
+    expect(applyPrivateKeyTypeModifiers(2, 1, 'rsa', { setAsBackup: true, autoLoad: true })).toBe(
+      2 | KEY_TYPE_DECRYPTION | KEY_TYPE_BACKUP,
+    );
+    expect(applyPrivateKeyTypeModifiers(2, 2, 'rsa', { setAsBackup: true, autoLoad: true })).toBe(
       2 | KEY_TYPE_SIGNATURE,
+    );
+    expect(applyPrivateKeyTypeModifiers(1, 102, 'ecc', { setAsBackup: true, autoLoad: true })).toBe(
+      1,
     );
   });
 });
