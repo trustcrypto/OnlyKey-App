@@ -17,3 +17,7 @@ export function loadSshpk(): SshpkModule {
   }
   return cached;
 }
+
+export function resetSshpkCache(): void {
+  cached = null;
+}

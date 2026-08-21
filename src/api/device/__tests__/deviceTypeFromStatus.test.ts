@@ -52,6 +52,23 @@ describe('device type detection', () => {
     expect(inferDeviceTypeFromStatusText('UNLOCKEDv2.1.0-prodp')).toBe(DeviceType.CLASSIC);
   });
 
+  it('treats plain INITIALIZED as Classic and empty text as unknown', () => {
+    expect(inferDeviceTypeFromStatusText('')).toBeUndefined();
+    expect(inferDeviceTypeFromStatusText('   ')).toBeUndefined();
+    expect(inferDeviceTypeFromStatusText('INITIALIZED')).toBe(DeviceType.CLASSIC);
+    expect(inferDeviceTypeFromStatusText('UNLOCKED')).toBeUndefined();
+  });
+
+  it('uses trailing n/p/c when major version is missing', () => {
+    expect(inferDeviceTypeFromStatusText('UNLOCKEDprodn')).toBe(DeviceType.DUO);
+    expect(inferDeviceTypeFromStatusText('UNLOCKEDprodp')).toBe(DeviceType.DUO);
+    expect(inferDeviceTypeFromStatusText('UNLOCKEDprodc')).toBe(DeviceType.CLASSIC);
+    expect(inferDeviceTypeFromVersion('')).toBeUndefined();
+    expect(inferDeviceTypeFromVersion('customn')).toBe(DeviceType.DUO);
+    expect(inferDeviceTypeFromVersion('customc')).toBe(DeviceType.CLASSIC);
+    expect(inferDeviceTypeFromVersion('mystery')).toBeUndefined();
+  });
+
   it('maps DUO USB product IDs', () => {
     expect(deviceTypeFromProductId(0x614c)).toBe(DeviceType.DUO);
     expect(deviceTypeFromProductId(0x614e)).toBe(DeviceType.DUO);

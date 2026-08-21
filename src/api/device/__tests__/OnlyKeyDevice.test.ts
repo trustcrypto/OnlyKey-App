@@ -313,6 +313,46 @@ it('should timeout if hardware does not respond', async () => {
     expect(privPackets).toBe(2);
   });
 
+  it('encodes DUO PIN setup with 0xFF prefix', async () => {
+    const transport = new MockTransport({ deviceType: 'duo', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+    await device.sendPinDUO(['1234567'], true);
+    const packet = sendSpy.mock.calls[0][1] as Uint8Array;
+    expect(packet[4]).toBe(MessageID.OKSETPIN);
+    expect(packet[5]).toBe(255);
+    expect(packet[6]).toBe(49);
+  });
+
+  it('hashes a backup passphrase onto slot 131 type 161', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+    await device.setBackupPassphrase('this passphrase is long enough!!');
+    const priv = sendSpy.mock.calls
+      .map((c) => c[1] as Uint8Array)
+      .find((p) => p[4] === MessageID.OKSETPRIV);
+    expect(priv?.[5]).toBe(131);
+    expect(priv?.[6]).toBe(161);
+  });
+
+  it('firmwareUpdate kicks bootloader when not already in bootloader', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    transport.setConfigMode(true);
+    transport.setLocked(false);
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+    await device.firmwareUpdate(['aabb']);
+    const fw = sendSpy.mock.calls.map((c) => c[1] as Uint8Array).find((p) => p[4] === MessageID.OKFWUPDATE);
+    expect(fw).toBeTruthy();
+  });
+
   it('beginClassicPinEntry waits on empty OKSETPIN / PIN2 / SDPIN', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
     const device = new OnlyKeyDevice(transport);

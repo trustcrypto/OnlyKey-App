@@ -1,5 +1,8 @@
+type ChromeHid = { hid?: { getDevices?: unknown } };
+
 export function getHidStatus(): { available: boolean; hint: string } {
-  const available = typeof chrome !== 'undefined' && !!chrome.hid?.getDevices;
+  const chromeApi = (globalThis as typeof globalThis & { chrome?: ChromeHid }).chrome;
+  const available = !!chromeApi?.hid?.getDevices;
 
   if (available) {
     return { available: true, hint: 'HID API ready — polling for your device.' };

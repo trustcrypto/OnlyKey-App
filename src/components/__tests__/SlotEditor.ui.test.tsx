@@ -121,4 +121,24 @@ describe('SlotEditor', () => {
     expect(slotConfigService.wipeSlotData).toHaveBeenCalled();
     expect(getStoreState().selectedSlotId).toBeNull();
   });
+
+  it('edits MFA TOTP and Yubikey OTP fields', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      devicePinSet: true,
+      selectedSlotId: 2,
+      labels: { 2: 'GitHub' },
+    });
+    renderWithProviders(<SlotEditor />);
+    const editor = screen.getByTestId('slot-editor');
+    await user.click(within(editor).getByRole('tab', { name: /multi-factor/i }));
+    await user.type(within(editor).getByPlaceholderText(/totp secret/i), 'JBSWY3DPEHPK3PXP');
+    await user.type(within(editor).getByPlaceholderText(/public identity/i), 'cccccc');
+    await user.type(within(editor).getByPlaceholderText(/private identity/i), '112233');
+    await user.type(within(editor).getByPlaceholderText(/secret key/i), 'aabbcc');
+    await user.click(within(editor).getByRole('button', { name: /set slot/i }));
+    expect(slotConfigService.saveSlotConfig).toHaveBeenCalled();
+  });
 });

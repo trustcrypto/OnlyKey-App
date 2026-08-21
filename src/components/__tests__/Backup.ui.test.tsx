@@ -74,4 +74,34 @@ describe('Backup page', () => {
     });
     expect(screen.getByText(/backup loaded/i)).toBeInTheDocument();
   });
+
+  it('saves backup data to a downloaded file', async () => {
+    const user = userEvent.setup();
+    const click = vi.fn();
+    const origCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = origCreate(tag);
+      if (tag === 'a') el.click = click;
+      return el;
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:backup');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    seedDeviceStore({ device: createMockDeviceClient() });
+    renderWithProviders(<Backup />);
+    await user.type(screen.getByPlaceholderText(/do not type in this field/i), '-----BEGIN ONLYKEY BACKUP-----\nYWJj\n-----END ONLYKEY BACKUP-----');
+    await user.click(screen.getByRole('button', { name: /save file/i }));
+    expect(click).toHaveBeenCalled();
+  });
+
+  it('shows restore errors from the backup service', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(backupService, 'restoreBackupFromFile').mockRejectedValue(new Error('restore exploded'));
+    seedDeviceStore({ device: createMockDeviceClient() });
+    renderWithProviders(<Backup />);
+    await user.click(screen.getByRole('tab', { name: 'Restore' }));
+    const file = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: /restore to onlykey/i }));
+    expect(await screen.findByText(/restore exploded/i)).toBeInTheDocument();
+  });
 });

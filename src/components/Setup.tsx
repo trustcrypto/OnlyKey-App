@@ -963,6 +963,7 @@ const BackupPassphraseStep: React.FC<{
         onChange={(e) => onPassphraseChange(e.target.value)}
         className="field-input mt-1 block max-w-xl"
         autoComplete="new-password"
+        aria-label="Enter passphrase"
       />
       <span className="mt-1 block text-sm text-muted">Passphrase must be at least 25 characters</span>
     </label>
@@ -975,6 +976,7 @@ const BackupPassphraseStep: React.FC<{
         onChange={(e) => onConfirmChange(e.target.value)}
         className="field-input mt-1 block max-w-xl"
         autoComplete="new-password"
+        aria-label="Re-enter passphrase"
       />
     </label>
     {!isInitialized && advancedSetup && (

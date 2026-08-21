@@ -17,6 +17,22 @@ describe('passwordGenerator', () => {
     })).toThrow();
   });
 
+  it('includes braces, punctuation, and space when selected', () => {
+    const password = generatePassword({
+      ...DEFAULT_PASSWORD_OPTIONS,
+      length: 40,
+      upper: false,
+      lower: false,
+      digits: false,
+      special: false,
+      punct: true,
+      braces: true,
+      space: true,
+    });
+    expect(password).toHaveLength(40);
+    expect(/[\s{}[\]()<>.,;:!?]/.test(password)).toBe(true);
+  });
+
   it('omits excluded characters', () => {
     const password = generatePassword({
       ...DEFAULT_PASSWORD_OPTIONS,

@@ -14,12 +14,16 @@ const coverage = {
     'src/test/**',
     'src/vite-env.d.ts',
     'src/main.tsx',
+    'src/**/*.d.ts',
+    'src/api/device/DeviceClient.ts',
+    'src/api/transport/Transport.interface.ts',
+    'src/services/keyImport/types.ts',
   ],
   thresholds: {
-    lines: 60,
-    statements: 58,
-    functions: 50,
-    branches: 52,
+    lines: 75,
+    statements: 75,
+    functions: 75,
+    branches: 72,
   },
 };
 

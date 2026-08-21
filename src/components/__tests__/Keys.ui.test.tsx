@@ -6,6 +6,7 @@ import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
 import * as keyImportService from '../../services/keyImport/keyImportService';
 import * as keyService from '../../services/keys/keyService';
+import * as keyBundleParser from '../../services/keyImport/keyBundleParser';
 
 vi.mock('../../services/keyImport/keyImportService', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../services/keyImport/keyImportService')>();
@@ -64,5 +65,40 @@ describe('Keys page', () => {
 
     await user.click(screen.getByRole('button', { name: /wipe from onlykey/i }));
     expect(keyService.wipeKeyInSlot).toHaveBeenCalledWith(device, 99);
+  });
+
+  it('opens the subkey picker when import requires selection', async () => {
+    const user = userEvent.setup();
+    vi.mocked(keyImportService.importPemKey).mockRejectedValueOnce(new Error('KEY_SELECTION_REQUIRED'));
+    vi.spyOn(keyBundleParser, 'parseKeyBundle').mockResolvedValue({
+      requiresSelection: true,
+      assignments: [],
+      candidates: [
+        { id: '0', name: 'Primary Key', type: 2, keyData: [1], kind: 'rsa' },
+        { id: '1', name: 'Subkey 1', type: 2, keyData: [2], kind: 'rsa' },
+      ],
+    });
+    seedDeviceStore({ device: createMockDeviceClient() });
+    renderWithProviders(<Keys />);
+    await user.type(screen.getByPlaceholderText(/paste pem/i), '-----BEGIN PGP PRIVATE KEY BLOCK-----');
+    await user.click(screen.getByRole('button', { name: /save to onlykey/i }));
+    expect(await screen.findByRole('heading', { name: /select private key/i })).toBeInTheDocument();
+  });
+
+  it('passes setAsBackup and surfaces wipe errors', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(keyService.wipeKeyInSlot).mockRejectedValueOnce(new Error('wipe failed'));
+    seedDeviceStore({ device: createMockDeviceClient() });
+    renderWithProviders(<Keys />);
+    await user.type(screen.getByPlaceholderText(/paste pem/i), '-----BEGIN OPENSSH PRIVATE KEY-----');
+    await user.click(screen.getByLabelText(/set as backup key/i));
+    await user.click(screen.getByRole('button', { name: /save to onlykey/i }));
+    expect(keyImportService.importPemKey).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ setAsBackup: true }),
+    );
+    await user.click(screen.getByRole('button', { name: /wipe from onlykey/i }));
+    expect(await screen.findByText(/wipe failed/i)).toBeInTheDocument();
   });
 });

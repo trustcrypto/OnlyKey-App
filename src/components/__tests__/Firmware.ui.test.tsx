@@ -90,4 +90,24 @@ describe('Firmware page', () => {
     expect(device.triggerBootloader).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('ok-pending-firmware')).toBe(JSON.stringify(['aa', 'bb']));
   });
+
+  it('loads a chosen firmware file after bootloader kick', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: true,
+      isBootloader: false,
+      version: 'v3.0.0',
+    });
+    renderWithProviders(<Firmware />);
+    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
+    await waitFor(() => {
+      expect(device.triggerBootloader).toHaveBeenCalled();
+    });
+    expect(JSON.parse(sessionStorage.getItem('ok-pending-firmware') ?? 'null')).toEqual(['aabb']);
+  });
 });
