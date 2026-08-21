@@ -4,10 +4,13 @@ export function base32ToHex(base32: string): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
   let bits = '';
   let hex = '';
+  const cleaned = base32.replace(/\s+/g, '').replace(/=+$/, '');
 
-  for (let i = 0; i < base32.length; i++) {
-    const val = alphabet.indexOf(base32.charAt(i).toUpperCase());
-    if (val < 0) continue;
+  for (let i = 0; i < cleaned.length; i++) {
+    const val = alphabet.indexOf(cleaned.charAt(i).toUpperCase());
+    if (val < 0) {
+      throw new Error('Invalid Base32 character in TOTP secret.');
+    }
     bits += strPad(val.toString(2), 5, '0');
   }
 
