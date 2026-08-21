@@ -89,6 +89,21 @@ describe('Setup page', () => {
     await waitFor(() => expect(device.restore).toHaveBeenCalled());
   });
 
+  it('enables advanced setup on an uninitialized device', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    const advanced = screen.getByRole('checkbox');
+    await user.click(advanced);
+    expect(advanced).toBeChecked();
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(screen.getByRole('heading', { name: /enter pin on onlykey keypad/i })).toBeInTheDocument();
+  });
+
   it('starts guided setup from an uninitialized Classic device', async () => {
     const user = userEvent.setup();
     seedDeviceStore({
@@ -190,6 +205,15 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /use openpgp key instead of passphrase/i }));
     expect(screen.getByRole('heading', { name: /set a backup key/i })).toBeInTheDocument();
   }
+
+  it('toggles PGP backup-key options and returns to the passphrase form', async () => {
+    const user = userEvent.setup();
+    await openClassicPgpStep(user);
+    await user.selectOptions(screen.getByRole('combobox'), '2');
+    await user.click(screen.getByLabelText(/lock backup key on this device/i));
+    await user.click(screen.getByRole('button', { name: /use passphrase instead of pgp key/i }));
+    expect(screen.getByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
+  });
 
   it('opens the PGP backup-key step from the passphrase form', async () => {
     const user = userEvent.setup();
@@ -312,6 +336,84 @@ describe('Setup page', () => {
       expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin');
     });
     expect(device.setPin).not.toHaveBeenCalled();
+  });
+
+  it('validates backup passphrase and returns to the landing page on cancel', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /set backup passphrase/i }));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByText(/passphrase cannot be empty/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/^enter passphrase$/i), { target: { value: 'short' } });
+    fireEvent.change(screen.getByLabelText(/^re-enter passphrase$/i), { target: { value: 'short' } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(document.querySelector('.critical-text')).toHaveTextContent(/at least 25 characters/i);
+
+    fireEvent.change(screen.getByLabelText(/^enter passphrase$/i), {
+      target: { value: 'this passphrase is not complex!!' },
+    });
+    fireEvent.change(screen.getByLabelText(/^re-enter passphrase$/i), {
+      target: { value: 'this passphrase is different!!!!' },
+    });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(document.querySelector('.critical-text')).toHaveTextContent(/do not match/i);
+
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    expect(screen.getByRole('button', { name: /set backup passphrase/i })).toBeInTheDocument();
+  });
+
+  it('requires an OpenPGP key and passcode before import', async () => {
+    const user = userEvent.setup();
+    await openClassicPgpStep(user);
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByText(/cannot be empty/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/paste pem/i), { target: { value: pgpPem } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByText(/passcode cannot be empty/i)).toBeInTheDocument();
+  });
+
+  it('shows a firmware parse error for a non-firmware file', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    const badFw = new File(['nope'], 'fw.txt', { type: 'text/plain' });
+    const fwInputs = document.querySelectorAll('input[type="file"]');
+    await user.upload(fwInputs[fwInputs.length - 1] as HTMLInputElement, badFw);
+    expect(await screen.findByText(/invalid hex|could not parse firmware/i)).toBeInTheDocument();
+  });
+
+  it('sets DUO self-destruct PIN and skips it when declined', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.DUO,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /set or change onlykey duo pins/i }));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    fireEvent.change(screen.getByPlaceholderText('Device PIN'), { target: { value: '3253614' } });
+    fireEvent.change(screen.getAllByPlaceholderText('Confirm')[0], { target: { value: '3253614' } });
+    fireEvent.change(screen.getByPlaceholderText(/self-destruct pin/i), { target: { value: '1111111' } });
+    fireEvent.change(screen.getAllByPlaceholderText('Confirm')[1], { target: { value: '1111111' } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => {
+      expect(device.sendPinDUO).toHaveBeenCalledWith(['3253614', '1111111'], true);
+    });
   });
 
   it('opens the subkey picker when import throws KEY_SELECTION_REQUIRED', async () => {

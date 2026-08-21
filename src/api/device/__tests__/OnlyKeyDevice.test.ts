@@ -422,6 +422,40 @@ it('should timeout if hardware does not respond', async () => {
     expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETSDPIN);
   });
 
+  it('setSlotFields, prefs, and hex private keys round-trip on the mock', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    await device.setSlotFields(1, [
+      { fieldId: FieldID.LABEL, value: 'Mail' },
+      { fieldId: FieldID.USERNAME, value: 'user' },
+    ]);
+    expect(transport.labels.get(1)).toBe('Mail');
+    await device.setSecProfileMode(1);
+    await device.setPin2();
+    await device.setSDPin();
+    await device.setPrivateKey(101, 1, 'ab'.repeat(32));
+    await device.setPrivateKey(102, 1, new Uint8Array(32).fill(7));
+    await device.setSlotTypeSpeed(1, 4);
+    await device.setDerivedChallengeMode(1);
+    await device.setStoredChallengeMode(1);
+    await device.setHmacChallengeMode(1);
+    await device.setModKeyMode(1);
+    await device.wipePrivateKey(101);
+    await device.wipeSlot(1);
+    expect(transport.labels.get(1)).toBe('empty');
+  });
+
+  it('applies DUO unlock and lock status strings', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    transport.simulateResponse('UNLOCKED-Dv3.0.0-prod');
+    expect(device.state.isLocked).toBe(false);
+    transport.simulateResponse('INITIALIZED-Dv3.0.0-prod');
+    expect(device.state.isLocked).toBe(true);
+  });
+
   it('restore rejects when not in config mode (requireConfigMode mock)', async () => {
     const transport = new MockTransport({
       deviceType: 'classic',

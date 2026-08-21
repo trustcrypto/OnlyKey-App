@@ -92,4 +92,45 @@ describe('windowVisibility', () => {
     const closeCalls = (win.on as ReturnType<typeof vi.fn>).mock.calls.filter((c) => c[0] === 'close');
     expect(closeCalls).toHaveLength(1);
   });
+
+  it('treats an nw binary under node_modules as a dev runtime', () => {
+    const orig = process.execPath;
+    Object.defineProperty(process, 'execPath', { value: '/app/node_modules/nw/nw.exe', configurable: true });
+    const argv = process.argv;
+    process.argv = ['nw'];
+    expect(isDevRuntime()).toBe(true);
+    process.argv = argv;
+    Object.defineProperty(process, 'execPath', { value: orig, configurable: true });
+  });
+
+  it('restores a minimized window and runs bound loaded/focus handlers', () => {
+    const win = fakeWin({ isMinimized: true, isVisible: false });
+    bindWindowVisibilityHandlers(win);
+    expect(win.restore).toHaveBeenCalled();
+    const handlers = Object.fromEntries(
+      (win.on as ReturnType<typeof vi.fn>).mock.calls.map((c) => [c[0], c[1]]),
+    );
+    handlers.loaded();
+    handlers.focus();
+    handlers.restore();
+    expect(win.focus).toHaveBeenCalled();
+  });
+
+  it('does not center when Screen has no displays', () => {
+    vi.stubGlobal('nw', { App: { startPath: '/tmp' }, Screen: { screens: [] } });
+    const win = fakeWin();
+    centerWindowOnScreen(win);
+    expect(win.moveTo).not.toHaveBeenCalled();
+  });
+
+  it('quits on close in a dev runtime', () => {
+    const orig = process.argv;
+    process.argv = ['node', 'app', '--onlykey-dev'];
+    const win = fakeWin();
+    bindCloseToTrayOrQuit(win);
+    const close = (win.on as ReturnType<typeof vi.fn>).mock.calls.find((c) => c[0] === 'close')?.[1] as () => void;
+    close();
+    expect((globalThis as unknown as { nw: { App: { quit: ReturnType<typeof vi.fn> } } }).nw.App.quit).toHaveBeenCalled();
+    process.argv = orig;
+  });
 });

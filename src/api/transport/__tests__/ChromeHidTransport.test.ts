@@ -124,4 +124,124 @@ describe('ChromeHidTransport', () => {
     removed(1);
     expect(gone).toHaveBeenCalled();
   });
+
+  it('selects a bootloader PID and a Beta8 usage-page device', async () => {
+    devices = [
+      hidDevice({
+        productId: 0xb001,
+        serialNumber: '1000000000',
+        collections: [{ usagePage: 0xffab }],
+      }),
+    ];
+    const boot = new ChromeHidTransport();
+    await boot.connect({ vendorId: 0x16c0, productId: 0xb001 });
+    expect(boot.getConnectedDevice()?.productId).toBe(0xb001);
+
+    devices = [
+      hidDevice({
+        serialNumber: '1000000000',
+        collections: [{ usagePage: 0xffab }],
+      }),
+    ];
+    const beta = new ChromeHidTransport();
+    await beta.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(beta.getConnectedDevice()).toEqual({ vendorId: 0x16c0, productId: 0x0486 });
+  });
+
+  it('falls back to the first matching HID interface', async () => {
+    devices = [hidDevice({ serialNumber: '1000000000', collections: [{ usagePage: 0x1 }] })];
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(t.getConnectedDevice()?.productId).toBe(0x0486);
+  });
+
+  it('sends only the view window of a sliced Uint8Array', async () => {
+    devices = [hidDevice()];
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const raw = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
+    await t.send(0, raw.subarray(2, 6));
+    const sent = hid.send.mock.calls[0][2] as ArrayBuffer;
+    expect(sent.byteLength).toBe(4);
+    expect([...new Uint8Array(sent)]).toEqual([2, 3, 4, 5]);
+  });
+
+  it('throws when sending while disconnected', async () => {
+    const t = new ChromeHidTransport();
+    await expect(t.send(0, new Uint8Array(8))).rejects.toThrow(/Not connected/);
+  });
+
+  it('disconnects on send lastError mentioning the device is gone', async () => {
+    devices = [hidDevice()];
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const gone = vi.fn();
+    t.onDisconnect(gone);
+    hid.send.mockImplementation((_c, _r, _d, cb: () => void) => {
+      (chrome.runtime as { lastError?: { message: string } }).lastError = {
+        message: 'failed: device disconnected',
+      };
+      cb();
+    });
+    await expect(t.send(0, new Uint8Array(8))).rejects.toThrow(/disconnected/);
+    expect(gone).toHaveBeenCalled();
+  });
+
+  it('rejects chrome.hid.connect errors and missing connectInfo', async () => {
+    devices = [hidDevice()];
+    hid.connect.mockImplementation((_id: number, cb: (info?: { connectionId: number }) => void) => {
+      (chrome.runtime as { lastError?: { message: string } }).lastError = { message: 'busy' };
+      cb(undefined);
+    });
+    const t = new ChromeHidTransport();
+    await expect(t.connect({ vendorId: 0x16c0, productId: 0x0486 })).rejects.toThrow(/busy/);
+
+    (chrome.runtime as { lastError?: { message: string } }).lastError = undefined;
+    hid.connect.mockImplementation((_id: number, cb: (info?: { connectionId: number }) => void) => {
+      cb(undefined);
+    });
+    const t2 = new ChromeHidTransport();
+    await expect(t2.connect({ vendorId: 0x16c0, productId: 0x0486 })).rejects.toThrow(/Connection failed/);
+  });
+
+  it('retries receive errors and disconnects when the device is gone', async () => {
+    devices = [hidDevice()];
+    vi.useFakeTimers();
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const gone = vi.fn();
+    t.onDisconnect(gone);
+
+    receiveCb?.(0, new ArrayBuffer(0));
+    (chrome.runtime as { lastError?: { message: string } }).lastError = { message: 'temporary glitch' };
+    receiveCb?.(0, new ArrayBuffer(0));
+    await vi.advanceTimersByTimeAsync(100);
+
+    (chrome.runtime as { lastError?: { message: string } }).lastError = {
+      message: 'invalid connection id',
+    };
+    receiveCb?.(0, new ArrayBuffer(0));
+    expect(gone).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('returns no permitted devices when HID is unavailable', async () => {
+    vi.stubGlobal('chrome', undefined);
+    expect(await ChromeHidTransport.listPermittedDevices()).toEqual([]);
+  });
+
+  it('falls back to an unfiltered getDevices list after a filtered error', async () => {
+    hid.getDevices.mockImplementation((opts: { filters?: unknown[] }, cb: (devs: HidDevice[]) => void) => {
+      if (opts?.filters?.length) {
+        (chrome.runtime as { lastError?: { message: string } }).lastError = { message: 'filtered failed' };
+        cb([]);
+        return;
+      }
+      (chrome.runtime as { lastError?: { message: string } }).lastError = undefined;
+      cb([hidDevice()]);
+    });
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(t.getConnectedDevice()?.productId).toBe(0x0486);
+  });
 });

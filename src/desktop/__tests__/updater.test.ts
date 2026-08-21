@@ -114,4 +114,86 @@ describe('checkForAppUpdate', () => {
       }),
     ).rejects.toThrow(/missing sha256/);
   });
+
+  it('skips download when the user declines or versions are equal', async () => {
+    userPreferences.autoUpdate = true;
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ version: '5.7.0', packages: {} }),
+    }));
+    await checkForAppUpdate({
+      fetchFn: fetchFn as never,
+      confirmFn: () => false,
+      readPackage: () => ({ version: '5.7.0', manifestUrl: 'https://example.com/manifest.json' }),
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    fetchFn.mockResolvedValue({
+      ok: true,
+      json: async () => ({ version: '5.7.1', packages: {} }),
+    } as never);
+    await checkForAppUpdate({
+      fetchFn: fetchFn as never,
+      confirmFn: () => false,
+      readPackage: () => ({ version: '5.7.0', manifestUrl: 'https://example.com/manifest.json' }),
+    });
+  });
+
+  it('rejects a failed package download and a size mismatch', async () => {
+    userPreferences.autoUpdate = true;
+    const body = new Uint8Array([1, 2]);
+    const hash = sha256(body);
+    const pkg = {
+      url: 'https://example.com/OnlyKey.exe',
+      sha256: hash,
+      size: 99,
+    };
+    const manifest = {
+      version: '5.7.1',
+      packages: { win64: pkg, mac64: pkg, linux64: pkg },
+    };
+
+    await expect(
+      checkForAppUpdate({
+        fetchFn: vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => manifest })
+          .mockResolvedValueOnce({ ok: false, status: 502 }) as never,
+        confirmFn: () => true,
+        readPackage: () => ({ version: '5.7.0', manifestUrl: 'https://example.com/manifest.json' }),
+      }),
+    ).rejects.toThrow(/Update download failed: HTTP 502/);
+
+    await expect(
+      checkForAppUpdate({
+        fetchFn: vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, json: async () => manifest })
+          .mockResolvedValueOnce({ ok: true, arrayBuffer: async () => body.buffer }) as never,
+        confirmFn: () => true,
+        readPackage: () => ({ version: '5.7.0', manifestUrl: 'https://example.com/manifest.json' }),
+      }),
+    ).rejects.toThrow(/size does not match/);
+  });
+
+  it('rejects a missing HTTPS package URL and a failed manifest fetch', async () => {
+    userPreferences.autoUpdate = true;
+    await expect(
+      checkForAppUpdate({
+        fetchFn: vi.fn().mockResolvedValue({ ok: false, status: 404 }) as never,
+        readPackage: () => ({ version: '5.7.0', manifestUrl: 'https://example.com/manifest.json' }),
+      }),
+    ).rejects.toThrow(/Manifest fetch failed/);
+
+    await expect(
+      checkForAppUpdate({
+        fetchFn: vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({ version: '5.7.1', packages: {} }),
+        }) as never,
+        confirmFn: () => true,
+        readPackage: () => ({ version: '5.7.0', manifestUrl: 'https://example.com/manifest.json' }),
+      }),
+    ).rejects.toThrow(/No HTTPS package URL/);
+  });
 });

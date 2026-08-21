@@ -155,6 +155,42 @@ describe('MockTransport', () => {
     expect(messages).not.toContain('RECEIVED OKFWUPDATE');
   });
 
+  it('emits text labels when binaryLabels is false', async () => {
+    const t = new MockTransport({ binaryLabels: false, startLocked: false, initialLabels: { 1: 'A', 11: 'B' } });
+    const device = new OnlyKeyDevice(t);
+    await device.connect({ vendorId: 0, productId: 0 });
+    await device.getLabels();
+    expect(device.state.labels.get(1)).toBe('A');
+    expect(device.state.labels.get(11)).toBe('B');
+  });
+
+  it('decodes raw numeric PIN digits and DUO locked status', async () => {
+    const t = new MockTransport({ deviceType: 'duo', startLocked: true, correctPin: '12' });
+    const device = new OnlyKeyDevice(t);
+    await device.connect({ vendorId: 0, productId: 0 });
+    t.sentPackets.length = 0;
+    const packet = new Uint8Array(64);
+    packet.set([0xff, 0xff, 0xff, 0xff, MessageID.OKSETPIN, 1, 2]);
+    await t.send(0, packet);
+    expect(t.getSnapshot().isLocked).toBe(false);
+  });
+
+  it('returns OK for empty label maps and unused message ids', async () => {
+    const t = new MockTransport({ deviceType: 'bootloader', initialLabels: {} });
+    await t.connect({ vendorId: 0, productId: 0 });
+    const received: string[] = [];
+    t.onReceive((data) => {
+      received.push(String.fromCharCode(...data.filter((b) => b >= 32 && b < 127)));
+    });
+    const labels = new Uint8Array(64);
+    labels.set([0xff, 0xff, 0xff, 0xff, MessageID.OKGETLABELS]);
+    await t.send(0, labels);
+    const unused = new Uint8Array(64);
+    unused.set([0xff, 0xff, 0xff, 0xff, MessageID.OKGETPUBKEY]);
+    await t.send(0, unused);
+    expect(received.some((s) => s.includes('OK'))).toBe(true);
+  });
+
   it('stays silent on intermediate 0xFF firmware chunks', async () => {
     const t = new MockTransport({ deviceType: 'bootloader' });
     await t.connect({ vendorId: 0, productId: 0 });

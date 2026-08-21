@@ -16,6 +16,14 @@ describe('platform', () => {
     expect(isLinux()).toBe(false);
   });
 
+  it('falls back to navigator.userAgent when process.platform is missing', () => {
+    vi.stubGlobal('process', { ...process, platform: undefined });
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 X11 Linux x86_64' });
+    expect(isLinux()).toBe(true);
+    vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 Macintosh' });
+    expect(isLinux()).toBe(false);
+  });
+
   it('classifies HID permission failures as udev-like', () => {
     expect(isConnectErrorLikelyUdev('Cannot open device')).toBe(true);
     expect(isConnectErrorLikelyUdev('Access denied')).toBe(true);

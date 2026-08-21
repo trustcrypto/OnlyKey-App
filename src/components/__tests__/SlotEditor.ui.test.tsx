@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SlotEditor from '../SlotEditor';
 import { DeviceType } from '../../api/device/types';
@@ -186,6 +186,52 @@ describe('SlotEditor', () => {
     await user.click(within(editor).getByRole('button', { name: /set slot/i }));
     expect(await screen.findByText(/password fields do not match/i)).toBeInTheDocument();
     expect(getStoreState().selectedSlotId).toBe(1);
+  });
+
+  it('sets type speed, next-key radios, generated password, and closes from the header', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      devicePinSet: true,
+      selectedSlotId: 1,
+      labels: { 1: 'Gmail' },
+    });
+    renderWithProviders(<SlotEditor />);
+    const editor = screen.getByTestId('slot-editor');
+    await user.click(within(editor).getByRole('checkbox', { name: /keyboard type speed/i }));
+    fireEvent.change(within(editor).getByRole('spinbutton', { name: /keyboard type speed/i }), {
+      target: { value: '7' },
+    });
+    await user.click(within(editor).getByRole('checkbox', { name: /after username/i }));
+    await user.click(within(editor).getAllByRole('radio', { name: /^tab$/i })[0]);
+    await user.click(within(editor).getByRole('button', { name: /^gen$/i }));
+    await user.click(screen.getByRole('button', { name: /^generate$/i }));
+    await user.click(screen.getByRole('button', { name: /use password/i }));
+    await user.click(within(editor).getByRole('button', { name: /close/i }));
+    expect(getStoreState().selectedSlotId).toBeNull();
+  });
+
+  it('cancels wipe and surfaces a wipe error', async () => {
+    const user = userEvent.setup();
+    vi.mocked(slotConfigService.wipeSlotData).mockRejectedValueOnce(new Error('wipe blocked'));
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      selectedSlotId: 3,
+      labels: { 3: 'Bank' },
+    });
+    renderWithProviders(<SlotEditor />);
+    const editor = screen.getByTestId('slot-editor');
+    await user.click(within(editor).getByRole('button', { name: /wipe all slot data/i }));
+    const wipeDialog = screen.getByRole('heading', { name: /wipe slot/i }).closest('div') as HTMLElement;
+    await user.click(within(wipeDialog).getByRole('button', { name: /^cancel$/i }));
+    expect(slotConfigService.wipeSlotData).not.toHaveBeenCalled();
+
+    await user.click(within(editor).getByRole('button', { name: /wipe all slot data/i }));
+    await user.click(screen.getByRole('button', { name: /^wipe slot$/i }));
+    expect(await screen.findByText(/wipe blocked/i)).toBeInTheDocument();
+    expect(getStoreState().selectedSlotId).toBe(3);
   });
 
   it('edits MFA TOTP and Yubikey OTP fields', async () => {

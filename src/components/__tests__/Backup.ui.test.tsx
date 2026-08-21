@@ -57,6 +57,25 @@ describe('Backup page', () => {
     expect(screen.getByText(/does not support verification/i)).toBeInTheDocument();
   });
 
+  it('reports restore progress while sending backup bytes', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    vi.spyOn(backupService, 'restoreBackupFromFile').mockImplementation(async (_d, _f, onProgress) => {
+      onProgress?.(40);
+      onProgress?.(96);
+      onProgress?.(100);
+    });
+    seedDeviceStore({ device, deviceType: DeviceType.CLASSIC });
+    renderWithProviders(<Backup />);
+    await user.click(screen.getByRole('tab', { name: 'Restore' }));
+    const file = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: /restore to onlykey/i }));
+    await waitFor(() => {
+      expect(backupService.restoreBackupFromFile).toHaveBeenCalled();
+    });
+  });
+
   it('restores a selected backup file', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();
@@ -91,6 +110,24 @@ describe('Backup page', () => {
     await user.type(screen.getByPlaceholderText(/do not type in this field/i), '-----BEGIN ONLYKEY BACKUP-----\nYWJj\n-----END ONLYKEY BACKUP-----');
     await user.click(screen.getByRole('button', { name: /save file/i }));
     expect(click).toHaveBeenCalled();
+  });
+
+  it('shows a successful backup verification', async () => {
+    const user = userEvent.setup();
+    const { sha256 } = await import('js-sha256');
+    const { base64ToHex, hexStringToByteArray } = await import('../../api/device/utils');
+    const payload = btoa('Hi');
+    const hash = sha256.create();
+    hash.update(new Uint8Array(32).fill(0));
+    hash.update(hexStringToByteArray(base64ToHex(payload)));
+    const digest = new Uint8Array(hash.array());
+    const hashB64 = btoa(String.fromCharCode(...digest));
+    seedDeviceStore({ device: createMockDeviceClient() });
+    renderWithProviders(<Backup />);
+    const block = `-----BEGIN ONLYKEY BACKUP-----\n${payload}\n--${hashB64}\n-----END ONLYKEY BACKUP-----`;
+    await user.type(screen.getByPlaceholderText(/do not type in this field/i), block);
+    await user.click(screen.getByRole('button', { name: /verify backup/i }));
+    expect(await screen.findByText(/successfully verified/i)).toBeInTheDocument();
   });
 
   it('shows restore errors from the backup service', async () => {

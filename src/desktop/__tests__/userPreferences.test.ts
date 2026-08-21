@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { userPreferences } from '../userPreferences';
 
 describe('userPreferences', () => {
@@ -25,5 +25,20 @@ describe('userPreferences', () => {
     userPreferences.autoUpdate = true;
     expect(localStorage.getItem('autoUpdate')).toBe('true');
     expect(userPreferences.autoUpdate).toBe(true);
+
+    userPreferences.closeToTray = false;
+    expect(localStorage.getItem('closeToTray')).toBe('false');
+    expect(userPreferences.closeToTray).toBe(false);
+    userPreferences.closeToTray = true;
+    expect(userPreferences.closeToTray).toBe(true);
+  });
+
+  it('uses the in-memory cache when localStorage is unavailable', () => {
+    vi.stubGlobal('localStorage', undefined);
+    userPreferences.autoLaunch = false;
+    expect(userPreferences.autoLaunch).toBe(false);
+    userPreferences.autoLaunch = true;
+    expect(userPreferences.autoLaunch).toBe(true);
+    vi.unstubAllGlobals();
   });
 });

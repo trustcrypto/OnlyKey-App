@@ -195,7 +195,8 @@ export class ChromeHidTransport implements TransportInterface {
     }
 
     return new Promise((resolve, reject) => {
-      chrome.hid.send(this.connectionId!, reportId, data.buffer as ArrayBuffer, () => {
+      const payload = Uint8Array.from(data).buffer;
+      chrome.hid.send(this.connectionId!, reportId, payload, () => {
         if (chrome.runtime.lastError) {
           const errMsg = chrome.runtime.lastError.message || '';
           if (errMsg.includes('disconnected') || errMsg.includes('not found') || errMsg.includes('invalid connection')) {
