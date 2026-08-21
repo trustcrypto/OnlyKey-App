@@ -26,6 +26,21 @@ const TEXT = `${INPUT} slot-input-text`;
 const NARROW = `${INPUT} slot-input-narrow`;
 const SPEED = `${INPUT} slot-input-speed`;
 
+const DEFAULT_FORM: SlotFormState = {
+  label: '', url: '', username: '', password: '', passwordConfirm: '',
+  delay1: '0', delay2: '0', delay3: '0',
+  nextKey4: '0', nextKey1: '0', nextKey2: '0', nextKey5: '0', nextKey3: '0',
+  slotTypeSpeed: '4', mfaMode: 'none', totpSecret: '',
+  yubiPublicId: '', yubiPrivateId: '', yubiSecretKey: '',
+};
+
+const DEFAULT_ENABLED: Record<string, boolean> = {
+  label: true, url: false, username: false, password: false,
+  delay1: false, delay2: false, delay3: false,
+  nextKey4: false, nextKey1: false, nextKey2: false, nextKey5: false, nextKey3: false,
+  slotTypeSpeed: false, mfa: false, totp: false,
+};
+
 const SlotEditor: React.FC = () => {
   const {
     selectedSlotId,
@@ -43,19 +58,8 @@ const SlotEditor: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showWipeConfirm, setShowWipeConfirm] = useState(false);
   const [showPasswordGen, setShowPasswordGen] = useState(false);
-  const [form, setForm] = useState<SlotFormState>({
-    label: '', url: '', username: '', password: '', passwordConfirm: '',
-    delay1: '0', delay2: '0', delay3: '0',
-    nextKey4: '0', nextKey1: '0', nextKey2: '0', nextKey5: '0', nextKey3: '0',
-    slotTypeSpeed: '4', mfaMode: 'none', totpSecret: '',
-    yubiPublicId: '', yubiPrivateId: '', yubiSecretKey: '',
-  });
-  const [enabled, setEnabled] = useState<Record<string, boolean>>({
-    label: true, url: false, username: false, password: false,
-    delay1: false, delay2: false, delay3: false,
-    nextKey4: false, nextKey1: false, nextKey2: false, nextKey5: false, nextKey3: false,
-    slotTypeSpeed: false, mfa: false, totp: false,
-  });
+  const [form, setForm] = useState<SlotFormState>(DEFAULT_FORM);
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(DEFAULT_ENABLED);
 
   const isDuoNoPin = deviceType === DeviceType.DUO && !devicePinSet;
   const tabModes: SlotConfigMode[] = isDuoNoPin ? ['basic', 'mfa'] : ['basic', 'mfa', 'advanced'];
@@ -66,17 +70,18 @@ const SlotEditor: React.FC = () => {
   };
 
   useEffect(() => {
-    if (selectedSlotId !== null) {
-      const existing = labels[selectedSlotId];
-      setForm((f) => ({
-        ...f,
-        label: existing && existing.toLowerCase() !== 'empty' ? existing : '',
-        url: '', username: '', password: '', passwordConfirm: '',
-        totpSecret: '', yubiPublicId: '', yubiPrivateId: '', yubiSecretKey: '',
-      }));
-      setError(null);
-    }
-  }, [selectedSlotId, labels]);
+    if (selectedSlotId === null) return;
+    const existing = labels[selectedSlotId];
+    setForm({
+      ...DEFAULT_FORM,
+      label: existing && existing.toLowerCase() !== 'empty' ? existing : '',
+    });
+    setEnabled({ ...DEFAULT_ENABLED });
+    setError(null);
+    // Reset only when the selected slot changes. A labels refresh must not
+    // wipe in-progress checkbox/delay edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSlotId]);
 
   if (selectedSlotId === null || !device) return null;
 
