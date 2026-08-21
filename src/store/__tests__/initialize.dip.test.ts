@@ -35,6 +35,27 @@ describe('useDeviceStore.initialize DIP', () => {
     expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
   });
 
+  it('does not start a second firmware load when two resumes overlap', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const loadFirmwareBlocks = vi.fn().mockImplementation(() => gate);
+    const device = createMockDeviceClient({ loadFirmwareBlocks });
+    sessionStorage.setItem('ok-pending-firmware', JSON.stringify(['aa', 'bb']));
+    await useDeviceStore.getState().initialize({ device, useMock: true });
+    useDeviceStore.setState({ isBootloader: true });
+
+    const first = useDeviceStore.getState().resumePendingFirmware();
+    const second = useDeviceStore.getState().resumePendingFirmware();
+    expect(loadFirmwareBlocks).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
+
+    release();
+    await Promise.all([first, second]);
+    expect(loadFirmwareBlocks).toHaveBeenCalledTimes(1);
+  });
+
   it('uses the injected listPermittedDevices on Device not found', async () => {
     const listPermittedDevices = vi.fn().mockResolvedValue([
       { vendorId: 0x1d50, productId: 0x60fc, productName: 'OnlyKey' },

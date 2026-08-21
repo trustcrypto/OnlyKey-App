@@ -102,6 +102,7 @@ const SUPPORTED_DEVICES = [
 
 let pollInterval: NodeJS.Timeout | null = null;
 let firmwareCheckInFlight: Promise<void> | null = null;
+let firmwareResumeInFlight: Promise<void> | null = null;
 /** In-flight connect mutex — separate from UI `isConnecting` so silent polls can run. */
 let connectInFlight = false;
 let listPermittedDevicesFn: () => Promise<PermittedHidDevice[]> = async () => [];
@@ -296,7 +297,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       if (state.isBootloader && state.isConnected) {
         const pending = getPendingFirmware();
         if (pending?.length) {
-          get().resumePendingFirmware();
+          void get().resumePendingFirmware();
         }
       }
 
@@ -304,6 +305,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       const shouldRefreshLabels =
         state.isConnected &&
         !isNowLocked &&
+        !state.isBootloader &&
         !get().isRefreshingLabels &&
         ((wasLocked && !isNowLocked) || Object.keys(get().labels).length === 0);
 
@@ -354,18 +356,30 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   },
 
   resumePendingFirmware: async () => {
-    const { device, isBootloader } = get();
-    const pending = getPendingFirmware();
-    if (!device || !isBootloader || !pending?.length) return;
+    if (firmwareResumeInFlight) return firmwareResumeInFlight;
+
+    firmwareResumeInFlight = (async () => {
+      const { device, isBootloader } = get();
+      const pending = getPendingFirmware();
+      if (!device || !isBootloader || !pending?.length) return;
+
+      // Snapshot and clear before send so a second BOOTLOADER status cannot
+      // start another loadFirmwareBlocks on the same HID queue.
+      clearPendingFirmware();
+      try {
+        get().setWorking(true, 'Loading firmware…');
+        await device.loadFirmwareBlocks(pending);
+      } catch (e: any) {
+        set({ error: e.message });
+      } finally {
+        get().setWorking(false);
+      }
+    })();
 
     try {
-      get().setWorking(true, 'Loading firmware…');
-      await device.loadFirmwareBlocks(pending);
-      clearPendingFirmware();
-    } catch (e: any) {
-      set({ error: e.message });
+      await firmwareResumeInFlight;
     } finally {
-      get().setWorking(false);
+      firmwareResumeInFlight = null;
     }
   },
 
