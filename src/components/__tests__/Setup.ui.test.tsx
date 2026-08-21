@@ -125,6 +125,52 @@ describe('Setup page', () => {
     expect(device.setBackupKeyMode).toHaveBeenCalledWith(0);
   });
 
+  it('does not store pending firmware when the bootloader kick fails', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient({
+      triggerBootloader: vi.fn().mockRejectedValue(new Error('Error: Not in Config Mode')),
+    });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+      isBootloader: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
+    const inputs = document.querySelectorAll('input[type="file"]');
+    await user.upload(inputs[inputs.length - 1] as HTMLInputElement, file);
+
+    await waitFor(() => {
+      expect(device.triggerBootloader).toHaveBeenCalled();
+    });
+    expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
+    expect(screen.getByText(/not in config mode/i)).toBeInTheDocument();
+  });
+
+  it('stores pending firmware only after a successful bootloader kick', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+      isBootloader: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
+    const inputs = document.querySelectorAll('input[type="file"]');
+    await user.upload(inputs[inputs.length - 1] as HTMLInputElement, file);
+
+    await waitFor(() => {
+      expect(device.triggerBootloader).toHaveBeenCalled();
+    });
+    expect(JSON.parse(sessionStorage.getItem('ok-pending-firmware') ?? 'null')).toEqual(['aabb']);
+    expect(device.firmwareUpdate).not.toHaveBeenCalled();
+  });
+
   it('uses beginClassicPinEntry for Classic keypad PIN setup, not 10s setPin', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();

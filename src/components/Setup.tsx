@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
 import { parseBackupData, parseFirmwareData } from '../api/device/utils';
-import { storePendingFirmware } from '../desktop/firmwareCheck';
+import { clearPendingFirmware, storePendingFirmware } from '../desktop/firmwareCheck';
 import { importPemKey, isSelectionRequiredError } from '../services/keyImport/keyImportService';
 import { parseKeyBundle } from '../services/keyImport/keyBundleParser';
 import PrivateKeySelectDialog from './dialogs/PrivateKeySelectDialog';
@@ -26,7 +26,7 @@ const BACKUP_RSA_SLOTS = [
 ];
 
 const Setup: React.FC = () => {
-  const { device, deviceType, isLocked, isConfigMode, setWorking } = useDeviceStore();
+  const { device, deviceType, isLocked, isConfigMode, isBootloader, setWorking } = useDeviceStore();
   const [guided, setGuided] = useState(false);
   const [advancedSetup, setAdvancedSetup] = useState(false);
   const [classicStep, setClassicStep] = useState<ClassicStep>('Step1');
@@ -179,8 +179,19 @@ const Setup: React.FC = () => {
     run(async () => {
       const blocks = parseFirmwareData(await file.text());
       if (!blocks.length) throw new Error('Could not parse firmware file.');
+      if (isBootloader) {
+        await device!.loadFirmwareBlocks(blocks);
+        clearPendingFirmware();
+        resetToStep1();
+        return;
+      }
+      try {
+        await device!.triggerBootloader();
+      } catch (err) {
+        clearPendingFirmware();
+        throw err;
+      }
       storePendingFirmware(blocks);
-      await device!.firmwareUpdate(blocks);
       resetToStep1();
     });
 
