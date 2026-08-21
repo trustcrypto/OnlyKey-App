@@ -1,4 +1,5 @@
 import { isOpenPgpKey, isSshKey, KEY_SLOTS } from '../../api/device/keySlots';
+import { materialFromOpenPgpPacket, materialFromSshKey } from '../../api/device/keyMaterial';
 import { loadSshpk } from '../../api/device/sshpkNode';
 import { KeyCandidate, KeyImportResult } from './types';
 
@@ -6,22 +7,10 @@ const AUTO_LOAD_SLOT = 99;
 const SIGNING_SLOT = 2;
 const DECRYPTION_SLOT = 1;
 
-function rsaTypeFromKeyData(keyData: number[]): number {
-  // v5: type = p.length / 64 (1024/2048/3072/4096 bit)
-  const estimatedBits = keyData.length * 8;
-  if (estimatedBits <= 128) return 1;
-  if (estimatedBits <= 256) return 2;
-  if (estimatedBits <= 384) return 3;
-  return 4;
-}
-
 async function parseSshBundle(pem: string, passcode: string): Promise<KeyCandidate[]> {
   const key = loadSshpk().parsePrivateKey(pem, 'pem', { passphrase: passcode || undefined });
-  const der = key.toBuffer('pkcs1');
-  const keyData = Array.from(der);
-  const type = key.type === 'ecdsa' || key.type === 'ed25519' ? 2 : rsaTypeFromKeyData(keyData);
-
-  return [{ id: '0', name: 'Primary Key', type, keyData }];
+  const material = materialFromSshKey(key);
+  return [{ id: '0', name: 'Primary Key', ...material }];
 }
 
 async function parseOpenPgpBundle(pem: string, passcode: string): Promise<KeyCandidate[]> {
@@ -33,17 +22,15 @@ async function parseOpenPgpBundle(pem: string, passcode: string): Promise<KeyCan
 
   const candidates: KeyCandidate[] = [];
 
-  const addPacket = (packet: { write: () => Uint8Array; algorithm?: unknown }, name: string, id: string) => {
-    const raw = packet.write();
-    const keyData = Array.from(new Uint8Array(raw));
-    const algo = String(packet.algorithm ?? '').toLowerCase();
-    const isRsa = algo.includes('rsa') || algo === '1' || algo === '2' || algo === '3' || (!algo && keyData.length > 128);
-    candidates.push({
-      id,
-      name,
-      type: isRsa ? rsaTypeFromKeyData(keyData) : 2,
-      keyData,
-    });
+  const addPacket = (packet: unknown, name: string, id: string) => {
+    const material = materialFromOpenPgpPacket(
+      packet as {
+        algorithm?: unknown;
+        privateParams?: Record<string, unknown> | null;
+        getAlgorithmInfo?: () => { algorithm: string; curve?: string };
+      },
+    );
+    candidates.push({ id, name, ...material });
   };
 
   if (decrypted.keyPacket) {
@@ -66,7 +53,7 @@ async function parseOpenPgpBundle(pem: string, passcode: string): Promise<KeyCan
 function buildAutoAssignments(candidates: KeyCandidate[]): KeyImportResult['assignments'] {
   if (candidates.length < 2) {
     const candidate = candidates[0];
-    const slot = candidate.type === 1 ? SIGNING_SLOT : KEY_SLOTS.ecc[0];
+    const slot = candidate.kind === 'rsa' ? SIGNING_SLOT : KEY_SLOTS.ecc[0];
     return [{ candidate, slot }];
   }
 

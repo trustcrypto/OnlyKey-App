@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const parsePrivateKeyMock = vi.fn();
-const toBufferMock = vi.fn();
 
 vi.mock('../../../api/device/sshpkNode', () => ({
   loadSshpk: () => ({
@@ -19,10 +18,20 @@ vi.mock('openpgp', () => ({
 
 import { parseKeyBundle } from '../keyBundleParser';
 
+function rsaPacket(fill: number, bytes = 128) {
+  return {
+    algorithm: 'rsaEncryptSign',
+    privateParams: {
+      p: new Uint8Array(bytes).fill(fill),
+      q: new Uint8Array(bytes).fill(fill + 1),
+    },
+    write: () => new Uint8Array(400).fill(9),
+  };
+}
+
 describe('parseKeyBundle', () => {
   beforeEach(() => {
     parsePrivateKeyMock.mockReset();
-    toBufferMock.mockReset();
     readPrivateKey.mockReset();
     decryptKey.mockReset();
   });
@@ -31,47 +40,54 @@ describe('parseKeyBundle', () => {
     await expect(parseKeyBundle('not-a-key', '', 1)).rejects.toThrow(/Unsupported key format/);
   });
 
-  it('auto-assigns a single SSH RSA key to the chosen slot', async () => {
-    toBufferMock.mockReturnValue(Buffer.from(new Array(20).fill(1)));
-    parsePrivateKeyMock.mockReturnValue({ type: 'rsa', toBuffer: toBufferMock });
+  it('auto-assigns a 2048-bit SSH RSA key as type 2 p||q', async () => {
+    const p = new Uint8Array(128).fill(1);
+    const q = new Uint8Array(128).fill(2);
+    parsePrivateKeyMock.mockReturnValue({
+      type: 'rsa',
+      part: { p: { data: p }, q: { data: q } },
+    });
 
     const result = await parseKeyBundle('-----BEGIN OPENSSH PRIVATE KEY-----', '', 3);
     expect(result.requiresSelection).toBe(false);
-    expect(result.assignments).toHaveLength(1);
     expect(result.assignments[0].slot).toBe(3);
-    expect(result.candidates[0].name).toBe('Primary Key');
+    expect(result.assignments[0].candidate.type).toBe(2);
+    expect(result.assignments[0].candidate.kind).toBe('rsa');
+    expect(result.assignments[0].candidate.keyData).toHaveLength(256);
   });
 
   it('auto-loads a single ECC SSH key onto the first ECC slot', async () => {
-    toBufferMock.mockReturnValue(Buffer.from([1]));
-    parsePrivateKeyMock.mockReturnValue({ type: 'ecdsa', toBuffer: toBufferMock });
+    parsePrivateKeyMock.mockReturnValue({
+      type: 'ecdsa',
+      curve: 'nistp256',
+      part: { d: { data: new Uint8Array(32).fill(1) } },
+    });
 
     const result = await parseKeyBundle('-----BEGIN OPENSSH PRIVATE KEY-----', '', 99);
     expect(result.assignments[0].slot).toBe(101);
     expect(result.assignments[0].candidate.type).toBe(2);
+    expect(result.assignments[0].candidate.kind).toBe('ecc');
   });
 
   it('requires selection when a chosen slot has multiple OpenPGP subkeys', async () => {
     readPrivateKey.mockResolvedValue({});
     decryptKey.mockResolvedValue({
-      keyPacket: { algorithm: 'rsaEncryptSign', write: () => new Uint8Array(20) },
-      subkeys: [{ keyPacket: { algorithm: 'rsaEncryptSign', write: () => new Uint8Array(20) } }],
+      keyPacket: rsaPacket(1),
+      subkeys: [{ keyPacket: rsaPacket(3) }],
     });
 
     const result = await parseKeyBundle('-----BEGIN PGP PRIVATE KEY BLOCK-----', 'pw', 2);
     expect(result.requiresSelection).toBe(true);
     expect(result.assignments).toEqual([]);
     expect(result.candidates).toHaveLength(2);
+    expect(result.candidates[0].type).toBe(2);
   });
 
   it('auto-assigns signing and decryption slots for OpenPGP bundles', async () => {
     readPrivateKey.mockResolvedValue({});
     decryptKey.mockResolvedValue({
-      keyPacket: { algorithm: 'rsaEncryptSign', write: () => new Uint8Array(20) },
-      subkeys: [
-        { keyPacket: { algorithm: 'rsaEncryptSign', write: () => new Uint8Array(20) } },
-        { keyPacket: { algorithm: 'rsaEncryptSign', write: () => new Uint8Array(20) } },
-      ],
+      keyPacket: rsaPacket(1),
+      subkeys: [{ keyPacket: rsaPacket(3) }, { keyPacket: rsaPacket(5) }],
     });
 
     const result = await parseKeyBundle('-----BEGIN PGP PRIVATE KEY BLOCK-----', 'pw', 99);

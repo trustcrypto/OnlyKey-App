@@ -3,6 +3,7 @@ export interface KeyCandidate {
   name: string;
   type: number;
   keyData: number[];
+  kind: 'rsa' | 'ecc';
 }
 
 export interface KeyLoadAssignment {
