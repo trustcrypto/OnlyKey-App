@@ -30,6 +30,7 @@ describe('Setup page', () => {
     renderWithProviders(<Setup />);
 
     expect(screen.getByText(/your onlykey is ready to use/i)).toBeInTheDocument();
+    expect(screen.getByText(/hold down button #6/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /set backup passphrase/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /change primary pin/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /change self-destruct pin/i })).toBeInTheDocument();
@@ -44,6 +45,8 @@ describe('Setup page', () => {
       isConfigMode: true,
     });
     renderWithProviders(<Setup />);
+
+    expect(screen.getByText(/hold down button #1 on your onlykey duo/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /set or change onlykey duo pins/i }));
     expect(screen.getByRole('heading', { name: /set or change pins/i })).toBeInTheDocument();

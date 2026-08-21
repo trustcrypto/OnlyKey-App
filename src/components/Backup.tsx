@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
-import { DeviceType } from '../api/device/types';
 import { extractBackupBlock, verifyBackupData } from '../utils/backupVerify';
 import { restoreBackupFromFile } from '../services/backup/backupService';
 import { TOOLTIPS } from '../data/tooltips';
+import ConfigModeInstructions from './ConfigModeInstructions';
 import { SetButton, StepFieldset } from './ui/forms';
 import { HelpTip } from './ui/HelpTip';
 import { PseudoTabBar, PseudoTabPanel } from './ui/PseudoTabs';
@@ -11,8 +11,7 @@ import { PseudoTabBar, PseudoTabPanel } from './ui/PseudoTabs';
 type BackupTab = 'backup' | 'restore';
 
 const Backup: React.FC = () => {
-  const { device, deviceType, setWorking } = useDeviceStore();
-  const isDuo = deviceType === DeviceType.DUO;
+  const { device, setWorking } = useDeviceStore();
   const [activeTab, setActiveTab] = useState<BackupTab>('backup');
   const [hasBackupData, setHasBackupData] = useState(false);
   const backupTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -165,12 +164,7 @@ const Backup: React.FC = () => {
                 <u>Step 1</u>. To restore a backup file to your OnlyKey, ensure you have loaded the same backup passphrase or backup key you used to create the backup.
               </p>
               <p>
-                <u>Step 2</u>.{' '}
-                {isDuo ? (
-                  <>Hold down button #1 on your OnlyKey DUO for 10+ seconds and release. The light will turn off. If a PIN was previously set, re-enter the PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.</>
-                ) : (
-                  <>Hold down button #6 on your OnlyKey for 5+ seconds and release. The light will turn off. Enter your PIN. You will notice the OnlyKey flashes red in config mode.</>
-                )}
+                <u>Step 2</u>. <ConfigModeInstructions inline />
               </p>
               <p>
                 <u>Step 3</u>. Click [Choose File], select your backup file, then click [Restore to OnlyKey].

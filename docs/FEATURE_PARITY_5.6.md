@@ -47,7 +47,7 @@ Legend: **Done** = present with real UI + device API (unverified on hardware unl
 | Sec profile mode | Done | `setSecProfileMode` |
 | Restore during setup | Done | restore file + `parseBackupData` |
 | Firmware during setup | Unverified | firmware file + pending store — same untested path as Firmware tab |
-| Config-mode instructions | Done | `ConfigModeInstructions` / notices |
+| Config-mode instructions | Done | `ConfigModeInstructions` / `src/data/configMode.ts` |
 
 ### Slots
 | Item | Status | Evidence |

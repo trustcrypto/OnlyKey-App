@@ -8,7 +8,9 @@ import { parseKeyBundle } from '../services/keyImport/keyBundleParser';
 import PrivateKeySelectDialog from './dialogs/PrivateKeySelectDialog';
 import type { KeyCandidate } from '../services/keyImport/keyImportService';
 import { KEY_SLOTS } from '../api/device/keyParser';
+import { configModePassphraseHint } from '../data/configMode';
 import { TOOLTIPS } from '../data/tooltips';
+import ConfigModeInstructions from './ConfigModeInstructions';
 import { CriticalText, SetButton, StepFieldset } from './ui/forms';
 import { HelpTip } from './ui/HelpTip';
 
@@ -227,24 +229,13 @@ const Setup: React.FC = () => {
       <p className="setup-ready-sub">
         Use the options below to change PINs or backup passphrase.
       </p>
-      <p className="setup-ready-critical">
-        Before selecting an option below, you must first put your OnlyKey{isDuo ? ' DUO' : ''} into config mode.
-      </p>
-      <p>
-        To do this{' '}
-        {isDuo ? (
-          <>hold down button #1 on your OnlyKey DUO for 10+ seconds and release.</>
-        ) : (
-          <>hold down button #6 on your OnlyKey for 5+ seconds and release.</>
-        )}{' '}
-        The light will turn off.
-        {isDuo ? (
-          <> If a PIN was previously set, re-enter the PIN to enter config mode.</>
-        ) : (
-          <> Enter your PIN.</>
-        )}
-        {' '}You will notice the OnlyKey flashes red in config mode.
-      </p>
+      <ConfigModeInstructions
+        leadIn={
+          <p className="setup-ready-critical">
+            Before selecting an option below, you must first put your OnlyKey{isDuo ? ' DUO' : ''} into config mode.
+          </p>
+        }
+      />
     </div>
   );
 
@@ -389,11 +380,7 @@ const Setup: React.FC = () => {
             backupConfirm={backupConfirm}
             onPassphraseChange={setBackupPassphrase}
             onConfirmChange={setBackupConfirm}
-            configHint={
-              isInitialized
-                ? 'To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.'
-                : undefined
-            }
+            configHint={isInitialized ? configModePassphraseHint(deviceType) : undefined}
           />
         )}
 
@@ -743,25 +730,14 @@ const Setup: React.FC = () => {
           backupConfirm={backupConfirm}
           onPassphraseChange={setBackupPassphrase}
           onConfirmChange={setBackupConfirm}
-          configHint={
-            isInitialized
-              ? 'To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.'
-              : undefined
-          }
+          configHint={isInitialized ? configModePassphraseHint(deviceType) : undefined}
         />
       )}
 
       {classicStep === 'Step9' && (
         <div id="Step9">
           <h3>Set a Backup Key</h3>
-          {isInitialized && (
-            <p>
-              To set a new passphrase on your OnlyKey put OnlyKey in config mode. For OnlyKey hold down button #6 on your
-              OnlyKey for 5+ seconds and release. For OnlyKey DUO hold down button #1 on your OnlyKey for 10+ seconds and
-              release. The light will turn off and if a PIN has been set re-enter your PIN to enter config mode. You will
-              notice the OnlyKey flashes red in config mode.
-            </p>
-          )}
+          {isInitialized && <p>{configModePassphraseHint(deviceType)}</p>}
           <p>
             Your OpenPGP key will be used for secure backup and restore of your OnlyKey, make sure to store it in a
             secure location.

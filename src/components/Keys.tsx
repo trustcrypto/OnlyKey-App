@@ -6,7 +6,7 @@ import { importPemKey, isSelectionRequiredError, KeyCandidate } from '../service
 import { wipeKeyInSlot } from '../services/keys/keyService';
 import PrivateKeySelectDialog from './dialogs/PrivateKeySelectDialog';
 import ConfigModeInstructions from './ConfigModeInstructions';
-import { CautionButton, SetButton } from './ui/forms';
+import { CautionButton, CriticalText, SetButton } from './ui/forms';
 
 const RSA_SLOT_OPTIONS = [
   { value: 99, label: 'Auto Load' },
@@ -83,7 +83,11 @@ const Keys: React.FC = () => {
               </a>{' '}
               for generating an OpenPGP key with Keybase.
             </p>
-            <ConfigModeInstructions />
+            <ConfigModeInstructions
+              leadIn={
+                <CriticalText>Before loading a key, you must first put your OnlyKey into config mode.</CriticalText>
+              }
+            />
           </div>
 
           <form className="keys-form space-y-5" onSubmit={(e) => e.preventDefault()}>
