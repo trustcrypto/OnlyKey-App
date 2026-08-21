@@ -22,6 +22,8 @@ export declare interface OnlyKeyDevice {
 
 const DUO_SETUP_PIN = /^[1-6]{7,10}$/;
 const DUO_PIN_SLOT_BYTES = 16;
+/** Connect-time OKSETTIME must fail fast — 10s×2 plus retry pinned Searching. */
+const CONNECT_SETTIME_TIMEOUT_MS = 2500;
 
 function padDuoPinSlot(pin: string): number[] {
   const slot = new Array(DUO_PIN_SLOT_BYTES).fill(0);
@@ -57,10 +59,13 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
   private requestQueue: (() => Promise<void>)[] = [];
   private isProcessingQueue = false;
+  private queueEpoch = 0;
   private fetchingLabels = false;
   private lastLabelReceivedAt = 0;
   private lastUnlockedAt = 0;
   private statusProbe: Promise<void> | null = null;
+  /** Bumped on each connect() and on unplug so in-flight connect/setTime cannot resume. */
+  private connectSeq = 0;
 
   public state = {
     isConnected: false,
@@ -87,22 +92,22 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     });
   }
 
-  private abortPendingRequest(reason = 'Device disconnected', soft = false): void {
+  private abortPendingRequest(reason = 'Device disconnected'): void {
     if (!this.pendingRequest) return;
     clearTimeout(this.pendingRequest.timer);
-    const { resolve, reject } = this.pendingRequest;
+    const { reject } = this.pendingRequest;
     this.pendingRequest = null;
-    if (soft) {
-      // Soft-complete so in-flight awaits (e.g. getLabels during test teardown) do not
-      // surface as unhandled rejections.
-      resolve({ type: 'text', text: reason });
-    } else {
-      reject(new Error(reason));
-    }
+    reject(new Error(reason));
+  }
+
+  private isCurrentConnect(seq: number): boolean {
+    return seq === this.connectSeq && this.state.isConnected;
   }
 
   private resetDeviceState(): void {
-    this.abortPendingRequest('Device disconnected', true);
+    this.connectSeq += 1;
+    this.queueEpoch += 1;
+    this.abortPendingRequest('Device disconnected');
     this.requestQueue = [];
     this.isProcessingQueue = false;
     this.fetchingLabels = false;
@@ -227,7 +232,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   private async processQueue() {
     if (this.isProcessingQueue || this.requestQueue.length === 0) return;
     this.isProcessingQueue = true;
-    while (this.requestQueue.length > 0) {
+    const epoch = this.queueEpoch;
+    while (this.requestQueue.length > 0 && epoch === this.queueEpoch) {
       const task = this.requestQueue.shift();
       if (task) {
         try {
@@ -237,7 +243,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         }
       }
     }
-    this.isProcessingQueue = false;
+    if (epoch === this.queueEpoch) this.isProcessingQueue = false;
   }
 
   private recordReceivedMessage(response: DeviceResponse): void {
@@ -389,6 +395,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     
     return new Promise((resolve, reject) => {
       this.requestQueue.push(async () => {
+        if (!this.state.isConnected) {
+          reject(new Error('Device disconnected'));
+          return;
+        }
         const packet = this.buildMessage(msgId, slotId, fieldId, data);
         
         try {
@@ -587,6 +597,12 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   // --- PUBLIC API ---
 
   public async connect(filters: any): Promise<void> {
+    const seq = ++this.connectSeq;
+    this.queueEpoch += 1;
+    this.requestQueue = [];
+    this.isProcessingQueue = false;
+    this.abortPendingRequest('Device disconnected');
+
     // Each HID connection is a possibly different OnlyKey. Drop the previous
     // type so a DUO unplug + Classic plug cannot keep DUO after unlock.
     this.state.deviceType = DeviceType.UNKNOWN;
@@ -599,7 +615,16 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     this.state.isConfigMode = false;
     this.state.isBootloader = false;
 
-    await this.transport.connect(filters);
+    try {
+      await this.transport.connect(filters);
+    } catch (e) {
+      if (seq !== this.connectSeq) throw new Error('Device disconnected');
+      throw e;
+    }
+    if (seq !== this.connectSeq) {
+      throw new Error('Device disconnected');
+    }
+
     this.state.isConnected = true;
     this.seedDeviceTypeFromTransport();
     // Emit now only if firmware already replied during transport.connect so the
@@ -610,14 +635,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     }
     // Bootloader has no clock and OKSETTIME waiters steal OKFWUPDATE replies.
     if (!this.state.isBootloader) {
-      try {
-        await this.setTime();
-      } catch (e) {
-        if (!this.state.isConnected) throw e;
-        await new Promise((r) => setTimeout(r, 300));
-        if (!this.state.isConnected) throw e;
-        await this.setTime();
-      }
+      await this.setTime(CONNECT_SETTIME_TIMEOUT_MS);
+    }
+    if (!this.isCurrentConnect(seq)) {
+      throw new Error('Device disconnected');
     }
     this.emit('statusChange', { ...this.state });
   }
@@ -628,16 +649,17 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     this.emit('statusChange', { ...this.state });
   }
 
-  public async setTime(): Promise<void> {
+  public async setTime(timeoutMs = 10000): Promise<void> {
      const currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
      const timeParts = currentEpochTime.match(/.{2}/g);
      if (!timeParts) throw new Error("Failed to generate time parts");
 
      const bytes = new Uint8Array(timeParts.map(p => parseInt(p, 16)));
-     // Send twice
-     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 10000, OnlyKeyDevice.isFirmwareStatus);
+     // Send twice — firmware historically needs two OKSETTIME packets.
+     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, timeoutMs, OnlyKeyDevice.isFirmwareStatus);
      await new Promise(r => setTimeout(r, 100));
-     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 10000, OnlyKeyDevice.isFirmwareStatus);
+     if (!this.state.isConnected) throw new Error('Device disconnected');
+     await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, timeoutMs, OnlyKeyDevice.isFirmwareStatus);
   }
 
   /**
@@ -676,28 +698,33 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     this.lastLabelReceivedAt = Date.now();
     this.state.labels.clear();
 
-    await this.sendRequest(MessageID.OKGETLABELS, undefined, undefined, undefined, 5000);
+    try {
+      await this.sendRequest(MessageID.OKGETLABELS, undefined, undefined, undefined, 5000);
 
-    // Firmware streams one label per HID packet; finish after idle gap (v5 listens until stream ends).
-    const maxWaitMs = 5000;
-    const idleMs = 400;
-    const started = Date.now();
-    let endedByIdle = false;
-    while (Date.now() - started < maxWaitMs) {
-      await new Promise((r) => setTimeout(r, 50));
-      if (this.state.labels.size > 0 && Date.now() - this.lastLabelReceivedAt >= idleMs) {
-        endedByIdle = true;
-        break;
+      // Firmware streams one label per HID packet; finish after idle gap (v5 listens until stream ends).
+      const maxWaitMs = 5000;
+      const idleMs = 400;
+      const started = Date.now();
+      let endedByIdle = false;
+      while (this.state.isConnected && Date.now() - started < maxWaitMs) {
+        await new Promise((r) => setTimeout(r, 50));
+        if (!this.state.isConnected) break;
+        if (this.state.labels.size > 0 && Date.now() - this.lastLabelReceivedAt >= idleMs) {
+          endedByIdle = true;
+          break;
+        }
       }
-    }
 
-    this.fetchingLabels = false;
-    if (this.inferDeviceTypeFromLabels(endedByIdle)) {
-      this.emit('statusChange', { ...this.state });
+      if (this.state.isConnected && this.inferDeviceTypeFromLabels(endedByIdle)) {
+        this.emit('statusChange', { ...this.state });
+      }
+      if (this.state.isConnected) {
+        this.emit('labelsRefreshed', new Map(this.state.labels));
+      }
+      return this.state.labels;
+    } finally {
+      this.fetchingLabels = false;
     }
-    this.emit('labelsRefreshed', new Map(this.state.labels));
-
-    return this.state.labels;
   }
 
   public async setSlot(slotId: number, fieldId: FieldID, value: string | number[]): Promise<void> {

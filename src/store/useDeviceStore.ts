@@ -55,10 +55,9 @@ interface DeviceState {
 /** Options for store.connect(). */
 export type ConnectOptions = {
   /**
-   * When true, flip `isConnecting` so the UI shows the hourglass / "Connecting..."
-   * state. Background HID probes (startup + 2s poll) must pass false — otherwise
-   * the overlay flickers in lockstep with the plug icon's 2s animate-pulse.
-   * Real plug events (onDeviceAdded) pass true.
+   * When true, flip `isConnecting` so the UI shows a connecting badge.
+   * Startup, 2s poll, and onDeviceAdded probes pass false — the Searching
+   * overlay already covers "no device", and a badge on every HID probe flickers.
    */
   announce?: boolean;
 };
@@ -105,7 +104,26 @@ let firmwareCheckInFlight: Promise<void> | null = null;
 let firmwareResumeInFlight: Promise<void> | null = null;
 /** In-flight connect mutex — separate from UI `isConnecting` so silent polls can run. */
 let connectInFlight = false;
+/** Coalesced: a plug arrived while connect() was still running. */
+let pendingReconnect = false;
+/** Identifies the current store connect so a superseded attempt cannot wipe a live session. */
+let connectAttempt = 0;
+let connectWatchdog: ReturnType<typeof setTimeout> | null = null;
+/** Last-resort: if device.connect() never settles, release the mutex. */
+export const CONNECT_WATCHDOG_MS = 20_000;
 let listPermittedDevicesFn: () => Promise<PermittedHidDevice[]> = async () => [];
+
+/** Test-only: drop module-level connect mutex/watchdog so suites cannot leak hangs. */
+export function resetDeviceStoreRuntimeForTests(): void {
+  connectInFlight = false;
+  pendingReconnect = false;
+  connectAttempt += 1;
+  listPermittedDevicesFn = async () => [];
+  if (connectWatchdog) {
+    clearTimeout(connectWatchdog);
+    connectWatchdog = null;
+  }
+}
 
 function parseInitializeOptions(
   useMockOrOptions?: boolean | InitializeOptions,
@@ -216,9 +234,12 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       const transport = useMock ? new MockTransport() : new ChromeHidTransport();
       if (!useMock && transport instanceof ChromeHidTransport) {
         transport.onDeviceAdded(() => {
-          if (!get().isConnected && !connectInFlight) {
-            void get().connect({ announce: false });
+          if (get().isConnected) return;
+          if (connectInFlight) {
+            pendingReconnect = true;
+            return;
           }
+          void get().connect({ announce: false });
         });
       }
       device = new OnlyKeyDevice(transport);
@@ -395,6 +416,8 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       try {
         set({ isRefreshingLabels: true });
         await device.getLabels();
+      } catch {
+        // Unplug / timeout — overlay already follows isConnected.
       } finally {
         set({ isRefreshingLabels: false });
       }
@@ -425,14 +448,45 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
   connect: async (options = {}) => {
     const { device } = get();
-    if (!device || connectInFlight) return;
+    if (!device) return;
+    if (connectInFlight) {
+      if (!get().isConnected) pendingReconnect = true;
+      return;
+    }
 
     const announce = options.announce === true;
+    const attempt = ++connectAttempt;
     connectInFlight = true;
+    pendingReconnect = false;
     if (announce) set({ isConnecting: true });
+
+    if (connectWatchdog) clearTimeout(connectWatchdog);
+    connectWatchdog = setTimeout(() => {
+      if (attempt !== connectAttempt || !connectInFlight) return;
+      console.error('Connect watchdog: aborting hung HID connect');
+      connectAttempt += 1;
+      connectInFlight = false;
+      pendingReconnect = false;
+      if (connectWatchdog) {
+        clearTimeout(connectWatchdog);
+        connectWatchdog = null;
+      }
+      const hung = get().device;
+      void (async () => {
+        try {
+          await hung?.disconnect();
+        } catch {
+          // Hung connect may already be torn down.
+        }
+        if (!get().isConnected) {
+          void get().connect({ announce: false });
+        }
+      })();
+    }, CONNECT_WATCHDOG_MS);
 
     try {
       await device.connect(SUPPORTED_DEVICES);
+      if (attempt !== connectAttempt) return;
       set({ error: null, pinError: null });
       // Resume only after connect() finishes so OKSETTIME is not interleaved
       // with OKFWUPDATE on the same HID queue.
@@ -440,6 +494,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         void get().resumePendingFirmware();
       }
     } catch (e: any) {
+      if (attempt !== connectAttempt) return;
       const msg = e.message ?? '';
       if (
         msg === 'Device not found' ||
@@ -456,6 +511,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
           sessionEpoch: hadSession ? get().sessionEpoch + 1 : get().sessionEpoch,
         });
         const permitted = await listPermittedDevicesFn();
+        if (attempt !== connectAttempt) return;
         const onlyKeyDevs = permitted.filter((d) =>
           SUPPORTED_DEVICES.some((f) => f.vendorId === d.vendorId && f.productId === d.productId)
         );
@@ -471,8 +527,20 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         set({ error: e.message, showUdevDialog: showUdev });
       }
     } finally {
-      connectInFlight = false;
-      if (get().isConnecting) set({ isConnecting: false });
+      if (connectWatchdog) {
+        clearTimeout(connectWatchdog);
+        connectWatchdog = null;
+      }
+      if (attempt === connectAttempt) {
+        connectInFlight = false;
+        if (get().isConnecting) set({ isConnecting: false });
+        if (pendingReconnect && !get().isConnected) {
+          pendingReconnect = false;
+          void get().connect({ announce: false });
+        } else {
+          pendingReconnect = false;
+        }
+      }
     }
   },
 

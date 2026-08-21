@@ -841,5 +841,36 @@ it('should timeout if hardware does not respond', async () => {
     await expect(device.setSlot(1, FieldID.LABEL, 'Mail')).rejects.toThrow(/locked|config mode/i);
     await expect(device.wipeSlot(1)).rejects.toThrow(/locked|config mode/i);
   });
+
+  it('aborts connect when unplugged before transport.connect finishes', async () => {
+    const transport = new MockTransport({ startLocked: true, responseDelayMs: 80 });
+    const device = new OnlyKeyDevice(transport);
+    const pending = device.connect({ vendorId: 0, productId: 0 });
+    await new Promise((r) => setTimeout(r, 20));
+    transport.unplug();
+    await expect(pending).rejects.toThrow(/disconnected/i);
+    expect(device.state.isConnected).toBe(false);
+  });
+
+  it('aborts connect when unplugged during setTime and allows a later connect', async () => {
+    const transport = new MockTransport({ startLocked: true });
+    vi.spyOn(transport, 'send').mockImplementation(
+      () =>
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Not connected')), 5000);
+        }),
+    );
+    const device = new OnlyKeyDevice(transport);
+    const pending = device.connect({ vendorId: 0, productId: 0 });
+    await new Promise((r) => setTimeout(r, 20));
+    transport.unplug();
+    await expect(pending).rejects.toThrow(/disconnected|not connected/i);
+    expect(device.state.isConnected).toBe(false);
+
+    vi.mocked(transport.send).mockRestore();
+    await expect(device.connect({ vendorId: 0, productId: 0 })).resolves.toBeUndefined();
+    expect(device.state.isConnected).toBe(true);
+    expect(device.state.isLocked).toBe(true);
+  });
 });
 

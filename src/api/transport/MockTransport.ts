@@ -216,7 +216,9 @@ export class MockTransport implements TransportInterface {
 
     // Initial status after plug-in (async like real HID).
     await this.delay();
-    if (epoch !== this.epoch || !this.connected) return;
+    if (epoch !== this.epoch || !this.connected) {
+      throw new Error('Device disconnected');
+    }
 
     if (this.isBootloader) {
       this.emitText('BOOTLOADER');
@@ -257,6 +259,7 @@ export class MockTransport implements TransportInterface {
     }
 
     await this.delay();
+    if (!this.connected) throw new Error('Not connected');
     await this.handleCommand(msgId, packet);
   }
 

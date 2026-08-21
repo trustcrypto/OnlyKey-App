@@ -4,10 +4,12 @@ import { TransportInterface, DeviceFilter } from './Transport.interface';
 
 const BETA8_USAGE_PAGE = 0xFFAB; // 65451
 const BETA8_SERIAL = '1000000000';
-/** chrome.hid often reports disconnected on receive/send for ~1s after a rapid replug. */
-const HID_RECONNECT_GRACE_MS = 2000;
-/** chrome.hid.connect can hang if the device is yanked during the callback. */
-const HID_CONNECT_TIMEOUT_MS = 4000;
+/** chrome.hid can report a false "disconnected" on receive/send right after open. */
+export const HID_RECONNECT_GRACE_MS = 400;
+/** chrome.hid.connect / getDevices can hang if the device is yanked mid-callback. */
+export const HID_CONNECT_TIMEOUT_MS = 4000;
+/** chrome.hid.send can hang with no callback after an unplug. */
+export const HID_SEND_TIMEOUT_MS = 3000;
 
 export class ChromeHidTransport implements TransportInterface {
   static isAvailable(): boolean {
@@ -23,6 +25,11 @@ export class ChromeHidTransport implements TransportInterface {
   /** Bumped on each listen/disconnect so stale chrome.hid.receive callbacks are ignored. */
   private listenEpoch = 0;
   private listeningSince = 0;
+  /**
+   * Settles the in-flight chrome.hid.connect promise. Must always run on unplug
+   * so `connect()` cannot hang forever and pin the store mutex.
+   */
+  private pendingConnectFinish: ((err?: Error) => void) | null = null;
 
   private onDeviceRemovedListener = (deviceId: number) => {
     if (this.deviceId === deviceId) {
@@ -41,9 +48,9 @@ export class ChromeHidTransport implements TransportInterface {
     if ((chrome.hid as any).onDeviceAdded) {
       (chrome.hid as any).onDeviceAdded.addListener((device: chrome.hid.Device) => {
         console.log('ChromeHidTransport: Device added:', device.vendorId, device.productId, device.productName);
-        if (!this.connectionId && this.deviceAddedCallback) {
-          this.deviceAddedCallback();
-        }
+        // Always notify. A stale connectionId after a missed onDeviceRemoved
+        // must not swallow the next plug — the store reconnects if needed.
+        this.deviceAddedCallback?.();
       });
     }
   }
@@ -82,12 +89,27 @@ export class ChromeHidTransport implements TransportInterface {
 
   private getDevices(filters?: DeviceFilter[]): Promise<chrome.hid.Device[]> {
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error('Device disconnected'));
+      }, HID_CONNECT_TIMEOUT_MS);
+
+      const finish = (err?: Error, devices?: chrome.hid.Device[]) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (err) reject(err);
+        else resolve(devices || []);
+      };
+
       const options = filters?.length ? { filters } : {};
       chrome.hid.getDevices(options, (devices) => {
         if (chrome.runtime.lastError) {
-          return reject(new Error(chrome.runtime.lastError.message || 'Unknown getDevices error'));
+          return finish(new Error(chrome.runtime.lastError.message || 'Unknown getDevices error'));
         }
-        resolve(devices || []);
+        finish(undefined, devices || []);
       });
     });
   }
@@ -145,6 +167,8 @@ export class ChromeHidTransport implements TransportInterface {
   private openConnection(device: chrome.hid.Device): Promise<void> {
     return new Promise((resolve, reject) => {
       // Drop any previous HID connection/listen loop before opening another.
+      // Must run before we install pendingConnectFinish so we reject the
+      // previous attempt, not this one.
       this.abandonConnection();
       const attemptEpoch = this.listenEpoch;
       this.deviceId = device.deviceId;
@@ -155,13 +179,18 @@ export class ChromeHidTransport implements TransportInterface {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
+        if (this.pendingConnectFinish === finish) this.pendingConnectFinish = null;
         if (err) reject(err);
         else resolve();
       };
+      this.pendingConnectFinish = finish;
 
       const timer = setTimeout(() => {
-        if (attemptEpoch !== this.listenEpoch) return;
-        this.abandonConnection();
+        // Always settle — a listenEpoch bump from unplug used to return
+        // here without finish(), leaving connect() hung forever.
+        if (attemptEpoch === this.listenEpoch) {
+          this.abandonConnection();
+        }
         finish(new Error('Device disconnected'));
       }, HID_CONNECT_TIMEOUT_MS);
 
@@ -207,9 +236,12 @@ export class ChromeHidTransport implements TransportInterface {
     this.connectionId = null;
     this.deviceId = null;
     this.connectedDevice = null;
+    const finishPending = this.pendingConnectFinish;
+    this.pendingConnectFinish = null;
     if (conn !== null && typeof chrome !== 'undefined' && chrome.hid?.disconnect) {
       chrome.hid.disconnect(conn, () => {});
     }
+    finishPending?.(new Error('Device disconnected'));
   }
 
   private handleDisconnection() {
@@ -237,17 +269,30 @@ export class ChromeHidTransport implements TransportInterface {
     }
 
     const connectionId = this.connectionId;
+    const epoch = this.listenEpoch;
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (err?: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (err) reject(err);
+        else resolve();
+      };
+      const timer = setTimeout(() => finish(new Error('Device disconnected')), HID_SEND_TIMEOUT_MS);
       const payload = Uint8Array.from(data).buffer;
       chrome.hid.send(connectionId, reportId, payload, () => {
+        if (epoch !== this.listenEpoch || this.connectionId !== connectionId) {
+          return finish(new Error('Device disconnected'));
+        }
         if (chrome.runtime.lastError) {
           const errMsg = chrome.runtime.lastError.message || '';
           if (this.isGoneError(errMsg) && !this.inReconnectGrace() && this.connectionId === connectionId) {
             this.handleDisconnection();
           }
-          return reject(new Error(errMsg || 'Unknown send error'));
+          return finish(new Error(errMsg || 'Unknown send error'));
         }
-        resolve();
+        finish();
       });
     });
   }

@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ChromeHidTransport } from '../ChromeHidTransport';
+import {
+  ChromeHidTransport,
+  HID_CONNECT_TIMEOUT_MS,
+  HID_RECONNECT_GRACE_MS,
+  HID_SEND_TIMEOUT_MS,
+} from '../ChromeHidTransport';
 
 type HidDevice = {
   deviceId: number;
@@ -116,9 +121,11 @@ describe('ChromeHidTransport', () => {
     t.onDeviceAdded(added);
     const addedListener = hid.onDeviceAdded.addListener.mock.calls[0][0] as (d: HidDevice) => void;
     addedListener(hidDevice());
-    expect(added).toHaveBeenCalled();
+    expect(added).toHaveBeenCalledTimes(1);
 
     await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    addedListener(hidDevice({ deviceId: 2 }));
+    expect(added).toHaveBeenCalledTimes(2);
     const gone = vi.fn();
     t.onDisconnect(gone);
     const removed = hid.onDeviceRemoved.addListener.mock.calls[0][0] as (id: number) => void;
@@ -177,7 +184,7 @@ describe('ChromeHidTransport', () => {
     devices = [hidDevice()];
     const t = new ChromeHidTransport();
     await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
-    await vi.advanceTimersByTimeAsync(2000);
+    await vi.advanceTimersByTimeAsync(HID_RECONNECT_GRACE_MS);
     const gone = vi.fn();
     t.onDisconnect(gone);
     hid.send.mockImplementation((_c, _r, _d, cb: () => void) => {
@@ -237,7 +244,7 @@ describe('ChromeHidTransport', () => {
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-    await vi.advanceTimersByTimeAsync(4000);
+    await vi.advanceTimersByTimeAsync(HID_CONNECT_TIMEOUT_MS);
     await assertion;
     expect(t.getConnectedDevice()).toBeNull();
     vi.useRealTimers();
@@ -301,7 +308,7 @@ describe('ChromeHidTransport', () => {
     };
     receiveCb?.(0, new ArrayBuffer(0));
     expect(gone).not.toHaveBeenCalled();
-    await vi.advanceTimersByTimeAsync(2000);
+    await vi.advanceTimersByTimeAsync(HID_RECONNECT_GRACE_MS);
     receiveCb?.(0, new ArrayBuffer(0));
     expect(gone).toHaveBeenCalled();
     vi.useRealTimers();
@@ -342,5 +349,35 @@ describe('ChromeHidTransport', () => {
     const t = new ChromeHidTransport();
     await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
     expect(t.getConnectedDevice()?.productId).toBe(0x0486);
+  });
+
+  it('rejects a hung chrome.hid.connect immediately when the device is yanked', async () => {
+    devices = [hidDevice()];
+    hid.connect.mockImplementation(() => {
+      /* never callback */
+    });
+    const t = new ChromeHidTransport();
+    const pending = t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    await vi.waitFor(() => expect(hid.connect).toHaveBeenCalled());
+    const removed = hid.onDeviceRemoved.addListener.mock.calls[0][0] as (id: number) => void;
+    removed(1);
+    await expect(pending).rejects.toThrow(/disconnected/i);
+    expect(t.getConnectedDevice()).toBeNull();
+  });
+
+  it('times out a hung chrome.hid.send so a later plug is not blocked', async () => {
+    vi.useFakeTimers();
+    devices = [hidDevice()];
+    hid.send.mockImplementation(() => {
+      /* never callback */
+    });
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const pending = t.send(0, new Uint8Array(8));
+    const assertion = expect(pending).rejects.toThrow(/disconnected/i);
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(HID_SEND_TIMEOUT_MS);
+    await assertion;
+    vi.useRealTimers();
   });
 });
