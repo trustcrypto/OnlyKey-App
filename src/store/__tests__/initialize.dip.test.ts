@@ -198,6 +198,19 @@ describe('useDeviceStore.initialize DIP', () => {
     expect(loadFirmwareBlocks).toHaveBeenCalledTimes(1);
   });
 
+  it('treats a connect OKSETTIME timeout like Device not found', async () => {
+    const listPermittedDevices = vi.fn().mockResolvedValue([]);
+    const device = createMockDeviceClient({
+      connect: vi.fn().mockRejectedValue(new Error('Request OKSETTIME timed out after 10000ms')),
+    });
+    await useDeviceStore.getState().initialize({ device, listPermittedDevices });
+    useDeviceStore.setState({ isConnected: true, sessionEpoch: 4, error: 'stale' });
+    await useDeviceStore.getState().connect({ announce: false });
+    expect(useDeviceStore.getState().isConnected).toBe(false);
+    expect(useDeviceStore.getState().error).toBeNull();
+    expect(useDeviceStore.getState().sessionEpoch).toBe(5);
+  });
+
   it('uses the injected listPermittedDevices on Device not found', async () => {
     const listPermittedDevices = vi.fn().mockResolvedValue([
       { vendorId: 0x1d50, productId: 0x60fc, productName: 'OnlyKey' },

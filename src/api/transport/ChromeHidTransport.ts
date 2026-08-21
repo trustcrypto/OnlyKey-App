@@ -16,6 +16,8 @@ export class ChromeHidTransport implements TransportInterface {
   private disconnectCallback: (() => void) | null = null;
   private deviceAddedCallback: (() => void) | null = null;
   private isListening = false;
+  /** Bumped on each listen/disconnect so stale chrome.hid.receive callbacks are ignored. */
+  private listenEpoch = 0;
 
   private onDeviceRemovedListener = (deviceId: number) => {
     if (this.deviceId === deviceId) {
@@ -137,6 +139,8 @@ export class ChromeHidTransport implements TransportInterface {
 
   private openConnection(device: chrome.hid.Device): Promise<void> {
     return new Promise((resolve, reject) => {
+      // Drop any previous HID connection/listen loop before opening another.
+      this.abandonConnection();
       this.deviceId = device.deviceId;
       console.log('Connecting to device:', device.deviceId, 'Product:', device.productName);
 
@@ -163,27 +167,25 @@ export class ChromeHidTransport implements TransportInterface {
   }
 
   async disconnect(): Promise<void> {
-    if (this.connectionId !== null) {
-      return new Promise((resolve) => {
-        chrome.hid.disconnect(this.connectionId!, () => {
-          this.connectionId = null;
-          this.deviceId = null;
-          this.connectedDevice = null;
-          this.isListening = false;
-          resolve();
-        });
-      });
+    // Intentional close — do not fire onDisconnect (mirrors surprise-removal vs close).
+    this.abandonConnection();
+  }
+
+  /** Close HID and stop listen without notifying the device layer. */
+  private abandonConnection() {
+    this.listenEpoch += 1;
+    this.isListening = false;
+    const conn = this.connectionId;
+    this.connectionId = null;
+    this.deviceId = null;
+    this.connectedDevice = null;
+    if (conn !== null && typeof chrome !== 'undefined' && chrome.hid?.disconnect) {
+      chrome.hid.disconnect(conn, () => {});
     }
   }
 
   private handleDisconnection() {
-    if (this.connectionId !== null) {
-      chrome.hid.disconnect(this.connectionId, () => {});
-    }
-    this.connectionId = null;
-    this.deviceId = null;
-    this.connectedDevice = null;
-    this.isListening = false;
+    this.abandonConnection();
     if (this.disconnectCallback) {
       this.disconnectCallback();
     }
@@ -222,18 +224,21 @@ export class ChromeHidTransport implements TransportInterface {
   }
 
   private startListening() {
-    if (this.isListening || this.connectionId === null) return;
+    if (this.connectionId === null) return;
+    const epoch = ++this.listenEpoch;
+    const connectionId = this.connectionId;
     this.isListening = true;
 
     const poll = () => {
-      if (!this.isListening || this.connectionId === null) return;
+      if (epoch !== this.listenEpoch || this.connectionId !== connectionId) return;
 
-      chrome.hid.receive(this.connectionId, (_reportId, data) => {
+      chrome.hid.receive(connectionId, (_reportId, data) => {
+        if (epoch !== this.listenEpoch) return;
         if (chrome.runtime.lastError) {
           const errMsg = chrome.runtime.lastError.message || '';
           console.warn('Receive error:', errMsg);
           if (errMsg.includes('disconnected') || errMsg.includes('not found') || errMsg.includes('invalid connection')) {
-            this.handleDisconnection();
+            if (this.connectionId === connectionId) this.handleDisconnection();
             return;
           }
           setTimeout(poll, 100);

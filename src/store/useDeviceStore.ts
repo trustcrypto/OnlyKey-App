@@ -444,7 +444,8 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       if (
         msg === 'Device not found' ||
         /not connected/i.test(msg) ||
-        /disconnected/i.test(msg)
+        /disconnected/i.test(msg) ||
+        /timed out/i.test(msg)
       ) {
         // Silent probe failure — wipe device fields but do not bump sessionEpoch
         // on every 2s empty poll (would thrash React remounts while disconnected).

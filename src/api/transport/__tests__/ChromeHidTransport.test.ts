@@ -204,6 +204,46 @@ describe('ChromeHidTransport', () => {
     await expect(t2.connect({ vendorId: 0x16c0, productId: 0x0486 })).rejects.toThrow(/Connection failed/);
   });
 
+  it('ignores a stale receive disconnect after a new connection is open', async () => {
+    devices = [hidDevice()];
+    const receiveCbs: Array<(reportId: number, data: ArrayBuffer) => void> = [];
+    hid.receive.mockImplementation((_cid: number, cb: (reportId: number, data: ArrayBuffer) => void) => {
+      receiveCbs.push(cb);
+    });
+    hid.connect
+      .mockImplementationOnce((_id: number, cb: (info: { connectionId: number }) => void) => {
+        cb({ connectionId: 7 });
+      })
+      .mockImplementationOnce((_id: number, cb: (info: { connectionId: number }) => void) => {
+        cb({ connectionId: 8 });
+      });
+
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const stale = receiveCbs[0];
+    expect(stale).toBeTypeOf('function');
+
+    await t.disconnect();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const gone = vi.fn();
+    t.onDisconnect(gone);
+    const received: Uint8Array[] = [];
+    t.onReceive((data) => received.push(data));
+
+    (chrome.runtime as { lastError?: { message: string } }).lastError = {
+      message: 'device disconnected',
+    };
+    stale?.(0, new ArrayBuffer(0));
+    expect(gone).not.toHaveBeenCalled();
+    expect(t.getConnectedDevice()?.productId).toBe(0x0486);
+
+    (chrome.runtime as { lastError?: { message: string } }).lastError = undefined;
+    const live = receiveCbs[receiveCbs.length - 1];
+    live?.(0, new Uint8Array([9, 8, 7]).buffer);
+    expect(received[0][0]).toBe(9);
+    await t.disconnect();
+  });
+
   it('retries receive errors and disconnects when the device is gone', async () => {
     devices = [hidDevice()];
     vi.useFakeTimers();
