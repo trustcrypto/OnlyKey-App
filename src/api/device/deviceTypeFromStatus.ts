@@ -44,7 +44,8 @@ export function inferDeviceTypeFromVersion(version: string): DeviceType | undefi
   return undefined;
 }
 
-function hardwareTypeFromSuffix(text: string): DeviceType | undefined {
+/** Last letter of HW_MODEL / version: c Classic, p DUO+PIN, n DUO no PIN. */
+export function hardwareTypeFromSuffix(text: string): DeviceType | undefined {
   const lastChar = text.slice(-1).toLowerCase();
   if (lastChar === 'n' || lastChar === 'p') return DeviceType.DUO;
   if (lastChar === 'c') return DeviceType.CLASSIC;

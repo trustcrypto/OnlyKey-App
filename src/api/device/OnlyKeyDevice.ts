@@ -5,6 +5,7 @@ import { MessageID, FieldID, MESSAGE_HEADER, PACKET_SIZE, DeviceType, GLOBAL_SLO
 import { deviceTypeFromProductId, isDuoNoPinVersion } from './firmwareConstants';
 import {
   classicConfirmedByLabels,
+  hardwareTypeFromSuffix,
   inferDeviceTypeFromLabelSlotIds,
   maxLabelSlotId,
 } from './deviceTypeFromStatus';
@@ -130,9 +131,9 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   /**
-   * Set device type once from UNKNOWN, and allow Classic → DUO when firmware
-   * later proves DUO (v3 / INITIALIZED-D / slot > 12). Never DUO → Classic here —
-   * empty DUO profiles 3–4 stream only 12 labels and look like a Classic key.
+   * Identify from UNKNOWN. Status/USB may switch Classic ↔ DUO (hot-plug).
+   * Labels must not: empty DUO profiles look like 12 Classic slots, and Classic
+   * HID `1a`–`1e` decode as slots 20–24.
    */
   private applyDeviceTypeFromResponse(
     nextType: DeviceType | undefined,
@@ -142,13 +143,21 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     const current = this.state.deviceType;
     if (current === nextType) return false;
 
+    const fromUsb = source.startsWith('usb:');
+    const fromStatus = source === 'status';
+    const suffixType = hardwareTypeFromSuffix(this.state.lastStatusText);
     const canSet =
       current === DeviceType.UNKNOWN ||
       nextType === DeviceType.UNINITIALIZED ||
       nextType === DeviceType.BOOTLOADER ||
       (current === DeviceType.UNINITIALIZED &&
         (nextType === DeviceType.CLASSIC || nextType === DeviceType.DUO)) ||
-      (current === DeviceType.CLASSIC && nextType === DeviceType.DUO);
+      (current === DeviceType.CLASSIC &&
+        nextType === DeviceType.DUO &&
+        (fromStatus || fromUsb)) ||
+      (current === DeviceType.DUO &&
+        nextType === DeviceType.CLASSIC &&
+        (fromUsb || (fromStatus && suffixType === DeviceType.CLASSIC)));
 
     if (!canSet) return false;
 
@@ -578,6 +587,17 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   // --- PUBLIC API ---
 
   public async connect(filters: any): Promise<void> {
+    // Each HID connection is a possibly different OnlyKey. Drop the previous
+    // type so a DUO unplug + Classic plug cannot keep DUO after unlock.
+    this.state.deviceType = DeviceType.UNKNOWN;
+    this.state.deviceTypeSource = '';
+    this.state.version = '';
+    this.state.maxLabelSlot = 0;
+    this.state.labels = new Map();
+    this.state.isLocked = true;
+    this.state.isConfigMode = false;
+    this.state.isBootloader = false;
+
     await this.transport.connect(filters);
     this.state.isConnected = true;
     this.seedDeviceTypeFromTransport();
