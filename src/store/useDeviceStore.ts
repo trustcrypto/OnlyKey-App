@@ -226,6 +226,9 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
     device.on('statusChange', async (state) => {
       if (!state.isConnected) {
+        // INITIALIZED during transport.connect is emitted before OnlyKeyDevice
+        // sets isConnected — do not treat that as an unplug.
+        if (connectInFlight) return;
         // CRITICAL: unplug / disconnect wipes all device session UI state.
         set({
           ...disconnectedDeviceSnapshot,

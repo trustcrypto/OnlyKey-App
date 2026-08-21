@@ -578,11 +578,11 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     await this.transport.connect(filters);
     this.state.isConnected = true;
     this.seedDeviceTypeFromTransport();
+    this.emit('statusChange', { ...this.state });
     // Bootloader has no clock and OKSETTIME waiters steal OKFWUPDATE replies.
     if (!this.state.isBootloader) {
       await this.setTime();
     }
-    this.emit('statusChange', { ...this.state });
   }
 
   public async disconnect(): Promise<void> {

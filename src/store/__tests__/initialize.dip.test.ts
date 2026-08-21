@@ -25,6 +25,41 @@ describe('useDeviceStore.initialize DIP', () => {
     expect(listPermitted).not.toHaveBeenCalled();
   });
 
+  it('does not treat INITIALIZED during connect as an unplug', async () => {
+    const listeners: Record<string, Function> = {};
+    let releaseConnect!: () => void;
+    const connectGate = new Promise<void>((resolve) => {
+      releaseConnect = resolve;
+    });
+    const device = createMockDeviceClient({
+      connect: vi.fn().mockImplementation(() => connectGate),
+      on: vi.fn((event: string, fn: Function) => {
+        listeners[event] = fn;
+        return device;
+      }),
+    });
+    const init = useDeviceStore.getState().initialize({ device, useMock: true });
+    await vi.waitFor(() => expect(listeners.statusChange).toBeTypeOf('function'));
+    listeners.statusChange?.({
+      isConnected: false,
+      isLocked: true,
+      isConfigMode: false,
+      isBootloader: false,
+      deviceType: DeviceType.CLASSIC,
+      deviceTypeSource: 'status',
+      usbProductId: 0x0486,
+      maxLabelSlot: 0,
+      lastStatusText: 'INITIALIZED',
+      version: 'v2.1.0',
+      devicePinSet: true,
+      labels: new Map(),
+    });
+    expect(useDeviceStore.getState().device).toBe(device);
+    expect(useDeviceStore.getState().isConnected).toBe(false);
+    releaseConnect();
+    await init;
+  });
+
   it('resumes pending firmware after connect finishes, not from statusChange', async () => {
     const loadFirmwareBlocks = vi.fn().mockResolvedValue(undefined);
     const listeners: Record<string, Function> = {};
