@@ -260,6 +260,25 @@ it('should timeout if hardware does not respond', async () => {
     expect(restoreSends[1][5]).toBe(3); // final length
   });
 
+  it('beginClassicPinEntry waits on empty OKSETPIN / PIN2 / SDPIN', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+
+    await device.beginClassicPinEntry('pin');
+    expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETPIN);
+
+    sendSpy.mockClear();
+    await device.beginClassicPinEntry('pin2');
+    expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETPIN2);
+
+    sendSpy.mockClear();
+    await device.beginClassicPinEntry('sdpin');
+    expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETSDPIN);
+  });
+
   it('restore rejects when not in config mode (requireConfigMode mock)', async () => {
     const transport = new MockTransport({
       deviceType: 'classic',

@@ -638,17 +638,25 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
    * initialized, firmware ignores OKSETPIN unless in config mode; unlock is
    * keypad-only and reported via OKSETTIME / unsolicited UNLOCKED.
    */
-  public async beginClassicPinEntry(): Promise<void> {
+  public async beginClassicPinEntry(which: 'pin' | 'pin2' | 'sdpin' = 'pin'): Promise<void> {
+    const msgId =
+      which === 'pin2' ? MessageID.OKSETPIN2 : which === 'sdpin' ? MessageID.OKSETSDPIN : MessageID.OKSETPIN;
     const res = await this.sendRequest(
-      MessageID.OKSETPIN,
+      msgId,
       undefined,
       undefined,
       undefined,
       300000,
-      (r) =>
-        (r.text?.includes('UNLOCKED') ?? false) ||
-        (r.text?.toLowerCase().includes('successful pin') ?? false) ||
-        r.type === 'error'
+      (r) => {
+        const text = (r.text ?? '').toLowerCase();
+        return (
+          (r.text?.includes('UNLOCKED') ?? false) ||
+          text.includes('successful pin') ||
+          text.includes('pin2 set') ||
+          text.includes('sd pin') ||
+          r.type === 'error'
+        );
+      }
     );
     if (res.type === 'error') throw new Error(res.error);
   }

@@ -796,7 +796,7 @@ const Setup: React.FC = () => {
           onNext={() =>
             run(async () => {
               if (!passcode1Disclaimer) throw new Error('Please accept the disclaimer.');
-              await device!.setPin();
+              await device!.beginClassicPinEntry('pin');
               if (guided) setClassicStep('Step3');
               else resetToStep1();
             })
@@ -810,7 +810,7 @@ const Setup: React.FC = () => {
         <StepNav
           onNext={() =>
             run(async () => {
-              await device!.setPin();
+              await device!.beginClassicPinEntry('pin');
               if (guided) setClassicStep('Step4');
               else resetToStep1();
             })
@@ -825,7 +825,7 @@ const Setup: React.FC = () => {
             run(async () => {
               if (!isInitialized && !passcode3Disclaimer) throw new Error('Please accept the disclaimer.');
               if (!isInitialized && advancedSetup) await device!.setSecProfileMode(secProfileMode);
-              await device!.setPin2();
+              await device!.beginClassicPinEntry('pin2');
               if (guided) setClassicStep('Step5');
               else resetToStep1();
             })
@@ -839,7 +839,7 @@ const Setup: React.FC = () => {
         <StepNav
           onNext={() =>
             run(async () => {
-              await device!.setPin2();
+              await device!.beginClassicPinEntry('pin2');
               if (guided) setClassicStep('Step6');
               else resetToStep1();
             })
@@ -855,7 +855,7 @@ const Setup: React.FC = () => {
               if (!passcode2Disclaimer && (isInitialized || guided)) {
                 throw new Error('Please accept the disclaimer.');
               }
-              await device!.setSDPin();
+              await device!.beginClassicPinEntry('sdpin');
               if (guided) setClassicStep('Step7');
               else resetToStep1();
             })
@@ -869,7 +869,7 @@ const Setup: React.FC = () => {
         <StepNav
           onNext={() =>
             run(async () => {
-              await device!.setSDPin();
+              await device!.beginClassicPinEntry('sdpin');
               if (guided) setClassicStep('Step8');
               else resetToStep1();
             })

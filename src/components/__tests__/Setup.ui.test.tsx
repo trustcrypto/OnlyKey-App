@@ -125,6 +125,26 @@ describe('Setup page', () => {
     expect(device.setBackupKeyMode).toHaveBeenCalledWith(0);
   });
 
+  it('uses beginClassicPinEntry for Classic keypad PIN setup, not 10s setPin', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.CLASSIC,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /change primary pin/i }));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+
+    await waitFor(() => {
+      expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin');
+    });
+    expect(device.setPin).not.toHaveBeenCalled();
+  });
+
   it('opens the subkey picker when import throws KEY_SELECTION_REQUIRED', async () => {
     const user = userEvent.setup();
     vi.mocked(keyImportService.importPemKey).mockRejectedValueOnce(new Error('KEY_SELECTION_REQUIRED'));
