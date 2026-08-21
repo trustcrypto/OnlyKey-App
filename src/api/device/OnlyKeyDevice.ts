@@ -21,7 +21,9 @@ export declare interface OnlyKeyDevice {
 
 export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   private transport: TransportInterface;
+  private pendingSeq = 0;
   private pendingRequest: {
+    id: number;
     resolve: (res: DeviceResponse) => void;
     reject: (err: Error) => void;
     timer: NodeJS.Timeout;
@@ -348,16 +350,18 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         
         try {
           await new Promise<DeviceResponse>((res, rej) => {
+            const id = ++this.pendingSeq;
             const timer = setTimeout(() => {
-              if (this.pendingRequest) {
+              if (this.pendingRequest?.id === id) {
                 this.pendingRequest = null;
                 rej(new Error(`Request ${MessageID[msgId]} timed out after ${timeoutMs}ms`));
               }
             }, timeoutMs);
 
-            this.pendingRequest = { resolve: res, reject: rej, timer, matchPredicate };
+            this.pendingRequest = { id, resolve: res, reject: rej, timer, matchPredicate };
             
             this.transport.send(0, packet).catch(err => {
+              if (this.pendingRequest?.id !== id) return;
               clearTimeout(timer);
               this.pendingRequest = null;
               rej(err);
@@ -420,15 +424,18 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       this.requestQueue.push(async () => {
         try {
           await new Promise<void>((res, rej) => {
+            const id = ++this.pendingSeq;
             const timer = setTimeout(() => {
-              if (this.pendingRequest) {
+              if (this.pendingRequest?.id === id) {
                 this.pendingRequest = null;
+                res();
               }
-              res();
             }, errorWindowMs);
 
             this.pendingRequest = {
+              id,
               resolve: () => {
+                if (this.pendingRequest?.id !== id) return;
                 clearTimeout(timer);
                 this.pendingRequest = null;
                 res();
@@ -440,6 +447,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
             const packet = this.buildMessage(msgId, slotId, fieldId, data);
             this.transport.send(0, packet).catch((err) => {
+              if (this.pendingRequest?.id !== id) return;
               clearTimeout(timer);
               this.pendingRequest = null;
               rej(err);
@@ -470,14 +478,16 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       this.requestQueue.push(async () => {
         try {
           await new Promise<DeviceResponse>((res, rej) => {
+            const id = ++this.pendingSeq;
             const timer = setTimeout(() => {
-              if (this.pendingRequest) {
+              if (this.pendingRequest?.id === id) {
                 this.pendingRequest = null;
                 rej(new Error(`Timed out waiting for message containing "${successText}"`));
               }
             }, timeoutMs);
 
             this.pendingRequest = {
+              id,
               resolve: res,
               reject: rej,
               timer,
@@ -487,6 +497,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
             const packet = this.buildMessage(msgId, slotId, fieldId, data);
             this.transport.send(0, packet).catch((err) => {
+              if (this.pendingRequest?.id !== id) return;
               clearTimeout(timer);
               this.pendingRequest = null;
               rej(err);
@@ -506,12 +517,16 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       this.requestQueue.push(async () => {
         try {
           await new Promise<DeviceResponse>((res, rej) => {
+            const id = ++this.pendingSeq;
             const timer = setTimeout(() => {
-              this.pendingRequest = null;
-              rej(new Error(`Timed out waiting for message containing "${str}"`));
+              if (this.pendingRequest?.id === id) {
+                this.pendingRequest = null;
+                rej(new Error(`Timed out waiting for message containing "${str}"`));
+              }
             }, timeoutMs);
 
             this.pendingRequest = {
+              id,
               resolve: res,
               reject: rej,
               timer,

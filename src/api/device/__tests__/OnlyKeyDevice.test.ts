@@ -260,6 +260,39 @@ it('should timeout if hardware does not respond', async () => {
     expect(restoreSends[1][5]).toBe(3); // final length
   });
 
+  it('request timeout does not clear a later waiter', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(transport, 'send').mockImplementation(async () => undefined);
+      const timedOut = device.setPin('1');
+      await vi.advanceTimersByTimeAsync(0);
+      type Waiter = { id: number; reject: (err: Error) => void; timer: NodeJS.Timeout };
+      const waiterA = (device as unknown as { pendingRequest: Waiter | null }).pendingRequest;
+      expect(waiterA).toBeTruthy();
+
+      const waiterB = {
+        id: waiterA!.id + 1,
+        resolve: vi.fn(),
+        reject: vi.fn(),
+        timer: setTimeout(() => undefined, 999_999),
+      };
+      (device as unknown as { pendingRequest: typeof waiterB }).pendingRequest = waiterB;
+
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect((device as unknown as { pendingRequest: typeof waiterB | null }).pendingRequest).toBe(waiterB);
+      expect(waiterB.reject).not.toHaveBeenCalled();
+      waiterA!.reject(new Error('cleanup'));
+      await expect(timedOut).rejects.toThrow(/cleanup/);
+      clearTimeout(waiterB.timer);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('setPrivateKey does not wait for HID replies on intermediate chunks', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
     const device = new OnlyKeyDevice(transport);
