@@ -26,14 +26,14 @@ describe('useDeviceStore.initialize DIP', () => {
   });
 
   it('does not treat INITIALIZED during connect as an unplug', async () => {
-    const listeners: Record<string, Function> = {};
+    const listeners: Record<string, (...args: unknown[]) => void> = {};
     let releaseConnect!: () => void;
     const connectGate = new Promise<void>((resolve) => {
       releaseConnect = resolve;
     });
     const device = createMockDeviceClient({
       connect: vi.fn().mockImplementation(() => connectGate),
-      on: vi.fn((event: string, fn: Function) => {
+      on: vi.fn((event: string, fn: (...args: unknown[]) => void) => {
         listeners[event] = fn;
         return device;
       }),
@@ -61,14 +61,14 @@ describe('useDeviceStore.initialize DIP', () => {
   });
 
   it('treats an empty snapshot during connect as a real unplug', async () => {
-    const listeners: Record<string, Function> = {};
+    const listeners: Record<string, (...args: unknown[]) => void> = {};
     let releaseConnect!: () => void;
     const connectGate = new Promise<void>((resolve) => {
       releaseConnect = resolve;
     });
     const device = createMockDeviceClient({
       connect: vi.fn().mockImplementation(() => connectGate),
-      on: vi.fn((event: string, fn: Function) => {
+      on: vi.fn((event: string, fn: (...args: unknown[]) => void) => {
         listeners[event] = fn;
         return device;
       }),
@@ -132,11 +132,11 @@ describe('useDeviceStore.initialize DIP', () => {
 
   it('resumes pending firmware after connect finishes, not from statusChange', async () => {
     const loadFirmwareBlocks = vi.fn().mockResolvedValue(undefined);
-    const listeners: Record<string, Function> = {};
+    const listeners: Record<string, (...args: unknown[]) => void> = {};
     const device = createMockDeviceClient({
       loadFirmwareBlocks,
       connect: vi.fn().mockResolvedValue(undefined),
-      on: vi.fn((event: string, fn: Function) => {
+      on: vi.fn((event: string, fn: (...args: unknown[]) => void) => {
         listeners[event] = fn;
         return device;
       }),

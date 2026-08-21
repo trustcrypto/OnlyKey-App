@@ -75,9 +75,9 @@ describe('useDeviceStore remaining branches', () => {
   });
 
   it('routes PIN errors separately from generic device errors', async () => {
-    const listeners: Record<string, Function> = {};
+    const listeners: Record<string, (...args: unknown[]) => void> = {};
     const device = createMockDeviceClient({
-      on: vi.fn((event: string, fn: Function) => {
+      on: vi.fn((event: string, fn: (...args: unknown[]) => void) => {
         listeners[event] = fn;
         return device;
       }),
@@ -100,9 +100,9 @@ describe('useDeviceStore remaining branches', () => {
       fwUpdateSupport: true,
     });
     vi.stubGlobal('confirm', vi.fn(() => true));
-    const listeners: Record<string, Function> = {};
+    const listeners: Record<string, (...args: unknown[]) => void> = {};
     const device = createMockDeviceClient({
-      on: vi.fn((event: string, fn: Function) => {
+      on: vi.fn((event: string, fn: (...args: unknown[]) => void) => {
         listeners[event] = fn;
         return device;
       }),
