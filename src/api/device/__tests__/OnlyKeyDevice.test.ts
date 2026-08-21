@@ -501,6 +501,53 @@ it('should timeout if hardware does not respond', async () => {
     await expect(device.loadFirmwareBlocks(['aabb'])).rejects.toThrow(/not in bootloader/i);
   });
 
+  it('restore rejects a soft-complete disconnect instead of treating it as success', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    const orig = transport.send.bind(transport);
+    vi.spyOn(transport, 'send').mockImplementation(async (reportId, data) => {
+      if (data[4] === MessageID.OKRESTORE) {
+        transport.unplug();
+        return;
+      }
+      return orig(reportId, data);
+    });
+    await expect(device.restore('aabbccdd')).rejects.toThrow(/Device disconnected/);
+  });
+
+  it('loadFirmwareBlocks rejects a disconnect on an intermediate 0xFF chunk', async () => {
+    const transport = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    const orig = transport.send.bind(transport);
+    let firstFw = true;
+    vi.spyOn(transport, 'send').mockImplementation(async (reportId, data) => {
+      if (data[4] === MessageID.OKFWUPDATE && firstFw) {
+        firstFw = false;
+        transport.unplug();
+        return;
+      }
+      return orig(reportId, data);
+    });
+    await expect(device.loadFirmwareBlocks(['ab'.repeat(58)])).rejects.toThrow(/Device disconnected/);
+  });
+
+  it('loadFirmwareBlocks rejects a disconnect on the last chunk instead of SUCCESS', async () => {
+    const transport = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    const orig = transport.send.bind(transport);
+    vi.spyOn(transport, 'send').mockImplementation(async (reportId, data) => {
+      if (data[4] === MessageID.OKFWUPDATE) {
+        transport.unplug();
+        return;
+      }
+      return orig(reportId, data);
+    });
+    await expect(device.loadFirmwareBlocks(['aabb'])).rejects.toThrow(/Device disconnected/);
+  });
+
   it('firmwareUpdate loads blocks when already in bootloader', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);

@@ -899,11 +899,12 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         },
       );
 
-      if (res.type === 'error' || (res.error && /error/i.test(res.error))) {
+      const t = `${res.text ?? ''} ${res.error ?? ''}`.toLowerCase();
+      if (res.type === 'error' || /error/i.test(t)) {
         throw new Error(OnlyKeyDevice.formatDeviceLockedError(res.error || res.text || 'Restore failed'));
       }
-      if (res.text && /error/i.test(res.text)) {
-        throw new Error(OnlyKeyDevice.formatDeviceLockedError(res.text));
+      if (!t.includes('successfully loaded backup') && !t.includes('remove and reinsert')) {
+        throw new Error(res.text || 'Restore failed');
       }
       reportProgress('apply');
     }
@@ -1046,13 +1047,15 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
               return r.type === 'error' || t.includes('received okfwupdate') || t.includes('error');
             },
           );
-          if (res.type === 'error' || (res.error && /error/i.test(res.error))) {
+          const ack = `${res.text ?? ''} ${res.error ?? ''}`.toLowerCase();
+          // Soft-complete on unplug resolves with "Device disconnected" — that is not an ACK.
+          if (res.type === 'error' || ack.includes('error') || !ack.includes('received okfwupdate')) {
             throw new Error(res.error || res.text || 'Firmware load failed');
           }
           continue;
         }
         // Do not match RECEIVED here — that would consume the ACK and drop NEXT BLOCK.
-        await this.sendRequest(
+        const res = await this.sendRequest(
           MessageID.OKFWUPDATE,
           chunk.length,
           undefined,
@@ -1063,6 +1066,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
             return t.includes(successText.toLowerCase()) || r.type === 'error' || t.includes('error');
           },
         );
+        const t = `${res.text ?? ''} ${res.error ?? ''}`.toLowerCase();
+        if (res.type === 'error' || t.includes('error') || !t.includes(successText.toLowerCase())) {
+          throw new Error(res.error || res.text || 'Firmware load failed');
+        }
       }
 
       onProgress?.(Math.round(((i + 1) / blocks.length) * 100));
