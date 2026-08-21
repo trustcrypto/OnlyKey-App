@@ -14,10 +14,7 @@ const coverage = {
     'src/test/**',
     'src/vite-env.d.ts',
     'src/main.tsx',
-    'src/api/transport/HidTransport.ts',
   ],
-  // Floor is slightly below the current ~66/63/54/57 so CI fails on
-  // real regressions, not coverage jitter.
   thresholds: {
     lines: 60,
     statements: 58,
