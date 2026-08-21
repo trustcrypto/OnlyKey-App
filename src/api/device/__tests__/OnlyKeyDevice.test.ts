@@ -269,6 +269,21 @@ it('should timeout if hardware does not respond', async () => {
     expect(device.state.isLocked).toBe(false);
   });
 
+  it('keeps config mode through UNLOCKED the way firmware still flashes red', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    device.state.deviceType = DeviceType.CLASSIC;
+    device.state.isLocked = false;
+    transport.simulateResponse('INITIALIZEDv2.1.0-prod');
+    expect(device.state.isConfigMode).toBe(true);
+    expect(device.state.isLocked).toBe(true);
+
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    expect(device.state.isLocked).toBe(false);
+    expect(device.state.isConfigMode).toBe(true);
+  });
+
   it('does not re-lock on a stale INITIALIZED echo after keypad unlock', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
     const device = new OnlyKeyDevice(transport);
@@ -611,9 +626,10 @@ it('should timeout if hardware does not respond', async () => {
     expect(device.state.labels.get(7)).toBe('unsolicited');
 
     device.state.isConfigMode = true;
-    device.state.isLocked = false;
-    transport.simulateResponse('UNLOCKEDv3.0.0-prod');
-    expect(device.state.isConfigMode).toBe(false);
+    device.state.isLocked = true;
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    expect(device.state.isLocked).toBe(false);
+    expect(device.state.isConfigMode).toBe(true);
 
     await device.setWipeMode(1);
     await device.setLedBrightness(8);

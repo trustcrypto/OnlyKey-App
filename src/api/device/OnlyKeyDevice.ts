@@ -254,11 +254,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
           this.state.isLocked = false;
           stateChanged = true;
         }
-        if (this.state.isConfigMode && !text.includes('INITIALIZED')) {
-          // Normal unlock leaves config mode; config-mode entry uses INITIALIZED.
-          this.state.isConfigMode = false;
-          stateChanged = true;
-        }
+        // 5.6 keeps isConfigMode through UNLOCKED — firmware set_time still
+        // prints UNLOCKED while configmode is true (red LED).
       }
 
       if (text.includes('INITIALIZED-D')) {
