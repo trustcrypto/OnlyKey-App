@@ -65,6 +65,21 @@ describe('Firmware page', () => {
     expect(screen.queryByRole('button', { name: /download latest firmware/i })).not.toBeInTheDocument();
   });
 
+  it('enables load in bootloader even when the previous firmware lacked in-app updates', () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.BOOTLOADER,
+      fwUpdateSupport: false,
+      isBootloader: true,
+      version: '',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByRole('button', { name: /download latest firmware/i })).toBeEnabled();
+    expect(document.querySelector('input[type="file"]')).not.toBeDisabled();
+    expect(screen.queryByText(/does not support this feature/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/click \[choose file\]/i)).toBeInTheDocument();
+  });
+
   it('loads firmware blocks directly while in bootloader mode', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();

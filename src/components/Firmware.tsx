@@ -19,6 +19,7 @@ const Firmware: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const isUninitialized = deviceType === DeviceType.UNINITIALIZED;
+  const canLoadFirmware = isBootloader || isUninitialized || fwUpdateSupport;
 
   const applyFirmwareBlocks = async (blocks: string[]) => {
     if (!device) return;
@@ -138,7 +139,7 @@ const Firmware: React.FC = () => {
         ref={fileInputRef}
         type="file"
         accept=".okfw,.txt,.hex"
-        disabled={isLoading || (!fwUpdateSupport && !isUninitialized)}
+        disabled={isLoading || !canLoadFirmware}
         onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
         className="ok-file-input"
       />
@@ -146,11 +147,11 @@ const Firmware: React.FC = () => {
       <div className="flex flex-wrap gap-2">
         <SetButton
           onClick={handleLoadFirmware}
-          disabled={isLoading || !selectedFile || (!fwUpdateSupport && !isUninitialized)}
+          disabled={isLoading || !selectedFile || !canLoadFirmware}
         >
           Load Firmware to OnlyKey
         </SetButton>
-        {(isUninitialized || fwUpdateSupport) && (
+        {canLoadFirmware && (
           <SetButton onClick={handleDownloadLatest} disabled={isLoading}>
             Download Latest Firmware
           </SetButton>
