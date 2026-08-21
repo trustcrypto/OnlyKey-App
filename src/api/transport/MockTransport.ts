@@ -271,7 +271,7 @@ export class MockTransport implements TransportInterface {
       return { vendorId: 0x1d50, productId: 0x614c };
     }
     if (this.deviceType === 'bootloader') {
-      return { vendorId: 0x1d50, productId: 0x60fc };
+      return { vendorId: 0x0000, productId: 0xb001 };
     }
     // Classic (newer firmware VID/PID)
     return { vendorId: 0x1d50, productId: 0x60fc };

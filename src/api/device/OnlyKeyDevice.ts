@@ -163,6 +163,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     this.state.usbProductId = info.productId;
     const fromPid = deviceTypeFromProductId(info.productId);
     if (fromPid) this.applyDeviceTypeFromResponse(fromPid, `usb:0x${info.productId.toString(16)}`);
+    if (fromPid === DeviceType.BOOTLOADER) {
+      this.state.isBootloader = true;
+      this.state.isLocked = false;
+    }
   }
 
   private static formatDeviceLockedError(message: string): string {
@@ -289,9 +293,15 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         this.state.devicePinSet = pinSet;
         stateChanged = true;
       }
-      if (text.includes('BOOTLOADER') && !this.state.isBootloader) {
-        this.state.isBootloader = true;
-        stateChanged = true;
+      if (text.includes('BOOTLOADER') || response.deviceType === DeviceType.BOOTLOADER) {
+        if (!this.state.isBootloader) {
+          this.state.isBootloader = true;
+          stateChanged = true;
+        }
+        if (this.state.isLocked) {
+          this.state.isLocked = false;
+          stateChanged = true;
+        }
       }
     }
 

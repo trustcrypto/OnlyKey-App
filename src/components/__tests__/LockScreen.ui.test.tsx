@@ -60,6 +60,20 @@ describe('LockScreen', () => {
     expect(setPin).toHaveBeenCalledWith('123456');
   });
 
+  it('is hidden in bootloader so firmware load is not covered by the lock overlay', () => {
+    seedDeviceStore({
+      isConnected: true,
+      isLocked: true,
+      isConfigMode: false,
+      isBootloader: true,
+      deviceType: DeviceType.BOOTLOADER,
+      device: createMockDeviceClient(),
+      activeTab: 'firmware',
+    });
+    renderWithProviders(<LockScreen />);
+    expect(screen.queryByTestId('lock-screen')).not.toBeInTheDocument();
+  });
+
   it('is hidden for an uninitialized wiped device', () => {
     seedDeviceStore({
       isConnected: true,

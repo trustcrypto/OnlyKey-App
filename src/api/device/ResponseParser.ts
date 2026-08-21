@@ -104,6 +104,15 @@ export class ResponseParser {
       };
     }
 
+    if (text.includes('BOOTLOADER')) {
+      return {
+        type: 'status',
+        text,
+        deviceType: DeviceType.BOOTLOADER,
+        isLocked: false,
+      };
+    }
+
     if (text.includes('LOCKED')) {
       return { type: 'status', text, isLocked: true };
     }

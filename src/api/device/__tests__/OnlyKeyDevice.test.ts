@@ -353,11 +353,20 @@ it('should timeout if hardware does not respond', async () => {
     expect(fw).toBeTruthy();
   });
 
+  it('connect on a bootloader transport sets isBootloader without a manual assignment', async () => {
+    const transport = new MockTransport({ deviceType: 'bootloader' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0xb001 });
+    expect(device.state.isBootloader).toBe(true);
+    expect(device.state.isLocked).toBe(false);
+    expect(device.state.deviceType).toBe(DeviceType.BOOTLOADER);
+  });
+
   it('loadFirmwareBlocks waits for NEXT/SUCCESS on the last chunk of each block, not RECEIVED', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);
     await device.connect({ vendorId: 0, productId: 0 });
-    device.state.isBootloader = true;
+    expect(device.state.isBootloader).toBe(true);
     transport.sentPackets.length = 0;
     const progress: number[] = [];
 

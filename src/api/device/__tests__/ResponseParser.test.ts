@@ -75,6 +75,15 @@ describe('ResponseParser', () => {
     expect(res.label).toBe('Work VPN');
   });
 
+  it('treats BOOTLOADER as an unlocked status, not free text', () => {
+    const data = stringToPacket('BOOTLOADER');
+    const res = ResponseParser.parse(data);
+    expect(res.type).toBe('status');
+    expect(res.deviceType).toBe(DeviceType.BOOTLOADER);
+    expect(res.isLocked).toBe(false);
+    expect(res.text).toBe('BOOTLOADER');
+  });
+
   it('should parse error messages', () => {
     const data = stringToPacket('Error: Not in Config Mode');
     const res = ResponseParser.parse(data);

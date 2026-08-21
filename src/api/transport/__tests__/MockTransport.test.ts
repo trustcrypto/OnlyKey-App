@@ -18,6 +18,11 @@ describe('MockTransport', () => {
     expect(t.getConnectedDevice().productId).toBe(0x614c);
   });
 
+  it('reports bootloader USB PID 0xB001', () => {
+    const t = new MockTransport({ deviceType: 'bootloader' });
+    expect(t.getConnectedDevice()).toEqual({ vendorId: 0x0000, productId: 0xb001 });
+  });
+
   it('unlocks on setPin and stores snapshot', async () => {
     const t = new MockTransport({ deviceType: 'classic' });
     const device = new OnlyKeyDevice(t);
