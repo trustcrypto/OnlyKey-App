@@ -45,7 +45,7 @@ describe('OnlyKeyDevice', () => {
     expect(device.state.devicePinSet).toBe(false);
   });
 
-  it('promotes a premature Classic to DUO on UNLOCKEDv3', async () => {
+  it('promotes a premature Classic to DUO on UNLOCKEDv3-prodp', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);
 
@@ -57,14 +57,14 @@ describe('OnlyKeyDevice', () => {
     expect(device.state.isLocked).toBe(false);
   });
 
-  it('keeps Classic on UNLOCKEDv2 even with a trailing p suffix', async () => {
+  it('keeps Classic on UNLOCKEDv3.0.4-prodc', async () => {
     const transport = new MockTransport();
     const device = new OnlyKeyDevice(transport);
 
     await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
-    device.state.deviceType = DeviceType.CLASSIC;
+    device.state.deviceType = DeviceType.UNKNOWN;
 
-    (transport as any).simulateResponse('UNLOCKEDv2.1.0-prodp');
+    (transport as any).simulateResponse('UNLOCKEDv3.0.4-prodc');
     expect(device.state.deviceType).toBe(DeviceType.CLASSIC);
     expect(device.state.isLocked).toBe(false);
   });

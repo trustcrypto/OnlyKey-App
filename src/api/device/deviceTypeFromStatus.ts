@@ -1,8 +1,10 @@
 import { DeviceType } from './types';
 
 /**
- * Infer device type from firmware status text — matches legacy OnlyKeyComm.setDeviceType().
- * DUO locked messages use INITIALIZED-D; unlock often returns UNLOCKEDv… without -D.
+ * Infer device type from firmware status text — matches OnlyKeyComm.setDeviceType().
+ * Locked DUO uses INITIALIZED-D. Unlocked HW_MODEL(UNLOCKED) appends the version
+ * suffix letter: c = Classic, p = DUO with PIN, n = DUO with no PIN. Classic can
+ * run 3.x (`UNLOCKEDv3.0.4-prodc`); do not treat major version as the hardware.
  */
 export function inferDeviceTypeFromStatusText(text: string): DeviceType | undefined {
   const trimmed = text.trim();
@@ -16,32 +18,36 @@ export function inferDeviceTypeFromStatusText(text: string): DeviceType | undefi
     return DeviceType.CLASSIC;
   }
 
-  // Major firmware version is authoritative before trailing suffix letters (v2=Classic, v3=DUO).
+  const fromSuffix = hardwareTypeFromSuffix(trimmed);
+  if (fromSuffix) return fromSuffix;
+
+  // No c/p/n letter (tests and truncated HID). Major is a weak fallback only.
   const major = trimmed.match(/v(\d+)\./i)?.[1];
   if (major === '2') return DeviceType.CLASSIC;
   if (major === '3') return DeviceType.DUO;
 
-  const lastChar = trimmed.slice(-1).toLowerCase();
-  if (lastChar === 'n' || lastChar === 'p') return DeviceType.DUO;
-  if (lastChar === 'c') return DeviceType.CLASSIC;
-
-  /* Plain UNLOCKEDv… with no parseable major version — use inferDeviceTypeFromVersion(). */
   if (trimmed.includes('UNLOCKED')) return undefined;
 
   return undefined;
 }
 
-/** Firmware version suffix / major version — DUO is 3.x, Classic is 2.x (legacy OnlyKeyComm). */
+/** Same suffix-letter rule as setDeviceType; major version is fallback only. */
 export function inferDeviceTypeFromVersion(version: string): DeviceType | undefined {
   const v = version.trim().toLowerCase();
   if (!v) return undefined;
 
-  const lastChar = v.slice(-1);
-  if (lastChar === 'c') return DeviceType.CLASSIC;
-  if (lastChar === 'n' || lastChar === 'p') return DeviceType.DUO;
+  const fromSuffix = hardwareTypeFromSuffix(v);
+  if (fromSuffix) return fromSuffix;
   if (/^v?3\./.test(v)) return DeviceType.DUO;
   if (/^v?2\./.test(v)) return DeviceType.CLASSIC;
 
+  return undefined;
+}
+
+function hardwareTypeFromSuffix(text: string): DeviceType | undefined {
+  const lastChar = text.slice(-1).toLowerCase();
+  if (lastChar === 'n' || lastChar === 'p') return DeviceType.DUO;
+  if (lastChar === 'c') return DeviceType.CLASSIC;
   return undefined;
 }
 

@@ -38,17 +38,19 @@ describe('ResponseParser', () => {
     expect(res.isLocked).toBe(true);
   });
 
-  it('should keep Classic on unlocked v2 firmware even with a p suffix', () => {
-    const data = stringToPacket('UNLOCKEDv2.1.0-prodp');
+  it('should keep Classic on unlocked v3 firmware with a c suffix', () => {
+    const data = stringToPacket('UNLOCKEDv3.0.4-prodc');
     const res = ResponseParser.parse(data);
+    expect(res.isLocked).toBe(false);
+    expect(res.version).toBe('v3.0.4-prodc');
     expect(res.deviceType).toBe(DeviceType.CLASSIC);
   });
 
-  it('should infer DUO from unlocked v3 firmware without -D suffix', () => {
-    const data = stringToPacket('UNLOCKEDv3.0.0-prod');
+  it('should infer DUO from unlocked v3 firmware with a p suffix', () => {
+    const data = stringToPacket('UNLOCKEDv3.0.4-prodp');
     const res = ResponseParser.parse(data);
     expect(res.isLocked).toBe(false);
-    expect(res.version).toBe('v3.0.0-prod');
+    expect(res.version).toBe('v3.0.4-prodp');
     expect(res.deviceType).toBe(DeviceType.DUO);
   });
 
