@@ -54,6 +54,9 @@ function isRsaAlgorithm(algorithm: unknown): boolean {
 
 function eccTypeFromAlgorithm(algorithm: unknown, curve?: string): number {
   const s = `${algorithm ?? ''} ${curve ?? ''}`.toLowerCase();
+  if (s.includes('secp256k1') || /(^|[^a-z0-9])k256([^a-z0-9]|$)/.test(s)) {
+    return 3;
+  }
   if (
     s.includes('ed25519') ||
     s.includes('x25519') ||
@@ -63,17 +66,15 @@ function eccTypeFromAlgorithm(algorithm: unknown, curve?: string): number {
     return 1;
   }
   if (
-    s.includes('p256') ||
     s.includes('nist') ||
     s.includes('secp256r1') ||
-    s.includes('ecdsa') ||
-    s.includes('ecdh')
+    s.includes('prime256v1') ||
+    /(^|[^a-z0-9])p-?256([^a-z0-9]|$)/.test(s)
   ) {
     return 2;
   }
   if (algorithm === 22 || algorithm === 27 || algorithm === 25) return 1;
-  if (algorithm === 18 || algorithm === 19) return 2;
-  throw new Error('Unsupported ECC key type, key is not X25519 or NIST256p1.');
+  throw new Error('Unsupported ECC key type, key is not X25519, NIST256p1, or secp256k1.');
 }
 
 export function materialFromOpenPgpPacket(packet: {

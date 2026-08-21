@@ -104,6 +104,124 @@ describe('materialFromSshKey', () => {
     expect(material.type).toBe(2);
     expect(material.keyData).toEqual(Array.from(d));
   });
+
+  it('maps secp256k1 SSH ECDSA to type 3, not NIST', () => {
+    const d = prime(32, 5);
+    const material = materialFromSshKey({
+      type: 'ecdsa',
+      curve: 'secp256k1',
+      part: { d: { data: d } },
+    });
+    expect(material).toEqual({ kind: 'ecc', type: 3, keyData: Array.from(d) });
+    expect(
+      materialFromSshKey({ type: 'ecdsa', curve: 'k256', part: { d: { data: d } } }).type,
+    ).toBe(3);
+  });
+
+  it('rejects SSH ECDSA when the curve is missing or unknown', () => {
+    const d = prime(32, 6);
+    expect(() => materialFromSshKey({ type: 'ecdsa', part: { d: { data: d } } })).toThrow(
+      /X25519, NIST256p1, or secp256k1/,
+    );
+    expect(() =>
+      materialFromSshKey({ type: 'ecdsa', curve: 'brainpoolP256r1', part: { d: { data: d } } }),
+    ).toThrow(/X25519, NIST256p1, or secp256k1/);
+  });
+
+  it('rejects SSH keys missing p/q, scalars, or an unsupported type', () => {
+    expect(() => materialFromSshKey({ type: 'rsa', part: {} })).toThrow(/missing p\/q/);
+    expect(() => materialFromSshKey({ type: 'ed25519', part: {} })).toThrow(/missing private scalar/);
+    expect(() => materialFromSshKey({ type: 'ecdsa', curve: 'nistp256', part: {} })).toThrow(
+      /missing private scalar/,
+    );
+    expect(() => materialFromSshKey({ type: 'dsa', part: {} })).toThrow(/Unsupported SSH key type/);
+  });
+});
+
+describe('ECC curve selection', () => {
+  it('maps OpenPGP secp256k1 to type 3', () => {
+    const d = prime(32, 8);
+    const material = materialFromOpenPgpPacket({
+      getAlgorithmInfo: () => ({ algorithm: 'ecdsa', curve: 'secp256k1' }),
+      privateParams: { d },
+    });
+    expect(material).toEqual({ kind: 'ecc', type: 3, keyData: Array.from(d) });
+  });
+
+  it('maps OpenPGP NIST / prime256v1 to type 2 and x25519 to type 1', () => {
+    const d = prime(32, 9);
+    expect(
+      materialFromOpenPgpPacket({
+        getAlgorithmInfo: () => ({ algorithm: 'ecdh', curve: 'prime256v1' }),
+        privateParams: { d },
+      }).type,
+    ).toBe(2);
+    expect(
+      materialFromOpenPgpPacket({
+        getAlgorithmInfo: () => ({ algorithm: 'ecdsa', curve: 'P-256' }),
+        privateParams: { d },
+      }).type,
+    ).toBe(2);
+    expect(
+      materialFromOpenPgpPacket({
+        algorithm: 'x25519',
+        privateParams: { d },
+      }).type,
+    ).toBe(1);
+    expect(
+      materialFromOpenPgpPacket({
+        algorithm: 22,
+        privateParams: { seed: d },
+      }).type,
+    ).toBe(1);
+  });
+
+  it('does not treat bare ecdsa/ecdh as NIST', () => {
+    const d = prime(32, 1);
+    expect(() =>
+      materialFromOpenPgpPacket({ algorithm: 'ecdsa', privateParams: { d } }),
+    ).toThrow(/X25519, NIST256p1, or secp256k1/);
+    expect(() =>
+      materialFromOpenPgpPacket({ algorithm: 'ecdh', privateParams: { d } }),
+    ).toThrow(/X25519, NIST256p1, or secp256k1/);
+    expect(() =>
+      materialFromOpenPgpPacket({ algorithm: 19, privateParams: { d } }),
+    ).toThrow(/X25519, NIST256p1, or secp256k1/);
+  });
+
+  it('accepts RSA and ECC parameters from arrays, views, and nested data', () => {
+    const p = Array.from(prime(64, 2));
+    const q = Array.from(prime(64, 3));
+    const rsa = materialFromOpenPgpPacket({
+      algorithm: 'rsaEncryptSign',
+      privateParams: { p, q },
+    });
+    expect(rsa.type).toBe(1);
+    expect(rsa.keyData).toHaveLength(128);
+
+    const seed = new Uint16Array(prime(32, 4).buffer);
+    const ecc = materialFromOpenPgpPacket({
+      algorithm: 'ed25519',
+      privateParams: { seed },
+    });
+    expect(ecc.type).toBe(1);
+    expect(ecc.keyData).toHaveLength(32);
+
+    const nested = materialFromOpenPgpPacket({
+      algorithm: 'ed25519',
+      privateParams: { seed: { data: prime(32, 5) } },
+    });
+    expect(nested.keyData[0]).toBe(5);
+  });
+
+  it('throws when ECC private parameters are missing or unreadable', () => {
+    expect(() =>
+      materialFromOpenPgpPacket({ algorithm: 'ed25519', privateParams: {} }),
+    ).toThrow(/Could not read key parameters/);
+    expect(() =>
+      materialFromOpenPgpPacket({ algorithm: 'ed25519', privateParams: { d: 'nope' } }),
+    ).toThrow(/Invalid key parameter encoding/);
+  });
 });
 
 describe('applyPrivateKeyTypeModifiers', () => {
