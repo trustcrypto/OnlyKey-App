@@ -77,7 +77,7 @@ const LockScreen: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await device.setPin(pin);
+      await device.sendPinDUO([pin], false);
       setPin('');
       // DUO unlock reply is UNLOCKED* on the same request; also probe in case it was missed.
       try {

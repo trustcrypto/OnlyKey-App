@@ -389,6 +389,10 @@ export class MockTransport implements TransportInterface {
         this.emitText('Error password attempts for this session exceeded');
         return;
       }
+      if (this.deviceType === 'duo' && !isSetup) {
+        this.emitText(this.statusInitialized());
+        return;
+      }
       this.emitText('Error incorrect PIN');
       return;
     }

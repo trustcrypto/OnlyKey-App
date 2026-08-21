@@ -731,8 +731,36 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       pinBytes = pin.split('').map((char) => 48 + Number(char));
     }
 
-    const res = await this.sendRequest(MessageID.OKSETPIN, undefined, undefined, pinBytes);
+    const res = await this.sendRequest(
+      MessageID.OKSETPIN,
+      undefined,
+      undefined,
+      pinBytes,
+      10000,
+      setPin
+        ? undefined
+        : (r) => {
+            const t = `${r.text ?? ''} ${r.error ?? ''}`.toLowerCase();
+            return (
+              r.type === 'error' ||
+              t.includes('unlocked') ||
+              t.includes('initialized-d') ||
+              t.includes('incorrect') ||
+              t.includes('password attempts')
+            );
+          },
+    );
     if (res.type === 'error') throw new Error(res.error);
+    if (!setPin) {
+      const t = `${res.text ?? ''} ${res.error ?? ''}`;
+      if (/initialized-d/i.test(t) || /incorrect/i.test(t) || /password attempts/i.test(t)) {
+        const msg = /password attempts/i.test(t)
+          ? 'Error password attempts for this session exceeded'
+          : 'Incorrect PIN';
+        this.emit('error', msg);
+        throw new Error(msg);
+      }
+    }
   }
 
   public async setBackupPassphrase(passphrase: string): Promise<void> {

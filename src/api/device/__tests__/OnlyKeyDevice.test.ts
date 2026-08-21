@@ -571,6 +571,21 @@ it('should timeout if hardware does not respond', async () => {
     expect(pcts[pcts.length - 1]).toBe(100);
   });
 
+  it('rejects a DUO unlock PIN when firmware replies INITIALIZED-D', async () => {
+    const transport = new MockTransport({
+      deviceType: 'duo',
+      startLocked: true,
+      correctPin: '3253614',
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    const errors: string[] = [];
+    device.on('error', (e) => errors.push(e));
+    await expect(device.sendPinDUO(['1111111'], false)).rejects.toThrow(/Incorrect PIN/);
+    expect(errors.some((e) => /Incorrect PIN/i.test(e))).toBe(true);
+    expect(device.state.isLocked).toBe(true);
+  });
+
   it('sends a DUO unlock PIN without the 0xFF setup prefix', async () => {
     const transport = new MockTransport({ deviceType: 'duo', startLocked: true, correctPin: '3253614' });
     const device = new OnlyKeyDevice(transport);
