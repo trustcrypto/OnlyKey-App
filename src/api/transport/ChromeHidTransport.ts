@@ -4,6 +4,8 @@ import { TransportInterface, DeviceFilter } from './Transport.interface';
 
 const BETA8_USAGE_PAGE = 0xFFAB; // 65451
 const BETA8_SERIAL = '1000000000';
+/** chrome.hid often reports disconnected on receive/send for ~1s after a rapid replug. */
+const HID_RECONNECT_GRACE_MS = 2000;
 
 export class ChromeHidTransport implements TransportInterface {
   static isAvailable(): boolean {
@@ -18,6 +20,7 @@ export class ChromeHidTransport implements TransportInterface {
   private isListening = false;
   /** Bumped on each listen/disconnect so stale chrome.hid.receive callbacks are ignored. */
   private listenEpoch = 0;
+  private listeningSince = 0;
 
   private onDeviceRemovedListener = (deviceId: number) => {
     if (this.deviceId === deviceId) {
@@ -175,6 +178,7 @@ export class ChromeHidTransport implements TransportInterface {
   private abandonConnection() {
     this.listenEpoch += 1;
     this.isListening = false;
+    this.listeningSince = 0;
     const conn = this.connectionId;
     this.connectionId = null;
     this.deviceId = null;
@@ -191,17 +195,30 @@ export class ChromeHidTransport implements TransportInterface {
     }
   }
 
+  private inReconnectGrace(): boolean {
+    return this.listeningSince > 0 && Date.now() - this.listeningSince < HID_RECONNECT_GRACE_MS;
+  }
+
+  private isGoneError(errMsg: string): boolean {
+    return (
+      errMsg.includes('disconnected') ||
+      errMsg.includes('not found') ||
+      errMsg.includes('invalid connection')
+    );
+  }
+
   async send(reportId: number, data: Uint8Array): Promise<void> {
     if (this.connectionId === null) {
       throw new Error('Not connected');
     }
 
+    const connectionId = this.connectionId;
     return new Promise((resolve, reject) => {
       const payload = Uint8Array.from(data).buffer;
-      chrome.hid.send(this.connectionId!, reportId, payload, () => {
+      chrome.hid.send(connectionId, reportId, payload, () => {
         if (chrome.runtime.lastError) {
           const errMsg = chrome.runtime.lastError.message || '';
-          if (errMsg.includes('disconnected') || errMsg.includes('not found') || errMsg.includes('invalid connection')) {
+          if (this.isGoneError(errMsg) && !this.inReconnectGrace() && this.connectionId === connectionId) {
             this.handleDisconnection();
           }
           return reject(new Error(errMsg || 'Unknown send error'));
@@ -228,6 +245,7 @@ export class ChromeHidTransport implements TransportInterface {
     const epoch = ++this.listenEpoch;
     const connectionId = this.connectionId;
     this.isListening = true;
+    this.listeningSince = Date.now();
 
     const poll = () => {
       if (epoch !== this.listenEpoch || this.connectionId !== connectionId) return;
@@ -237,7 +255,11 @@ export class ChromeHidTransport implements TransportInterface {
         if (chrome.runtime.lastError) {
           const errMsg = chrome.runtime.lastError.message || '';
           console.warn('Receive error:', errMsg);
-          if (errMsg.includes('disconnected') || errMsg.includes('not found') || errMsg.includes('invalid connection')) {
+          if (this.isGoneError(errMsg)) {
+            if (this.inReconnectGrace()) {
+              setTimeout(poll, 100);
+              return;
+            }
             if (this.connectionId === connectionId) this.handleDisconnection();
             return;
           }

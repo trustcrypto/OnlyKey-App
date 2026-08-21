@@ -594,6 +594,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     this.state.version = '';
     this.state.maxLabelSlot = 0;
     this.state.labels = new Map();
+    this.state.lastStatusText = '';
     this.state.isLocked = true;
     this.state.isConfigMode = false;
     this.state.isBootloader = false;
@@ -601,11 +602,24 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     await this.transport.connect(filters);
     this.state.isConnected = true;
     this.seedDeviceTypeFromTransport();
-    this.emit('statusChange', { ...this.state });
+    // Emit now only if firmware already replied during transport.connect so the
+    // store is not left on Searching. Do not invent a locked snapshot when no
+    // status has arrived — rapid replug delivers UNLOCKED a beat later.
+    if (this.state.lastStatusText || this.state.isBootloader) {
+      this.emit('statusChange', { ...this.state });
+    }
     // Bootloader has no clock and OKSETTIME waiters steal OKFWUPDATE replies.
     if (!this.state.isBootloader) {
-      await this.setTime();
+      try {
+        await this.setTime();
+      } catch (e) {
+        if (!this.state.isConnected) throw e;
+        await new Promise((r) => setTimeout(r, 300));
+        if (!this.state.isConnected) throw e;
+        await this.setTime();
+      }
     }
+    this.emit('statusChange', { ...this.state });
   }
 
   public async disconnect(): Promise<void> {

@@ -172,9 +172,11 @@ describe('ChromeHidTransport', () => {
   });
 
   it('disconnects on send lastError mentioning the device is gone', async () => {
+    vi.useFakeTimers();
     devices = [hidDevice()];
     const t = new ChromeHidTransport();
     await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    await vi.advanceTimersByTimeAsync(2000);
     const gone = vi.fn();
     t.onDisconnect(gone);
     hid.send.mockImplementation((_c, _r, _d, cb: () => void) => {
@@ -185,6 +187,7 @@ describe('ChromeHidTransport', () => {
     });
     await expect(t.send(0, new Uint8Array(8))).rejects.toThrow(/disconnected/);
     expect(gone).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 
   it('rejects chrome.hid.connect errors and missing connectInfo', async () => {
@@ -261,8 +264,28 @@ describe('ChromeHidTransport', () => {
       message: 'invalid connection id',
     };
     receiveCb?.(0, new ArrayBuffer(0));
+    expect(gone).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(2000);
+    receiveCb?.(0, new ArrayBuffer(0));
     expect(gone).toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it('retries receive disconnected errors during the reconnect grace window', async () => {
+    devices = [hidDevice()];
+    vi.useFakeTimers();
+    const t = new ChromeHidTransport();
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const gone = vi.fn();
+    t.onDisconnect(gone);
+    (chrome.runtime as { lastError?: { message: string } }).lastError = {
+      message: 'device disconnected',
+    };
+    receiveCb?.(0, new ArrayBuffer(0));
+    expect(gone).not.toHaveBeenCalled();
+    expect(t.getConnectedDevice()?.productId).toBe(0x0486);
+    vi.useRealTimers();
+    await t.disconnect();
   });
 
   it('returns no permitted devices when HID is unavailable', async () => {

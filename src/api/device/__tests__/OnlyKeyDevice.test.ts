@@ -533,6 +533,18 @@ it('should timeout if hardware does not respond', async () => {
     expect(fw).toBeTruthy();
   });
 
+  it('does not emit connected-and-locked before firmware status on an unlocked key', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    const snaps: Array<{ isConnected: boolean; isLocked: boolean }> = [];
+    device.on('statusChange', (s) => snaps.push({ isConnected: s.isConnected, isLocked: s.isLocked }));
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const connected = snaps.filter((s) => s.isConnected);
+    expect(connected.length).toBeGreaterThan(0);
+    expect(connected[0]?.isLocked).toBe(false);
+    expect(device.state.isLocked).toBe(false);
+  });
+
   it('connect on a bootloader transport sets isBootloader without a manual assignment', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);
