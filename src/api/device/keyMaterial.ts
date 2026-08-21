@@ -78,10 +78,10 @@ function eccTypeFromAlgorithm(algorithm: unknown, curve?: string): number {
 
 export function materialFromOpenPgpPacket(packet: {
   algorithm?: unknown;
-  privateParams?: Record<string, unknown> | null;
+  privateParams?: object | null;
   getAlgorithmInfo?: () => { algorithm: string; curve?: string };
 }): OnlyKeyKeyMaterial {
-  const priv = packet.privateParams;
+  const priv = packet.privateParams as Record<string, unknown> | null | undefined;
   if (!priv) {
     throw new Error('Could not read key parameters from OpenPGP key.');
   }

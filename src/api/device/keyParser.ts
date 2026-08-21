@@ -50,7 +50,7 @@ async function parseOpenPgpKey(pem: string, passcode: string, slotChoice: number
   const decrypted = await openpgp.decryptKey({ privateKey, passphrase: passcode });
 
   const keyPacket = decrypted.keyPacket;
-  if (!keyPacket) {
+  if (!keyPacket || !('privateParams' in keyPacket)) {
     throw new Error('Could not read key parameters from OpenPGP key.');
   }
 

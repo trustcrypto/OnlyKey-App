@@ -1,8 +1,13 @@
-import type { FieldID } from './types';
+import type { DeviceStatus, FieldID } from './types';
 import type { DeviceFilter } from '../transport/Transport.interface';
 
 /** Application-facing device API — UI and services depend on this, not OnlyKeyDevice. */
 export interface DeviceClient {
+  on(event: 'statusChange', listener: (state: DeviceStatus) => void): this;
+  on(event: 'error', listener: (error: string) => void): this;
+  on(event: 'labelUpdate', listener: (slotId: number, label: string) => void): this;
+  on(event: 'labelsRefreshed', listener: (labels: Map<number, string>) => void): this;
+  on(event: 'messageReceived', listener: (message: string) => void): this;
   on(event: string, listener: (...args: unknown[]) => void): this;
   emit(event: string, ...args: unknown[]): boolean;
   connect(filters: DeviceFilter | DeviceFilter[]): Promise<void>;

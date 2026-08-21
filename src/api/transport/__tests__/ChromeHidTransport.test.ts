@@ -22,16 +22,27 @@ function hidDevice(partial: Partial<HidDevice> = {}): HidDevice {
   };
 }
 
+type HidMock = {
+  getDevices: ReturnType<typeof vi.fn>;
+  connect: ReturnType<typeof vi.fn>;
+  disconnect: ReturnType<typeof vi.fn>;
+  send: ReturnType<typeof vi.fn>;
+  receive: ReturnType<typeof vi.fn>;
+  onDeviceAdded: { addListener: ReturnType<typeof vi.fn> };
+  onDeviceRemoved: { addListener: ReturnType<typeof vi.fn> };
+};
+
 describe('ChromeHidTransport', () => {
   let devices: HidDevice[];
   let lastError: string | undefined;
   let receiveCb: ((reportId: number, data: ArrayBuffer) => void) | null;
+  let hid: HidMock;
 
   beforeEach(() => {
     devices = [];
     lastError = undefined;
     receiveCb = null;
-    const hid = {
+    hid = {
       getDevices: vi.fn((_opts: unknown, cb: (devs: HidDevice[]) => void) => {
         if (lastError) {
           (chrome.runtime as { lastError?: { message: string } }).lastError = { message: lastError };
@@ -102,14 +113,14 @@ describe('ChromeHidTransport', () => {
     const t = new ChromeHidTransport();
     const added = vi.fn();
     t.onDeviceAdded(added);
-    const addedListener = (chrome.hid.onDeviceAdded.addListener as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const addedListener = hid.onDeviceAdded.addListener.mock.calls[0][0] as (d: HidDevice) => void;
     addedListener(hidDevice());
     expect(added).toHaveBeenCalled();
 
     await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
     const gone = vi.fn();
     t.onDisconnect(gone);
-    const removed = (chrome.hid.onDeviceRemoved.addListener as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const removed = hid.onDeviceRemoved.addListener.mock.calls[0][0] as (id: number) => void;
     removed(1);
     expect(gone).toHaveBeenCalled();
   });

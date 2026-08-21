@@ -5,6 +5,8 @@ declare module 'sshpk' {
 
   interface Key {
     type: string;
+    curve?: string;
+    part: Record<string, { data: Uint8Array } | undefined>;
     toBuffer(format: string): Buffer;
   }
 

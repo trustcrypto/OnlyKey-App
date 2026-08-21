@@ -4,14 +4,12 @@ import { loadSshpk, resetSshpkCache } from '../sshpkNode';
 describe('loadSshpk', () => {
   afterEach(() => {
     resetSshpkCache();
-    const g = globalThis as typeof globalThis & { require?: NodeRequire };
-    delete g.require;
+    (globalThis as { require?: NodeRequire }).require = undefined;
   });
 
   it('throws when Node require is unavailable', () => {
     resetSshpkCache();
-    const g = globalThis as typeof globalThis & { require?: NodeRequire };
-    delete g.require;
+    (globalThis as { require?: NodeRequire }).require = undefined;
     expect(() => loadSshpk()).toThrow(/sshpk requires NW\.js Node integration/);
   });
 

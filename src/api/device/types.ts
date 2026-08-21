@@ -54,6 +54,22 @@ export enum DeviceType {
   UNINITIALIZED = 'uninitialized'
 }
 
+/** Snapshot emitted on DeviceClient `statusChange`. */
+export interface DeviceStatus {
+  isConnected: boolean;
+  isLocked: boolean;
+  isConfigMode: boolean;
+  isBootloader: boolean;
+  deviceType: DeviceType;
+  deviceTypeSource: string;
+  usbProductId: number | null;
+  maxLabelSlot: number;
+  lastStatusText: string;
+  version: string;
+  devicePinSet: boolean;
+  labels: Map<number, string>;
+}
+
 export interface SlotConfig {
   label: string;
   url: string;

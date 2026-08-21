@@ -5,14 +5,14 @@ vi.unmock('../hidStatus');
 import { getHidStatus } from '../hidStatus';
 
 function setChromeHid(available: boolean) {
-  (globalThis as typeof globalThis & { chrome?: { hid?: { getDevices?: unknown } } }).chrome = available
+  (globalThis as { chrome?: { hid?: { getDevices?: unknown } } }).chrome = available
     ? { hid: { getDevices: () => undefined } }
     : { hid: {} };
 }
 
 describe('getHidStatus', () => {
   afterEach(() => {
-    delete (globalThis as { chrome?: unknown }).chrome;
+    (globalThis as { chrome?: unknown }).chrome = undefined;
   });
 
   it('reports ready when chrome.hid.getDevices exists', () => {
