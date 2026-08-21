@@ -80,6 +80,42 @@ describe('LockScreen', () => {
     expect(screen.getByText(/incorrect pin/i)).toBeInTheDocument();
   });
 
+  it('stays visible while locked in config mode so the DUO PIN can be entered', async () => {
+    const user = userEvent.setup();
+    const sendPinDUO = vi.fn().mockResolvedValue(undefined);
+    const refreshStatus = vi.fn().mockResolvedValue(undefined);
+    seedDeviceStore({
+      isConnected: true,
+      isLocked: true,
+      isConfigMode: true,
+      deviceType: DeviceType.DUO,
+      device: createMockDeviceClient({ sendPinDUO, refreshStatus }),
+      activeTab: 'setup',
+    });
+    renderWithProviders(<LockScreen />);
+    expect(screen.getByTestId('lock-screen')).toBeInTheDocument();
+    await user.type(screen.getByPlaceholderText(/enter pin/i), '3253614');
+    await user.click(screen.getByRole('button', { name: /unlock device/i }));
+    expect(sendPinDUO).toHaveBeenCalledWith(['3253614'], false);
+    expect(refreshStatus).toHaveBeenCalled();
+  });
+
+  it('keeps Classic keypad polling while locked in config mode', async () => {
+    const refreshStatus = vi.fn().mockResolvedValue(undefined);
+    seedDeviceStore({
+      isConnected: true,
+      isLocked: true,
+      isConfigMode: true,
+      deviceType: DeviceType.CLASSIC,
+      device: createMockDeviceClient({ refreshStatus }),
+      activeTab: 'setup',
+    });
+    renderWithProviders(<LockScreen />);
+    expect(screen.getByTestId('lock-screen')).toBeInTheDocument();
+    expect(screen.getByText(/six-button keypad/i)).toBeInTheDocument();
+    await vi.waitFor(() => expect(refreshStatus).toHaveBeenCalled());
+  });
+
   it('is hidden in bootloader so firmware load is not covered by the lock overlay', () => {
     seedDeviceStore({
       isConnected: true,

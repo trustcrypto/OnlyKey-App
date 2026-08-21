@@ -5,7 +5,7 @@ import { DeviceType } from '../api/device/types';
 const LOCK_POLL_MS = 1500;
 
 const LockScreen: React.FC = () => {
-  const { deviceType, device, isLocked, isConnected, isConfigMode, isBootloader, pinError, activeTab } =
+  const { deviceType, device, isLocked, isConnected, isBootloader, pinError, activeTab } =
     useDeviceStore();
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -16,12 +16,12 @@ const LockScreen: React.FC = () => {
 
   // Classic unlock is entirely on-device (6-button keypad). Firmware ignores OKSETPIN
   // once initialized unless in config mode. Poll OKSETTIME so we notice UNLOCKED even
-  // if the single unsolicited unlock HID report was missed.
+  // if the single unsolicited unlock HID report was missed. Keep polling while locked
+  // in config mode — firmware does not print UNLOCKED on the PIN itself.
   useEffect(() => {
     if (
       !isConnected ||
       !isLocked ||
-      isConfigMode ||
       !device ||
       isDuo ||
       isBootloader ||
@@ -57,12 +57,11 @@ const LockScreen: React.FC = () => {
       window.clearInterval(id);
       setClassicUnlockActive(false);
     };
-  }, [isConnected, isLocked, isConfigMode, device, isDuo, deviceType, isBootloader]);
+  }, [isConnected, isLocked, device, isDuo, deviceType, isBootloader]);
 
   if (
     !isConnected ||
     !isLocked ||
-    isConfigMode ||
     activeTab === 'tools' ||
     deviceType === DeviceType.UNINITIALIZED ||
     deviceType === DeviceType.BOOTLOADER ||
