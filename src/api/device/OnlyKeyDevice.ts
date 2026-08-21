@@ -727,11 +727,19 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       bytes = Array.from(key);
     }
 
-    // Chunked sending for RSA keys
+    // Firmware replies on the final OKSETPRIV chunk only (same class of
+    // behavior as OKRESTORE). Waiting on intermediates 10s-timeouts RSA-4096.
     const maxPacketSize = 57;
     for (let i = 0; i < bytes.length; i += maxPacketSize) {
       const chunk = bytes.slice(i, i + maxPacketSize);
-      await this.sendRequest(MessageID.OKSETPRIV, slot, type, chunk);
+      const isFinal = i + maxPacketSize >= bytes.length;
+      if (!isFinal) {
+        await this.sendCommandWithoutConfirmation(MessageID.OKSETPRIV, slot, type, chunk, 200);
+        await new Promise((r) => setTimeout(r, 30));
+        continue;
+      }
+      const res = await this.sendRequest(MessageID.OKSETPRIV, slot, type, chunk);
+      if (res.type === 'error') throw new Error(res.error);
     }
   }
 

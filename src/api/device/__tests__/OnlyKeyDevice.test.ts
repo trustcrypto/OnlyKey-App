@@ -260,6 +260,26 @@ it('should timeout if hardware does not respond', async () => {
     expect(restoreSends[1][5]).toBe(3); // final length
   });
 
+  it('setPrivateKey does not wait for HID replies on intermediate chunks', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+
+    let privPackets = 0;
+    const origSend = transport.send.bind(transport);
+    vi.spyOn(transport, 'send').mockImplementation(async (reportId, packet) => {
+      if (packet[4] !== MessageID.OKSETPRIV) return origSend(reportId, packet);
+      privPackets += 1;
+      if (privPackets === 2) {
+        setTimeout(() => transport.simulateResponse('OK'), 5);
+      }
+      return undefined;
+    });
+
+    await device.setPrivateKey(1, 2, new Uint8Array(60).fill(1));
+    expect(privPackets).toBe(2);
+  });
+
   it('beginClassicPinEntry waits on empty OKSETPIN / PIN2 / SDPIN', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
     const device = new OnlyKeyDevice(transport);
