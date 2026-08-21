@@ -8,7 +8,7 @@ vi.mock('../keyBundleParser', () => ({
 
 import { importPemKey, isSelectionRequiredError } from '../keyImportService';
 
-const candidate = { id: '0', name: 'Primary Key', type: 1, keyData: [1, 2] };
+const candidate = { id: '0', name: 'Primary Key', type: 2, keyData: [1, 2], kind: 'rsa' as const };
 
 describe('importPemKey', () => {
   const device = {
@@ -22,10 +22,10 @@ describe('importPemKey', () => {
     device.setBackupKeyMode.mockClear();
   });
 
-  it('loads auto-assigned keys and optionally sets backup mode', async () => {
+  it('loads keys and ORs the backup modifier instead of locking BACKUPKEYMODE', async () => {
     parseKeyBundle.mockResolvedValue({
       requiresSelection: false,
-      assignments: [{ candidate, slot: 2 }],
+      assignments: [{ candidate, slot: 1 }],
       candidates: [candidate],
     });
 
@@ -36,9 +36,28 @@ describe('importPemKey', () => {
       setAsBackup: true,
     });
 
-    expect(device.setPrivateKey).toHaveBeenCalledWith(2, 1, [1, 2]);
-    expect(device.setBackupKeyMode).toHaveBeenCalledWith(1);
+    // Slot 1 RSA: type 2 | decryption 32 | backup 128 = 162
+    expect(device.setPrivateKey).toHaveBeenCalledWith(1, 162, [1, 2]);
+    expect(device.setBackupKeyMode).not.toHaveBeenCalled();
     expect(result).toEqual({ loadedCount: 1, usedSelection: false });
+  });
+
+  it('ORs the signature modifier when requested', async () => {
+    const ecc = { id: '0', name: 'Primary Key', type: 1, keyData: [9], kind: 'ecc' as const };
+    parseKeyBundle.mockResolvedValue({
+      requiresSelection: false,
+      assignments: [{ candidate: ecc, slot: 101 }],
+      candidates: [ecc],
+    });
+
+    await importPemKey(device as never, {
+      pem: '-----BEGIN OPENSSH PRIVATE KEY-----',
+      passcode: '',
+      slotChoice: 101,
+      setAsSignature: true,
+    });
+
+    expect(device.setPrivateKey).toHaveBeenCalledWith(101, 1 | 64, [9]);
   });
 
   it('throws KEY_SELECTION_REQUIRED when the user must pick a subkey', async () => {
@@ -60,7 +79,7 @@ describe('importPemKey', () => {
   });
 
   it('loads the selected candidate into the target slot', async () => {
-    const second = { id: '1', name: 'Subkey 1', type: 2, keyData: [9] };
+    const second = { id: '1', name: 'Subkey 1', type: 2, keyData: [9], kind: 'ecc' as const };
     parseKeyBundle.mockResolvedValue({
       requiresSelection: true,
       assignments: [],
