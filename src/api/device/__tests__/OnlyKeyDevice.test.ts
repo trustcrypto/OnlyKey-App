@@ -319,11 +319,37 @@ it('should timeout if hardware does not respond', async () => {
     await device.connect({ vendorId: 0x1d50, productId: 0x614c });
     const sendSpy = vi.spyOn(transport, 'send');
     sendSpy.mockClear();
-    await device.sendPinDUO(['1234567'], true);
+    await device.sendPinDUO(['1234561'], true);
     const packet = sendSpy.mock.calls[0][1] as Uint8Array;
     expect(packet[4]).toBe(MessageID.OKSETPIN);
     expect(packet[5]).toBe(255);
     expect(packet[6]).toBe(49);
+    expect(packet[22]).toBe(0);
+    expect(packet[38]).toBe(0);
+  });
+
+  it('packs DUO self-destruct PIN at SETUP_MANUAL offset 38', async () => {
+    const transport = new MockTransport({ deviceType: 'duo', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+    await device.sendPinDUO(['3253614', '', '6543216'], true);
+    const packet = sendSpy.mock.calls[0][1] as Uint8Array;
+    expect(packet[5]).toBe(255);
+    expect(String.fromCharCode(...packet.slice(6, 13))).toBe('3253614');
+    expect(packet[22]).toBe(0);
+    expect(String.fromCharCode(...packet.slice(38, 45))).toBe('6543216');
+  });
+
+  it('rejects DUO setup PINs that are too short, use 0/7–9, or match SD', async () => {
+    const transport = new MockTransport({ deviceType: 'duo', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    await expect(device.sendPinDUO(['123'], true)).rejects.toThrow(/7–10 digits using only 1–6/);
+    await expect(device.sendPinDUO(['1234561'], true)).resolves.toBeUndefined();
+    await expect(device.sendPinDUO(['1234568'], true)).rejects.toThrow(/7–10 digits using only 1–6/);
+    await expect(device.sendPinDUO(['3253614', '3253614'], true)).rejects.toThrow(/different from the device PIN/);
   });
 
   it('hashes a backup passphrase onto slot 131 type 161', async () => {

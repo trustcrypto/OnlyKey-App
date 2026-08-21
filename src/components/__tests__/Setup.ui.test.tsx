@@ -132,7 +132,7 @@ describe('Setup page', () => {
     fireEvent.change(screen.getAllByPlaceholderText('Confirm')[0], { target: { value: '3253614' } });
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => {
-      expect(device.sendPinDUO).toHaveBeenCalledWith(['3253614'], true);
+      expect(device.sendPinDUO).toHaveBeenCalledWith(['3253614', '', ''], true);
     });
   });
 
@@ -412,7 +412,7 @@ describe('Setup page', () => {
     fireEvent.change(screen.getAllByPlaceholderText('Confirm')[1], { target: { value: '1111111' } });
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => {
-      expect(device.sendPinDUO).toHaveBeenCalledWith(['3253614', '1111111'], true);
+      expect(device.sendPinDUO).toHaveBeenCalledWith(['3253614', '', '1111111'], true);
     });
   });
 

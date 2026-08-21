@@ -19,6 +19,30 @@ export declare interface OnlyKeyDevice {
   on(event: 'messageReceived', listener: (message: string) => void): this;
 }
 
+const DUO_SETUP_PIN = /^[1-6]{7,10}$/;
+const DUO_PIN_SLOT_BYTES = 16;
+
+function padDuoPinSlot(pin: string): number[] {
+  const slot = new Array(DUO_PIN_SLOT_BYTES).fill(0);
+  for (let i = 0; i < pin.length && i < DUO_PIN_SLOT_BYTES; i++) {
+    slot[i] = 48 + Number(pin[i]);
+  }
+  return slot;
+}
+
+export function assertDuoSetupPins(primary: string, sd = ''): void {
+  if (!DUO_SETUP_PIN.test(primary)) {
+    throw new Error('Device PIN must be 7–10 digits using only 1–6.');
+  }
+  if (!sd) return;
+  if (!DUO_SETUP_PIN.test(sd)) {
+    throw new Error('Self-destruct PIN must be 7–10 digits using only 1–6.');
+  }
+  if (sd === primary) {
+    throw new Error('Self-destruct PIN must be different from the device PIN.');
+  }
+}
+
 export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   private transport: TransportInterface;
   private pendingSeq = 0;
@@ -697,19 +721,17 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   public async sendPinDUO(pins: string[], setPin: boolean = true): Promise<void> {
-    const pinCount = pins.length;
-    const bytesPerPin = 16;
-    const pinBytesLength = pinCount === 1 ? pins[0].length : pinCount * bytesPerPin;
-    const pinBytes: number[] = new Array(pinBytesLength).fill(0);
-
-    pins.forEach((pin, i) => {
-      pin.split('').forEach((char, j) => {
-        pinBytes[i * bytesPerPin + j] = 48 + Number(char);
-      });
-    });
-
+    let pinBytes: number[];
     if (setPin) {
-      pinBytes.unshift(255);
+      const primary = pins[0] ?? '';
+      const pin2 = pins.length >= 3 ? (pins[1] ?? '') : '';
+      const sd = pins.length >= 3 ? (pins[2] ?? '') : (pins[1] ?? '');
+      assertDuoSetupPins(primary, sd);
+      // SETUP_MANUAL: 0xFF + primary@6 + PIN2@22 + SD@38 (okcore_quick_setup).
+      pinBytes = [255, ...padDuoPinSlot(primary), ...padDuoPinSlot(pin2), ...padDuoPinSlot(sd)];
+    } else {
+      const pin = pins[0] ?? '';
+      pinBytes = pin.split('').map((char) => 48 + Number(char));
     }
 
     const res = await this.sendRequest(MessageID.OKSETPIN, undefined, undefined, pinBytes);

@@ -447,8 +447,7 @@ const Setup: React.FC = () => {
                 if (!passcode1Disclaimer) throw new Error('Please accept the disclaimer.');
                 if (duoPins.primary !== duoPins.primaryConfirm) throw new Error('PINs do not match.');
                 if (duoPins.sd && duoPins.sd !== duoPins.sdConfirm) throw new Error('Self-destruct PINs do not match.');
-                const pins = duoPins.sd ? [duoPins.primary, duoPins.sd] : [duoPins.primary];
-                await device!.sendPinDUO(pins, true);
+                await device!.sendPinDUO([duoPins.primary, '', duoPins.sd], true);
                 if (guided) setDuoStep('Step8');
                 else resetToStep1();
               })
