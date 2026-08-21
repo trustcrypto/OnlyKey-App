@@ -106,39 +106,48 @@ const Setup: React.FC = () => {
       }
     });
 
-  const loadPgpBackupKey = async (selectedCandidateId?: string, targetSlot?: number) =>
-    run(async () => {
-      if (!pgpKey.trim()) throw new Error('OpenPGP private key cannot be empty.');
-      if (!pgpPasscode) throw new Error('Passcode cannot be empty.');
-      await device!.setBackupKeyMode(pgpBackupKeyMode);
-      await importPemKey(device!, {
-        pem: pgpKey.trim(),
-        passcode: pgpPasscode,
-        slotChoice: pgpSlot,
-        setAsBackup: true,
-        selectedCandidateId,
-        targetSlot,
-      });
-      setPgpKey('');
-      setPgpPasscode('');
-      setShowPgpKeySelect(false);
-      setPgpCandidates([]);
-      if (guided) {
-        isDuo ? setDuoStep('Step10') : setClassicStep('Step10');
-      } else {
-        resetToStep1();
-      }
+  const importPgpBackupKey = async (selectedCandidateId?: string, targetSlot?: number) => {
+    if (!pgpKey.trim()) throw new Error('OpenPGP private key cannot be empty.');
+    if (!pgpPasscode) throw new Error('Passcode cannot be empty.');
+    await importPemKey(device!, {
+      pem: pgpKey.trim(),
+      passcode: pgpPasscode,
+      slotChoice: pgpSlot,
+      setAsBackup: true,
+      setAsSignature: pgpSetAsSignature,
+      selectedCandidateId,
+      targetSlot,
     });
+    await device!.setBackupKeyMode(pgpBackupKeyMode);
+    setPgpKey('');
+    setPgpPasscode('');
+    setShowPgpKeySelect(false);
+    setPgpCandidates([]);
+    if (guided) {
+      isDuo ? setDuoStep('Step10') : setClassicStep('Step10');
+    } else {
+      resetToStep1();
+    }
+  };
+
+  const loadPgpBackupKey = (selectedCandidateId?: string, targetSlot?: number) =>
+    run(() => importPgpBackupKey(selectedCandidateId, targetSlot));
 
   const handlePgpImport = async () => {
+    setIsProcessing(true);
+    setError(null);
     try {
-      await loadPgpBackupKey();
+      await importPgpBackupKey();
     } catch (e: unknown) {
       if (isSelectionRequiredError(e)) {
         const bundle = await parseKeyBundle(pgpKey.trim(), pgpPasscode, pgpSlot);
         setPgpCandidates(bundle.candidates);
         setShowPgpKeySelect(true);
+      } else {
+        setError(e instanceof Error ? e.message : String(e));
       }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -381,6 +390,24 @@ const Setup: React.FC = () => {
             onPassphraseChange={setBackupPassphrase}
             onConfirmChange={setBackupConfirm}
             configHint={isInitialized ? configModePassphraseHint(deviceType) : undefined}
+            onUsePgpKey={() => setDuoStep('Step9')}
+          />
+        )}
+
+        {duoStep === 'Step9' && (
+          <PgpBackupKeyStep
+            pgpSlot={pgpSlot}
+            onSlotChange={setPgpSlot}
+            pgpKey={pgpKey}
+            onKeyChange={setPgpKey}
+            pgpPasscode={pgpPasscode}
+            onPasscodeChange={setPgpPasscode}
+            pgpSetAsSignature={pgpSetAsSignature}
+            onSetAsSignatureChange={setPgpSetAsSignature}
+            pgpBackupKeyMode={pgpBackupKeyMode}
+            onBackupKeyModeChange={setPgpBackupKeyMode}
+            configHint={isInitialized ? configModePassphraseHint(deviceType) : undefined}
+            onUsePassphrase={() => setDuoStep('Step8')}
           />
         )}
 
@@ -421,17 +448,19 @@ const Setup: React.FC = () => {
           />
         )}
 
-        {(duoStep === 'Step8' || duoStep === 'Step10' || duoStep === 'Step11') && (
+        {(duoStep === 'Step8' || duoStep === 'Step9' || duoStep === 'Step10' || duoStep === 'Step11') && (
           <StepNav
             onNext={
               duoStep === 'Step8'
                 ? handleBackup
-                : duoStep === 'Step10'
-                  ? () => restoreInputRef.current?.click()
-                  : () => firmwareInputRef.current?.click()
+                : duoStep === 'Step9'
+                  ? handlePgpImport
+                  : duoStep === 'Step10'
+                    ? () => restoreInputRef.current?.click()
+                    : () => firmwareInputRef.current?.click()
             }
             onCancel={resetToStep1}
-            nextLabel={duoStep === 'Step8' ? 'Next' : duoStep === 'Step11' ? 'Load Firmware to OnlyKey' : 'Next'}
+            nextLabel={duoStep === 'Step11' ? 'Load Firmware to OnlyKey' : 'Next'}
           />
         )}
 
@@ -731,90 +760,25 @@ const Setup: React.FC = () => {
           onPassphraseChange={setBackupPassphrase}
           onConfirmChange={setBackupConfirm}
           configHint={isInitialized ? configModePassphraseHint(deviceType) : undefined}
+          onUsePgpKey={() => setClassicStep('Step9')}
         />
       )}
 
       {classicStep === 'Step9' && (
-        <div id="Step9">
-          <h3>Set a Backup Key</h3>
-          {isInitialized && <p>{configModePassphraseHint(deviceType)}</p>}
-          <p>
-            Your OpenPGP key will be used for secure backup and restore of your OnlyKey, make sure to store it in a
-            secure location.
-          </p>
-          <p>
-            Need a key? Follow our guide{' '}
-            <a href="https://docs.crp.to/importpgp.html#generating-keys" target="_blank" rel="noreferrer">
-              here
-            </a>{' '}
-            for generating an OpenPGP key.
-          </p>
-          <label>
-            Slot:{' '}
-            <select value={pgpSlot} onChange={(e) => setPgpSlot(parseInt(e.target.value, 10))}>
-              {BACKUP_RSA_SLOTS.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </label>
-          <br />
-          <br />
-          <label className="block">
-            Backup OpenPGP RSA/ECC Key:
-            <textarea
-              value={pgpKey}
-              onChange={(e) => setPgpKey(e.target.value)}
-              rows={3}
-              placeholder="OpenPGP Key -- paste PEM file contents"
-              className="field-input mt-1 font-mono text-sm w-full max-w-2xl"
-            />
-          </label>
-          <br />
-          <label className="block">
-            Passphrase:
-            <input
-              type="password"
-              value={pgpPasscode}
-              onChange={(e) => setPgpPasscode(e.target.value)}
-              className="field-input mt-1 block max-w-xl"
-              autoComplete="new-password"
-            />
-          </label>
-          <br />
-          <br />
-          <label>
-            <input
-              type="checkbox"
-              checked={pgpSetAsSignature}
-              onChange={(e) => setPgpSetAsSignature(e.target.checked)}
-            />{' '}
-            Set as signature key - Use key to sign messages
-          </label>
-          <br />
-          <br />
-          <label>
-            <input
-              type="radio"
-              checked={pgpBackupKeyMode === 0}
-              onChange={() => setPgpBackupKeyMode(0)}
-            />{' '}
-            <u>Permit future backup key changes (Default)</u>
-          </label>
-          <br />
-          <label>
-            <input
-              type="radio"
-              checked={pgpBackupKeyMode === 1}
-              onChange={() => setPgpBackupKeyMode(1)}
-            />{' '}
-            <u>Lock backup key on this device</u>
-          </label>
-          <br />
-          <br />
-          <SetButton onClick={() => setClassicStep('Step8')}>
-            <b>Use passphrase instead of PGP key</b>
-          </SetButton>
-        </div>
+        <PgpBackupKeyStep
+          pgpSlot={pgpSlot}
+          onSlotChange={setPgpSlot}
+          pgpKey={pgpKey}
+          onKeyChange={setPgpKey}
+          pgpPasscode={pgpPasscode}
+          onPasscodeChange={setPgpPasscode}
+          pgpSetAsSignature={pgpSetAsSignature}
+          onSetAsSignatureChange={setPgpSetAsSignature}
+          pgpBackupKeyMode={pgpBackupKeyMode}
+          onBackupKeyModeChange={setPgpBackupKeyMode}
+          configHint={isInitialized ? configModePassphraseHint(deviceType) : undefined}
+          onUsePassphrase={() => setClassicStep('Step8')}
+        />
       )}
 
       {classicStep === 'Step10' && (
@@ -957,6 +921,7 @@ const BackupPassphraseStep: React.FC<{
   onPassphraseChange: (v: string) => void;
   onConfirmChange: (v: string) => void;
   configHint?: string;
+  onUsePgpKey?: () => void;
 }> = ({
   isInitialized,
   advancedSetup,
@@ -967,6 +932,7 @@ const BackupPassphraseStep: React.FC<{
   onPassphraseChange,
   onConfirmChange,
   configHint,
+  onUsePgpKey,
 }) => (
   <div id="Step8">
     <h3>Enter a Backup Passphrase</h3>
@@ -1029,6 +995,124 @@ const BackupPassphraseStep: React.FC<{
       here
     </a>
     .
+    {onUsePgpKey && (
+      <>
+        <br />
+        <br />
+        <SetButton onClick={onUsePgpKey}>
+          <b>Use OpenPGP key instead of passphrase</b>
+        </SetButton>
+      </>
+    )}
+  </div>
+);
+
+const PgpBackupKeyStep: React.FC<{
+  pgpSlot: number;
+  onSlotChange: (v: number) => void;
+  pgpKey: string;
+  onKeyChange: (v: string) => void;
+  pgpPasscode: string;
+  onPasscodeChange: (v: string) => void;
+  pgpSetAsSignature: boolean;
+  onSetAsSignatureChange: (v: boolean) => void;
+  pgpBackupKeyMode: number;
+  onBackupKeyModeChange: (v: number) => void;
+  configHint?: string;
+  onUsePassphrase: () => void;
+}> = ({
+  pgpSlot,
+  onSlotChange,
+  pgpKey,
+  onKeyChange,
+  pgpPasscode,
+  onPasscodeChange,
+  pgpSetAsSignature,
+  onSetAsSignatureChange,
+  pgpBackupKeyMode,
+  onBackupKeyModeChange,
+  configHint,
+  onUsePassphrase,
+}) => (
+  <div id="Step9">
+    <h3>Set a Backup Key</h3>
+    {configHint && <p>{configHint}</p>}
+    <p>
+      Your OpenPGP key will be used for secure backup and restore of your OnlyKey, make sure to store it in a
+      secure location.
+    </p>
+    <p>
+      Need a key? Follow our guide{' '}
+      <a href="https://docs.crp.to/importpgp.html#generating-keys" target="_blank" rel="noreferrer">
+        here
+      </a>{' '}
+      for generating an OpenPGP key.
+    </p>
+    <label>
+      Slot:{' '}
+      <select value={pgpSlot} onChange={(e) => onSlotChange(parseInt(e.target.value, 10))}>
+        {BACKUP_RSA_SLOTS.map((s) => (
+          <option key={s.value} value={s.value}>{s.label}</option>
+        ))}
+      </select>
+    </label>
+    <br />
+    <br />
+    <label className="block">
+      Backup OpenPGP RSA/ECC Key:
+      <textarea
+        value={pgpKey}
+        onChange={(e) => onKeyChange(e.target.value)}
+        rows={3}
+        placeholder="OpenPGP Key -- paste PEM file contents"
+        className="field-input mt-1 font-mono text-sm w-full max-w-2xl"
+      />
+    </label>
+    <br />
+    <label className="block">
+      Passphrase:
+      <input
+        type="password"
+        value={pgpPasscode}
+        onChange={(e) => onPasscodeChange(e.target.value)}
+        className="field-input mt-1 block max-w-xl"
+        autoComplete="new-password"
+      />
+    </label>
+    <br />
+    <br />
+    <label>
+      <input
+        type="checkbox"
+        checked={pgpSetAsSignature}
+        onChange={(e) => onSetAsSignatureChange(e.target.checked)}
+      />{' '}
+      Set as signature key - Use key to sign messages
+    </label>
+    <br />
+    <br />
+    <label>
+      <input
+        type="radio"
+        checked={pgpBackupKeyMode === 0}
+        onChange={() => onBackupKeyModeChange(0)}
+      />{' '}
+      <u>Permit future backup key changes (Default)</u>
+    </label>
+    <br />
+    <label>
+      <input
+        type="radio"
+        checked={pgpBackupKeyMode === 1}
+        onChange={() => onBackupKeyModeChange(1)}
+      />{' '}
+      <u>Lock backup key on this device</u>
+    </label>
+    <br />
+    <br />
+    <SetButton onClick={onUsePassphrase}>
+      <b>Use passphrase instead of PGP key</b>
+    </SetButton>
   </div>
 );
 
