@@ -14,7 +14,8 @@ function getBooleanString(value) {
   return value ? 'true' : 'false';
 }
 
-function defaultForKey() {
+function defaultForKey(key) {
+  if (key === 'autoUpdate') return false;
   return true;
 }
 

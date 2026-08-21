@@ -6,9 +6,11 @@ describe('userPreferences', () => {
     localStorage.clear();
   });
 
-  it('defaults unset keys to true', () => {
+  it('defaults autoUpdate off and other flags on', () => {
     expect(userPreferences.closeToTray).toBe(true);
-    expect(userPreferences.autoUpdate).toBe(true);
+    expect(userPreferences.autoLaunch).toBe(true);
+    expect(userPreferences.autoUpdateFW).toBe(true);
+    expect(userPreferences.autoUpdate).toBe(false);
   });
 
   it('persists boolean flags to localStorage', () => {
@@ -19,5 +21,9 @@ describe('userPreferences', () => {
     userPreferences.autoUpdateFW = true;
     expect(localStorage.getItem('autoUpdateFW')).toBe('true');
     expect(userPreferences.autoUpdateFW).toBe(true);
+
+    userPreferences.autoUpdate = true;
+    expect(localStorage.getItem('autoUpdate')).toBe('true');
+    expect(userPreferences.autoUpdate).toBe(true);
   });
 });
