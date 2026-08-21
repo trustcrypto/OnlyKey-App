@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Setup from '../Setup';
 import { DeviceType } from '../../api/device/types';
@@ -89,6 +89,36 @@ describe('Setup page', () => {
     await waitFor(() => expect(device.restore).toHaveBeenCalled());
   });
 
+  it('locks the backup key when advanced uninitialized setup is enabled', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(await screen.findByRole('button', { name: /don't want a second profile/i }));
+    await user.click(await screen.findByRole('button', { name: /don't want a self-destruct pin/i }));
+    expect(screen.getByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/permit future backup key changes/i));
+    await user.click(screen.getByLabelText(/lock backup key on this device/i));
+    const passphrase = 'this passphrase is not complex!!';
+    fireEvent.change(screen.getByLabelText(/^enter passphrase$/i), { target: { value: passphrase } });
+    fireEvent.change(screen.getByLabelText(/^re-enter passphrase$/i), { target: { value: passphrase } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => {
+      expect(device.setBackupKeyMode).toHaveBeenCalledWith(1);
+      expect(device.setBackupPassphrase).toHaveBeenCalledWith(passphrase);
+    });
+  });
+
   it('enables advanced setup on an uninitialized device', async () => {
     const user = userEvent.setup();
     seedDeviceStore({
@@ -114,6 +144,29 @@ describe('Setup page', () => {
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(screen.getByRole('heading', { name: /enter pin on onlykey keypad/i })).toBeInTheDocument();
+  });
+
+  it('rejects mismatched DUO device and self-destruct PINs', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.DUO,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /set or change onlykey duo pins/i }));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    fireEvent.change(screen.getByPlaceholderText('Device PIN'), { target: { value: '3253614' } });
+    fireEvent.change(screen.getAllByPlaceholderText('Confirm')[0], { target: { value: '3253615' } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByText(/pins do not match/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getAllByPlaceholderText('Confirm')[0], { target: { value: '3253614' } });
+    fireEvent.change(screen.getByPlaceholderText(/self-destruct pin/i), { target: { value: '6543216' } });
+    fireEvent.change(screen.getAllByPlaceholderText('Confirm')[1], { target: { value: '6543215' } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByText(/self-destruct pins do not match/i)).toBeInTheDocument();
   });
 
   it('submits DUO PINs after accepting the disclaimer', async () => {
@@ -436,5 +489,146 @@ describe('Setup page', () => {
     expect(await screen.findByRole('heading', { name: /select private key/i })).toBeInTheDocument();
     expect(screen.getByText('Subkey 1')).toBeInTheDocument();
     expect(screen.queryByText('KEY_SELECTION_REQUIRED')).not.toBeInTheDocument();
+  });
+
+  it('loads the selected OpenPGP subkey from the picker and can cancel it', async () => {
+    const user = userEvent.setup();
+    vi.mocked(keyImportService.importPemKey)
+      .mockRejectedValueOnce(new Error('KEY_SELECTION_REQUIRED'))
+      .mockRejectedValueOnce(new Error('KEY_SELECTION_REQUIRED'))
+      .mockResolvedValue({ loadedCount: 1, usedSelection: true });
+    vi.mocked(keyBundleParser.parseKeyBundle).mockResolvedValue({
+      requiresSelection: true,
+      assignments: [],
+      candidates: [
+        { id: '0', name: 'Primary Key', type: 2, keyData: [1], kind: 'rsa' },
+        { id: '1', name: 'Subkey 1', type: 2, keyData: [2], kind: 'rsa' },
+      ],
+    });
+
+    await openClassicPgpStep(user);
+    fireEvent.change(screen.getByPlaceholderText(/paste pem/i), { target: { value: pgpPem } });
+    fireEvent.change(screen.getByLabelText(/^passphrase/i), { target: { value: 'secret' } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /select private key/i })).toBeInTheDocument();
+
+    const dialog = screen.getByRole('heading', { name: /select private key/i }).closest('.fixed');
+    expect(dialog).toBeTruthy();
+    await user.click(within(dialog as HTMLElement).getByRole('button', { name: /cancel/i }));
+    expect(screen.queryByRole('heading', { name: /select private key/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /select private key/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /load key/i }));
+    await waitFor(() => {
+      expect(keyImportService.importPemKey).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ selectedCandidateId: '0', targetSlot: 1 }),
+      );
+    });
+  });
+
+  it('warns when an initialized DUO is locked out of config mode', () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.DUO,
+      isLocked: true,
+      isConfigMode: false,
+    });
+    renderWithProviders(<Setup />);
+    expect(screen.getByText(/put your onlykey duo into config mode before continuing/i)).toBeInTheDocument();
+  });
+
+  it('toggles DUO backup passphrase and OpenPGP steps', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.DUO,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /set backup passphrase/i }));
+    expect(screen.getByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /use openpgp key instead of passphrase/i }));
+    expect(screen.getByRole('heading', { name: /set a backup key/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /use passphrase instead of pgp key/i }));
+    expect(screen.getByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
+  });
+
+  it('sets a plausible-deniability second profile during advanced Classic setup', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /enter pin for second profile/i })).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/plausible deniability profile/i));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => {
+      expect(device.setSecProfileMode).toHaveBeenCalledWith(2);
+      expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2');
+    });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /self-destruct pin/i })).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
+  });
+
+  it('reports restore progress including the apply phase', async () => {
+    const user = userEvent.setup();
+    const restore = vi.fn(async (_hex: string, onProgress?: (pct: number) => void) => {
+      onProgress?.(40);
+      onProgress?.(96);
+    });
+    const device = createMockDeviceClient({ restore });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    await user.click(await screen.findByRole('button', { name: /don't want a second profile/i }));
+    await user.click(await screen.findByRole('button', { name: /don't want a self-destruct pin/i }));
+    const passphrase = 'this passphrase is not complex!!';
+    fireEvent.change(screen.getByLabelText(/^enter passphrase$/i), { target: { value: passphrase } });
+    fireEvent.change(screen.getByLabelText(/^re-enter passphrase$/i), { target: { value: passphrase } });
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('heading', { name: /restore from backup/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    const restoreFile = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
+    const restoreInputs = document.querySelectorAll('#Step10 input[type="file"]');
+    await user.upload(restoreInputs[restoreInputs.length - 1] as HTMLInputElement, restoreFile);
+    await waitFor(() => expect(restore).toHaveBeenCalled());
+  });
+
+  it('clicks the hidden firmware file chooser from the firmware step', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
   });
 });

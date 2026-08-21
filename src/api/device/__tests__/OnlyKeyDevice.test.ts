@@ -207,7 +207,6 @@ it('should timeout if hardware does not respond', async () => {
   vi.useRealTimers();
 });
 */
-});
 
   it('detects classic keypad unlock via refreshStatus OKSETTIME probe', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
@@ -350,6 +349,7 @@ it('should timeout if hardware does not respond', async () => {
     await expect(device.sendPinDUO(['1234561'], true)).resolves.toBeUndefined();
     await expect(device.sendPinDUO(['1234568'], true)).rejects.toThrow(/7–10 digits using only 1–6/);
     await expect(device.sendPinDUO(['3253614', '3253614'], true)).rejects.toThrow(/different from the device PIN/);
+    await expect(device.sendPinDUO(['3253614', '', '12'], true)).rejects.toThrow(/Self-destruct PIN must be 7–10/);
   });
 
   it('hashes a backup passphrase onto slot 131 type 161', async () => {
@@ -476,9 +476,14 @@ it('should timeout if hardware does not respond', async () => {
     await device.setStoredChallengeMode(1);
     await device.setHmacChallengeMode(1);
     await device.setModKeyMode(1);
+    await device.setBackupKeyMode(1);
+    await device.setLockout(5);
     await device.wipePrivateKey(101);
     await device.wipeSlot(1);
     expect(transport.labels.get(1)).toBe('empty');
+    transport.simulateResponse('LOCKED');
+    await device.disconnect();
+    expect(device.state.isConnected).toBe(false);
   });
 
   it('applies DUO unlock and lock status strings', async () => {
@@ -489,6 +494,29 @@ it('should timeout if hardware does not respond', async () => {
     expect(device.state.isLocked).toBe(false);
     transport.simulateResponse('INITIALIZED-Dv3.0.0-prod');
     expect(device.state.isLocked).toBe(true);
+  });
+
+  it('reports restore progress and rejects empty backup hex', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    await expect(device.restore('')).rejects.toThrow(/empty/);
+    const pcts: number[] = [];
+    await device.restore('ab'.repeat(58), (p) => pcts.push(p));
+    expect(pcts.some((p) => p <= 92)).toBe(true);
+    expect(pcts[pcts.length - 1]).toBe(100);
+  });
+
+  it('sends a DUO unlock PIN without the 0xFF setup prefix', async () => {
+    const transport = new MockTransport({ deviceType: 'duo', startLocked: true, correctPin: '3253614' });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x1d50, productId: 0x614c });
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+    await device.sendPinDUO(['3253614'], false);
+    const packet = sendSpy.mock.calls[0][1] as Uint8Array;
+    expect(packet[4]).toBe(MessageID.OKSETPIN);
+    expect(packet[5]).toBe(51);
   });
 
   it('restore rejects when not in config mode (requireConfigMode mock)', async () => {
@@ -506,3 +534,70 @@ it('should timeout if hardware does not respond', async () => {
 
     await expect(device.restore('aabbccdd')).rejects.toThrow(/config mode/i);
   });
+
+  it('covers remaining type, label, preference, and disconnect branches', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+
+    expect(device['encodeSlotByte']('0A')).toBe(0x0a);
+    expect(device['encodeSlotByte']('XX')).toBe(GLOBAL_SLOT);
+    const labeled = device['buildMessage'](MessageID.OKSETSLOT, 1, 'LABEL', 'x');
+    expect(labeled[6]).toBe(FieldID.LABEL);
+    const numericField = device['buildMessage'](MessageID.OKSETSLOT, 1, '99', 'x');
+    expect(numericField[6]).toBe(0x99);
+
+    device.state.deviceType = DeviceType.UNINITIALIZED;
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    expect(device.state.deviceType).toBe(DeviceType.CLASSIC);
+
+    device.state.deviceType = DeviceType.UNINITIALIZED;
+    transport.simulateResponse('UNLOCKED-Dv3.0.0-prod');
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+
+    device.state.deviceType = DeviceType.BOOTLOADER;
+    expect(device['setClassicFromLabels']('labels')).toBe(false);
+
+    transport.simulateBinaryLabel(7, 'unsolicited');
+    expect(device.state.labels.get(7)).toBe('unsolicited');
+
+    device.state.isConfigMode = true;
+    device.state.isLocked = false;
+    transport.simulateResponse('UNLOCKEDv3.0.0-prod');
+    expect(device.state.isConfigMode).toBe(false);
+
+    await device.setWipeMode(1);
+    await device.setLedBrightness(8);
+    await device.setKbdLayout(1);
+    await device.setTypeSpeed(4);
+    await device.setLockButton(1);
+    await device.setYubiAuth('ccddcceeffcc', 'aabbccddeeff', '00112233445566778899aabbccddeeff');
+    await device.setPrivateKey(101, 1, Array.from({ length: 32 }, () => 3));
+
+    const wait = device['waitForMessage']('hello', 2000);
+    await new Promise((r) => setTimeout(r, 20));
+    transport.simulateResponse('hello from firmware');
+    await expect(wait).resolves.toMatchObject({ text: expect.stringMatching(/hello/i) });
+
+    const firstProbe = device.refreshStatus();
+    const secondProbe = device.refreshStatus();
+    await Promise.all([firstProbe, secondProbe]);
+
+    transport.simulateResponse('Error unknown failure');
+    transport.unplug();
+    expect(device.state.isConnected).toBe(false);
+  });
+
+  it('rejects setSlot and wipeSlot when the device reports an error', async () => {
+    const transport = new MockTransport({
+      deviceType: 'classic',
+      startLocked: true,
+      requireConfigMode: true,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    await expect(device.setSlot(1, FieldID.LABEL, 'Mail')).rejects.toThrow(/locked|config mode/i);
+    await expect(device.wipeSlot(1)).rejects.toThrow(/locked|config mode/i);
+  });
+});
+
