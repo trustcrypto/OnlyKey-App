@@ -27,6 +27,17 @@ describe('useDeviceStore.connect announce flag', () => {
     expect(device.connect).toHaveBeenCalledTimes(1);
   });
 
+  it('device-added hotplug uses silent connect and does not set isConnecting', async () => {
+    const device = createMockDeviceClient({
+      connect: vi.fn().mockRejectedValue(new Error('Device not found')),
+    });
+    useDeviceStore.setState({ device });
+    const pending = useDeviceStore.getState().connect({ announce: false });
+    expect(useDeviceStore.getState().isConnecting).toBe(false);
+    await pending;
+    expect(useDeviceStore.getState().isConnecting).toBe(false);
+  });
+
   it('announced connect shows isConnecting until the attempt finishes', async () => {
     let resolveConnect!: () => void;
     const device = createMockDeviceClient({

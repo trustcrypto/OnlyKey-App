@@ -69,6 +69,7 @@ describe('ChromeHidTransport', () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -205,6 +206,41 @@ describe('ChromeHidTransport', () => {
     });
     const t2 = new ChromeHidTransport();
     await expect(t2.connect({ vendorId: 0x16c0, productId: 0x0486 })).rejects.toThrow(/Connection failed/);
+  });
+
+  it('rejects chrome.hid.connect if the device is yanked before the callback', async () => {
+    devices = [hidDevice()];
+    let hidConnectCb: ((info: { connectionId: number } | undefined) => void) | undefined;
+    hid.connect.mockImplementation((_id: number, cb: (info: { connectionId: number } | undefined) => void) => {
+      hidConnectCb = cb;
+    });
+    const t = new ChromeHidTransport();
+    const pending = t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    await vi.waitFor(() => expect(hidConnectCb).toBeTypeOf('function'));
+    const removed = hid.onDeviceRemoved.addListener.mock.calls[0][0] as (id: number) => void;
+    removed(1);
+    hidConnectCb?.({ connectionId: 99 });
+    await expect(pending).rejects.toThrow(/disconnected/i);
+    expect(t.getConnectedDevice()).toBeNull();
+    expect(hid.disconnect).toHaveBeenCalled();
+  });
+
+  it('times out a hung chrome.hid.connect so later plugs can connect', async () => {
+    vi.useFakeTimers();
+    devices = [hidDevice()];
+    hid.connect.mockImplementation(() => {
+      /* never callback */
+    });
+    const t = new ChromeHidTransport();
+    const pending = t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const assertion = expect(pending).rejects.toThrow(/disconnected/i);
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(4000);
+    await assertion;
+    expect(t.getConnectedDevice()).toBeNull();
+    vi.useRealTimers();
   });
 
   it('ignores a stale receive disconnect after a new connection is open', async () => {

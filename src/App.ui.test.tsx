@@ -14,6 +14,15 @@ describe('App shell', () => {
     expect(screen.getByRole('heading', { name: /searching for onlykey/i })).toBeInTheDocument();
   });
 
+  it('does not show a connecting hourglass on the Searching overlay', () => {
+    stubDeviceInitialize();
+    seedDeviceStore({ isConnecting: true });
+    renderWithProviders(<App />);
+    expect(screen.getByRole('heading', { name: /searching for onlykey/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('connecting-badge')).not.toBeInTheDocument();
+    expect(screen.queryByText(/^connecting/i)).not.toBeInTheDocument();
+  });
+
   it('allows Tools while disconnected', async () => {
     stubDeviceInitialize();
     const user = userEvent.setup();

@@ -6,6 +6,8 @@ const BETA8_USAGE_PAGE = 0xFFAB; // 65451
 const BETA8_SERIAL = '1000000000';
 /** chrome.hid often reports disconnected on receive/send for ~1s after a rapid replug. */
 const HID_RECONNECT_GRACE_MS = 2000;
+/** chrome.hid.connect can hang if the device is yanked during the callback. */
+const HID_CONNECT_TIMEOUT_MS = 4000;
 
 export class ChromeHidTransport implements TransportInterface {
   static isAvailable(): boolean {
@@ -144,27 +146,49 @@ export class ChromeHidTransport implements TransportInterface {
     return new Promise((resolve, reject) => {
       // Drop any previous HID connection/listen loop before opening another.
       this.abandonConnection();
+      const attemptEpoch = this.listenEpoch;
       this.deviceId = device.deviceId;
       console.log('Connecting to device:', device.deviceId, 'Product:', device.productName);
 
+      let settled = false;
+      const finish = (err?: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (err) reject(err);
+        else resolve();
+      };
+
+      const timer = setTimeout(() => {
+        if (attemptEpoch !== this.listenEpoch) return;
+        this.abandonConnection();
+        finish(new Error('Device disconnected'));
+      }, HID_CONNECT_TIMEOUT_MS);
+
       chrome.hid.connect(device.deviceId, (connectInfo) => {
+        if (attemptEpoch !== this.listenEpoch) {
+          if (connectInfo?.connectionId != null) {
+            chrome.hid.disconnect(connectInfo.connectionId, () => {});
+          }
+          return finish(new Error('Device disconnected'));
+        }
         if (chrome.runtime.lastError) {
           const message = chrome.runtime.lastError.message || 'Unknown connect error';
           console.error('chrome.hid.connect error:', message);
           this.deviceId = null;
-          return reject(new Error(message));
+          return finish(new Error(message));
         }
         if (!connectInfo) {
           console.error('Connection failed: No connectInfo returned');
           this.deviceId = null;
-          return reject(new Error('Connection failed'));
+          return finish(new Error('Connection failed'));
         }
 
         console.log('Connected successfully. ConnectionId:', connectInfo.connectionId);
         this.connectionId = connectInfo.connectionId;
         this.connectedDevice = { vendorId: device.vendorId, productId: device.productId };
         this.startListening();
-        resolve();
+        finish();
       });
     });
   }

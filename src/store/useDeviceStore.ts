@@ -217,7 +217,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       if (!useMock && transport instanceof ChromeHidTransport) {
         transport.onDeviceAdded(() => {
           if (!get().isConnected && !connectInFlight) {
-            void get().connect({ announce: true });
+            void get().connect({ announce: false });
           }
         });
       }

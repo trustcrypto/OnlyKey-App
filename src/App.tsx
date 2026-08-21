@@ -26,7 +26,6 @@ const App: React.FC = () => {
     isConnected,
     isLocked,
     isConfigMode,
-    isConnecting,
     deviceType,
     version,
     error,
@@ -114,24 +113,11 @@ const App: React.FC = () => {
                 <div className="w-24 h-24 bg-ok-gray rounded-full flex items-center justify-center text-4xl mb-6 shadow-2xl border border-white/10 animate-pulse">
                   🔌
                 </div>
-                {isConnecting && (
-                  <div
-                    data-testid="connecting-badge"
-                    className="absolute -bottom-2 -right-2 w-8 h-8 bg-ok-blue rounded-full border-4 border-ok-dark flex items-center justify-center animate-spin"
-                  >
-                    <span className="text-[10px] text-on-blue">⌛</span>
-                  </div>
-                )}
               </div>
               <h2 className="text-2xl font-bold mb-2">Searching for OnlyKey...</h2>
               <p className="text-secondary max-w-sm mb-4">
                 Please insert your OnlyKey into a USB port. The app will automatically detect and connect to your device.
               </p>
-              {isConnecting && (
-                <p data-testid="connecting-label" className="text-muted text-sm">
-                  Connecting...
-                </p>
-              )}
               {!hidStatus.available && (
                 <p className="text-amber-300/90 text-sm bg-amber-500/10 px-3 py-2 rounded max-w-md mt-3">
                   {hidStatus.hint}
