@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { OnlyKeyDevice } from '../OnlyKeyDevice';
+import { OnlyKeyDevice, encodeUnixTimeBytes } from '../OnlyKeyDevice';
 import { MockTransport } from '../../transport/MockTransport';
 import { MessageID, DeviceType, FieldID, GLOBAL_SLOT } from '../types';
 
@@ -346,6 +346,31 @@ it('should timeout if hardware does not respond', async () => {
   vi.useRealTimers();
 });
 */
+
+  it('encodes OKSETTIME as four big-endian unix-second bytes', () => {
+    expect(Array.from(encodeUnixTimeBytes(0x6a3d0f80))).toEqual([0x6a, 0x3d, 0x0f, 0x80]);
+    expect(Array.from(encodeUnixTimeBytes(0xff))).toEqual([0x00, 0x00, 0x00, 0xff]);
+  });
+
+  it('sends OKSETTIME after keypad unlock so the device clock is set', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+
+    transport.setLocked(false);
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    expect(device.state.isLocked).toBe(false);
+
+    await vi.waitFor(() => {
+      const timePackets = sendSpy.mock.calls.filter((c) => (c[1] as Uint8Array)[4] === MessageID.OKSETTIME);
+      expect(timePackets.length).toBeGreaterThanOrEqual(2);
+    });
+    const packet = sendSpy.mock.calls.find((c) => (c[1] as Uint8Array)[4] === MessageID.OKSETTIME)![1] as Uint8Array;
+    const encoded = (packet[5] << 24) | (packet[6] << 16) | (packet[7] << 8) | packet[8];
+    expect(Math.abs(encoded - Math.round(Date.now() / 1000))).toBeLessThanOrEqual(3);
+  });
 
   it('detects classic keypad unlock via refreshStatus OKSETTIME probe', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: true });

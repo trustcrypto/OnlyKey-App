@@ -57,6 +57,16 @@ describe('saveSlotConfig', () => {
     expect(device.setSlot).toHaveBeenCalledWith(1, FieldID.TFAUSERNAME, bytes);
   });
 
+  it('rejects a TOTP secret longer than the 57-byte HID payload', async () => {
+    const device = mockDevice();
+    const secret =
+      'OVTRV4D6OSGWXK6PYUYFSEFQTFCCG6W5C4QMHVH3VM7KGD5YBC4XRKI4DQGPB6RFZA4ZPO2MMZJTRSQ6X2JKK2LCWVAVVZQSUYUURHY';
+    await expect(
+      saveSlotConfig(device as never, 1, { totp: true }, emptyForm({ totpSecret: secret })),
+    ).rejects.toThrow(/too long for OnlyKey/i);
+    expect(device.setSlot).not.toHaveBeenCalled();
+  });
+
   it('writes firmware Yubi OTP TFATYPE, not the HMAC+Yubi code', async () => {
     const device = mockDevice();
     const enabled: SlotEnabledState = { mfa: true };

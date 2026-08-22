@@ -92,9 +92,16 @@ export async function saveSlotConfig(
   }
 
   if (settingTotp) {
-    await device.setSlot(slotId, FieldID.TFATYPE, MFA_TYPE_GOOGLE_AUTH);
     const hex = base32ToHex(form.totpSecret.replace(/\s/g, ''));
     const bytes = hex.match(/.{2}/g)?.map((h) => parseInt(h, 16)) || [];
+    // HID OKSETSLOT payload is 57 bytes. A longer secret is silently truncated
+    // on the wire and TOTP will never match an authenticator using the full key.
+    if (bytes.length > 57) {
+      throw new Error(
+        `TOTP secret is too long for OnlyKey (${bytes.length} bytes). Maximum is 57 bytes (91 Base32 characters).`,
+      );
+    }
+    await device.setSlot(slotId, FieldID.TFATYPE, MFA_TYPE_GOOGLE_AUTH);
     await device.setSlot(slotId, FieldID.TFAUSERNAME, bytes);
   } else if (settingYubi) {
     if (!form.yubiPublicId || !form.yubiPrivateId || !form.yubiSecretKey) {

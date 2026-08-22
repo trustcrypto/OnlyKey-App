@@ -32,6 +32,14 @@ export const PIN_ENTRY_CANCELED_MESSAGE = 'Canceled';
 const PIN_FLUSH_NOISE =
   /error pin is not between|error pins don.?t match|enter your|re-enter your|successful pin|successfully set pin/i;
 
+/** Four big-endian unix-seconds bytes for OKSETTIME (firmware set_time reads buffer[5..8]). */
+export function encodeUnixTimeBytes(epochSec = Math.round(Date.now() / 1000)): Uint8Array {
+  const hex = (epochSec >>> 0).toString(16).padStart(8, '0').slice(-8);
+  const parts = hex.match(/.{2}/g);
+  if (!parts || parts.length !== 4) throw new Error('Failed to generate time parts');
+  return new Uint8Array(parts.map((p) => parseInt(p, 16)));
+}
+
 function padDuoPinSlot(pin: string): number[] {
   const slot = new Array(DUO_PIN_SLOT_BYTES).fill(0);
   for (let i = 0; i < pin.length && i < DUO_PIN_SLOT_BYTES; i++) {
@@ -281,9 +289,18 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       // response.isLocked — defensive for any parser edge cases.
       if (text.includes('UNLOCKED')) {
         this.lastUnlockedAt = Date.now();
+        const justUnlocked = this.state.isLocked;
         if (this.state.isLocked) {
           this.state.isLocked = false;
           stateChanged = true;
+        }
+        // Firmware ignores OKSETTIME while locked (no recvmsg). 5.6 called
+        // setTime after UNLOCKED so TOTP has a clock. refreshStatus is only a
+        // lock probe — it must not stand in for this post-unlock setTime.
+        if (justUnlocked && !this.state.isBootloader) {
+          void this.setTime().catch(() => {
+            /* unplug during setTime */
+          });
         }
         // 5.6 keeps isConfigMode through UNLOCKED — firmware set_time still
         // prints UNLOCKED while configmode is true (red LED).
@@ -666,11 +683,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   public async setTime(timeoutMs = 10000): Promise<void> {
-     const currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
-     const timeParts = currentEpochTime.match(/.{2}/g);
-     if (!timeParts) throw new Error("Failed to generate time parts");
-
-     const bytes = new Uint8Array(timeParts.map(p => parseInt(p, 16)));
+     const bytes = encodeUnixTimeBytes();
      // Send twice — firmware historically needs two OKSETTIME packets.
      await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, timeoutMs, OnlyKeyDevice.isFirmwareStatus);
      await new Promise(r => setTimeout(r, 100));
@@ -692,10 +705,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   private async sendStatusProbe(): Promise<void> {
-    const currentEpochTime = Math.round(new Date().getTime() / 1000.0).toString(16);
-    const timeParts = currentEpochTime.match(/.{2}/g);
-    if (!timeParts) throw new Error('Failed to generate time parts');
-    const bytes = new Uint8Array(timeParts.map((p) => parseInt(p, 16)));
+    const bytes = encodeUnixTimeBytes();
     // While locked, firmware may print INITIALIZED unsolicited (and set_time is
     // silent until the PIN is entered). Completing the waiter on INITIALIZED
     // makes the lock screen think the probe finished while the key is still

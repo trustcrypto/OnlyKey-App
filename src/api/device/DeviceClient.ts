@@ -25,6 +25,8 @@ export interface DeviceClient {
   cancelClassicPinEntry(which?: 'pin' | 'pin2' | 'sdpin'): Promise<void>;
   /** Probe lock state via OKSETTIME (INITIALIZED* vs UNLOCKED*). */
   refreshStatus(): Promise<void>;
+  /** Set the device clock (two OKSETTIME packets). Required after unlock for TOTP. */
+  setTime(timeoutMs?: number): Promise<void>;
   setPin2(): Promise<void>;
   setSDPin(): Promise<void>;
   sendPinDUO(pins: string[], setPin?: boolean): Promise<void>;
