@@ -154,6 +154,59 @@ const DESKTOP_SHELL_FILES = [
   'desktopInject.js',
 ];
 
+/**
+ * Vite bundles react, react-dom, zustand, openpgp, and js-sha256 into dist/.
+ * Only these two are loaded via require() at runtime (sshpk is externalized
+ * in vite.config.ts; auto-launch is required by desktopBg.cjs).
+ */
+const RUNTIME_DEPS = ['sshpk', 'auto-launch'];
+
+/**
+ * Keep only English locale files in the staged NW.js runtime. The app is
+ * English-only; all other locale .pak/.pak.info files are dead weight (~117 MB).
+ *
+ * On Windows/Linux the locales live at <appDir>/locales/.
+ * On macOS the NW.js runtime is a .app bundle; locales may live under
+ *   <appDir>/nwjs.app/Contents/Frameworks/[fw]/Libraries/Languages/
+ *   or <appDir>/nwjs.app/Contents/Resources/locales/.
+ */
+function stripLocaleDir(dirPath) {
+  if (!fs.existsSync(dirPath)) return false;
+  const keep = new Set(['en-US.pak', 'en-US.pak.info']);
+  for (const entry of fs.readdirSync(dirPath)) {
+    if (!keep.has(entry)) {
+      fs.unlinkSync(path.join(dirPath, entry));
+    }
+  }
+  return true;
+}
+
+function stripLocales(appDir) {
+  const candidates = [path.join(appDir, 'locales')];
+
+  // macOS: locale files live inside the nwjs.app bundle
+  const nwjsAppRoot = path.join(appDir, 'nwjs.app');
+  if (fs.existsSync(path.join(nwjsAppRoot, 'Contents'))) {
+    candidates.push(path.join(nwjsAppRoot, 'Contents', 'Resources', 'locales'));
+    const fwDir = path.join(nwjsAppRoot, 'Contents', 'Frameworks');
+    if (fs.existsSync(fwDir)) {
+      for (const fw of fs.readdirSync(fwDir)) {
+        if (fw.endsWith('.framework')) {
+          candidates.push(path.join(fwDir, fw, 'Libraries', 'Languages'));
+        }
+      }
+    }
+  }
+
+  let stripped = 0;
+  for (const dir of candidates) {
+    if (stripLocaleDir(dir)) stripped++;
+  }
+  if (stripped > 0) {
+    console.log(`Stripped non-English locales from ${stripped} locale directory(ies) (en-US.pak retained).`);
+  }
+}
+
 function stageApplication(manifest) {
   const appDir = path.join(tmpDir, manifest.name);
   if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -162,10 +215,18 @@ function stageApplication(manifest) {
 
   console.log('Staging NW.js runtime + app…');
   copyDir(resolveNwjsDir(), appDir);
+  stripLocales(appDir);
   copyDir(path.join(rootDir, 'dist'), path.join(appDir, 'dist'));
   fs.copyFileSync(path.join(rootDir, 'icon.png'), path.join(appDir, 'icon.png'));
-  if (fs.existsSync(path.join(rootDir, 'resources'))) {
-    copyDir(path.join(rootDir, 'resources'), path.join(appDir, 'resources'));
+
+  // Only copy runtime-needed resources (tray icon); platform-specific packaging
+  // files (NSIS scripts, DMG backgrounds, deb control, etc.) are consumed
+  // directly from rootDir/resources/ by the OS-specific build steps.
+  const trayIconSrc = path.join(rootDir, 'resources', 'ok-tray-logo.png');
+  if (fs.existsSync(trayIconSrc)) {
+    const resourcesDest = path.join(appDir, 'resources');
+    fs.mkdirSync(resourcesDest, { recursive: true });
+    fs.copyFileSync(trayIconSrc, path.join(resourcesDest, 'ok-tray-logo.png'));
   }
 
   for (const desktopFile of DESKTOP_SHELL_FILES) {
@@ -180,10 +241,9 @@ function stageApplication(manifest) {
     `${JSON.stringify(buildProductionPackageJson(manifest), null, 2)}\n`
   );
 
-  // Production deps only (openpgp, sshpk, etc.) — NW runtime is already copied.
   const prodModules = path.join(appDir, 'node_modules');
   fs.mkdirSync(prodModules, { recursive: true });
-  for (const dep of Object.keys(manifest.dependencies || {})) {
+  for (const dep of RUNTIME_DEPS) {
     const src = path.join(rootDir, 'node_modules', dep);
     if (fs.existsSync(src)) copyDir(src, path.join(prodModules, dep));
   }
