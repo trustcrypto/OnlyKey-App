@@ -359,6 +359,26 @@ it('should timeout if hardware does not respond', async () => {
     expect(device.state.isLocked).toBe(false);
   });
 
+  it('does not complete a locked status probe on INITIALIZED', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(device.state.isLocked).toBe(true);
+
+    let settled = false;
+    const probe = device.refreshStatus().then(() => {
+      settled = true;
+    });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(settled).toBe(false);
+    expect(device.state.isLocked).toBe(true);
+
+    transport.setLocked(false);
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    await probe;
+    expect(device.state.isLocked).toBe(false);
+  });
+
   it('keeps config mode through UNLOCKED the way firmware still flashes red', async () => {
     const transport = new MockTransport({ deviceType: 'classic', startLocked: true });
     const device = new OnlyKeyDevice(transport);
@@ -681,6 +701,41 @@ it('should timeout if hardware does not respond', async () => {
     sendSpy.mockClear();
     await device.beginClassicPinEntry('sdpin', 'prompt');
     expect(sendSpy.mock.calls[0][1][4]).toBe(MessageID.OKSETSDPIN);
+  });
+
+  it('matches the firmware self-destruct PIN prompt string', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    await expect(device.beginClassicPinEntry('sdpin', 'prompt')).resolves.toBeUndefined();
+  });
+
+  it('cancelClassicPinEntry aborts a waiting PIN prompt and flushes the keypad FSM', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    vi.spyOn(transport, 'send').mockImplementation(async () => undefined);
+
+    const prompt = device.beginClassicPinEntry('pin', 'prompt');
+    await new Promise((r) => setTimeout(r, 20));
+    const cancel = device.cancelClassicPinEntry('pin');
+    await expect(prompt).rejects.toThrow(/PIN entry cancelled/);
+    await expect(cancel).resolves.toBeUndefined();
+  });
+
+  it('cancelClassicPinEntry reports Canceled instead of PIN FSM noise', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    const seen: string[] = [];
+    device.on('messageReceived', (m) => seen.push(m));
+
+    await device.beginClassicPinEntry('pin', 'prompt');
+    await device.cancelClassicPinEntry('pin');
+
+    expect(seen.some((m) => /error pin is not between/i.test(m))).toBe(false);
+    expect(seen.filter((m) => /enter your/i.test(m))).toHaveLength(1);
+    expect(seen).toContain('Canceled');
   });
 
   it('setSlotFields, prefs, and hex private keys round-trip on the mock', async () => {

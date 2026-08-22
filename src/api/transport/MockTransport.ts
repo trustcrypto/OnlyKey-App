@@ -373,7 +373,8 @@ export class MockTransport implements TransportInterface {
   private emitClassicPinSetup(which: 'pin' | 'pin2' | 'sdpin'): void {
     this.setupPinStep[which] += 1;
     const n = ((this.setupPinStep[which] - 1) % 4) + 1;
-    if (n === 1) this.emitText('OnlyKey is ready, enter your PIN');
+    const pinNoun = which === 'sdpin' ? 'self-destruct PIN' : 'PIN';
+    if (n === 1) this.emitText(`OnlyKey is ready, enter your ${pinNoun}`);
     else if (n === 2) this.emitText('Successful PIN entry');
     else if (n === 3) this.emitText('OnlyKey is ready, re-enter your PIN to confirm');
     else this.emitText('Successfully set PIN');

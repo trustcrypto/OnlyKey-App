@@ -57,6 +57,28 @@ describe('session wipe on disconnect / lock', () => {
     expect(s.isLocked).toBe(true);
   });
 
+  it('stays on Setup after config-mode PIN reports UNLOCKED', async () => {
+    const { transport } = await bootMockDevice();
+    seedDeviceStore({
+      activeTab: 'setup',
+      isLocked: false,
+    });
+    (useDeviceStore.getState().device as OnlyKeyDevice)['lastUnlockedAt'] = 0;
+
+    transport.simulateResponse('INITIALIZEDv2.1.0-prod');
+    await waitFor(() => {
+      expect(getStoreState().isLocked).toBe(true);
+      expect(getStoreState().isConfigMode).toBe(true);
+    });
+    expect(getStoreState().activeTab).toBe('setup');
+
+    transport.setLocked(false);
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    await waitFor(() => expect(getStoreState().isLocked).toBe(false));
+    expect(getStoreState().isConfigMode).toBe(true);
+    expect(getStoreState().activeTab).toBe('setup');
+  });
+
   it('bumps sessionEpoch and wipes secrets on unlocked→locked', async () => {
     const { transport } = await bootMockDevice();
     seedDeviceStore({

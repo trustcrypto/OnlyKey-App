@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
+import { PIN_ENTRY_CANCELLED } from '../api/device/OnlyKeyDevice';
 import { parseBackupData, parseFirmwareData } from '../api/device/utils';
 import { clearPendingFirmware, storePendingFirmware } from '../desktop/firmwareCheck';
 import { importPemKey, isSelectionRequiredError } from '../services/keyImport/keyImportService';
@@ -25,6 +26,64 @@ const BACKUP_RSA_SLOTS = [
   ...KEY_SLOTS.ecc.map((s) => ({ value: s, label: `ECC ${s - 100} (${s})` })),
 ];
 
+const SetupShell: React.FC<{ isDuo: boolean; children: React.ReactNode }> = ({ isDuo, children }) => (
+  <div className="page-shell">
+    <header className="page-header">
+      <h2 className="text-xl font-bold">
+        {isDuo ? 'OnlyKey DUO Setup' : 'OnlyKey Setup'}{' '}
+        <HelpTip
+          href={isDuo ? TOOLTIPS.setup.duoHref : TOOLTIPS.setup.href}
+          tooltip={TOOLTIPS.setup.text}
+        />
+      </h2>
+    </header>
+    <div className="page-body page-body--scroll setup-body space-y-4">{children}</div>
+  </div>
+);
+
+const StepNav: React.FC<{
+  isProcessing: boolean;
+  isUninitialized: boolean;
+  showGuided?: boolean;
+  onNext?: () => void;
+  onCancel?: () => void;
+  onGuided?: () => void;
+  nextLabel?: string;
+  nextDisabled?: boolean;
+}> = ({
+  isProcessing,
+  isUninitialized,
+  showGuided,
+  onNext,
+  onCancel,
+  onGuided,
+  nextLabel = 'Next',
+  nextDisabled,
+}) => (
+  <div className="setup-step-nav flex flex-wrap items-center gap-3 border-t border-white/10">
+    {showGuided && isUninitialized && (
+      <>
+        <b>Guided Setup</b>{' '}
+        <SetButton onClick={onNext ?? onGuided} disabled={isProcessing || nextDisabled}>
+          {isProcessing ? 'Please wait…' : 'Next'}
+        </SetButton>
+      </>
+    )}
+    {!showGuided && onNext && (
+      <>
+        <SetButton onClick={onNext} disabled={isProcessing || nextDisabled}>
+          {isProcessing ? 'Please wait…' : nextLabel}
+        </SetButton>
+        {onCancel && (
+          <SetButton onClick={onCancel}>
+            Cancel
+          </SetButton>
+        )}
+      </>
+    )}
+  </div>
+);
+
 const Setup: React.FC = () => {
   const { device, deviceType, isLocked, isConfigMode, isBootloader, setWorking } = useDeviceStore();
   const [guided, setGuided] = useState(false);
@@ -43,6 +102,7 @@ const Setup: React.FC = () => {
   const [secProfileMode, setSecProfileMode] = useState(1);
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const firmwareInputRef = useRef<HTMLInputElement>(null);
+  const pinWhichRef = useRef<'pin' | 'pin2' | 'sdpin' | null>(null);
   const [pgpKey, setPgpKey] = useState('');
   const [pgpPasscode, setPgpPasscode] = useState('');
   const [pgpSlot, setPgpSlot] = useState(1);
@@ -61,23 +121,54 @@ const Setup: React.FC = () => {
     try {
       await fn();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg !== PIN_ENTRY_CANCELLED) setError(msg);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const resetToStep1 = () => {
+  const goToLanding = () => {
+    pinWhichRef.current = null;
     setGuided(false);
     setError(null);
+    setIsProcessing(false);
     setPasscode1Disclaimer(false);
     setPasscode2Disclaimer(false);
     setPasscode3Disclaimer(false);
+    setBackupPassphrase('');
+    setBackupConfirm('');
     isDuo ? setDuoStep('Step1') : setClassicStep('Step1');
   };
 
-  const pinPrompt = (which: 'pin' | 'pin2' | 'sdpin') => device!.beginClassicPinEntry(which, 'prompt');
-  const pinCommit = (which: 'pin' | 'pin2' | 'sdpin') => device!.beginClassicPinEntry(which, 'commit');
+  const cancelSetupStep = () => {
+    const which = pinWhichRef.current;
+    const onClassicPinStep =
+      !isDuo &&
+      (classicStep === 'Step2' ||
+        classicStep === 'Step3' ||
+        classicStep === 'Step4' ||
+        classicStep === 'Step5' ||
+        classicStep === 'Step6' ||
+        classicStep === 'Step7');
+    if (onClassicPinStep && which && device) {
+      void device.cancelClassicPinEntry(which);
+    }
+    goToLanding();
+  };
+
+  const pinPrompt = (which: 'pin' | 'pin2' | 'sdpin') => {
+    pinWhichRef.current = which;
+    return device!.beginClassicPinEntry(which, 'prompt').catch((e: unknown) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === PIN_ENTRY_CANCELLED) return;
+      setError(msg);
+    });
+  };
+  const pinCommit = (which: 'pin' | 'pin2' | 'sdpin') => {
+    pinWhichRef.current = which;
+    return device!.beginClassicPinEntry(which, 'commit');
+  };
 
   const startGuided = () => {
     setGuided(true);
@@ -86,7 +177,7 @@ const Setup: React.FC = () => {
       setDuoStep(advancedSetup ? 'Step2' : 'Step8');
     } else {
       setClassicStep('Step2');
-      void run(() => pinPrompt('pin'));
+      void pinPrompt('pin');
     }
   };
 
@@ -98,9 +189,9 @@ const Setup: React.FC = () => {
       return;
     }
     setClassicStep(step as ClassicStep);
-    if (step === 'Step2') void run(() => pinPrompt('pin'));
-    if (step === 'Step4') void run(() => pinPrompt('pin2'));
-    if (step === 'Step6') void run(() => pinPrompt('sdpin'));
+    if (step === 'Step2') void pinPrompt('pin');
+    if (step === 'Step4') void pinPrompt('pin2');
+    if (step === 'Step6') void pinPrompt('sdpin');
   };
 
   const handleBackup = () =>
@@ -110,10 +201,12 @@ const Setup: React.FC = () => {
       if (backupPassphrase.length < 25) throw new Error('Passphrase must be at least 25 characters.');
       if (!isInitialized && advancedSetup) await device!.setBackupKeyMode(backupKeyMode);
       await device!.setBackupPassphrase(backupPassphrase);
+      setBackupPassphrase('');
+      setBackupConfirm('');
       if (guided) {
         isDuo ? setDuoStep('Step10') : setClassicStep('Step10');
       } else {
-        resetToStep1();
+        goToLanding();
       }
     });
 
@@ -137,7 +230,7 @@ const Setup: React.FC = () => {
     if (guided) {
       isDuo ? setDuoStep('Step10') : setClassicStep('Step10');
     } else {
-      resetToStep1();
+      goToLanding();
     }
   };
 
@@ -180,9 +273,9 @@ const Setup: React.FC = () => {
         setWorking(false);
       }
       if (guided) {
-        isDuo ? resetToStep1() : setClassicStep('Step11');
+        isDuo ? goToLanding() : setClassicStep('Step11');
       } else {
-        resetToStep1();
+        goToLanding();
       }
     });
 
@@ -193,7 +286,7 @@ const Setup: React.FC = () => {
       if (isBootloader) {
         await device!.loadFirmwareBlocks(blocks);
         clearPendingFirmware();
-        resetToStep1();
+        goToLanding();
         return;
       }
       try {
@@ -203,54 +296,8 @@ const Setup: React.FC = () => {
         throw err;
       }
       storePendingFirmware(blocks);
-      resetToStep1();
+      goToLanding();
     });
-
-  const SetupShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="page-shell">
-      <header className="page-header">
-        <h2 className="text-xl font-bold">
-          {isDuo ? 'OnlyKey DUO Setup' : 'OnlyKey Setup'}{' '}
-          <HelpTip
-            href={isDuo ? TOOLTIPS.setup.duoHref : TOOLTIPS.setup.href}
-            tooltip={TOOLTIPS.setup.text}
-          />
-        </h2>
-      </header>
-      <div className="page-body page-body--scroll setup-body space-y-4">{children}</div>
-    </div>
-  );
-
-  const StepNav: React.FC<{
-    showGuided?: boolean;
-    onNext?: () => void;
-    onCancel?: () => void;
-    nextLabel?: string;
-    nextDisabled?: boolean;
-  }> = ({ showGuided, onNext, onCancel, nextLabel = 'Next', nextDisabled }) => (
-    <div className="setup-step-nav flex flex-wrap items-center gap-3 border-t border-white/10">
-      {showGuided && isUninitialized && (
-        <>
-          <b>Guided Setup</b>{' '}
-          <SetButton onClick={onNext ?? startGuided} disabled={isProcessing || nextDisabled}>
-            {isProcessing ? 'Please wait…' : 'Next'}
-          </SetButton>
-        </>
-      )}
-      {!showGuided && onNext && (
-        <>
-          <SetButton onClick={onNext} disabled={isProcessing || nextDisabled}>
-            {isProcessing ? 'Please wait…' : nextLabel}
-          </SetButton>
-          {onCancel && (
-            <SetButton onClick={onCancel} disabled={isProcessing}>
-              Cancel
-            </SetButton>
-          )}
-        </>
-      )}
-    </div>
-  );
 
   const ConfigModeBlock: React.FC = () => (
     <div className="init-only setup-ready-block">
@@ -312,7 +359,7 @@ const Setup: React.FC = () => {
   // --- DUO ---
   if (isDuo) {
     return (
-      <SetupShell>
+      <SetupShell isDuo={isDuo}>
         {error && <p className="critical-text">{error}</p>}
         {isInitialized && isLocked && !isConfigMode && duoStep === 'Step1' && (
           <CriticalText>Put your OnlyKey DUO into config mode before continuing.</CriticalText>
@@ -448,11 +495,11 @@ const Setup: React.FC = () => {
         )}
 
         {duoStep === 'Step1' && (
-          <StepNav showGuided onNext={startGuided} />
+          <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized} showGuided onNext={startGuided} />
         )}
 
         {duoStep === 'Step2' && (
-          <StepNav
+          <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
             onNext={() =>
               run(async () => {
                 if (!passcode1Disclaimer) throw new Error('Please accept the disclaimer.');
@@ -460,17 +507,17 @@ const Setup: React.FC = () => {
                 if (duoPins.sd && duoPins.sd !== duoPins.sdConfirm) throw new Error('Self-destruct PINs do not match.');
                 await device!.sendPinDUO([duoPins.primary, '', duoPins.sd], true);
                 if (guided) setDuoStep('Step8');
-                else resetToStep1();
+                else goToLanding();
               })
             }
-            onCancel={resetToStep1}
+            onCancel={cancelSetupStep}
             nextLabel="Next"
             nextDisabled={!passcode1Disclaimer || !duoPins.primary}
           />
         )}
 
         {(duoStep === 'Step8' || duoStep === 'Step9' || duoStep === 'Step10' || duoStep === 'Step11') && (
-          <StepNav
+          <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
             onNext={
               duoStep === 'Step8'
                 ? handleBackup
@@ -480,7 +527,7 @@ const Setup: React.FC = () => {
                     ? () => restoreInputRef.current?.click()
                     : () => firmwareInputRef.current?.click()
             }
-            onCancel={resetToStep1}
+            onCancel={cancelSetupStep}
             nextLabel={duoStep === 'Step11' ? 'Load Firmware to OnlyKey' : 'Next'}
           />
         )}
@@ -497,7 +544,7 @@ const Setup: React.FC = () => {
 
   // --- CLASSIC ---
   return (
-    <SetupShell>
+    <SetupShell isDuo={isDuo}>
       {error && <p className="critical-text">{error}</p>}
 
       {classicStep === 'Step1' && <Step1 />}
@@ -606,7 +653,7 @@ const Setup: React.FC = () => {
                 <br />
                 <SetButton onClick={() => {
                   setClassicStep('Step6');
-                  void run(() => pinPrompt('sdpin'));
+                  void pinPrompt('sdpin');
                 }}>
                   <b>I don&apos;t want a second profile, skip this step</b>
                 </SetButton>
@@ -664,7 +711,7 @@ const Setup: React.FC = () => {
                 <br />
                 <SetButton onClick={() => {
                   setClassicStep('Step6');
-                  void run(() => pinPrompt('sdpin'));
+                  void pinPrompt('sdpin');
                 }}>
                   <b>I don&apos;t want a second profile, skip this step</b>
                 </SetButton>
@@ -816,10 +863,10 @@ const Setup: React.FC = () => {
         <FirmwareStep inputRef={firmwareInputRef} onFile={handleFirmware} />
       )}
 
-      {classicStep === 'Step1' && <StepNav showGuided onNext={startGuided} />}
+      {classicStep === 'Step1' && <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized} showGuided onNext={startGuided} />}
 
       {classicStep === 'Step2' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() =>
             run(async () => {
               if (!passcode1Disclaimer) throw new Error('Please accept the disclaimer.');
@@ -828,13 +875,13 @@ const Setup: React.FC = () => {
               await pinPrompt('pin');
             })
           }
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
           nextDisabled={!passcode1Disclaimer}
         />
       )}
 
       {classicStep === 'Step3' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() =>
             run(async () => {
               await pinCommit('pin');
@@ -842,32 +889,32 @@ const Setup: React.FC = () => {
                 setClassicStep('Step4');
                 await pinPrompt('pin2');
               } else {
-                resetToStep1();
+                goToLanding();
               }
             })
           }
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
         />
       )}
 
       {classicStep === 'Step4' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() =>
             run(async () => {
-              if (!isInitialized && !passcode3Disclaimer) throw new Error('Please accept the disclaimer.');
+              if (!passcode3Disclaimer) throw new Error('Please accept the disclaimer.');
               if (!isInitialized && advancedSetup) await device!.setSecProfileMode(secProfileMode);
               await pinCommit('pin2');
               setClassicStep('Step5');
               await pinPrompt('pin2');
             })
           }
-          onCancel={resetToStep1}
-          nextDisabled={!isInitialized && !passcode3Disclaimer}
+          onCancel={cancelSetupStep}
+          nextDisabled={!passcode3Disclaimer}
         />
       )}
 
       {classicStep === 'Step5' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() =>
             run(async () => {
               await pinCommit('pin2');
@@ -875,16 +922,16 @@ const Setup: React.FC = () => {
                 setClassicStep('Step6');
                 await pinPrompt('sdpin');
               } else {
-                resetToStep1();
+                goToLanding();
               }
             })
           }
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
         />
       )}
 
       {classicStep === 'Step6' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() =>
             run(async () => {
               if (!passcode2Disclaimer && (isInitialized || guided)) {
@@ -895,43 +942,43 @@ const Setup: React.FC = () => {
               await pinPrompt('sdpin');
             })
           }
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
           nextDisabled={!passcode2Disclaimer && (isInitialized || guided)}
         />
       )}
 
       {classicStep === 'Step7' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() =>
             run(async () => {
               await pinCommit('sdpin');
               if (guided) setClassicStep('Step8');
-              else resetToStep1();
+              else goToLanding();
             })
           }
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
         />
       )}
 
       {classicStep === 'Step8' && (
-        <StepNav onNext={handleBackup} onCancel={resetToStep1} />
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized} onNext={handleBackup} onCancel={cancelSetupStep} />
       )}
 
       {classicStep === 'Step9' && (
-        <StepNav onNext={handlePgpImport} onCancel={resetToStep1} nextLabel="Next" />
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized} onNext={handlePgpImport} onCancel={cancelSetupStep} nextLabel="Next" />
       )}
 
       {classicStep === 'Step10' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() => restoreInputRef.current?.click()}
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
         />
       )}
 
       {classicStep === 'Step11' && (
-        <StepNav
+        <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
           onNext={() => firmwareInputRef.current?.click()}
-          onCancel={resetToStep1}
+          onCancel={cancelSetupStep}
           nextLabel="Load Firmware to OnlyKey"
         />
       )}
@@ -1087,7 +1134,11 @@ const PgpBackupKeyStep: React.FC<{
     </p>
     <label>
       Slot:{' '}
-      <select value={pgpSlot} onChange={(e) => onSlotChange(parseInt(e.target.value, 10))}>
+      <select
+        value={pgpSlot}
+        onChange={(e) => onSlotChange(parseInt(e.target.value, 10))}
+        className="field-input field-select-pref inline-block w-auto"
+      >
         {BACKUP_RSA_SLOTS.map((s) => (
           <option key={s.value} value={s.value}>{s.label}</option>
         ))}

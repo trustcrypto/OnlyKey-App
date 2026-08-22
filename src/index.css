@@ -124,6 +124,29 @@ html.light .hover\:bg-white\/10:hover {
   border-color: #0056b3;
 }
 
+/*
+ * Chromium/NW on Windows paints <select> popups with OS list colors while
+ * inheriting page `color`. Dark mode then yields white-on-white (or near it).
+ * Style the closed control and every option so both stay on our palette.
+ */
+select {
+  color: var(--ok-text);
+  background-color: var(--ok-input-bg);
+  color-scheme: inherit;
+}
+
+select option,
+select optgroup {
+  background-color: var(--ok-surface);
+  color: var(--ok-text);
+}
+
+html.light select option,
+html.light select optgroup {
+  background-color: #ffffff;
+  color: #202124;
+}
+
 .page-shell {
   height: 100%;
   display: flex;
@@ -934,6 +957,11 @@ html.light .help-tip-link:hover .help-tip-icon {
 
 .setup-body p + p {
   margin-top: 0.65rem;
+}
+
+/* A <br> before a block <p> collapses to nothing (Tailwind resets p margin). */
+.setup-body label + p {
+  margin-top: 1.6em;
 }
 
 .setup-step-nav {

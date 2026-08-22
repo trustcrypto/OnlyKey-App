@@ -24,6 +24,13 @@ const DUO_SETUP_PIN = /^[1-6]{7,10}$/;
 const DUO_PIN_SLOT_BYTES = 16;
 /** Connect-time OKSETTIME must fail fast — 10s×2 plus retry pinned Searching. */
 const CONNECT_SETTIME_TIMEOUT_MS = 2500;
+/** Lock-screen probes should not sit on INITIALIZED for the full 5s default. */
+const LOCK_STATUS_TIMEOUT_MS = 2500;
+export const PIN_ENTRY_CANCELLED = 'PIN entry cancelled';
+/** 5.6 last-message text after flushing a cancelled PIN keypad session. */
+export const PIN_ENTRY_CANCELED_MESSAGE = 'Canceled';
+const PIN_FLUSH_NOISE =
+  /error pin is not between|error pins don.?t match|enter your|re-enter your|successful pin|successfully set pin/i;
 
 function padDuoPinSlot(pin: string): number[] {
   const slot = new Array(DUO_PIN_SLOT_BYTES).fill(0);
@@ -64,6 +71,8 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   private lastLabelReceivedAt = 0;
   private lastUnlockedAt = 0;
   private statusProbe: Promise<void> | null = null;
+  /** Hide firmware PIN FSM chatter while cancelClassicPinEntry is flushing. */
+  private suppressPinMessages = false;
   /** Bumped on each connect() and on unplug so in-flight connect/setTime cannot resume. */
   private connectSeq = 0;
 
@@ -239,7 +248,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         try {
           await task();
         } catch (e) {
-          console.error('Queue task failed:', e);
+          const msg = e instanceof Error ? e.message : String(e);
+          if (msg !== PIN_ENTRY_CANCELLED) {
+            console.error('Queue task failed:', e);
+          }
         }
       }
     }
@@ -249,6 +261,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   private recordReceivedMessage(response: DeviceResponse): void {
     const msg = (response.error || response.text || '').trim();
     if (msg.length > 1 && msg !== 'OK') {
+      if (this.suppressPinMessages && PIN_FLUSH_NOISE.test(msg)) return;
       this.emit('messageReceived', msg);
     }
   }
@@ -373,7 +386,10 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     }
 
     if (response.type === 'error') {
-      this.emit('error', response.error || 'Unknown device error');
+      const errText = response.error || 'Unknown device error';
+      if (!(this.suppressPinMessages && PIN_FLUSH_NOISE.test(errText))) {
+        this.emit('error', errText);
+      }
     }
 
     // Finally resolve or reject the promise
@@ -680,7 +696,15 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     const timeParts = currentEpochTime.match(/.{2}/g);
     if (!timeParts) throw new Error('Failed to generate time parts');
     const bytes = new Uint8Array(timeParts.map((p) => parseInt(p, 16)));
-    await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, 5000, OnlyKeyDevice.isFirmwareStatus);
+    // While locked, firmware may print INITIALIZED unsolicited (and set_time is
+    // silent until the PIN is entered). Completing the waiter on INITIALIZED
+    // makes the lock screen think the probe finished while the key is still
+    // locked — including after a config-mode PIN, which never prints UNLOCKED.
+    const match = this.state.isLocked
+      ? OnlyKeyDevice.isUnlockStatus
+      : OnlyKeyDevice.isFirmwareStatus;
+    const timeoutMs = this.state.isLocked ? LOCK_STATUS_TIMEOUT_MS : 5000;
+    await this.sendRequest(MessageID.OKSETTIME, undefined, undefined, bytes, timeoutMs, match);
   }
 
   private static isFirmwareStatus(res: DeviceResponse): boolean {
@@ -689,6 +713,16 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       res.type === 'status' ||
       text.includes('UNLOCKED') ||
       text.includes('INITIALIZED') ||
+      text.includes('BOOTLOADER')
+    );
+  }
+
+  /** Lock-poll: ignore INITIALIZED* so leftover locked reports cannot complete the waiter. */
+  private static isUnlockStatus(res: DeviceResponse): boolean {
+    const text = res.text ?? '';
+    return (
+      text.includes('UNLOCKED') ||
+      text.includes('UNINITIALIZED') ||
       text.includes('BOOTLOADER')
     );
   }
@@ -753,8 +787,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     which: 'pin' | 'pin2' | 'sdpin' = 'pin',
     phase: 'prompt' | 'commit' = 'prompt',
   ): Promise<void> {
-    const msgId =
-      which === 'pin2' ? MessageID.OKSETPIN2 : which === 'sdpin' ? MessageID.OKSETSDPIN : MessageID.OKSETPIN;
+    const msgId = OnlyKeyDevice.classicPinMessageId(which);
     const res = await this.sendRequest(
       msgId,
       undefined,
@@ -765,12 +798,51 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         const text = (r.text ?? '').toLowerCase();
         if (r.type === 'error') return true;
         if (phase === 'prompt') {
-          return text.includes('enter your pin') || text.includes('re-enter');
+          // Firmware: "enter your PIN" / "enter your self-destruct PIN" / "re-enter your PIN".
+          return (text.includes('enter your') && text.includes('pin')) || text.includes('re-enter');
         }
         return text.includes('successful pin') || text.includes('successfully set pin');
       }
     );
     if (res.type === 'error') throw new Error(res.error);
+  }
+
+  /**
+   * Abort an in-flight PIN waiter and send one empty OKSETPIN* so firmware
+   * resets `pin_set` (5.6 `flushMessage`). Without this, Cancel leaves the
+   * keypad FSM waiting and the next Change PIN can hang on "Please wait…".
+   */
+  public async cancelClassicPinEntry(
+    which: 'pin' | 'pin2' | 'sdpin' = 'pin',
+  ): Promise<void> {
+    this.abortPendingRequest(PIN_ENTRY_CANCELLED);
+    const msgId = OnlyKeyDevice.classicPinMessageId(which);
+    this.suppressPinMessages = true;
+    try {
+      await this.sendRequest(
+        msgId,
+        undefined,
+        undefined,
+        undefined,
+        1500,
+        (r) => r.type === 'error' || !!(r.text && r.text.length > 1),
+      );
+    } catch {
+      // Timeout or cancel is the flush succeeding — firmware may stay silent.
+    } finally {
+      this.suppressPinMessages = false;
+    }
+    if (this.state.isConnected) {
+      this.emit('messageReceived', PIN_ENTRY_CANCELED_MESSAGE);
+    }
+  }
+
+  private static classicPinMessageId(which: 'pin' | 'pin2' | 'sdpin'): MessageID {
+    return which === 'pin2'
+      ? MessageID.OKSETPIN2
+      : which === 'sdpin'
+        ? MessageID.OKSETSDPIN
+        : MessageID.OKSETPIN;
   }
 
   public async setPin2(): Promise<void> {

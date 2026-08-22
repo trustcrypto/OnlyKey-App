@@ -306,8 +306,10 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         labels: isNowLocked ? {} : Object.fromEntries(state.labels),
         error: null,
         pinError: null,
-        // First unlock / connect-while-unlocked of an initialized device → Slots.
-        ...(wasLocked && !isNowLocked
+        // First unlock of an initialized device → Slots. Config-mode PIN
+        // also reports UNLOCKED (set_time); stay on the current tab so Setup
+        // Change PIN / passphrase is not yanked away to Slots.
+        ...(wasLocked && !isNowLocked && !state.isConfigMode
           ? {
               activeTab: defaultTabForDevice({
                 isLocked: false,

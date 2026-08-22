@@ -94,6 +94,7 @@ describe('LockScreen', () => {
     });
     renderWithProviders(<LockScreen />);
     expect(screen.getByTestId('lock-screen')).toBeInTheDocument();
+    await vi.waitFor(() => expect(refreshStatus).toHaveBeenCalled());
     await user.type(screen.getByPlaceholderText(/enter pin/i), '3253614');
     await user.click(screen.getByRole('button', { name: /unlock device/i }));
     expect(sendPinDUO).toHaveBeenCalledWith(['3253614'], false);

@@ -22,6 +22,7 @@ export interface DeviceClient {
   ): Promise<void>;
   setPin(pin?: string): Promise<void>;
   beginClassicPinEntry(which?: 'pin' | 'pin2' | 'sdpin', phase?: 'prompt' | 'commit'): Promise<void>;
+  cancelClassicPinEntry(which?: 'pin' | 'pin2' | 'sdpin'): Promise<void>;
   /** Probe lock state via OKSETTIME (INITIALIZED* vs UNLOCKED*). */
   refreshStatus(): Promise<void>;
   setPin2(): Promise<void>;

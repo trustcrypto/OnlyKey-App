@@ -201,6 +201,9 @@ describe('Setup page', () => {
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /change secondary pin/i }));
     await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'prompt'));
+    expect(screen.getByRole('button', { name: /^next$/i })).toBeDisabled();
+    await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
+    expect(screen.getByRole('button', { name: /^next$/i })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'commit'));
     expect(await screen.findByRole('heading', { name: /re-enter pin/i })).toBeInTheDocument();
@@ -327,6 +330,9 @@ describe('Setup page', () => {
     await waitFor(() => {
       expect(device.setBackupPassphrase).toHaveBeenCalledWith(passphrase);
     });
+    await user.click(screen.getByRole('button', { name: /set backup passphrase/i }));
+    expect(screen.getByLabelText(/^enter passphrase$/i)).toHaveValue('');
+    expect(screen.getByLabelText(/^re-enter passphrase$/i)).toHaveValue('');
   });
 
   it('does not store pending firmware when the bootloader kick fails', async () => {
@@ -391,6 +397,76 @@ describe('Setup page', () => {
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'commit'));
     expect(device.setPin).not.toHaveBeenCalled();
+    expect(await screen.findByRole('heading', { name: /re-enter pin/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(await screen.findByRole('button', { name: /change primary pin/i })).toBeInTheDocument();
+    expect(device.cancelClassicPinEntry).not.toHaveBeenCalled();
+  });
+
+  it('keeps the backup passphrase field focused while typing', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /set backup passphrase/i }));
+    const input = screen.getByLabelText(/^enter passphrase$/i);
+    await user.type(input, 'this passphrase is not complex!!');
+    expect(input).toHaveValue('this passphrase is not complex!!');
+    expect(input).toHaveFocus();
+  });
+
+  it('cancels a Change PIN step that is still waiting on the device', async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    const hanging = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const beginClassicPinEntry = vi.fn().mockReturnValue(hanging);
+    const cancelClassicPinEntry = vi.fn().mockImplementation(async () => {
+      release();
+    });
+    seedDeviceStore({
+      device: createMockDeviceClient({ beginClassicPinEntry, cancelClassicPinEntry }),
+      deviceType: DeviceType.CLASSIC,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /change primary pin/i }));
+    const cancel = await screen.findByRole('button', { name: /cancel/i });
+    expect(cancel).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^next$/i })).toHaveTextContent(/^next$/i);
+    await user.click(cancel);
+    expect(cancelClassicPinEntry).toHaveBeenCalledWith('pin');
+    expect(screen.getByRole('button', { name: /change primary pin/i })).toBeInTheDocument();
+  });
+
+  it('lets each Change PIN action be opened after Cancel', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.CLASSIC,
+      isLocked: false,
+      isConfigMode: true,
+    });
+    renderWithProviders(<Setup />);
+
+    await user.click(screen.getByRole('button', { name: /change primary pin/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await user.click(screen.getByRole('button', { name: /change secondary pin/i }));
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await user.click(screen.getByRole('button', { name: /change self-destruct pin/i }));
+
+    expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt');
+    expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'prompt');
+    expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin', 'prompt');
+    expect(device.cancelClassicPinEntry).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeEnabled();
   });
 
   it('validates backup passphrase and returns to the landing page on cancel', async () => {
@@ -422,6 +498,9 @@ describe('Setup page', () => {
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
     expect(screen.getByRole('button', { name: /set backup passphrase/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /set backup passphrase/i }));
+    expect(screen.getByLabelText(/^enter passphrase$/i)).toHaveValue('');
+    expect(screen.getByLabelText(/^re-enter passphrase$/i)).toHaveValue('');
   });
 
   it('requires an OpenPGP key and passcode before import', async () => {

@@ -88,6 +88,7 @@ export function createMockDeviceClient(overrides: Partial<DeviceClient> = {}): D
     setSlotFields: mockResolved(),
     setPin: mockResolved(),
     beginClassicPinEntry: mockResolved(),
+    cancelClassicPinEntry: mockResolved(),
     refreshStatus: mockResolved(),
     setPin2: mockResolved(),
     setSDPin: mockResolved(),

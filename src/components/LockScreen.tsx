@@ -17,13 +17,13 @@ const LockScreen: React.FC = () => {
   // Classic unlock is entirely on-device (6-button keypad). Firmware ignores OKSETPIN
   // once initialized unless in config mode. Poll OKSETTIME so we notice UNLOCKED even
   // if the single unsolicited unlock HID report was missed. Keep polling while locked
-  // in config mode — firmware does not print UNLOCKED on the PIN itself.
+  // in config mode — firmware does not print UNLOCKED on the PIN itself. DUO is polled
+  // too: the config-mode PIN may be entered on the keypad instead of the app form.
   useEffect(() => {
     if (
       !isConnected ||
       !isLocked ||
       !device ||
-      isDuo ||
       isBootloader ||
       deviceType === DeviceType.UNINITIALIZED ||
       deviceType === DeviceType.BOOTLOADER
@@ -33,7 +33,7 @@ const LockScreen: React.FC = () => {
     }
 
     let cancelled = false;
-    setClassicUnlockActive(true);
+    if (!isDuo) setClassicUnlockActive(true);
 
     const tick = async () => {
       if (cancelled || pollInFlight.current) return;
@@ -41,7 +41,11 @@ const LockScreen: React.FC = () => {
       try {
         await device.refreshStatus();
       } catch (err) {
-        console.error('Lock status poll failed:', err);
+        const msg = err instanceof Error ? err.message : String(err);
+        // Timeouts are expected while locked: firmware set_time is silent until PIN.
+        if (msg !== 'Device disconnected' && !/timed out/i.test(msg)) {
+          console.error('Lock status poll failed:', err);
+        }
       } finally {
         pollInFlight.current = false;
       }
