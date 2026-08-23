@@ -165,10 +165,10 @@ const RUNTIME_DEPS = ['sshpk', 'auto-launch'];
  * Keep only English locale files in the staged NW.js runtime. The app is
  * English-only; all other locale .pak/.pak.info files are dead weight (~117 MB).
  *
- * On Windows/Linux the locales live at <appDir>/locales/.
- * On macOS the NW.js runtime is a .app bundle; locales may live under
- *   <appDir>/nwjs.app/Contents/Frameworks/[fw]/Libraries/Languages/
- *   or <appDir>/nwjs.app/Contents/Resources/locales/.
+ * Handles three layouts:
+ *  - Windows/Linux: <dir>/locales/
+ *  - macOS staging: <dir>/nwjs.app/Contents/...
+ *  - macOS .app bundle (nwjs.app "unwrapped"): <dir>/Contents/...
  */
 function stripLocaleDir(dirPath) {
   if (!fs.existsSync(dirPath)) return false;
@@ -181,14 +181,20 @@ function stripLocaleDir(dirPath) {
   return true;
 }
 
-function stripLocales(appDir) {
-  const candidates = [path.join(appDir, 'locales')];
+function stripLocales(targetDir) {
+  const candidates = [path.join(targetDir, 'locales')];
 
-  // macOS: locale files live inside the nwjs.app bundle
-  const nwjsAppRoot = path.join(appDir, 'nwjs.app');
-  if (fs.existsSync(path.join(nwjsAppRoot, 'Contents'))) {
-    candidates.push(path.join(nwjsAppRoot, 'Contents', 'Resources', 'locales'));
-    const fwDir = path.join(nwjsAppRoot, 'Contents', 'Frameworks');
+  // macOS: if nwjs.app exists as a subdirectory, base paths on it;
+  // otherwise treat targetDir itself as the .app bundle root (Contents/ at top).
+  const nwjsAppRoot = path.join(targetDir, 'nwjs.app');
+  const macBase = fs.existsSync(path.join(nwjsAppRoot, 'Contents'))
+    ? nwjsAppRoot
+    : (fs.existsSync(path.join(targetDir, 'Contents')) ? targetDir : nwjsAppRoot);
+
+  const contentsDir = path.join(macBase, 'Contents');
+  if (fs.existsSync(contentsDir)) {
+    candidates.push(path.join(contentsDir, 'Resources', 'locales'));
+    const fwDir = path.join(contentsDir, 'Frameworks');
     if (fs.existsSync(fwDir)) {
       for (const fw of fs.readdirSync(fwDir)) {
         if (fw.endsWith('.framework')) {
@@ -391,8 +397,7 @@ async function buildMacDmg(appDir, manifest) {
   console.log('Assembling macOS .app bundle…');
   if (fs.existsSync(finalAppDir)) fs.rmSync(finalAppDir, { recursive: true, force: true });
   copyDir(nwjsApp, finalAppDir);
-
-  // App payload lives in Contents/Resources/app.nw
+  stripLocales(finalAppDir);
   const appNw = path.join(finalAppDir, 'Contents', 'Resources', 'app.nw');
   if (fs.existsSync(appNw)) fs.rmSync(appNw, { recursive: true, force: true });
   fs.mkdirSync(appNw, { recursive: true });
