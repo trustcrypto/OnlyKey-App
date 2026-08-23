@@ -19,7 +19,7 @@ env:
 
 jobs:
   release:
-    name: ${{ runner.os }} installer
+    name: ${{ matrix.os }} installer
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
