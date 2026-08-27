@@ -364,7 +364,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         message.includes('BOOTLOADER');
       if (get().isLocked && !isStatus) return;
       set((s) => ({
-        recentMessages: [message, ...s.recentMessages].slice(0, 5),
+        recentMessages: [message, ...s.recentMessages].slice(0, 50),
       }));
     });
 

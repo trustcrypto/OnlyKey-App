@@ -161,15 +161,10 @@ const DESKTOP_SHELL_FILES = [
  */
 const RUNTIME_DEPS = ['sshpk', 'auto-launch'];
 
-/**
- * Keep only English locale files in the staged NW.js runtime. The app is
- * English-only; all other locale .pak/.pak.info files are dead weight (~117 MB).
- *
- * Handles three layouts:
- *  - Windows/Linux: <dir>/locales/
- *  - macOS staging: <dir>/nwjs.app/Contents/...
- *  - macOS .app bundle (nwjs.app "unwrapped"): <dir>/Contents/...
- */
+// Keep only English locale files. Handles Windows/Linux locales/,
+// macOS .app bundle Contents/Resources/locales/, macOS framework
+// Contents/Frameworks/*.framework/Libraries/Languages/ (incl. Versions/A/),
+// and a recursive scan fallback.
 function stripLocaleDir(dirPath) {
   if (!fs.existsSync(dirPath)) return false;
   const keep = new Set(['en-US.pak', 'en-US.pak.info']);
@@ -179,6 +174,22 @@ function stripLocaleDir(dirPath) {
     }
   }
   return true;
+}
+
+function findLocaleDirs(root, dirs = []) {
+  if (!fs.existsSync(root)) return dirs;
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const full = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'locales' || entry.name === 'Languages') {
+        dirs.push(full);
+      }
+      if (entry.name === 'Frameworks' || entry.name === 'Versions' || entry.name === 'Contents') {
+        findLocaleDirs(full, dirs);
+      }
+    }
+  }
+  return dirs;
 }
 
 function stripLocales(targetDir) {
@@ -198,9 +209,24 @@ function stripLocales(targetDir) {
     if (fs.existsSync(fwDir)) {
       for (const fw of fs.readdirSync(fwDir)) {
         if (fw.endsWith('.framework')) {
-          candidates.push(path.join(fwDir, fw, 'Libraries', 'Languages'));
+          const fwPath = path.join(fwDir, fw);
+          candidates.push(path.join(fwPath, 'Libraries', 'Languages'));
+          const versionsPath = path.join(fwPath, 'Versions');
+          if (fs.existsSync(versionsPath)) {
+            for (const v of fs.readdirSync(versionsPath)) {
+              candidates.push(path.join(versionsPath, v, 'Libraries', 'Languages'));
+            }
+          }
         }
       }
+    }
+  }
+
+  // Fallback: recursively find any "locales" or "Languages" directories
+  const recursiveDirs = findLocaleDirs(targetDir);
+  for (const dir of recursiveDirs) {
+    if (!candidates.includes(dir)) {
+      candidates.push(dir);
     }
   }
 
