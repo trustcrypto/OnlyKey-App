@@ -29,14 +29,14 @@ describe('DeviceMessages', () => {
     expect(screen.queryByText('msg5')).not.toBeInTheDocument();
   });
 
-  it('shows nav button at top when more than 5 messages exist (offset 0)', () => {
+  it('shows nav button at bottom when older messages available (offset 0)', () => {
     const msgs = Array.from({ length: 50 }, (_, i) => `msg${i}`);
     seedDeviceStore({ recentMessages: msgs });
     renderWithProviders(<DeviceMessages />);
 
     const olderBtn = screen.getByLabelText('Show older messages');
     expect(olderBtn).toBeInTheDocument();
-    expect(olderBtn).toHaveClass('device-messages-nav--top');
+    expect(olderBtn).toHaveClass('device-messages-nav--bottom');
     expect(screen.queryByLabelText('Show newer messages')).not.toBeInTheDocument();
   });
 

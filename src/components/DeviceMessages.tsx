@@ -89,14 +89,14 @@ const DeviceMessages: React.FC = () => {
         onKeyDown={handleKeyDown}
         onMouseLeave={handleLineMouseLeave}
       >
-        {hasMoreBelow && (
+        {hasMoreAbove && (
           <button
             type="button"
             className="device-messages-nav device-messages-nav--top"
-            onClick={scrollUp}
-            aria-label="Show older messages"
+            onClick={scrollDown}
+            aria-label="Show newer messages"
           >
-            ▼
+            ▲
           </button>
         )}
         <div
@@ -125,14 +125,14 @@ const DeviceMessages: React.FC = () => {
             );
           })}
         </div>
-        {hasMoreAbove && (
+        {hasMoreBelow && (
           <button
             type="button"
             className="device-messages-nav device-messages-nav--bottom"
-            onClick={scrollDown}
-            aria-label="Show newer messages"
+            onClick={scrollUp}
+            aria-label="Show older messages"
           >
-            ▲
+            ▼
           </button>
         )}
       </div>
