@@ -1194,8 +1194,7 @@ html.light .sidebar-status-connection--off {
 
 .device-messages-nav {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
