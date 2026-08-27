@@ -70,5 +70,5 @@ jobs:
           GITHUB_RUN_ID: ${{ github.run_id }}
 
       - name: List built installer
-        run: |
-          ls -la releases/ 2>/dev/null || dir releases\
+        continue-on-error: true
+        run: node -e "const fs=require('fs');const f=fs.readdirSync('releases',{withFileTypes:true});f.forEach(d=>console.log(d.name, d.size, 'bytes'))"
