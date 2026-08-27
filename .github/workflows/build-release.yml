@@ -53,9 +53,25 @@ jobs:
         run: npm run release:skip-audit
 
       - name: Upload release artifact
+        id: upload-artifact
         uses: actions/upload-artifact@v4
         with:
           name: onlykey-installer-${{ runner.os }}
           path: releases/*
           if-no-files-found: error
           retention-days: 14
+
+      - name: Get artifact download URL
+        run: |
+          ARTIFACT_NAME="onlykey-installer-${RUNNER_OS}"
+          ARTIFACT_ID=$(gh api repos/${GITHUB_REPOSITORY}/actions/artifacts --jq ".artifacts[] | select(.name==\"$ARTIFACT_NAME\") | .id")
+          echo "Artifact ID: $ARTIFACT_ID"
+          echo "Download URL: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}#artifacts"
+          echo ""
+          echo "Artifact download page: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}#artifacts"
+        env:
+          RUNNER_OS: ${{ runner.os }}
+
+      - name: List built installer
+        run: |
+          ls -la releases/
