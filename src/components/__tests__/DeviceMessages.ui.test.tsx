@@ -5,13 +5,13 @@ import { renderWithProviders } from '../../test/render';
 import { seedDeviceStore } from '../../test/store';
 
 describe('DeviceMessages', () => {
-  it('shows Last 50 messages label and five terminal lines', () => {
+  it('shows Last messages label and five terminal lines', () => {
     seedDeviceStore({
       recentMessages: ['Latest OK', 'Older line'],
     });
     renderWithProviders(<DeviceMessages />);
 
-    expect(screen.getByText('Last 50 messages')).toBeInTheDocument();
+    expect(screen.getByText('Last messages')).toBeInTheDocument();
     const lines = screen.getAllByRole('generic', { hidden: true });
     const terminalLines = lines.filter((el) => el.classList?.contains('device-messages-line'));
     expect(terminalLines).toHaveLength(5);
@@ -29,12 +29,15 @@ describe('DeviceMessages', () => {
     expect(screen.queryByText('msg5')).not.toBeInTheDocument();
   });
 
-  it('shows scrollbar down button when more than 5 messages exist', () => {
+  it('shows nav button at top when more than 5 messages exist (offset 0)', () => {
     const msgs = Array.from({ length: 50 }, (_, i) => `msg${i}`);
     seedDeviceStore({ recentMessages: msgs });
     renderWithProviders(<DeviceMessages />);
 
-    expect(screen.getByLabelText('Show older messages')).toBeInTheDocument();
+    const olderBtn = screen.getByLabelText('Show older messages');
+    expect(olderBtn).toBeInTheDocument();
+    expect(olderBtn).toHaveClass('device-messages-nav--top');
+    expect(screen.queryByLabelText('Show newer messages')).not.toBeInTheDocument();
   });
 
   it('shows older messages on scroll down (ArrowDown key)', () => {
@@ -65,7 +68,7 @@ describe('DeviceMessages', () => {
     expect(screen.queryByText('msg5')).not.toBeInTheDocument();
   });
 
-  it('shows older messages on scrollbar down button click', () => {
+  it('shows older messages on nav down button click', () => {
     const msgs = Array.from({ length: 50 }, (_, i) => `msg${i}`);
     seedDeviceStore({ recentMessages: msgs });
     renderWithProviders(<DeviceMessages />);
@@ -78,7 +81,7 @@ describe('DeviceMessages', () => {
     expect(screen.getByText('msg5')).toBeInTheDocument();
   });
 
-  it('shows newer messages on scrollbar up button click', () => {
+  it('shows newer messages on nav up button click', () => {
     const msgs = Array.from({ length: 50 }, (_, i) => `msg${i}`);
     seedDeviceStore({ recentMessages: msgs });
     renderWithProviders(<DeviceMessages />);

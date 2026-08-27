@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 
 const MESSAGE_SLOTS = 5;
-const MESSAGE_BUFFER = 50;
 
 const DeviceMessages: React.FC = () => {
   const { recentMessages } = useDeviceStore();
@@ -10,6 +9,14 @@ const DeviceMessages: React.FC = () => {
   const [hoveredMessage, setHoveredMessage] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(recentMessages.length);
+
+  useEffect(() => {
+    if (recentMessages.length > prevCountRef.current) {
+      setScrollOffset(0);
+    }
+    prevCountRef.current = recentMessages.length;
+  }, [recentMessages.length]);
 
   const visibleStart = scrollOffset;
   const visibleEnd = Math.min(scrollOffset + MESSAGE_SLOTS, recentMessages.length);
@@ -24,12 +31,6 @@ const DeviceMessages: React.FC = () => {
   const totalMessages = recentMessages.length;
   const hasMoreAbove = scrollOffset > 0;
   const hasMoreBelow = scrollOffset + MESSAGE_SLOTS < totalMessages;
-
-  useEffect(() => {
-    if (scrollOffset + MESSAGE_SLOTS > totalMessages && totalMessages >= MESSAGE_SLOTS) {
-      setScrollOffset(Math.max(0, totalMessages - MESSAGE_SLOTS));
-    }
-  }, [recentMessages.length, scrollOffset, totalMessages]);
 
   const scrollDown = () => {
     if (hasMoreAbove) {
@@ -79,7 +80,7 @@ const DeviceMessages: React.FC = () => {
 
   return (
     <div className="device-messages">
-      <div className="device-messages-label">Last {MESSAGE_BUFFER} messages</div>
+      <div className="device-messages-label">Last messages</div>
       <div
         ref={terminalRef}
         className="device-messages-terminal"
@@ -88,6 +89,16 @@ const DeviceMessages: React.FC = () => {
         onKeyDown={handleKeyDown}
         onMouseLeave={handleLineMouseLeave}
       >
+        {hasMoreBelow && (
+          <button
+            type="button"
+            className="device-messages-nav device-messages-nav--top"
+            onClick={scrollUp}
+            aria-label="Show older messages"
+          >
+            ▼
+          </button>
+        )}
         <div
           className="device-messages-content"
           style={{
@@ -114,29 +125,15 @@ const DeviceMessages: React.FC = () => {
             );
           })}
         </div>
-        {(hasMoreAbove || hasMoreBelow) && (
-          <div className="device-messages-scrollbar">
-            {hasMoreBelow && (
-              <button
-                type="button"
-                className="device-messages-scrollbar__btn device-messages-scrollbar__btn--down"
-                onClick={scrollUp}
-                aria-label="Show older messages"
-              >
-                ▼
-              </button>
-            )}
-            {hasMoreAbove && (
-              <button
-                type="button"
-                className="device-messages-scrollbar__btn device-messages-scrollbar__btn--up"
-                onClick={scrollDown}
-                aria-label="Show newer messages"
-              >
-                ▲
-              </button>
-            )}
-          </div>
+        {hasMoreAbove && (
+          <button
+            type="button"
+            className="device-messages-nav device-messages-nav--bottom"
+            onClick={scrollDown}
+            aria-label="Show newer messages"
+          >
+            ▲
+          </button>
         )}
       </div>
       {hoveredMessage && hoverPos && (
