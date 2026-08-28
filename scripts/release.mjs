@@ -7,15 +7,21 @@
  *
  * Windows → releases/OnlyKey_<ver>.exe  (NSIS; requires makensis)
  * Linux   → releases/OnlyKey_<ver>_amd64.deb  (requires fakeroot + dpkg-deb)
- * macOS   → releases/OnlyKey_<ver>.dmg  (uses hdiutil)
+ * macOS   → releases/OnlyKey_<ver>.dmg  (universal arm64+x64 via lipo; hdiutil UDZO)
  *
  * Always stages a runnable app bundle under tmp/release/<name>/ before packaging.
+ * On macOS, app.nw is the app payload only (not a nested nwjs.app).
  */
 import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveNwjsDir } from './nw-runtime.mjs';
+import {
+  ensureOfficialNwjsApps,
+  mergeUniversalApp,
+  officialNwVersion,
+} from './mac-universal.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -148,11 +154,25 @@ function buildProductionPackageJson(source) {
 }
 
 /** Files that must ship next to package.json for desktop shell. */
-const DESKTOP_SHELL_FILES = [
+export const DESKTOP_SHELL_FILES = [
   'userPreferences.cjs',
   'desktopBg.cjs',
   'desktopInject.js',
 ];
+
+/**
+ * Names that belong in Contents/Resources/app.nw. Everything else in the
+ * staged tree (nwjs.app, Chromium locales, credits.html, …) is runtime and
+ * must not be nested inside the .app payload.
+ */
+export const APP_NW_ALLOWLIST = new Set([
+  'dist',
+  'icon.png',
+  'package.json',
+  'resources',
+  'node_modules',
+  ...DESKTOP_SHELL_FILES,
+]);
 
 /**
  * Vite bundles react, react-dom, zustand, openpgp, and js-sha256 into dist/.
@@ -239,24 +259,29 @@ function stripLocales(targetDir) {
   }
 }
 
-function stageApplication(manifest) {
-  const appDir = path.join(tmpDir, manifest.name);
-  if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
-  fs.mkdirSync(appDir, { recursive: true });
-  fs.mkdirSync(releasesDir, { recursive: true });
+export function copyAllowlistedAppPayload(srcDir, destDir) {
+  fs.mkdirSync(destDir, { recursive: true });
+  for (const name of APP_NW_ALLOWLIST) {
+    const src = path.join(srcDir, name);
+    if (!fs.existsSync(src)) continue;
+    const dest = path.join(destDir, name);
+    const st = fs.lstatSync(src);
+    if (st.isDirectory()) copyDir(src, dest);
+    else fs.copyFileSync(src, dest);
+  }
+}
 
-  console.log('Staging NW.js runtime + app…');
-  copyDir(resolveNwjsDir(), appDir);
-  stripLocales(appDir);
-  copyDir(path.join(rootDir, 'dist'), path.join(appDir, 'dist'));
-  fs.copyFileSync(path.join(rootDir, 'icon.png'), path.join(appDir, 'icon.png'));
+function copyAppPayloadFromRepo(destDir, manifest) {
+  fs.mkdirSync(destDir, { recursive: true });
+  copyDir(path.join(rootDir, 'dist'), path.join(destDir, 'dist'));
+  fs.copyFileSync(path.join(rootDir, 'icon.png'), path.join(destDir, 'icon.png'));
 
   // Only copy runtime-needed resources (tray icon); platform-specific packaging
   // files (NSIS scripts, DMG backgrounds, deb control, etc.) are consumed
   // directly from rootDir/resources/ by the OS-specific build steps.
   const trayIconSrc = path.join(rootDir, 'resources', 'ok-tray-logo.png');
   if (fs.existsSync(trayIconSrc)) {
-    const resourcesDest = path.join(appDir, 'resources');
+    const resourcesDest = path.join(destDir, 'resources');
     fs.mkdirSync(resourcesDest, { recursive: true });
     fs.copyFileSync(trayIconSrc, path.join(resourcesDest, 'ok-tray-logo.png'));
   }
@@ -264,21 +289,39 @@ function stageApplication(manifest) {
   for (const desktopFile of DESKTOP_SHELL_FILES) {
     const src = path.join(rootDir, desktopFile);
     if (fs.existsSync(src)) {
-      fs.copyFileSync(src, path.join(appDir, desktopFile));
+      fs.copyFileSync(src, path.join(destDir, desktopFile));
     }
   }
 
   fs.writeFileSync(
-    path.join(appDir, 'package.json'),
+    path.join(destDir, 'package.json'),
     `${JSON.stringify(buildProductionPackageJson(manifest), null, 2)}\n`
   );
 
-  const prodModules = path.join(appDir, 'node_modules');
+  const prodModules = path.join(destDir, 'node_modules');
   fs.mkdirSync(prodModules, { recursive: true });
   for (const dep of RUNTIME_DEPS) {
     const src = path.join(rootDir, 'node_modules', dep);
     if (fs.existsSync(src)) copyDir(src, path.join(prodModules, dep));
   }
+}
+
+function stageApplication(manifest) {
+  const appDir = path.join(tmpDir, manifest.name);
+  if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+  fs.mkdirSync(appDir, { recursive: true });
+  fs.mkdirSync(releasesDir, { recursive: true });
+
+  // On macOS the official runtime is merged separately into a universal .app.
+  // Copying the host nwjs.app into the payload tree is what bloated the DMG.
+  if (process.platform !== 'darwin') {
+    console.log('Staging NW.js runtime + app…');
+    copyDir(resolveNwjsDir(), appDir);
+    stripLocales(appDir);
+  } else {
+    console.log('Staging app payload (NW.js runtime merged as a universal .app)…');
+  }
+  copyAppPayloadFromRepo(appDir, manifest);
 
   // Critical: NW runtime files often arrive mode 600/700; fix before package.
   ensureWorldReadableTree(appDir);
@@ -414,20 +457,15 @@ async function buildLinuxDeb(appDir, manifest) {
 async function buildMacDmg(appDir, manifest) {
   const appBundleName = `${manifest.productName}.app`;
   const finalAppDir = path.join(tmpDir, appBundleName);
-  const nwjsApp = path.join(resolveNwjsDir(), 'nwjs.app');
+  const nwVersion = officialNwVersion(manifest);
 
-  if (!fs.existsSync(nwjsApp)) {
-    throw new Error(`nwjs.app not found under NW runtime. Got: ${resolveNwjsDir()}`);
-  }
-
-  console.log('Assembling macOS .app bundle…');
-  if (fs.existsSync(finalAppDir)) fs.rmSync(finalAppDir, { recursive: true, force: true });
-  copyDir(nwjsApp, finalAppDir);
+  console.log(`Assembling universal macOS .app (NW.js ${nwVersion} arm64+x64)…`);
+  const { arm64App, x64App } = await ensureOfficialNwjsApps(nwVersion);
+  mergeUniversalApp(x64App, arm64App, finalAppDir);
   stripLocales(finalAppDir);
   const appNw = path.join(finalAppDir, 'Contents', 'Resources', 'app.nw');
   if (fs.existsSync(appNw)) fs.rmSync(appNw, { recursive: true, force: true });
-  fs.mkdirSync(appNw, { recursive: true });
-  copyDir(appDir, appNw);
+  copyAllowlistedAppPayload(appDir, appNw);
 
   // Info.plist + icon
   const infoTpl = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'Info.plist'), 'utf8');
@@ -509,7 +547,22 @@ async function main() {
   if (artifact) console.log('Artifact:', artifact);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule() {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return (
+      path.normalize(fileURLToPath(import.meta.url)).toLowerCase() ===
+      path.normalize(path.resolve(entry)).toLowerCase()
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

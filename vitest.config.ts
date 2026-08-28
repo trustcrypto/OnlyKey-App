@@ -7,7 +7,7 @@ const coverage = {
   provider: 'v8' as const,
   reporter: ['text', 'text-summary', 'json-summary', 'html'],
   reportsDirectory: './coverage',
-  include: ['src/**/*.{ts,tsx}'],
+  include: ['src/**/*.{ts,tsx}', 'scripts/mac-universal.mjs'],
   exclude: [
     'src/**/*.{test,spec}.{ts,tsx}',
     'src/**/*.ui.test.{ts,tsx}',
@@ -43,8 +43,12 @@ export default defineConfig({
           name: 'ui',
           environment: 'happy-dom',
           setupFiles: ['./src/test/setup.ts'],
-          include: ['src/**/*.{test,spec}.{ts,tsx}', 'src/**/*.ui.test.{ts,tsx}'],
-          exclude: ['node_modules', 'dist', 'tests/desktop/**'],
+          include: [
+            'src/**/*.{test,spec}.{ts,tsx}',
+            'src/**/*.ui.test.{ts,tsx}',
+            'tests/desktop/release-packaging.static.test.mjs',
+          ],
+          exclude: ['node_modules', 'dist'],
           env: {
             VITE_MOCK_DEVICE: 'true',
           },

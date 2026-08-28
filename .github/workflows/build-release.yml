@@ -21,15 +21,15 @@ jobs:
   release:
     name: ${{ matrix.os }} installer
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -44,6 +44,8 @@ jobs:
 
       # Full install so the pinned NW.js 0.104.1 runtime is downloaded.
       # Use the production (non-SDK) build — tray/HID regressions show up there.
+      # macOS release additionally fetches official osx-x64 + osx-arm64 zips
+      # and lipo-merges them into a universal .app (scripts/mac-universal.mjs).
       - name: Install dependencies
         run: npm ci
 
@@ -54,7 +56,7 @@ jobs:
 
       - name: Upload release artifact
         id: upload-artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: onlykey-installer-${{ runner.os }}
           path: releases/*
@@ -71,4 +73,4 @@ jobs:
 
       - name: List built installer
         continue-on-error: true
-        run: node -e "const fs=require('fs');const f=fs.readdirSync('releases',{withFileTypes:true});f.forEach(d=>console.log(d.name, d.size, 'bytes'))"
+        run: node -e "const fs=require('fs');const path=require('path');for (const n of fs.readdirSync('releases')) { const s=fs.statSync(path.join('releases',n)); console.log(n, s.size, 'bytes'); }"
