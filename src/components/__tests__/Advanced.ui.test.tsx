@@ -38,7 +38,23 @@ describe('Advanced page', () => {
     expect(screen.getByText(/yubikey security info saved/i)).toBeInTheDocument();
   });
 
-  it('blocks private-key save outside config mode', async () => {
+  /*
+   * THE APP MUST NOT PRE-JUDGE CONFIG MODE.
+   *
+   * A user reported "unable to wipe key, says to put into config mode even when
+   * it is in config mode". The cause was a client-side gate here that refused to
+   * send when the store's isConfigMode read false - and it reads false whenever
+   * the app missed the one transition that sets it, such as starting up with the
+   * key already in config mode. The device was willing the whole time;
+   * onlykey-testing/test/01-protocol/27-config-mode-observability.test.js
+   * measures the firmware accepting OKWIPEPRIV in exactly that state.
+   *
+   * The legacy app never gated on this - it sent and let the device answer - so
+   * the gate was a regression introduced by the rewrite. These pin the fix: the
+   * command goes out regardless of the flag, and the device's own refusal is
+   * what the user sees.
+   */
+  it('sends a private-key save even when isConfigMode reads false', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();
     seedDeviceStore({ device, isConfigMode: false });
@@ -50,8 +66,39 @@ describe('Advanced page', () => {
     );
     await user.click(screen.getAllByRole('button', { name: /save to onlykey/i })[1]);
 
-    expect(screen.getByText(/flashing red led/i)).toBeInTheDocument();
-    expect(device.setPrivateKey).not.toHaveBeenCalled();
+    expect(device.setPrivateKey).toHaveBeenCalledWith(101, 1, expect.any(Array));
+    expect(screen.queryByText(/flashing red led/i)).not.toBeInTheDocument();
+  });
+
+  it('sends a private-key wipe even when isConfigMode reads false', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const device = createMockDeviceClient();
+    seedDeviceStore({ device, isConfigMode: false });
+    renderWithProviders(<Advanced />);
+
+    await user.click(screen.getAllByRole('button', { name: /wipe from onlykey/i })[1]);
+
+    expect(device.wipePrivateKey).toHaveBeenCalledWith(101);
+    expect(screen.queryByText(/flashing red led/i)).not.toBeInTheDocument();
+  });
+
+  it("surfaces the device's own config-mode refusal instead of guessing", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const device = createMockDeviceClient();
+    /* What OnlyKeyDevice.formatDeviceLockedError already makes of the firmware's
+     * "Error not in config mode" - which OKWIPEPRIV now returns for this state. */
+    device.wipePrivateKey = vi
+      .fn()
+      .mockRejectedValue(new Error('OnlyKey must be in config mode (flashing red LED) for this operation.'));
+    seedDeviceStore({ device, isConfigMode: false });
+    renderWithProviders(<Advanced />);
+
+    await user.click(screen.getAllByRole('button', { name: /wipe from onlykey/i })[1]);
+
+    expect(device.wipePrivateKey).toHaveBeenCalledWith(101);
+    expect(await screen.findByText(/flashing red led/i)).toBeInTheDocument();
   });
 
   it('saves an ECC key in config mode', async () => {
