@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { KEY_SLOTS } from '../api/device/keyParser';
 import { hexStringToByteArray } from '../api/device/utils';
-import { CONFIG_MODE_REQUIRED, configModeTooltipText } from '../data/configMode';
+import { configModeTooltipText } from '../data/configMode';
 import { CautionButton, CriticalText, SetButton } from './ui/forms';
 import { Tooltip } from './ui/Tooltip';
 
@@ -22,7 +22,7 @@ const ECC_SLOTS = [
 const KEY_MODIFIERS = { Backup: 128, Signature: 64, Decryption: 32 };
 
 const Advanced: React.FC = () => {
-  const { device, deviceType, isConfigMode, setWorking } = useDeviceStore();
+  const { device, deviceType, setWorking } = useDeviceStore();
   const [yubiForm, setYubiForm] = useState({ publicId: '', privateId: '', secretKey: '' });
   const [eccType, setEccType] = useState(1);
   const [eccSlot, setEccSlot] = useState(101);
@@ -33,12 +33,15 @@ const Advanced: React.FC = () => {
 
   if (!device) return null;
 
-  const requireConfigMode = (): boolean => {
-    if (isConfigMode) return true;
-    setStatus(null);
-    setError(CONFIG_MODE_REQUIRED);
-    return false;
-  };
+  // No client-side config-mode gate. The firmware reports the same UNLOCKED
+  // status in config mode as out of it (okcore.cpp set_time), so the store's
+  // isConfigMode is an inference that reads false whenever the app missed the
+  // transition that sets it - a reconnect, or starting up with the key already
+  // in config mode. Gating writes on that guess refused them on a key that WAS
+  // in config mode, with no way to recover. The device is the authority: send,
+  // and let it answer. Its refusal already routes through the catch blocks
+  // below, and OnlyKeyDevice.formatDeviceLockedError turns "Error not in config
+  // mode" into the instructions. The legacy app never gated on this either.
 
   return (
     <div className="page-shell">
@@ -203,7 +206,6 @@ const Advanced: React.FC = () => {
                 onClick={async () => {
                   setError(null);
                   setStatus(null);
-                  if (!requireConfigMode()) return;
                   const maxLen = eccType === 9 ? 40 : 64;
                   const key = eccKey.replace(/\s/g, '').slice(0, maxLen);
                   if (!key || key.length !== maxLen) {
@@ -233,7 +235,6 @@ const Advanced: React.FC = () => {
                   if (!window.confirm(`Wipe private key from slot ${eccSlot}?`)) return;
                   setError(null);
                   setStatus(null);
-                  if (!requireConfigMode()) return;
                   setWorking(true, `Wiping private key from slot ${eccSlot}…`);
                   try {
                     await device.wipePrivateKey(eccSlot);
