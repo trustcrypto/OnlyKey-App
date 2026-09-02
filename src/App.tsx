@@ -19,6 +19,7 @@ import { HelpTip } from './components/ui/HelpTip';
 import { TOOLTIPS } from './data/tooltips';
 import { shouldUseMockDevice } from './utils/mockDevice';
 import { DeviceType } from './api/device/types';
+import { connectedDeviceLabel } from './data/deviceProduct';
 
 const App: React.FC = () => {
   const {
@@ -79,7 +80,7 @@ const App: React.FC = () => {
           {isConnected && (
             <>
               <div className="sidebar-status-device">
-                {deviceType} {version}
+                {connectedDeviceLabel(deviceType, version)}
               </div>
               <div className="sidebar-status-mode">
                 {isConfigMode

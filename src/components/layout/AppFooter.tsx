@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDeviceStore } from '../../store/useDeviceStore';
-import { DeviceType } from '../../api/device/types';
+import { connectedDeviceLabel } from '../../data/deviceProduct';
 
 const APP_VERSION = '5.7.0';
 
@@ -20,17 +20,7 @@ const AppFooter: React.FC = () => {
   const pidHex =
     usbProductId != null ? `0x${usbProductId.toString(16).toUpperCase()}` : '—';
 
-  const deviceLabel = !isConnected
-    ? ''
-    : deviceType === DeviceType.DUO
-      ? `OnlyKey DUO ${version}`.trim()
-      : deviceType === DeviceType.CLASSIC
-        ? `OnlyKey ${version}`.trim()
-        : deviceType === DeviceType.UNINITIALIZED
-          ? 'OnlyKey (uninitialized)'
-          : version
-            ? `OnlyKey ${version}`
-            : 'OnlyKey';
+  const deviceLabel = !isConnected ? '' : connectedDeviceLabel(deviceType, version);
 
   return (
     <footer className="app-footer shrink-0">

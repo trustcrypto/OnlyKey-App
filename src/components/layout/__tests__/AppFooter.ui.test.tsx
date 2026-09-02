@@ -19,9 +19,22 @@ describe('AppFooter', () => {
     });
     renderWithProviders(<AppFooter />);
     expect(screen.getByText(/App v5\.7\.0/)).toBeInTheDocument();
-    expect(screen.getByText(/OnlyKey v2\.1\.0-prod/)).toBeInTheDocument();
+    expect(screen.getByText('OnlyKey v2.1.0-prod')).toBeInTheDocument();
+    expect(screen.queryByText(/classic/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/UNLOCKEDv2\.1\.0-prod/).length).toBeGreaterThan(0);
     expect(screen.getByText(/PID 0x486/i)).toBeInTheDocument();
+  });
+
+  it('labels a v3 test firmware OnlyKey without Classic', () => {
+    seedDeviceStore({
+      isConnected: true,
+      deviceType: DeviceType.CLASSIC,
+      version: 'v3.0.4-testc',
+      recentMessages: [],
+    });
+    renderWithProviders(<AppFooter />);
+    expect(screen.getByText('OnlyKey v3.0.4-testc')).toBeInTheDocument();
+    expect(screen.queryByText(/classic/i)).not.toBeInTheDocument();
   });
 
   it('labels DUO and uninitialized devices', () => {

@@ -51,6 +51,8 @@ describe('App shell', () => {
     renderWithProviders(<App />);
 
     expect(within(screen.getByTestId('sidebar-status')).getByText('Connected')).toBeInTheDocument();
+    expect(within(screen.getByTestId('sidebar-status')).getByText('OnlyKey v2.1.0-prod')).toBeInTheDocument();
+    expect(screen.getByTestId('sidebar-status').textContent).not.toMatch(/\bclassic\b/i);
     expect(screen.getByText('Locked')).toBeInTheDocument();
     expect(screen.queryByTestId('disconnected-overlay')).not.toBeInTheDocument();
   });

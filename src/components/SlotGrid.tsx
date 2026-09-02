@@ -68,7 +68,7 @@ const ClassicSlotLayout: React.FC<{
             <div className="slots-classic-device-wrap">
               <img
                 src={CLASSIC_DEVICE_IMG_DARK}
-                alt="OnlyKey Classic device"
+                alt="OnlyKey device"
                 className="slots-classic-device slots-device-img--dark"
                 draggable={false}
               />

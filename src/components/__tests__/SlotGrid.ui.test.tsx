@@ -18,7 +18,7 @@ describe('SlotGrid', () => {
     expect(screen.getByRole('button', { name: /1b <empty>/i })).toBeInTheDocument();
     expect(screen.getByText(new RegExp(`${EMPTY_SLOT_LABEL} have no label set`, 'i'))).toBeInTheDocument();
     expect(screen.getByText(/only receives slot labels/i)).toBeInTheDocument();
-    expect(screen.getByAltText('OnlyKey Classic device')).toBeInTheDocument();
+    expect(screen.getByAltText('OnlyKey device')).toBeInTheDocument();
   });
 
   it('renders DUO device image and profile pills', () => {
