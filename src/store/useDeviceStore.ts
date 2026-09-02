@@ -268,6 +268,10 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       // CRITICAL: unlocked → locked ends the UI session. Wipe secrets even though
       // the USB connection may still be open (idle lock, user re-locked, etc.).
       if (wasConnected && !wasLocked && isNowLocked) {
+        // Config-mode lock (red LED) is a deliberate setup step, not an idle
+        // lockout — keep Advanced/Keys/Setup so wipe/set PIN stay reachable
+        // after the config PIN. Idle lock still forces Setup.
+        const currentTab = get().activeTab;
         set({
           ...lockedSessionWipeSnapshot,
           isConnected: true,
@@ -284,6 +288,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
           fwUpdateSupport: fwSupport,
           // Never keep labels while locked — firmware may still return them.
           labels: {},
+          ...(state.isConfigMode ? { activeTab: currentTab } : {}),
           sessionEpoch: get().sessionEpoch + 1,
         });
         return;

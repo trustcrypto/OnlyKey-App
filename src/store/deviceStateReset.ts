@@ -39,7 +39,8 @@ export const disconnectedDeviceSnapshot = {
 
 /**
  * Extra fields wiped on unlocked→locked (connection may remain). Forces a
- * non-sensitive tab and clears secret-bearing store fields.
+ * non-sensitive tab and clears secret-bearing store fields. Config-mode lock
+ * keeps the current tab in useDeviceStore so Advanced key wipe stays reachable.
  */
 export const lockedSessionWipeSnapshot = {
   isRefreshingLabels: false,

@@ -9,6 +9,7 @@ import {
   seedDeviceStore,
 } from '../../test/store';
 import { OnlyKeyDevice } from '../../api/device/OnlyKeyDevice';
+import { DeviceType } from '../../api/device/types';
 import { MockTransport } from '../../api/transport/MockTransport';
 import { useDeviceStore } from '../useDeviceStore';
 
@@ -99,11 +100,114 @@ describe('session wipe on disconnect / lock', () => {
       expect(getStoreState().sessionEpoch).toBe(before + 1);
     });
     const s = getStoreState();
-    expect(s.activeTab).toBe('setup');
+    expect(s.isConfigMode).toBe(true);
+    expect(s.activeTab).toBe('backup');
     expect(s.labels).toEqual({});
     expect(s.recentMessages).toEqual([]);
     expect(s.selectedSlotId).toBeNull();
     expect(s.isConnected).toBe(true);
+  });
+
+  it('keeps Advanced selected through a config-mode lock', async () => {
+    const { transport } = await bootMockDevice();
+    seedDeviceStore({
+      activeTab: 'advanced',
+      isLocked: false,
+    });
+    (useDeviceStore.getState().device as OnlyKeyDevice)['lastUnlockedAt'] = 0;
+
+    transport.simulateResponse('INITIALIZEDv2.1.0-prod');
+    await waitFor(() => {
+      expect(getStoreState().isLocked).toBe(true);
+      expect(getStoreState().isConfigMode).toBe(true);
+    });
+    expect(getStoreState().activeTab).toBe('advanced');
+  });
+
+  it('stays on Advanced after a config-mode PIN reports UNLOCKED', async () => {
+    const { transport } = await bootMockDevice();
+    seedDeviceStore({
+      activeTab: 'advanced',
+      isLocked: false,
+    });
+    (useDeviceStore.getState().device as OnlyKeyDevice)['lastUnlockedAt'] = 0;
+
+    transport.simulateResponse('INITIALIZEDv2.1.0-prod');
+    await waitFor(() => {
+      expect(getStoreState().isLocked).toBe(true);
+      expect(getStoreState().isConfigMode).toBe(true);
+    });
+    expect(getStoreState().activeTab).toBe('advanced');
+
+    transport.setLocked(false);
+    transport.simulateResponse('UNLOCKEDv2.1.0-prod');
+    await waitFor(() => expect(getStoreState().isLocked).toBe(false));
+    expect(getStoreState().isConfigMode).toBe(true);
+    expect(getStoreState().activeTab).toBe('advanced');
+  });
+
+  it('keeps Advanced selected through a DUO config-mode lock', async () => {
+    const { transport } = await bootMockDevice(new MockTransport({ deviceType: 'duo', startLocked: false }));
+    seedDeviceStore({
+      activeTab: 'advanced',
+      isLocked: false,
+      deviceType: DeviceType.DUO,
+    });
+    (useDeviceStore.getState().device as OnlyKeyDevice)['lastUnlockedAt'] = 0;
+
+    transport.simulateResponse('INITIALIZED-Dv3.0.0-prod');
+    await waitFor(() => {
+      expect(getStoreState().isLocked).toBe(true);
+      expect(getStoreState().isConfigMode).toBe(true);
+    });
+    expect(getStoreState().activeTab).toBe('advanced');
+  });
+
+  it('stays on Advanced after a DUO config-mode PIN reports UNLOCKED', async () => {
+    const { transport } = await bootMockDevice(new MockTransport({ deviceType: 'duo', startLocked: false }));
+    seedDeviceStore({
+      activeTab: 'advanced',
+      isLocked: false,
+      deviceType: DeviceType.DUO,
+    });
+    (useDeviceStore.getState().device as OnlyKeyDevice)['lastUnlockedAt'] = 0;
+
+    transport.simulateResponse('INITIALIZED-Dv3.0.0-prod');
+    await waitFor(() => {
+      expect(getStoreState().isLocked).toBe(true);
+      expect(getStoreState().isConfigMode).toBe(true);
+    });
+    expect(getStoreState().activeTab).toBe('advanced');
+
+    transport.setLocked(false);
+    transport.simulateResponse('UNLOCKEDv3.0.0-prod');
+    await waitFor(() => expect(getStoreState().isLocked).toBe(false));
+    expect(getStoreState().isConfigMode).toBe(true);
+    expect(getStoreState().activeTab).toBe('advanced');
+  });
+
+  it.each([
+    { name: 'classic', transport: () => new MockTransport({ startLocked: false }), lockText: 'LOCKED' },
+    {
+      name: 'duo',
+      transport: () => new MockTransport({ deviceType: 'duo', startLocked: false }),
+      lockText: 'LOCKED',
+    },
+  ])('forces Setup on $name idle lock that is not config mode', async ({ transport, lockText }) => {
+    const { transport: t } = await bootMockDevice(transport());
+    seedDeviceStore({
+      activeTab: 'backup',
+      isLocked: false,
+    });
+    (useDeviceStore.getState().device as OnlyKeyDevice)['lastUnlockedAt'] = 0;
+
+    t.setLocked(true);
+    t.simulateResponse(lockText);
+    await waitFor(() => {
+      expect(getStoreState().isLocked).toBe(true);
+    });
+    expect(getStoreState().isConfigMode).toBe(false);
+    expect(getStoreState().activeTab).toBe('setup');
   });
 
   it('shows disconnected overlay and leaves Backup after disconnect', async () => {
