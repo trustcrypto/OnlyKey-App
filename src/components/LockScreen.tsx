@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
+import { deviceProductName } from '../data/deviceProduct';
 
 const LOCK_POLL_MS = 1500;
 
@@ -104,7 +105,7 @@ const LockScreen: React.FC = () => {
       className="absolute inset-0 bg-ok-dark/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300"
     >
       <h2 className="text-2xl font-bold mb-2">
-        {isDuo ? 'OnlyKey DUO Locked' : 'OnlyKey Locked'}
+        {`${deviceProductName(deviceType)} Locked`}
       </h2>
 
       {isDuo ? (

@@ -45,7 +45,7 @@ describe('AppFooter', () => {
       recentMessages: [],
     });
     const { unmount } = renderWithProviders(<AppFooter />);
-    expect(screen.getByText(/OnlyKey DUO v3\.0\.0-prod/)).toBeInTheDocument();
+    expect(screen.getByText('OnlyKey Duo v3.0.0-prod')).toBeInTheDocument();
     unmount();
 
     seedDeviceStore({

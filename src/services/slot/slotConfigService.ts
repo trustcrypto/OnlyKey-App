@@ -45,11 +45,11 @@ export function validateDuoNoPinSlot(
 
   if (settingPassword && settingMfa) {
     throw new Error(
-      'OnlyKey DUO without a device PIN supports static password OR MFA per slot — not both. Set a device PIN in Setup to enable full login slots.'
+      'OnlyKey Duo without a device PIN supports static password OR MFA per slot — not both. Set a device PIN in Setup to enable full login slots.'
     );
   }
   if (enabled.username || enabled.url) {
-    throw new Error('Username and URL require a device PIN on OnlyKey DUO.');
+    throw new Error('Username and URL require a device PIN on OnlyKey Duo.');
   }
 }
 

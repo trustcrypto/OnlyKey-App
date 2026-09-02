@@ -29,7 +29,7 @@ describe('SlotGrid', () => {
     });
     renderWithProviders(<SlotGrid />);
 
-    expect(screen.getByAltText('OnlyKey DUO device')).toBeInTheDocument();
+    expect(screen.getByAltText('OnlyKey Duo device')).toBeInTheDocument();
     expect(screen.getByTitle(/green profile/i)).toBeInTheDocument();
   });
 

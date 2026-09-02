@@ -1,17 +1,18 @@
 import { DeviceType } from '../api/device/types';
+import { deviceProductName } from './deviceProduct';
 
 type ConfigModeHold = {
   isDuo: boolean;
   button: 1 | 6;
   holdSeconds: 10 | 5;
-  product: 'OnlyKey DUO' | 'OnlyKey';
+  product: string;
 };
 
 function configModeHold(deviceType: DeviceType): ConfigModeHold {
   if (deviceType === DeviceType.DUO) {
-    return { isDuo: true, button: 1, holdSeconds: 10, product: 'OnlyKey DUO' };
+    return { isDuo: true, button: 1, holdSeconds: 10, product: deviceProductName(deviceType) };
   }
-  return { isDuo: false, button: 6, holdSeconds: 5, product: 'OnlyKey' };
+  return { isDuo: false, button: 6, holdSeconds: 5, product: deviceProductName(deviceType) };
 }
 
 /** Full how-to for entering config mode. Capitalized for a new sentence; lowercase after "To do this". */

@@ -18,7 +18,7 @@ describe('configMode copy', () => {
 
   it('uses button #1 / 10+ seconds for DUO', () => {
     expect(configModeHowToText(DeviceType.DUO)).toBe(
-      'Hold down button #1 on your OnlyKey DUO for 10+ seconds and release. The light will turn off. If a PIN was previously set, re-enter the PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.',
+      'Hold down button #1 on your OnlyKey Duo for 10+ seconds and release. The light will turn off. If a PIN was previously set, re-enter the PIN to enter config mode. You will notice the OnlyKey flashes red in config mode.',
     );
   });
 

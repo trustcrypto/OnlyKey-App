@@ -8,6 +8,7 @@ import {
   type DuoProfileId,
 } from '../api/device/firmwareConstants';
 import { TOOLTIPS } from '../data/tooltips';
+import { deviceProductName } from '../data/deviceProduct';
 import { HelpTip } from './ui/HelpTip';
 
 const CLASSIC_DEVICE_IMG_DARK = './images/onlykey-photo.png';
@@ -114,7 +115,7 @@ const DuoSlotLayout: React.FC<{
       <div className="slots-duo-device-wrap">
         <img
           src={DUO_DEVICE_IMG_DARK}
-          alt="OnlyKey DUO device"
+          alt={`${deviceProductName(DeviceType.DUO)} device`}
           className="slots-duo-device slots-device-img--dark"
           draggable={false}
         />

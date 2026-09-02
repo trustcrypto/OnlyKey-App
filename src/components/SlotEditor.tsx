@@ -171,7 +171,7 @@ const SlotEditor: React.FC = () => {
 
         {isDuoNoPin && (
           <p className="mx-4 mt-2 text-amber-300/90 text-xs bg-amber-500/10 px-3 py-1 rounded shrink-0">
-            DUO without PIN: static password <em>or</em> MFA per slot — not both.
+            Duo without PIN: static password <em>or</em> MFA per slot — not both.
           </p>
         )}
 

@@ -2,7 +2,7 @@ import { DeviceType } from '../api/device/types';
 
 /** User-facing product name. Full-size hardware is OnlyKey, not Classic. */
 export function deviceProductName(deviceType: DeviceType): string {
-  return deviceType === DeviceType.DUO ? 'OnlyKey DUO' : 'OnlyKey';
+  return deviceType === DeviceType.DUO ? 'OnlyKey Duo' : 'OnlyKey';
 }
 
 /** Sidebar / footer line: product plus firmware version. */

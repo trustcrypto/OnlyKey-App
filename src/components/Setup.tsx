@@ -10,6 +10,7 @@ import PrivateKeySelectDialog from './dialogs/PrivateKeySelectDialog';
 import type { KeyCandidate } from '../services/keyImport/keyImportService';
 import { KEY_SLOTS } from '../api/device/keyParser';
 import { configModePassphraseHint } from '../data/configMode';
+import { deviceProductName } from '../data/deviceProduct';
 import { TOOLTIPS } from '../data/tooltips';
 import ConfigModeInstructions from './ConfigModeInstructions';
 import { CriticalText, SetButton, StepFieldset } from './ui/forms';
@@ -30,7 +31,7 @@ const SetupShell: React.FC<{ isDuo: boolean; children: React.ReactNode }> = ({ i
   <div className="page-shell">
     <header className="page-header">
       <h2 className="text-xl font-bold">
-        {isDuo ? 'OnlyKey DUO Setup' : 'OnlyKey Setup'}{' '}
+        {isDuo ? `${deviceProductName(DeviceType.DUO)} Setup` : 'OnlyKey Setup'}{' '}
         <HelpTip
           href={isDuo ? TOOLTIPS.setup.duoHref : TOOLTIPS.setup.href}
           tooltip={TOOLTIPS.setup.text}
@@ -302,7 +303,7 @@ const Setup: React.FC = () => {
   const ConfigModeBlock: React.FC = () => (
     <div className="init-only setup-ready-block">
       <p className="setup-ready-headline">
-        Your OnlyKey{isDuo ? ' DUO' : ''} is ready to use!
+        Your {deviceProductName(deviceType)} is ready to use!
       </p>
       <p className="setup-ready-sub">
         Use the options below to change PINs or backup passphrase.
@@ -310,7 +311,7 @@ const Setup: React.FC = () => {
       <ConfigModeInstructions
         leadIn={
           <p className="setup-ready-critical">
-            Before selecting an option below, you must first put your OnlyKey{isDuo ? ' DUO' : ''} into config mode.
+            Before selecting an option below, you must first put your {deviceProductName(deviceType)} into config mode.
           </p>
         }
       />
@@ -348,7 +349,7 @@ const Setup: React.FC = () => {
               </>
             )}
             {isDuo && (
-              <SetButton onClick={() => startUnguided('Step2')}>Set or Change OnlyKey DUO PINs</SetButton>
+              <SetButton onClick={() => startUnguided('Step2')}>Set or Change {deviceProductName(DeviceType.DUO)} PINs</SetButton>
             )}
           </>
         )}
@@ -362,7 +363,7 @@ const Setup: React.FC = () => {
       <SetupShell isDuo={isDuo}>
         {error && <p className="critical-text">{error}</p>}
         {isInitialized && isLocked && !isConfigMode && duoStep === 'Step1' && (
-          <CriticalText>Put your OnlyKey DUO into config mode before continuing.</CriticalText>
+          <CriticalText>Put your {deviceProductName(DeviceType.DUO)} into config mode before continuing.</CriticalText>
         )}
 
         {duoStep === 'Step1' && <Step1 />}
@@ -372,12 +373,12 @@ const Setup: React.FC = () => {
             <h3>Set or Change PINs</h3>
             <p>
               Make sure to choose a device PIN that you will not forget and that only you know. Once set, it is required
-              to know your device PIN to unlock your OnlyKey DUO, so keep a secure backup of your PIN somewhere in case
+              to know your device PIN to unlock your {deviceProductName(DeviceType.DUO)}, so keep a secure backup of your PIN somewhere in case
               you forget.
             </p>
             <p>
               DISCLAIMER &mdash; I understand that there is no way to recover my PINs, and, if I forget my PINs, the only
-              way to recover my OnlyKey DUO is to perform a factory reset which wipes all sensitive information.
+              way to recover my {deviceProductName(DeviceType.DUO)} is to perform a factory reset which wipes all sensitive information.
             </p>
             <label>
               <input
