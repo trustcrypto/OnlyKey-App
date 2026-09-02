@@ -11,6 +11,11 @@ import {
 import { deviceTypeFromProductId } from '../firmwareConstants';
 
 describe('device type detection', () => {
+  it('recognizes UNLOCKED BOOTLOADERv1 as bootloader', () => {
+    expect(inferDeviceTypeFromStatusText('UNLOCKED BOOTLOADERv1')).toBe(DeviceType.BOOTLOADER);
+    expect(inferDeviceTypeFromStatusText('BOOTLOADER')).toBe(DeviceType.BOOTLOADER);
+  });
+
   it('recognizes UNINITIALIZED before the INITIALIZED substring', () => {
     expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv2.1.0-prod')).toBe(DeviceType.UNINITIALIZED);
     expect(inferDeviceTypeFromStatusText('UNINITIALIZED-Dv3.0.0-prod')).toBe(DeviceType.UNINITIALIZED);

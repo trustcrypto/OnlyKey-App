@@ -71,16 +71,14 @@ const StepNav: React.FC<{
       </>
     )}
     {!showGuided && onNext && (
-      <>
-        <SetButton onClick={onNext} disabled={isProcessing || nextDisabled}>
-          {isProcessing ? 'Please wait…' : nextLabel}
-        </SetButton>
-        {onCancel && (
-          <SetButton onClick={onCancel}>
-            Cancel
-          </SetButton>
-        )}
-      </>
+      <SetButton onClick={onNext} disabled={isProcessing || nextDisabled}>
+        {isProcessing ? 'Please wait…' : nextLabel}
+      </SetButton>
+    )}
+    {!showGuided && onCancel && (
+      <SetButton onClick={onCancel}>
+        Cancel
+      </SetButton>
     )}
   </div>
 );
@@ -103,6 +101,8 @@ const Setup: React.FC = () => {
   const [secProfileMode, setSecProfileMode] = useState(1);
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const firmwareInputRef = useRef<HTMLInputElement>(null);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [firmwareFile, setFirmwareFile] = useState<File | null>(null);
   const pinWhichRef = useRef<'pin' | 'pin2' | 'sdpin' | null>(null);
   const [pgpKey, setPgpKey] = useState('');
   const [pgpPasscode, setPgpPasscode] = useState('');
@@ -113,8 +113,9 @@ const Setup: React.FC = () => {
   const [showPgpKeySelect, setShowPgpKeySelect] = useState(false);
 
   const isDuo = deviceType === DeviceType.DUO;
+  const inBootloader = isBootloader || deviceType === DeviceType.BOOTLOADER;
   const isUninitialized = deviceType === DeviceType.UNINITIALIZED;
-  const isInitialized = !isUninitialized;
+  const isInitialized = !isUninitialized && !inBootloader;
 
   const run = async (fn: () => Promise<void>) => {
     setIsProcessing(true);
@@ -139,6 +140,8 @@ const Setup: React.FC = () => {
     setPasscode3Disclaimer(false);
     setBackupPassphrase('');
     setBackupConfirm('');
+    setRestoreFile(null);
+    setFirmwareFile(null);
     isDuo ? setDuoStep('Step1') : setClassicStep('Step1');
   };
 
@@ -284,19 +287,31 @@ const Setup: React.FC = () => {
     run(async () => {
       const blocks = parseFirmwareData(await file.text());
       if (!blocks.length) throw new Error('Could not parse firmware file.');
-      if (isBootloader) {
-        await device!.loadFirmwareBlocks(blocks);
-        clearPendingFirmware();
-        goToLanding();
-        return;
-      }
+      setWorking(
+        true,
+        isBootloader
+          ? 'Loading firmware… 0%'
+          : 'Triggering reboot to bootloader — do not remove OnlyKey…',
+        isBootloader ? 0 : null,
+      );
       try {
-        await device!.triggerBootloader();
-      } catch (err) {
-        clearPendingFirmware();
-        throw err;
+        if (isBootloader) {
+          await device!.loadFirmwareBlocks(blocks, (pct) => {
+            setWorking(true, `Loading firmware… ${Math.round(pct)}%`, pct);
+          });
+          clearPendingFirmware();
+        } else {
+          try {
+            await device!.triggerBootloader();
+          } catch (err) {
+            clearPendingFirmware();
+            throw err;
+          }
+          storePendingFirmware(blocks);
+        }
+      } finally {
+        setWorking(false);
       }
-      storePendingFirmware(blocks);
       goToLanding();
     });
 
@@ -320,6 +335,11 @@ const Setup: React.FC = () => {
 
   const Step1: React.FC = () => (
     <div id="Step1">
+      {inBootloader && (
+        <p>
+          The OnlyKey is in bootloader mode. Load firmware to continue setup.
+        </p>
+      )}
       {isUninitialized && (
         <p>
           Begin the Guided Setup wizard by clicking [Next] at bottom. Or, if you would like to upgrade firmware on your
@@ -335,7 +355,7 @@ const Setup: React.FC = () => {
       {isInitialized && <ConfigModeBlock />}
 
       <div className="setup-action-buttons flex flex-wrap gap-2">
-        {isUninitialized && (
+        {(isUninitialized || inBootloader) && (
           <SetButton onClick={() => startUnguided('Step11')}>Load Firmware</SetButton>
         )}
         {isInitialized && (
@@ -484,14 +504,19 @@ const Setup: React.FC = () => {
         {duoStep === 'Step10' && (
           <RestoreStep
             inputRef={restoreInputRef}
-            onFile={handleRestore}
+            onFile={setRestoreFile}
           />
         )}
 
         {duoStep === 'Step11' && (
           <FirmwareStep
             inputRef={firmwareInputRef}
-            onFile={handleFirmware}
+            selectedFile={firmwareFile}
+            onFile={setFirmwareFile}
+            onLoad={() => {
+              if (firmwareFile) void handleFirmware(firmwareFile);
+            }}
+            isProcessing={isProcessing}
           />
         )}
 
@@ -525,11 +550,14 @@ const Setup: React.FC = () => {
                 : duoStep === 'Step9'
                   ? handlePgpImport
                   : duoStep === 'Step10'
-                    ? () => restoreInputRef.current?.click()
-                    : () => firmwareInputRef.current?.click()
+                    ? () => {
+                        if (restoreFile) void handleRestore(restoreFile);
+                      }
+                    : undefined
             }
             onCancel={cancelSetupStep}
-            nextLabel={duoStep === 'Step11' ? 'Load Firmware to OnlyKey' : 'Next'}
+            nextLabel="Next"
+            nextDisabled={duoStep === 'Step10' && !restoreFile}
           />
         )}
 
@@ -857,11 +885,19 @@ const Setup: React.FC = () => {
       )}
 
       {classicStep === 'Step10' && (
-        <RestoreStep inputRef={restoreInputRef} onFile={handleRestore} />
+        <RestoreStep inputRef={restoreInputRef} onFile={setRestoreFile} />
       )}
 
       {classicStep === 'Step11' && (
-        <FirmwareStep inputRef={firmwareInputRef} onFile={handleFirmware} />
+        <FirmwareStep
+          inputRef={firmwareInputRef}
+          selectedFile={firmwareFile}
+          onFile={setFirmwareFile}
+          onLoad={() => {
+            if (firmwareFile) void handleFirmware(firmwareFile);
+          }}
+          isProcessing={isProcessing}
+        />
       )}
 
       {classicStep === 'Step1' && <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized} showGuided onNext={startGuided} />}
@@ -971,16 +1007,17 @@ const Setup: React.FC = () => {
 
       {classicStep === 'Step10' && (
         <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
-          onNext={() => restoreInputRef.current?.click()}
+          onNext={() => {
+            if (restoreFile) void handleRestore(restoreFile);
+          }}
           onCancel={cancelSetupStep}
+          nextDisabled={!restoreFile}
         />
       )}
 
       {classicStep === 'Step11' && (
         <StepNav isProcessing={isProcessing} isUninitialized={isUninitialized}
-          onNext={() => firmwareInputRef.current?.click()}
           onCancel={cancelSetupStep}
-          nextLabel="Load Firmware to OnlyKey"
         />
       )}
 
@@ -1207,13 +1244,15 @@ const PgpBackupKeyStep: React.FC<{
 
 const RestoreStep: React.FC<{
   inputRef: React.RefObject<HTMLInputElement | null>;
-  onFile: (f: File) => void;
+  onFile: (f: File | null) => void;
 }> = ({ inputRef, onFile }) => (
   <div id="Step10">
     <h3>Restore from Backup</h3>
     <StepFieldset>
-      To restore a backup file to your OnlyKey, ensure you have loaded the same backup passphrase or backup key you used
-      to create the backup.
+      <p>
+        To restore a backup file to your OnlyKey, ensure you have loaded the same backup passphrase or backup key you used
+        to create the backup.
+      </p>
       <p>Click [Choose File], select your backup file, then click [Next].</p>
       <p>
         Restore can take up to 1 minute to complete, your OnlyKey will automatically reboot when restoring is complete.
@@ -1227,31 +1266,43 @@ const RestoreStep: React.FC<{
       type="file"
       accept=".txt,.okb"
       className="ok-file-input"
-      onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+      onChange={(e) => onFile(e.target.files?.[0] ?? null)}
     />
   </div>
 );
 
 const FirmwareStep: React.FC<{
   inputRef: React.RefObject<HTMLInputElement | null>;
-  onFile: (f: File) => void;
-}> = ({ inputRef, onFile }) => (
+  selectedFile: File | null;
+  onFile: (f: File | null) => void;
+  onLoad: () => void;
+  isProcessing: boolean;
+}> = ({ inputRef, selectedFile, onFile, onLoad, isProcessing }) => (
   <div id="Step11">
     <h2>Load Firmware</h2>
-    To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware
-    to OnlyKey].
-    <p>
-      The OnlyKey will restart automatically when firmware load is complete.
-      <br />
-      <br />
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".okfw,.txt,.hex"
-        className="ok-file-input"
-        onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-      />
-    </p>
+    <div className="space-y-4">
+      <p>
+        To load new firmware file to your OnlyKey, click [Choose File], select your firmware file, then click [Load Firmware
+        to OnlyKey].
+      </p>
+      <p>The OnlyKey will restart automatically when firmware load is complete.</p>
+    </div>
+    <input
+      ref={inputRef}
+      type="file"
+      accept=".okfw,.txt,.hex"
+      className="ok-file-input"
+      onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+    />
+    <div className="mt-4">
+      <SetButton
+        disabled={isProcessing || !selectedFile}
+        onClick={onLoad}
+        title={selectedFile ? undefined : 'Select a firmware file first'}
+      >
+        {isProcessing ? 'Please wait…' : 'Load Firmware to OnlyKey'}
+      </SetButton>
+    </div>
   </div>
 );
 

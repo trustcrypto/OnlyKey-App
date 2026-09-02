@@ -8,7 +8,7 @@ export const SetButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> 
 }) => (
   <button
     type="button"
-    className={`px-4 py-2 bg-ok-blue hover:bg-blue-600 text-on-blue rounded-lg text-sm font-semibold disabled:opacity-50 disabled:hover:bg-ok-blue transition-colors ${className}`}
+    className={`px-4 py-2 bg-ok-blue hover:bg-blue-600 text-on-blue rounded-lg text-sm font-semibold disabled:opacity-50 disabled:hover:bg-ok-blue disabled:cursor-not-allowed transition-colors ${className}`}
     {...props}
   >
     {children}

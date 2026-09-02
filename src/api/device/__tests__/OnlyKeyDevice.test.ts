@@ -673,6 +673,25 @@ it('should timeout if hardware does not respond', async () => {
     expect(device.state.isLocked).toBe(false);
   });
 
+  it('treats UNLOCKED BOOTLOADERv1 as bootloader, not an application unlock', async () => {
+    const transport = new MockTransport({ startLocked: true });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0, productId: 0 });
+    expect(device.state.isLocked).toBe(true);
+    const sendSpy = vi.spyOn(transport, 'send');
+    sendSpy.mockClear();
+
+    transport.simulateResponse('UNLOCKED BOOTLOADERv1');
+
+    expect(device.state.deviceType).toBe(DeviceType.BOOTLOADER);
+    expect(device.state.isBootloader).toBe(true);
+    expect(device.state.isLocked).toBe(false);
+    expect(device.state.version).toBe('v1');
+    expect(sendSpy.mock.calls.some((c) => (c[1] as Uint8Array)[4] === MessageID.OKSETTIME)).toBe(
+      false,
+    );
+  });
+
   it('connect on a bootloader transport sets isBootloader without a manual assignment', async () => {
     const transport = new MockTransport({ deviceType: 'bootloader' });
     const device = new OnlyKeyDevice(transport);

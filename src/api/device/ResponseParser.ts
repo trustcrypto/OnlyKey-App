@@ -87,6 +87,18 @@ export class ResponseParser {
       };
     }
 
+    // "UNLOCKED BOOTLOADERv1" is bootloader, not an application unlock.
+    if (text.includes('BOOTLOADER')) {
+      return {
+        type: 'status',
+        text,
+        version: extractVersionAfterPrefix(text, 'BOOTLOADER'),
+        deviceType: DeviceType.BOOTLOADER,
+        isLocked: false,
+        devicePinSet: false,
+      };
+    }
+
     if (text.includes('UNLOCKED-D')) {
       const version = extractVersionAfterPrefix(text, 'UNLOCKED-D');
       return {
@@ -133,15 +145,6 @@ export class ResponseParser {
         version,
         deviceType: DeviceType.CLASSIC,
         isLocked: true,
-      };
-    }
-
-    if (text.includes('BOOTLOADER')) {
-      return {
-        type: 'status',
-        text,
-        deviceType: DeviceType.BOOTLOADER,
-        isLocked: false,
       };
     }
 

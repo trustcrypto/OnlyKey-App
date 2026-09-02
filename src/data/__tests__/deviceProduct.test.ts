@@ -15,5 +15,9 @@ describe('deviceProduct', () => {
     expect(connectedDeviceLabel(DeviceType.UNINITIALIZED, 'v2.1.0-prod')).toBe(
       'OnlyKey (uninitialized)',
     );
+    expect(connectedDeviceLabel(DeviceType.BOOTLOADER, 'v1')).toBe('OnlyKey (bootloader v1)');
+    expect(connectedDeviceLabel(DeviceType.BOOTLOADER, 'BOOTLOADERv1')).toBe(
+      'OnlyKey (bootloader v1)',
+    );
   });
 });

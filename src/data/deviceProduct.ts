@@ -9,6 +9,10 @@ export function deviceProductName(deviceType: DeviceType): string {
 export function connectedDeviceLabel(deviceType: DeviceType, version: string): string {
   const name = deviceProductName(deviceType);
   if (deviceType === DeviceType.UNINITIALIZED) return `${name} (uninitialized)`;
+  if (deviceType === DeviceType.BOOTLOADER) {
+    const v = version.replace(/BOOTLOADER/gi, '').trim();
+    return v ? `${name} (bootloader ${v})` : `${name} (bootloader)`;
+  }
   const v = version.trim();
   return v ? `${name} ${v}` : name;
 }

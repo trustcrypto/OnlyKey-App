@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Setup from '../Setup';
+import WorkingDialog from '../dialogs/WorkingDialog';
 import { DeviceType } from '../../api/device/types';
 import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
@@ -21,6 +22,16 @@ vi.mock('../../services/keyImport/keyBundleParser', () => ({
 }));
 
 const pgpPem = '-----BEGIN PGP PRIVATE KEY BLOCK-----';
+const signedFirmwareFile = () =>
+  new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
+
+async function chooseSetupFirmwareFile(
+  user: ReturnType<typeof userEvent.setup>,
+  file: File = signedFirmwareFile(),
+) {
+  const input = document.querySelector('#Step11 input[type="file"]') as HTMLInputElement;
+  await user.upload(input, file);
+}
 
 describe('Setup page', () => {
   beforeEach(() => {
@@ -40,6 +51,23 @@ describe('Setup page', () => {
     expect(screen.getByRole('button', { name: /load firmware/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
     expect(screen.getByText(/begin the guided setup wizard/i)).toBeInTheDocument();
+  });
+
+  it('shows firmware load, not ready-to-use, while in bootloader', () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.BOOTLOADER,
+      isBootloader: true,
+      isLocked: false,
+      version: 'BOOTLOADERv1',
+    });
+    renderWithProviders(<Setup />);
+
+    expect(screen.getByText(/in bootloader mode/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /load firmware/i })).toBeInTheDocument();
+    expect(screen.queryByText(/your onlykey is ready to use/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /change primary pin/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^next$/i })).not.toBeInTheDocument();
   });
 
   it('shows Classic config-mode actions when initialized', () => {
@@ -86,8 +114,13 @@ describe('Setup page', () => {
     const restoreInputs = document.querySelectorAll('#Step10 input[type="file"]');
     expect(restoreInputs).toHaveLength(1);
     expect(restoreInputs[0]).toHaveClass('ok-file-input');
+    const nextOnRestore = screen.getByRole('button', { name: /^next$/i });
+    expect(nextOnRestore).toBeDisabled();
     const restoreFile = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
     await user.upload(restoreInputs[0] as HTMLInputElement, restoreFile);
+    expect(device.restore).not.toHaveBeenCalled();
+    expect(nextOnRestore).toBeEnabled();
+    await user.click(nextOnRestore);
     await waitFor(() => expect(device.restore).toHaveBeenCalled());
   });
 
@@ -218,23 +251,43 @@ describe('Setup page', () => {
     await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('sdpin', 'commit'));
   });
 
-  it('loads firmware blocks immediately while in bootloader', async () => {
+  it('loads firmware only after Load Firmware is clicked and shows Working in bootloader', async () => {
     const user = userEvent.setup();
-    const device = createMockDeviceClient();
+    let finishLoad!: () => void;
+    const loadFirmwareBlocks = vi.fn(
+      (_blocks: string[], onProgress?: (pct: number) => void) =>
+        new Promise<void>((resolve) => {
+          onProgress?.(40);
+          finishLoad = resolve;
+        }),
+    );
+    const device = createMockDeviceClient({ loadFirmwareBlocks });
     seedDeviceStore({
       device,
-      deviceType: DeviceType.UNINITIALIZED,
+      deviceType: DeviceType.BOOTLOADER,
       isLocked: false,
       isBootloader: true,
     });
-    renderWithProviders(<Setup />);
+    renderWithProviders(
+      <>
+        <WorkingDialog />
+        <Setup />
+      </>,
+    );
     await user.click(screen.getByRole('button', { name: /load firmware/i }));
-    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
-    const inputs = document.querySelectorAll('input[type="file"]');
-    await user.upload(inputs[inputs.length - 1] as HTMLInputElement, file);
-    await waitFor(() => {
-      expect(device.loadFirmwareBlocks).toHaveBeenCalled();
-    });
+    const loadBtn = screen.getByRole('button', { name: /load firmware to onlykey/i });
+    expect(loadBtn).toBeDisabled();
+    await chooseSetupFirmwareFile(user);
+    expect(device.loadFirmwareBlocks).not.toHaveBeenCalled();
+    expect(loadBtn).toBeEnabled();
+    await user.click(loadBtn);
+    await waitFor(() => expect(loadFirmwareBlocks).toHaveBeenCalled());
+    expect(await screen.findByTestId('working-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('working-message')).toHaveTextContent(/loading firmware/i);
+    expect(screen.getByTestId('working-progress')).toHaveAttribute('aria-valuenow', '40');
+    expect(screen.getByText('40%')).toBeInTheDocument();
+    finishLoad();
+    await waitFor(() => expect(screen.queryByTestId('working-dialog')).not.toBeInTheDocument());
     expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
   });
 
@@ -350,9 +403,8 @@ describe('Setup page', () => {
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /load firmware/i }));
-    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
-    const inputs = document.querySelectorAll('input[type="file"]');
-    await user.upload(inputs[inputs.length - 1] as HTMLInputElement, file);
+    await chooseSetupFirmwareFile(user);
+    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
 
     await waitFor(() => {
       expect(device.triggerBootloader).toHaveBeenCalled();
@@ -372,9 +424,8 @@ describe('Setup page', () => {
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /load firmware/i }));
-    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
-    const inputs = document.querySelectorAll('input[type="file"]');
-    await user.upload(inputs[inputs.length - 1] as HTMLInputElement, file);
+    await chooseSetupFirmwareFile(user);
+    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
 
     await waitFor(() => {
       expect(device.triggerBootloader).toHaveBeenCalled();
@@ -524,9 +575,8 @@ describe('Setup page', () => {
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /load firmware/i }));
-    const badFw = new File(['nope'], 'fw.txt', { type: 'text/plain' });
-    const fwInputs = document.querySelectorAll('input[type="file"]');
-    await user.upload(fwInputs[fwInputs.length - 1] as HTMLInputElement, badFw);
+    await chooseSetupFirmwareFile(user, new File(['nope'], 'fw.txt', { type: 'text/plain' }));
+    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
     expect(await screen.findByText(/invalid hex|could not parse firmware/i)).toBeInTheDocument();
   });
 
@@ -697,10 +747,12 @@ describe('Setup page', () => {
     fireEvent.change(screen.getByLabelText(/^re-enter passphrase$/i), { target: { value: passphrase } });
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /restore from backup/i })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(screen.getByRole('button', { name: /^next$/i })).toBeDisabled();
     const restoreFile = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
     const restoreInputs = document.querySelectorAll('#Step10 input[type="file"]');
     await user.upload(restoreInputs[restoreInputs.length - 1] as HTMLInputElement, restoreFile);
+    expect(restore).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => expect(restore).toHaveBeenCalled());
   });
 
@@ -716,6 +768,8 @@ describe('Setup page', () => {
     const fwInputs = document.querySelectorAll('#Step11 input[type="file"]');
     expect(fwInputs).toHaveLength(1);
     expect(fwInputs[0]).toHaveClass('ok-file-input');
-    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
+    expect(screen.getByRole('button', { name: /load firmware to onlykey/i })).toBeDisabled();
+    await chooseSetupFirmwareFile(user);
+    expect(screen.getByRole('button', { name: /load firmware to onlykey/i })).toBeEnabled();
   });
 });

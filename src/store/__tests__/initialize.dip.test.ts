@@ -163,7 +163,7 @@ describe('useDeviceStore.initialize DIP', () => {
 
     useDeviceStore.setState({ isBootloader: true });
     await useDeviceStore.getState().connect({ announce: false });
-    expect(loadFirmwareBlocks).toHaveBeenCalledWith(['aa']);
+    expect(loadFirmwareBlocks).toHaveBeenCalledWith(['aa'], expect.any(Function));
   });
 
   it('resumes pending firmware while in bootloader', async () => {
@@ -173,8 +173,37 @@ describe('useDeviceStore.initialize DIP', () => {
     await useDeviceStore.getState().initialize({ device, useMock: true });
     useDeviceStore.setState({ isBootloader: true });
     await useDeviceStore.getState().resumePendingFirmware();
-    expect(loadFirmwareBlocks).toHaveBeenCalledWith(['aa', 'bb']);
+    expect(loadFirmwareBlocks).toHaveBeenCalledWith(['aa', 'bb'], expect.any(Function));
     expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
+  });
+
+  it('shows percent progress on the working overlay while resuming firmware', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const loadFirmwareBlocks = vi.fn(
+      async (_blocks: string[], onProgress?: (pct: number) => void) => {
+        onProgress?.(40);
+        await gate;
+      },
+    );
+    const device = createMockDeviceClient({ loadFirmwareBlocks });
+    sessionStorage.setItem('ok-pending-firmware', JSON.stringify(['aa']));
+    await useDeviceStore.getState().initialize({ device, useMock: true });
+    useDeviceStore.setState({ isBootloader: true });
+
+    const done = useDeviceStore.getState().resumePendingFirmware();
+    await vi.waitFor(() => {
+      expect(useDeviceStore.getState().workingProgress).toBe(40);
+    });
+    expect(useDeviceStore.getState().isWorking).toBe(true);
+    expect(useDeviceStore.getState().workingMessage).toMatch(/40%/);
+
+    release();
+    await done;
+    expect(useDeviceStore.getState().isWorking).toBe(false);
+    expect(useDeviceStore.getState().workingProgress).toBeNull();
   });
 
   it('does not start a second firmware load when two resumes overlap', async () => {

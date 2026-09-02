@@ -391,8 +391,10 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
       // start another loadFirmwareBlocks on the same HID queue.
       clearPendingFirmware();
       try {
-        get().setWorking(true, 'Loading firmware…');
-        await device.loadFirmwareBlocks(pending);
+        get().setWorking(true, 'Loading firmware… 0%', 0);
+        await device.loadFirmwareBlocks(pending, (pct) => {
+          get().setWorking(true, `Loading firmware… ${Math.round(pct)}%`, pct);
+        });
       } catch (e: any) {
         set({ error: e.message });
       } finally {

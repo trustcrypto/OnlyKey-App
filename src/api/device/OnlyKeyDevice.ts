@@ -287,6 +287,17 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       const wasLocked = this.state.isLocked;
       const text = response.text ?? '';
 
+      if (text.includes('BOOTLOADER') || response.deviceType === DeviceType.BOOTLOADER) {
+        if (!this.state.isBootloader) {
+          this.state.isBootloader = true;
+          stateChanged = true;
+        }
+        if (this.state.isLocked) {
+          this.state.isLocked = false;
+          stateChanged = true;
+        }
+      }
+
       // Explicit unlock/lock from firmware status strings. Do not rely solely on
       // response.isLocked — defensive for any parser edge cases.
       if (text.includes('UNLOCKED')) {
@@ -299,6 +310,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         // Firmware ignores OKSETTIME while locked (no recvmsg). 5.6 called
         // setTime after UNLOCKED so TOTP has a clock. refreshStatus is only a
         // lock probe — it must not stand in for this post-unlock setTime.
+        // UNLOCKED BOOTLOADERv1 is not an application unlock — skip setTime.
         if (justUnlocked && !this.state.isBootloader) {
           void this.setTime().catch(() => {
             /* unplug during setTime */
@@ -363,16 +375,6 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       if (this.state.devicePinSet !== pinSet) {
         this.state.devicePinSet = pinSet;
         stateChanged = true;
-      }
-      if (text.includes('BOOTLOADER') || response.deviceType === DeviceType.BOOTLOADER) {
-        if (!this.state.isBootloader) {
-          this.state.isBootloader = true;
-          stateChanged = true;
-        }
-        if (this.state.isLocked) {
-          this.state.isLocked = false;
-          stateChanged = true;
-        }
       }
     }
 

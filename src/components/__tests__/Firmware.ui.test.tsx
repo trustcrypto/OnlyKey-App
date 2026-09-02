@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Firmware from '../Firmware';
+import WorkingDialog from '../dialogs/WorkingDialog';
 import { DeviceType } from '../../api/device/types';
 import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
@@ -75,6 +76,7 @@ describe('Firmware page', () => {
     });
     renderWithProviders(<Firmware />);
     expect(screen.getByRole('button', { name: /download latest firmware/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /load firmware to onlykey/i })).toBeDisabled();
     expect(document.querySelector('input[type="file"]')).not.toBeDisabled();
     expect(screen.queryByText(/does not support this feature/i)).not.toBeInTheDocument();
     expect(screen.getByText(/click \[choose file\]/i)).toBeInTheDocument();
@@ -105,6 +107,47 @@ describe('Firmware page', () => {
     });
     expect(device.triggerBootloader).not.toHaveBeenCalled();
     expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
+    expect(screen.getByText(/firmware load complete/i)).toBeInTheDocument();
+  });
+
+  it('does not send firmware until Load is clicked and shows Working in bootloader', async () => {
+    const user = userEvent.setup();
+    let finishLoad!: () => void;
+    const loadFirmwareBlocks = vi.fn(
+      (_blocks: string[], onProgress?: (pct: number) => void) =>
+        new Promise<void>((resolve) => {
+          onProgress?.(25);
+          finishLoad = resolve;
+        }),
+    );
+    const device = createMockDeviceClient({ loadFirmwareBlocks });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.BOOTLOADER,
+      fwUpdateSupport: false,
+      isBootloader: true,
+      version: 'v1',
+    });
+    renderWithProviders(
+      <>
+        <WorkingDialog />
+        <Firmware />
+      </>,
+    );
+    const loadBtn = screen.getByRole('button', { name: /load firmware to onlykey/i });
+    expect(loadBtn).toBeDisabled();
+    const file = new File(['-----BEGIN SIGNED FIRMWARE-----\naabb\n'], 'fw.txt', { type: 'text/plain' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+    expect(loadFirmwareBlocks).not.toHaveBeenCalled();
+    expect(loadBtn).toBeEnabled();
+    await user.click(loadBtn);
+    await waitFor(() => expect(loadFirmwareBlocks).toHaveBeenCalled());
+    expect(await screen.findByTestId('working-dialog')).toBeInTheDocument();
+    expect(screen.getByTestId('working-message')).toHaveTextContent(/loading firmware/i);
+    expect(screen.getByTestId('working-progress')).toHaveAttribute('aria-valuenow', '25');
+    expect(screen.getByText('25%')).toBeInTheDocument();
+    finishLoad();
+    await waitFor(() => expect(screen.queryByTestId('working-dialog')).not.toBeInTheDocument());
     expect(screen.getByText(/firmware load complete/i)).toBeInTheDocument();
   });
 

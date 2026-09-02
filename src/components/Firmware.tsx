@@ -10,7 +10,7 @@ import { SetButton, StepFieldset } from './ui/forms';
 import { HelpTip } from './ui/HelpTip';
 
 const Firmware: React.FC = () => {
-  const { device, version, isBootloader, fwUpdateSupport, deviceType } = useDeviceStore();
+  const { device, version, isBootloader, fwUpdateSupport, deviceType, setWorking } = useDeviceStore();
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -30,20 +30,31 @@ const Firmware: React.FC = () => {
       // bootloader PID.
       clearPendingFirmware();
       setStatus('Sending firmware blocks...');
-      await device.loadFirmwareBlocks(blocks, setProgress);
+      setWorking(true, 'Loading firmware… 0%', 0);
+      try {
+        await device.loadFirmwareBlocks(blocks, (pct) => {
+          setProgress(pct);
+          setWorking(true, `Loading firmware… ${Math.round(pct)}%`, pct);
+        });
+      } finally {
+        setWorking(false);
+      }
       setStatus('Firmware load complete!');
       return;
     }
 
     setStatus('Triggering reboot to bootloader — do not remove OnlyKey...');
+    setWorking(true, 'Triggering reboot to bootloader — do not remove OnlyKey…');
     try {
       await device.triggerBootloader();
     } catch (err) {
       clearPendingFirmware();
+      setWorking(false);
       setStatus(null);
       throw err;
     }
     storePendingFirmware(blocks);
+    setWorking(false);
     setStatus('Device rebooting to bootloader. Reconnect and the update will resume automatically.');
   };
 
@@ -148,6 +159,7 @@ const Firmware: React.FC = () => {
         <SetButton
           onClick={handleLoadFirmware}
           disabled={isLoading || !selectedFile || !canLoadFirmware}
+          title={selectedFile ? undefined : 'Select a firmware file first'}
         >
           Load Firmware to OnlyKey
         </SetButton>

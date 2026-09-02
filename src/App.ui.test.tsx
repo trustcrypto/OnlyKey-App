@@ -57,6 +57,25 @@ describe('App shell', () => {
     expect(screen.queryByTestId('disconnected-overlay')).not.toBeInTheDocument();
   });
 
+  it('reports bootloader status instead of Unlocked after UNLOCKED BOOTLOADERv1', () => {
+    stubDeviceInitialize();
+    seedDeviceStore({
+      isConnected: true,
+      isLocked: false,
+      isConfigMode: false,
+      isBootloader: true,
+      deviceType: DeviceType.BOOTLOADER,
+      version: 'v1',
+      device: null,
+    });
+    renderWithProviders(<App />);
+
+    expect(within(screen.getByTestId('sidebar-status')).getByText('Bootloader')).toBeInTheDocument();
+    expect(within(screen.getByTestId('sidebar-status')).getByText('OnlyKey (bootloader v1)')).toBeInTheDocument();
+    expect(screen.queryByText('Unlocked')).not.toBeInTheDocument();
+    expect(screen.queryByText(/your onlykey is ready to use/i)).not.toBeInTheDocument();
+  });
+
   it('reports a wiped device as Uninitialized, not Locked', () => {
     stubDeviceInitialize();
     seedDeviceStore({
