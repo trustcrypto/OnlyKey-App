@@ -3,22 +3,12 @@
  * Minimal NW tray menu smoke test. Writes tmp/tray-menu-smoke.json on success.
  * Run after npm install: node scripts/tray-menu-smoke.mjs
  */
-import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveNwExe } from './nw-runtime.mjs';
+import { rootDir, spawnNw, stopStaleNwInstances } from './nw-runtime.mjs';
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const packageJsonPath = path.join(rootDir, 'package.json');
-
-function stopNw() {
-  try {
-    execSync('taskkill /F /IM nw.exe', { stdio: 'ignore' });
-  } catch {
-    // ignore
-  }
-}
 
 const smokeHtml = path.join(rootDir, 'tmp', 'tray-menu-smoke.html');
 fs.mkdirSync(path.dirname(smokeHtml), { recursive: true });
@@ -53,10 +43,9 @@ fs.writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
 const resultPath = path.join(rootDir, 'tmp', 'tray-menu-smoke.json');
 if (fs.existsSync(resultPath)) fs.unlinkSync(resultPath);
 
-stopNw();
-const nwExe = resolveNwExe();
+stopStaleNwInstances();
 await new Promise((resolve) => {
-  spawn(nwExe, ['.', `--user-data-dir=${path.join(rootDir, 'tmp', 'tray-menu-smoke')}`], {
+  spawnNw(['.', `--user-data-dir=${path.join(rootDir, 'tmp', 'tray-menu-smoke')}`], {
     cwd: rootDir,
     stdio: 'ignore',
     windowsHide: true,
@@ -65,7 +54,7 @@ await new Promise((resolve) => {
 
 pkg.main = origMain;
 fs.writeFileSync(packageJsonPath, `${JSON.stringify(pkg, null, 2)}\n`);
-stopNw();
+stopStaleNwInstances();
 
 const ok = fs.existsSync(resultPath);
 console.log(ok ? fs.readFileSync(resultPath, 'utf8') : 'FAIL: MenuItem.click did not run');

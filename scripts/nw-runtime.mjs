@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,12 +44,72 @@ export function resolveNwExe() {
   return exePath;
 }
 
+/**
+ * Spawn NW.js. On Windows, retry UNKNOWN/EPERM after taskkill — the kernel
+ * still holds nw.exe for a beat and ChildProcess.spawn throws synchronously.
+ */
+export function spawnNw(nwArgs, options = {}) {
+  const nwExe = resolveNwExe();
+  const opts = {
+    cwd: rootDir,
+    stdio: 'inherit',
+    windowsHide: false,
+    ...options,
+  };
+  const attempts = process.platform === 'win32' ? 10 : 1;
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return spawn(nwExe, nwArgs, opts);
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryableNwSpawnError(err) || i === attempts - 1) throw err;
+      sleepMs(150);
+    }
+  }
+  throw lastErr;
+}
+
+const NW_SPAWN_RETRY_CODES = new Set(['UNKNOWN', 'EPERM', 'EACCES', 'EBUSY']);
+
+export function isRetryableNwSpawnError(err) {
+  const code = err && typeof err === 'object' ? err.code : undefined;
+  return typeof code === 'string' && NW_SPAWN_RETRY_CODES.has(code);
+}
+
+/** tasklist /NH line is `nw.exe` when a process exists, `INFO:` when none. */
+export function tasklistShowsNw(output) {
+  return /(?:^|[\r\n])nw\.exe\b/i.test(String(output));
+}
+
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function winNwStillRunning() {
+  try {
+    const out = execSync('tasklist /FI "IMAGENAME eq nw.exe" /NH', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    return tasklistShowsNw(out);
+  } catch {
+    return false;
+  }
+}
+
 export function stopStaleNwInstances() {
   if (process.platform === 'win32') {
     try {
-      execSync('taskkill /F /IM nw.exe', { stdio: 'ignore' });
+      execSync('taskkill /F /IM nw.exe /T', { stdio: 'ignore', windowsHide: true });
     } catch {
       // No running instances.
+    }
+    // Windows keeps nw.exe mapped briefly after taskkill; spawn then throws UNKNOWN.
+    const deadline = Date.now() + 4000;
+    while (Date.now() < deadline && winNwStillRunning()) {
+      sleepMs(100);
     }
     return;
   }

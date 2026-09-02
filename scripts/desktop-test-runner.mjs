@@ -6,7 +6,6 @@
  * and then fail with "SyntaxError: Invalid or unexpected token".
  * Run with: node scripts/desktop-test-runner.mjs
  */
-import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +16,7 @@ import {
   setPackageMain,
   restorePackageMain,
   clearTrayArtifactsOnDisk,
+  spawnNw,
 } from './nw-runtime.mjs';
 
 export { resolveNwExe };
@@ -103,10 +103,7 @@ export async function runDesktopHarness(options = {}) {
   const previousMain = setPackageMain(entry);
   const previousInjectJsEnd =
     options.injectJsEnd !== undefined ? setPackageInjectJsEnd(options.injectJsEnd) : undefined;
-  const nwExe = resolveNwExe();
-
-  const child = spawn(
-    nwExe,
+  const child = spawnNw(
     [
       '.',
       '--onlykey-desktop-test',

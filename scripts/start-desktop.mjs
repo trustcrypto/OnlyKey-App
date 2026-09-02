@@ -3,16 +3,16 @@
  * Build (if needed), stop stale NW.js instances, and launch the desktop app.
  * Uses dist/index.html as the NW entry (same as production) unless --dev-server is passed.
  */
-import { execSync, spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
   rootDir,
-  resolveNwExe,
   stopStaleNwInstances,
   setPackageMain,
   restorePackageMain,
   clearTrayArtifactsOnDisk,
+  spawnNw,
 } from './nw-runtime.mjs';
 
 function ensureBuild() {
@@ -54,14 +54,20 @@ function shutdown(exitCode) {
 process.on('SIGINT', () => shutdown(130));
 process.on('SIGTERM', () => shutdown(143));
 
-const nwExe = resolveNwExe();
 const args = ['.', '--onlykey-dev', ...launchArgs];
 
-const child = spawn(nwExe, args, {
-  cwd: rootDir,
-  stdio: 'inherit',
-  windowsHide: false,
-});
+let child;
+try {
+  child = spawnNw(args, {
+    cwd: rootDir,
+    stdio: 'inherit',
+    windowsHide: false,
+  });
+} catch (error) {
+  cleanup();
+  console.error('Failed to launch NW.js:', error);
+  process.exit(1);
+}
 
 child.on('close', (code) => {
   stopStaleNwInstances();
