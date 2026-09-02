@@ -5,7 +5,6 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { rootDir, spawnNw, stopStaleNwInstances } from './nw-runtime.mjs';
 
 const packageJsonPath = path.join(rootDir, 'package.json');
