@@ -2,8 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Advanced from '../Advanced';
+import { DeviceType } from '../../api/device/types';
+import { CONFIG_MODE_REQUIRED } from '../../data/configMode';
 import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
+
+const wipePages = [
+  { name: 'classic', deviceType: DeviceType.CLASSIC },
+  { name: 'duo', deviceType: DeviceType.DUO },
+];
 
 describe('Advanced page', () => {
   it('is hidden without a device', () => {
@@ -38,21 +45,31 @@ describe('Advanced page', () => {
     expect(screen.getByText(/yubikey security info saved/i)).toBeInTheDocument();
   });
 
-  it('blocks private-key save outside config mode', async () => {
-    const user = userEvent.setup();
-    const device = createMockDeviceClient();
-    seedDeviceStore({ device, isConfigMode: false });
-    renderWithProviders(<Advanced />);
+  /*
+   * Do not pre-judge config mode. isConfigMode reads false if the app missed
+   * the transition (reconnect, already in config mode at startup, DUO no-PIN).
+   * Send anyway; firmware accepts or refuses. 3.0.4 refuses OKWIPEPRIV with
+   * "Error device locked"; newer firmware says "Error not in config mode".
+   */
+  it.each(wipePages)(
+    '$name: sends a private-key save even when isConfigMode reads false',
+    async ({ deviceType }) => {
+      const user = userEvent.setup();
+      const device = createMockDeviceClient();
+      seedDeviceStore({ device, isConfigMode: false, deviceType });
+      renderWithProviders(<Advanced />);
 
-    await user.type(
-      screen.getByPlaceholderText(/private key/i),
-      '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
-    );
-    await user.click(screen.getAllByRole('button', { name: /save to onlykey/i })[1]);
+      await user.type(
+        screen.getByPlaceholderText(/private key/i),
+        '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff'
+      );
+      await user.click(screen.getAllByRole('button', { name: /save to onlykey/i })[1]);
 
-    expect(screen.getByText(/flashing red led/i)).toBeInTheDocument();
-    expect(device.setPrivateKey).not.toHaveBeenCalled();
-  });
+      expect(device.setPrivateKey).toHaveBeenCalledWith(101, 1, expect.any(Array));
+      expect(screen.queryByText(/flashing red led/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/private key saved to slot 101/i)).toBeInTheDocument();
+    },
+  );
 
   it('saves an ECC key in config mode', async () => {
     const user = userEvent.setup();
@@ -149,5 +166,50 @@ describe('Advanced page', () => {
     renderWithProviders(<Advanced />);
     await user.click(screen.getAllByRole('button', { name: /wipe from onlykey/i })[1]);
     expect(device.wipePrivateKey).toHaveBeenCalledWith(101);
+  });
+
+  it.each(wipePages)(
+    '$name: sends a private-key wipe even when isConfigMode reads false',
+    async ({ deviceType }) => {
+      const user = userEvent.setup();
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const device = createMockDeviceClient();
+      seedDeviceStore({ device, isConfigMode: false, deviceType });
+      renderWithProviders(<Advanced />);
+      await user.click(screen.getAllByRole('button', { name: /wipe from onlykey/i })[1]);
+      expect(device.wipePrivateKey).toHaveBeenCalledWith(101);
+      expect(screen.queryByText(/flashing red led/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/private key wiped from slot 101/i)).toBeInTheDocument();
+    },
+  );
+
+  it("surfaces the device's own config-mode refusal instead of guessing", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const device = createMockDeviceClient();
+    // Newer firmware: "Error not in config mode" after formatDeviceLockedError.
+    device.wipePrivateKey = vi
+      .fn()
+      .mockRejectedValue(
+        new Error('OnlyKey must be in config mode (flashing red LED) for this operation.'),
+      );
+    seedDeviceStore({ device, isConfigMode: false });
+    renderWithProviders(<Advanced />);
+    await user.click(screen.getAllByRole('button', { name: /wipe from onlykey/i })[1]);
+    expect(device.wipePrivateKey).toHaveBeenCalledWith(101);
+    expect(await screen.findByText(/flashing red led/i)).toBeInTheDocument();
+  });
+
+  it('surfaces 3.0.4 OKWIPEPRIV locked-as-config-mode copy', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const device = createMockDeviceClient();
+    // 3.0.4: "Error device locked" mapped when the app already sees unlocked.
+    device.wipePrivateKey = vi.fn().mockRejectedValue(new Error(CONFIG_MODE_REQUIRED));
+    seedDeviceStore({ device, isConfigMode: false });
+    renderWithProviders(<Advanced />);
+    await user.click(screen.getAllByRole('button', { name: /wipe from onlykey/i })[1]);
+    expect(device.wipePrivateKey).toHaveBeenCalledWith(101);
+    expect(await screen.findByText(CONFIG_MODE_REQUIRED)).toBeInTheDocument();
   });
 });

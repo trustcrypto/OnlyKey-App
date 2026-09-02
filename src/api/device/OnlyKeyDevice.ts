@@ -11,6 +11,7 @@ import {
 } from './deviceTypeFromStatus';
 import { ResponseParser, DeviceResponse } from './ResponseParser';
 import { hexToModhex, hexStringToByteArray } from './utils';
+import { CONFIG_MODE_FOR_OPERATION, CONFIG_MODE_REQUIRED } from '../../data/configMode';
 
 export declare interface OnlyKeyDevice {
   on(event: 'statusChange', listener: (state: OnlyKeyDevice['state']) => void): this;
@@ -227,15 +228,16 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     }
   }
 
-  private static formatDeviceLockedError(message: string): string {
+  private static formatDeviceLockedError(message: string, isLocked = true): string {
     if (/not in config mode/i.test(message)) {
-      return (
-        'OnlyKey must be in config mode (flashing red LED) for this operation. ' +
-        'If this was a standard preference (type speed, layout, LED, lockout, lock button), ' +
-        'disable Sysadmin Mode first — when Sysadmin Mode is on, firmware requires config mode for all OKSETSLOT writes.'
-      );
+      return CONFIG_MODE_FOR_OPERATION;
     }
     if (/device locked/i.test(message)) {
+      // 3.0.4 OKWIPEPRIV has no "not in config mode" branch — it prints
+      // "Error device locked" whenever unlocked+configmode is false. Newer
+      // firmware names config mode (handled above). If we already believe the
+      // key is unlocked, treat this as a config-mode refusal.
+      if (!isLocked) return CONFIG_MODE_REQUIRED;
       return 'OnlyKey is locked. Unlock your device and try again.';
     }
     return message;
@@ -411,7 +413,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
     // Finally resolve or reject the promise
     if (rejectFn) {
-      rejectFn(new Error(OnlyKeyDevice.formatDeviceLockedError(response.error || 'Unknown device error')));
+      rejectFn(new Error(OnlyKeyDevice.formatDeviceLockedError(response.error || 'Unknown device error', this.state.isLocked)));
     } else if (resolveFn) {
       resolveFn(response);
     }
@@ -1047,7 +1049,12 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
 
       const t = `${res.text ?? ''} ${res.error ?? ''}`.toLowerCase();
       if (res.type === 'error' || /error/i.test(t)) {
-        throw new Error(OnlyKeyDevice.formatDeviceLockedError(res.error || res.text || 'Restore failed'));
+        throw new Error(
+          OnlyKeyDevice.formatDeviceLockedError(
+            res.error || res.text || 'Restore failed',
+            this.state.isLocked,
+          ),
+        );
       }
       if (!t.includes('successfully loaded backup') && !t.includes('remove and reinsert')) {
         throw new Error(res.text || 'Restore failed');

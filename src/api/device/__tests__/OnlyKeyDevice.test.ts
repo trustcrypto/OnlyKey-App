@@ -273,20 +273,103 @@ describe('OnlyKeyDevice', () => {
     await expect(device.wipeYubiAuth()).rejects.toThrow(/config mode/i);
   });
 
-  it('maps device locked errors to unlock guidance (not config mode)', async () => {
-    const transport = new MockTransport();
-    const device = new OnlyKeyDevice(transport);
+  const wipeHw = [
+    { kind: 'classic' as const, vendorId: 0x16c0, productId: 0x0486 },
+    { kind: 'duo' as const, vendorId: 0x1d50, productId: 0x614c },
+  ];
 
-    await device.connect({ vendorId: 0, productId: 0 });
+  it.each(wipeHw)(
+    '$kind: maps device locked errors to unlock guidance while locked',
+    async ({ kind, vendorId, productId }) => {
+      const transport = new MockTransport({ deviceType: kind, startLocked: true });
+      const device = new OnlyKeyDevice(transport);
+      await device.connect({ vendorId, productId });
 
-    vi.spyOn(transport, 'send').mockImplementation(async () => {
-      setTimeout(() => {
-        (transport as any).simulateResponse('Error device locked');
-      }, 10);
-    });
+      vi.spyOn(transport, 'send').mockImplementation(async () => {
+        setTimeout(() => {
+          (transport as any).simulateResponse('Error device locked');
+        }, 10);
+      });
 
-    await expect(device.wipePrivateKey(101)).rejects.toThrow(/locked/i);
-  });
+      await expect(device.wipePrivateKey(101)).rejects.toThrow(/locked/i);
+    },
+  );
+
+  it.each(wipeHw)(
+    '$kind: maps OKWIPEPRIV "device locked" to config-mode guidance when unlocked',
+    async ({ kind, vendorId, productId }) => {
+      const transport = new MockTransport({ deviceType: kind, startLocked: false });
+      const device = new OnlyKeyDevice(transport);
+      await device.connect({ vendorId, productId });
+      expect(device.state.isLocked).toBe(false);
+
+      vi.spyOn(transport, 'send').mockImplementation(async () => {
+        setTimeout(() => {
+          (transport as any).simulateResponse('Error device locked');
+        }, 10);
+      });
+
+      await expect(device.wipePrivateKey(101)).rejects.toThrow(/flashing red led/i);
+    },
+  );
+
+  it.each(wipeHw)(
+    '$kind: maps OKWIPEPRIV "not in config mode" the way newer firmware names it',
+    async ({ kind, vendorId, productId }) => {
+      const transport = new MockTransport({ deviceType: kind, startLocked: false });
+      const device = new OnlyKeyDevice(transport);
+      await device.connect({ vendorId, productId });
+      expect(device.state.isLocked).toBe(false);
+
+      vi.spyOn(transport, 'send').mockImplementation(async () => {
+        setTimeout(() => {
+          (transport as any).simulateResponse('Error not in config mode');
+        }, 10);
+      });
+
+      await expect(device.wipePrivateKey(101)).rejects.toThrow(/flashing red led/i);
+    },
+  );
+
+  it.each(wipeHw)(
+    '$kind: wipes when the mock is in config mode even if the app never flagged it',
+    async ({ kind, vendorId, productId }) => {
+      const transport = new MockTransport({
+        deviceType: kind,
+        startLocked: false,
+        requireConfigMode: true,
+        unlockEntersConfigMode: false,
+      });
+      const device = new OnlyKeyDevice(transport);
+      await device.connect({ vendorId, productId });
+      transport.setLocked(false);
+      transport.setConfigMode(true);
+      transport.setLocked(false);
+      expect(device.state.isConfigMode).toBe(false);
+
+      await expect(device.wipePrivateKey(101)).resolves.toBeUndefined();
+      expect(device.state.isConfigMode).toBe(false);
+    },
+  );
+
+  it.each(wipeHw)(
+    '$kind: refuses OKWIPEPRIV through the mock the way newer firmware names config mode',
+    async ({ kind, vendorId, productId }) => {
+      const transport = new MockTransport({
+        deviceType: kind,
+        startLocked: false,
+        requireConfigMode: true,
+        unlockEntersConfigMode: false,
+      });
+      const device = new OnlyKeyDevice(transport);
+      await device.connect({ vendorId, productId });
+      transport.setLocked(false);
+      transport.setConfigMode(false);
+      expect(device.state.isLocked).toBe(false);
+
+      await expect(device.wipePrivateKey(101)).rejects.toThrow(/flashing red led/i);
+    },
+  );
 
   it('standard preferences succeed unlocked without config mode', async () => {
     const transport = new MockTransport({

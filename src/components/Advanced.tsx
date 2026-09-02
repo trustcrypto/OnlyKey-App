@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { KEY_SLOTS } from '../api/device/keyParser';
 import { hexStringToByteArray } from '../api/device/utils';
-import { CONFIG_MODE_REQUIRED, configModeTooltipText } from '../data/configMode';
+import { configModeTooltipText } from '../data/configMode';
 import { CautionButton, CriticalText, SetButton } from './ui/forms';
 import { Tooltip } from './ui/Tooltip';
 
@@ -22,7 +22,7 @@ const ECC_SLOTS = [
 const KEY_MODIFIERS = { Backup: 128, Signature: 64, Decryption: 32 };
 
 const Advanced: React.FC = () => {
-  const { device, deviceType, isConfigMode, setWorking } = useDeviceStore();
+  const { device, deviceType, setWorking } = useDeviceStore();
   const [yubiForm, setYubiForm] = useState({ publicId: '', privateId: '', secretKey: '' });
   const [eccType, setEccType] = useState(1);
   const [eccSlot, setEccSlot] = useState(101);
@@ -33,12 +33,11 @@ const Advanced: React.FC = () => {
 
   if (!device) return null;
 
-  const requireConfigMode = (): boolean => {
-    if (isConfigMode) return true;
-    setStatus(null);
-    setError(CONFIG_MODE_REQUIRED);
-    return false;
-  };
+  // No client-side config-mode gate. Store isConfigMode is an inference
+  // (firmware prints the same UNLOCKED in or out of config mode) and reads
+  // false if the app missed the transition. 5.6 sent and let the device
+  // answer. Refusal: 3.0.4 OKWIPEPRIV prints "Error device locked"; newer
+  // firmware names "Error not in config mode". formatDeviceLockedError maps both.
 
   return (
     <div className="page-shell">
@@ -203,7 +202,6 @@ const Advanced: React.FC = () => {
                 onClick={async () => {
                   setError(null);
                   setStatus(null);
-                  if (!requireConfigMode()) return;
                   const maxLen = eccType === 9 ? 40 : 64;
                   const key = eccKey.replace(/\s/g, '').slice(0, maxLen);
                   if (!key || key.length !== maxLen) {
@@ -233,7 +231,6 @@ const Advanced: React.FC = () => {
                   if (!window.confirm(`Wipe private key from slot ${eccSlot}?`)) return;
                   setError(null);
                   setStatus(null);
-                  if (!requireConfigMode()) return;
                   setWorking(true, `Wiping private key from slot ${eccSlot}…`);
                   try {
                     await device.wipePrivateKey(eccSlot);

@@ -46,3 +46,11 @@ export function configModePassphraseHint(deviceType: DeviceType): string {
 
 export const CONFIG_MODE_REQUIRED =
   'Put your OnlyKey in config mode (flashing red LED) before saving or wiping private keys.';
+
+/** Generic refusal when firmware names config mode (prefs, restore, firmware, keys). */
+export const CONFIG_MODE_FOR_OPERATION =
+  'OnlyKey must be in config mode (flashing red LED) for this operation.';
+
+/** Extra line for Standard prefs — Sysadmin Mode makes firmware require config mode for all writes. */
+export const SYSADMIN_MODE_PREF_HINT =
+  'When Sysadmin Mode is on, turn it off (Advanced preferences, in config mode) to change Standard settings while unlocked.';

@@ -123,4 +123,37 @@ describe('Preferences page', () => {
     await user.click(screen.getByRole('button', { name: /set layout/i }));
     expect(await screen.findByTestId('pref-error')).toHaveTextContent(/device locked/i);
   });
+
+  it('shows one config-mode error on Advanced prefs without the Standard/sysadmin extra line', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient({
+      setModKeyMode: vi
+        .fn()
+        .mockRejectedValue(new Error('OnlyKey must be in config mode (flashing red LED) for this operation.')),
+    });
+    seedDeviceStore({ device });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+    await user.click(screen.getAllByRole('button', { name: /^yes$/i })[0]);
+    const err = await screen.findByTestId('pref-error');
+    expect(err).toHaveTextContent(/flashing red led/i);
+    expect(err).not.toHaveTextContent(/sysadmin mode is on/i);
+    expect(err).not.toHaveTextContent(/standard preference/i);
+    expect(screen.getAllByTestId('pref-error')).toHaveLength(1);
+  });
+
+  it('adds the Sysadmin hint when a Standard pref is refused for config mode', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient({
+      setKbdLayout: vi
+        .fn()
+        .mockRejectedValue(new Error('OnlyKey must be in config mode (flashing red LED) for this operation.')),
+    });
+    seedDeviceStore({ device });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('button', { name: /set layout/i }));
+    const err = await screen.findByTestId('pref-error');
+    expect(err).toHaveTextContent(/flashing red led/i);
+    expect(err).toHaveTextContent(/sysadmin mode/i);
+  });
 });
