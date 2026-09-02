@@ -83,9 +83,11 @@ describe('Setup page', () => {
     fireEvent.change(screen.getByLabelText(/^re-enter passphrase$/i), { target: { value: passphrase } });
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /restore from backup/i })).toBeInTheDocument();
-    const restoreFile = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
     const restoreInputs = document.querySelectorAll('#Step10 input[type="file"]');
-    await user.upload(restoreInputs[restoreInputs.length - 1] as HTMLInputElement, restoreFile);
+    expect(restoreInputs).toHaveLength(1);
+    expect(restoreInputs[0]).toHaveClass('ok-file-input');
+    const restoreFile = new File(['SGk='], 'backup.txt', { type: 'text/plain' });
+    await user.upload(restoreInputs[0] as HTMLInputElement, restoreFile);
     await waitFor(() => expect(device.restore).toHaveBeenCalled());
   });
 
@@ -702,7 +704,7 @@ describe('Setup page', () => {
     await waitFor(() => expect(restore).toHaveBeenCalled());
   });
 
-  it('clicks the hidden firmware file chooser from the firmware step', async () => {
+  it('styles the firmware file chooser as an app button', async () => {
     const user = userEvent.setup();
     seedDeviceStore({
       device: createMockDeviceClient(),
@@ -711,6 +713,9 @@ describe('Setup page', () => {
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    const fwInputs = document.querySelectorAll('#Step11 input[type="file"]');
+    expect(fwInputs).toHaveLength(1);
+    expect(fwInputs[0]).toHaveClass('ok-file-input');
     await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
   });
 });

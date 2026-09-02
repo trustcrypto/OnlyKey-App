@@ -1226,12 +1226,7 @@ const RestoreStep: React.FC<{
       ref={inputRef}
       type="file"
       accept=".txt,.okb"
-      className="hidden"
-      onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-    />
-    <input
-      type="file"
-      accept=".txt,.okb"
+      className="ok-file-input"
       onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
     />
   </div>
@@ -1253,12 +1248,7 @@ const FirmwareStep: React.FC<{
         ref={inputRef}
         type="file"
         accept=".okfw,.txt,.hex"
-        style={{ display: 'none' }}
-        onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-      />
-      <input
-        type="file"
-        accept=".okfw,.txt,.hex"
+        className="ok-file-input"
         onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
       />
     </p>
