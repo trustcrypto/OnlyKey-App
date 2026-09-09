@@ -28,10 +28,11 @@ export function supportsAppFirmwareUpdate(version: string): boolean {
 
 export async function checkForNewFirmware(
   currentVersion: string,
-  deviceType: string
+  deviceType: string,
+  isInitialized = true,
 ): Promise<FirmwareCheckResult> {
   const fwUpdateSupport = supportsAppFirmwareUpdate(currentVersion);
-  const upgradeRequired = deviceType === 'uninitialized';
+  const upgradeRequired = !isInitialized || deviceType === 'uninitialized';
 
   if (sessionStorage.getItem(FW_CHECK_KEY)) {
     return { updateAvailable: false, currentVersion, fwUpdateSupport, upgradeRequired };
@@ -50,17 +51,17 @@ export async function checkForNewFirmware(
     const latestUrl = response.url;
     const tagPart = latestUrl.split('/tag/v')[1];
     if (!tagPart) {
-      return { updateAvailable: false, currentVersion, fwUpdateSupport };
+      return { updateAvailable: false, currentVersion, fwUpdateSupport, upgradeRequired };
     }
 
     const latestVersion = `v${tagPart}`;
     sessionStorage.setItem(FW_CHECK_KEY, '1');
 
     const updateAvailable = parseVersionScore(latestVersion) > parseVersionScore(currentVersion);
-    return { updateAvailable, currentVersion, latestVersion, fwUpdateSupport };
+    return { updateAvailable, currentVersion, latestVersion, fwUpdateSupport, upgradeRequired };
   } catch (e) {
     console.error('Firmware check failed:', e);
-    return { updateAvailable: false, currentVersion, fwUpdateSupport };
+    return { updateAvailable: false, currentVersion, fwUpdateSupport, upgradeRequired };
   }
 }
 

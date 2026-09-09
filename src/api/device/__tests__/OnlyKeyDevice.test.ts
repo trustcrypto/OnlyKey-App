@@ -40,9 +40,26 @@ describe('OnlyKeyDevice', () => {
     await device.connect({ vendorId: 0, productId: 0 });
     (transport as any).simulateResponse('UNINITIALIZEDv2.1.0-prod');
 
-    expect(device.state.deviceType).toBe(DeviceType.UNINITIALIZED);
+    expect(device.state.deviceType).toBe(DeviceType.CLASSIC);
+    expect(device.state.isInitialized).toBe(false);
     expect(device.state.isLocked).toBe(false);
     expect(device.state.devicePinSet).toBe(false);
+  });
+
+  it('classifies a wiped DUO from UNINITIALIZED* suffix letter, not DeviceType.UNINITIALIZED', async () => {
+    const transport = new MockTransport();
+    const device = new OnlyKeyDevice(transport);
+
+    await device.connect({ vendorId: 0x1d50, productId: 0x60fc });
+    transport.simulateResponse('UNINITIALIZEDv3.0.4-testp');
+
+    expect(device.state.deviceType).toBe(DeviceType.DUO);
+    expect(device.state.isInitialized).toBe(false);
+    expect(device.state.isLocked).toBe(false);
+
+    transport.simulateResponse('UNINITIALIZEDv3.0.4-testc');
+    expect(device.state.deviceType).toBe(DeviceType.CLASSIC);
+    expect(device.state.isInitialized).toBe(false);
   });
 
   it('promotes a premature Classic to DUO on UNLOCKEDv3-prodp', async () => {

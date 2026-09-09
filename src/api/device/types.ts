@@ -60,6 +60,8 @@ export interface DeviceStatus {
   isLocked: boolean;
   isConfigMode: boolean;
   isBootloader: boolean;
+  /** False on UNINITIALIZED* (first-use). Hardware type is still Classic/DUO. */
+  isInitialized: boolean;
   deviceType: DeviceType;
   deviceTypeSource: string;
   usbProductId: number | null;

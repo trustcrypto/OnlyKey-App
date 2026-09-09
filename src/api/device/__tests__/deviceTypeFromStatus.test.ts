@@ -7,6 +7,8 @@ import {
   classicConfirmedByLabels,
   maxLabelSlotId,
   isDuoNoPinFromStatusText,
+  hardwareTypeFromUninitializedStatus,
+  isUninitializedDevice,
 } from '../deviceTypeFromStatus';
 import { deviceTypeFromProductId } from '../firmwareConstants';
 
@@ -16,9 +18,16 @@ describe('device type detection', () => {
     expect(inferDeviceTypeFromStatusText('BOOTLOADER')).toBe(DeviceType.BOOTLOADER);
   });
 
-  it('recognizes UNINITIALIZED before the INITIALIZED substring', () => {
-    expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv2.1.0-prod')).toBe(DeviceType.UNINITIALIZED);
-    expect(inferDeviceTypeFromStatusText('UNINITIALIZED-Dv3.0.0-prod')).toBe(DeviceType.UNINITIALIZED);
+  it('classifies UNINITIALIZED by hardware letter like 5.6 setDeviceType', () => {
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv2.1.0-prod')).toBe(DeviceType.CLASSIC);
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv3.0.4-testc')).toBe(DeviceType.CLASSIC);
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv3.0.4-testp')).toBe(DeviceType.DUO);
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZEDv3.0.4-testn')).toBe(DeviceType.DUO);
+    expect(inferDeviceTypeFromStatusText('UNINITIALIZED-Dv3.0.0-prod')).toBe(DeviceType.DUO);
+    expect(hardwareTypeFromUninitializedStatus('UNINITIALIZEDv3.0.4-TEST')).toBe(DeviceType.CLASSIC);
+    expect(isUninitializedDevice({ isInitialized: false, deviceType: DeviceType.DUO })).toBe(true);
+    expect(isUninitializedDevice({ isInitialized: true, deviceType: DeviceType.DUO })).toBe(false);
+    expect(isUninitializedDevice({ deviceType: DeviceType.UNINITIALIZED })).toBe(true);
   });
 
   it('recognizes DUO from INITIALIZED-D and UNLOCKED-D', () => {

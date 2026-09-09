@@ -173,12 +173,31 @@ describe('Setup page', () => {
     const user = userEvent.setup();
     seedDeviceStore({
       device: createMockDeviceClient(),
-      deviceType: DeviceType.UNINITIALIZED,
+      deviceType: DeviceType.CLASSIC,
+      isInitialized: false,
       isLocked: false,
     });
     renderWithProviders(<Setup />);
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(screen.getByRole('heading', { name: /enter pin on onlykey keypad/i })).toBeInTheDocument();
+  });
+
+  it('uses DUO PIN setup for an uninitialized DUO, not Classic keypad', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.DUO,
+      isInitialized: false,
+      isLocked: false,
+    });
+    renderWithProviders(<Setup />);
+    expect(screen.getByRole('heading', { name: /onlykey duo setup/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(screen.getByRole('heading', { name: /set or change pins/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /enter pin on onlykey keypad/i })).not.toBeInTheDocument();
+    expect(device.beginClassicPinEntry).not.toHaveBeenCalled();
   });
 
   it('rejects mismatched DUO device and self-destruct PINs', async () => {

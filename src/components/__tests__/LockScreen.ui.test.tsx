@@ -136,7 +136,8 @@ describe('LockScreen', () => {
       isConnected: true,
       isLocked: false,
       isConfigMode: false,
-      deviceType: DeviceType.UNINITIALIZED,
+      isInitialized: false,
+      deviceType: DeviceType.CLASSIC,
       device: createMockDeviceClient(),
       activeTab: 'setup',
     });

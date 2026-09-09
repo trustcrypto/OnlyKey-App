@@ -3,14 +3,15 @@ import { useDeviceStore } from '../store/useDeviceStore';
 import { parseFirmwareData } from '../api/device/utils';
 import { clearPendingFirmware, storePendingFirmware } from '../desktop/firmwareCheck';
 import { fetchLatestFirmwareRelease } from '../desktop/firmwareDownload';
-import { DeviceType } from '../api/device/types';
+import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import { TOOLTIPS } from '../data/tooltips';
 import ConfigModeInstructions from './ConfigModeInstructions';
 import { SetButton, StepFieldset } from './ui/forms';
 import { HelpTip } from './ui/HelpTip';
 
 const Firmware: React.FC = () => {
-  const { device, version, isBootloader, fwUpdateSupport, deviceType, setWorking } = useDeviceStore();
+  const { device, version, isBootloader, fwUpdateSupport, deviceType, isInitialized, setWorking } =
+    useDeviceStore();
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ const Firmware: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const isUninitialized = deviceType === DeviceType.UNINITIALIZED;
+  const isUninitialized = isUninitializedDevice({ isInitialized, deviceType });
   const canLoadFirmware = isBootloader || isUninitialized || fwUpdateSupport;
 
   const applyFirmwareBlocks = async (blocks: string[]) => {

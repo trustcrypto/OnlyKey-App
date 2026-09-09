@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
+import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import { deviceProductName } from '../data/deviceProduct';
 
 const LOCK_POLL_MS = 1500;
 
 const LockScreen: React.FC = () => {
-  const { deviceType, device, isLocked, isConnected, isBootloader, pinError, activeTab } =
+  const { deviceType, device, isLocked, isConnected, isBootloader, isInitialized, pinError, activeTab } =
     useDeviceStore();
   const [pin, setPin] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,6 +15,7 @@ const LockScreen: React.FC = () => {
   const pollInFlight = useRef(false);
 
   const isDuo = deviceType === DeviceType.DUO;
+  const isUninitialized = isUninitializedDevice({ isInitialized, deviceType });
 
   // Classic unlock is entirely on-device (6-button keypad). Firmware ignores OKSETPIN
   // once initialized unless in config mode. Poll OKSETTIME so we notice UNLOCKED even
@@ -26,7 +28,7 @@ const LockScreen: React.FC = () => {
       !isLocked ||
       !device ||
       isBootloader ||
-      deviceType === DeviceType.UNINITIALIZED ||
+      isUninitialized ||
       deviceType === DeviceType.BOOTLOADER
     ) {
       setClassicUnlockActive(false);
@@ -62,13 +64,13 @@ const LockScreen: React.FC = () => {
       window.clearInterval(id);
       setClassicUnlockActive(false);
     };
-  }, [isConnected, isLocked, device, isDuo, deviceType, isBootloader]);
+  }, [isConnected, isLocked, device, isDuo, deviceType, isBootloader, isUninitialized]);
 
   if (
     !isConnected ||
     !isLocked ||
     activeTab === 'tools' ||
-    deviceType === DeviceType.UNINITIALIZED ||
+    isUninitialized ||
     deviceType === DeviceType.BOOTLOADER ||
     isBootloader
   ) {

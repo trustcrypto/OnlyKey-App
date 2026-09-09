@@ -5,12 +5,15 @@ import { DeviceType } from './types';
  * Locked DUO uses INITIALIZED-D. Unlocked HW_MODEL(UNLOCKED) appends the version
  * suffix letter: c = Classic, p = DUO with PIN, n = DUO with no PIN. Classic can
  * run 3.x (`UNLOCKEDv3.0.4-prodc`); do not treat major version as the hardware.
+ *
+ * UNINITIALIZED* is first-use, not a hardware type. 5.6 still reads the trailing
+ * letter (or INITIALIZED-D) so a wiped DUO gets DUO PIN setup, not Classic keypad.
  */
 export function inferDeviceTypeFromStatusText(text: string): DeviceType | undefined {
   const trimmed = text.trim();
   if (!trimmed) return undefined;
 
-  if (trimmed.includes('UNINITIALIZED')) return DeviceType.UNINITIALIZED;
+  if (trimmed.includes('UNINITIALIZED')) return hardwareTypeFromUninitializedStatus(trimmed);
   if (trimmed.includes('BOOTLOADER')) return DeviceType.BOOTLOADER;
   if (trimmed.includes('INITIALIZED-D') || trimmed.includes('UNLOCKED-D')) return DeviceType.DUO;
 
@@ -50,6 +53,30 @@ export function hardwareTypeFromSuffix(text: string): DeviceType | undefined {
   if (lastChar === 'n' || lastChar === 'p') return DeviceType.DUO;
   if (lastChar === 'c') return DeviceType.CLASSIC;
   return undefined;
+}
+
+/**
+ * 5.6 setDeviceType() on UNINITIALIZED*: n/p/c first, else INITIALIZED-D → DUO,
+ * else CLASSIC (`"UNINITIALIZED".includes("INITIALIZED")`).
+ */
+export function hardwareTypeFromUninitializedStatus(text: string): DeviceType {
+  const fromSuffix = hardwareTypeFromSuffix(text);
+  if (fromSuffix) return fromSuffix;
+  if (text.includes('INITIALIZED-D') || text.includes('UNLOCKED-D')) return DeviceType.DUO;
+  return DeviceType.CLASSIC;
+}
+
+export function isUninitializedStatus(text: string): boolean {
+  return text.includes('UNINITIALIZED');
+}
+
+/** First-use / wiped. Hardware type is still Classic or DUO. */
+export function isUninitializedDevice(state: {
+  isInitialized?: boolean;
+  deviceType: DeviceType;
+}): boolean {
+  if (state.deviceType === DeviceType.UNINITIALIZED) return true;
+  return state.isInitialized === false;
 }
 
 export function maxLabelSlotId(slotIds: Iterable<number>): number {

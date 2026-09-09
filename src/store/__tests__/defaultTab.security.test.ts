@@ -14,20 +14,21 @@ import { useDeviceStore } from '../useDeviceStore';
  * Simulate the store statusChange path for lock→unlock without full HID.
  * Mirrors the branch that sets activeTab via defaultTabForDevice.
  */
-function simulateUnlock(deviceType: DeviceType = DeviceType.CLASSIC) {
+function simulateUnlock(deviceType: DeviceType = DeviceType.CLASSIC, isInitialized = true) {
   const wasLocked = useDeviceStore.getState().isLocked;
   useDeviceStore.setState({
     isConnected: true,
     isLocked: false,
     isConfigMode: false,
     isBootloader: false,
+    isInitialized,
     deviceType,
     error: null,
     pinError: null,
     ...(wasLocked
       ? {
           activeTab:
-            deviceType === DeviceType.UNINITIALIZED ? 'setup' : 'slots',
+            !isInitialized || deviceType === DeviceType.UNINITIALIZED ? 'setup' : 'slots',
         }
       : {}),
   });
@@ -70,11 +71,12 @@ describe('default tab after unlock', () => {
     seedDeviceStore({
       isConnected: true,
       isLocked: true,
-      deviceType: DeviceType.UNINITIALIZED,
+      isInitialized: false,
+      deviceType: DeviceType.DUO,
       activeTab: 'setup',
     });
 
-    simulateUnlock(DeviceType.UNINITIALIZED);
+    simulateUnlock(DeviceType.DUO, false);
     expect(getStoreState().activeTab).toBe('setup');
   });
 

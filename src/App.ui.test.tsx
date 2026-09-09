@@ -82,13 +82,15 @@ describe('App shell', () => {
       isConnected: true,
       isLocked: false,
       isConfigMode: false,
-      deviceType: DeviceType.UNINITIALIZED,
+      isInitialized: false,
+      deviceType: DeviceType.CLASSIC,
       version: 'v2.1.0-prod',
       device: null,
     });
     renderWithProviders(<App />);
 
     expect(screen.getByText('Uninitialized')).toBeInTheDocument();
+    expect(screen.getByText('OnlyKey v2.1.0-prod (uninitialized)')).toBeInTheDocument();
     expect(screen.queryByText('Locked')).not.toBeInTheDocument();
     expect(screen.queryByTestId('lock-screen')).not.toBeInTheDocument();
   });

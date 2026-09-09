@@ -4,6 +4,7 @@ import type { DeviceClient } from '../api/device/DeviceClient';
 import { ChromeHidTransport } from '../api/transport/ChromeHidTransport';
 import { MockTransport } from '../api/transport/MockTransport';
 import { DeviceType } from '../api/device/types';
+import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import type { DuoProfileId } from '../api/device/firmwareConstants';
 import { isConnectErrorLikelyUdev, isLinux } from '../utils/platform';
 import {
@@ -21,6 +22,7 @@ interface DeviceState {
   isLocked: boolean;
   isConfigMode: boolean;
   isBootloader: boolean;
+  isInitialized: boolean;
   isRefreshingLabels: boolean;
   isPolling: boolean;
   deviceType: DeviceType;
@@ -136,10 +138,10 @@ function parseInitializeOptions(
 function defaultTabForDevice(state: {
   isLocked: boolean;
   isBootloader: boolean;
+  isInitialized: boolean;
   deviceType: DeviceType;
 }): DeviceState['activeTab'] {
-  if (state.deviceType === DeviceType.UNINITIALIZED) return 'setup';
-  if (state.isLocked || state.isBootloader) return 'setup';
+  if (isUninitializedDevice(state) || state.isLocked || state.isBootloader) return 'setup';
   // Initialized + unlocked (Classic/DUO, or type still refining) → Slots.
   return 'slots';
 }
@@ -165,7 +167,7 @@ async function promptFirmwareUpdateIfNeeded(
   firmwareCheckInFlight = (async () => {
     try {
       await waitForLabelIdentification(get);
-      const check = await checkForNewFirmware(version, get().deviceType);
+      const check = await checkForNewFirmware(version, get().deviceType, get().isInitialized);
       set({ firmwareCheck: check });
 
       if (check.updateAvailable && check.latestVersion) {
@@ -193,6 +195,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   isLocked: true,
   isConfigMode: false,
   isBootloader: false,
+  isInitialized: true,
   isRefreshingLabels: false,
   isPolling: false,
   deviceType: DeviceType.UNKNOWN,
@@ -278,6 +281,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
           isLocked: true,
           isConfigMode: state.isConfigMode,
           isBootloader: state.isBootloader,
+          isInitialized: state.isInitialized ?? true,
           deviceType: state.deviceType,
           deviceTypeSource: state.deviceTypeSource,
           usbProductId: state.usbProductId,
@@ -299,6 +303,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
         isLocked: state.isLocked,
         isConfigMode: state.isConfigMode,
         isBootloader: state.isBootloader,
+        isInitialized: state.isInitialized ?? true,
         deviceType: state.deviceType,
         deviceTypeSource: state.deviceTypeSource,
         usbProductId: state.usbProductId,
@@ -319,6 +324,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
               activeTab: defaultTabForDevice({
                 isLocked: false,
                 isBootloader: state.isBootloader,
+                isInitialized: state.isInitialized ?? true,
                 deviceType: state.deviceType,
               }),
             }

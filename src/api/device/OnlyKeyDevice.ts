@@ -90,6 +90,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     isLocked: true,
     isConfigMode: false,
     isBootloader: false,
+    isInitialized: true,
     deviceType: DeviceType.UNKNOWN,
     deviceTypeSource: '',
     usbProductId: null as number | null,
@@ -137,6 +138,7 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
       isLocked: true,
       isConfigMode: false,
       isBootloader: false,
+      isInitialized: true,
       deviceType: DeviceType.UNKNOWN,
       deviceTypeSource: '',
       usbProductId: null,
@@ -374,6 +376,13 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
         response.devicePinSet !== undefined ? response.devicePinSet : this.deriveDevicePinSet();
       if (this.state.devicePinSet !== pinSet) {
         this.state.devicePinSet = pinSet;
+        stateChanged = true;
+      }
+      if (
+        response.isInitialized !== undefined &&
+        this.state.isInitialized !== response.isInitialized
+      ) {
+        this.state.isInitialized = response.isInitialized;
         stateChanged = true;
       }
     }

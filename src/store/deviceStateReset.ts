@@ -16,6 +16,7 @@ export const disconnectedDeviceSnapshot = {
   isLocked: true,
   isConfigMode: false,
   isBootloader: false,
+  isInitialized: true,
   isRefreshingLabels: false,
   deviceType: DeviceType.UNKNOWN,
   deviceTypeSource: '',

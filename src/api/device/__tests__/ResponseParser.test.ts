@@ -15,10 +15,23 @@ describe('ResponseParser', () => {
     const data = stringToPacket('UNINITIALIZEDv2.1.0-prod');
     const res = ResponseParser.parse(data);
     expect(res.type).toBe('status');
-    expect(res.deviceType).toBe(DeviceType.UNINITIALIZED);
+    expect(res.deviceType).toBe(DeviceType.CLASSIC);
+    expect(res.isInitialized).toBe(false);
     expect(res.isLocked).toBe(false);
     expect(res.devicePinSet).toBe(false);
     expect(res.version).toBe('v2.1.0-prod');
+  });
+
+  it('keeps DUO hardware type on UNINITIALIZED with a p/n suffix', () => {
+    const duo = ResponseParser.parse(stringToPacket('UNINITIALIZEDv3.0.4-testp'));
+    expect(duo.deviceType).toBe(DeviceType.DUO);
+    expect(duo.isInitialized).toBe(false);
+    expect(duo.isLocked).toBe(false);
+    expect(duo.version).toBe('v3.0.4-testp');
+
+    const classic = ResponseParser.parse(stringToPacket('UNINITIALIZEDv3.0.4-testc'));
+    expect(classic.deviceType).toBe(DeviceType.CLASSIC);
+    expect(classic.isInitialized).toBe(false);
   });
 
   it('should parse OnlyKey Classic initialization', () => {

@@ -50,11 +50,12 @@ describe('AppFooter', () => {
 
     seedDeviceStore({
       isConnected: true,
-      deviceType: DeviceType.UNINITIALIZED,
-      version: '',
+      deviceType: DeviceType.DUO,
+      isInitialized: false,
+      version: 'v3.0.4-testp',
       recentMessages: [],
     });
     renderWithProviders(<AppFooter />);
-    expect(screen.getByText(/uninitialized/i)).toBeInTheDocument();
+    expect(screen.getByText('OnlyKey Duo v3.0.4-testp (uninitialized)')).toBeInTheDocument();
   });
 });

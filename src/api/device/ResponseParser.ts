@@ -3,6 +3,7 @@ import {
   inferDeviceTypeFromStatusText,
   inferDeviceTypeFromVersion,
   isDuoNoPinFromStatusText,
+  isUninitializedStatus,
 } from './deviceTypeFromStatus';
 
 export interface DeviceResponse {
@@ -14,6 +15,7 @@ export interface DeviceResponse {
   deviceType?: DeviceType;
   version?: string;
   isLocked?: boolean;
+  isInitialized?: boolean;
   devicePinSet?: boolean;
 }
 
@@ -75,14 +77,15 @@ export class ResponseParser {
       return { type: 'error', error: text };
     }
 
-    if (text.includes('UNINITIALIZED')) {
+    if (isUninitializedStatus(text)) {
       const version = extractVersionAfterPrefix(text, 'UNINITIALIZED');
       return {
         type: 'status',
         text,
         version,
-        deviceType: DeviceType.UNINITIALIZED,
+        deviceType: inferDeviceTypeFromStatusText(text) ?? DeviceType.CLASSIC,
         isLocked: false,
+        isInitialized: false,
         devicePinSet: false,
       };
     }
@@ -95,6 +98,7 @@ export class ResponseParser {
         version: extractVersionAfterPrefix(text, 'BOOTLOADER'),
         deviceType: DeviceType.BOOTLOADER,
         isLocked: false,
+        isInitialized: false,
         devicePinSet: false,
       };
     }
@@ -107,6 +111,7 @@ export class ResponseParser {
         version,
         deviceType: DeviceType.DUO,
         isLocked: false,
+        isInitialized: true,
         devicePinSet: !isDuoNoPinFromStatusText(text),
       };
     }
@@ -121,6 +126,7 @@ export class ResponseParser {
         version,
         deviceType,
         isLocked: false,
+        isInitialized: true,
         devicePinSet: deviceType === DeviceType.DUO ? !isDuoNoPinFromStatusText(text) : true,
       };
     }
@@ -133,6 +139,7 @@ export class ResponseParser {
         version,
         deviceType: DeviceType.DUO,
         isLocked: true,
+        isInitialized: true,
         devicePinSet: !isDuoNoPinFromStatusText(text),
       };
     }
@@ -145,6 +152,7 @@ export class ResponseParser {
         version,
         deviceType: DeviceType.CLASSIC,
         isLocked: true,
+        isInitialized: true,
       };
     }
 

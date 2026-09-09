@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
+import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import { PIN_ENTRY_CANCELLED } from '../api/device/OnlyKeyDevice';
 import { parseBackupData, parseFirmwareData } from '../api/device/utils';
 import { clearPendingFirmware, storePendingFirmware } from '../desktop/firmwareCheck';
@@ -84,7 +85,8 @@ const StepNav: React.FC<{
 );
 
 const Setup: React.FC = () => {
-  const { device, deviceType, isLocked, isConfigMode, isBootloader, setWorking } = useDeviceStore();
+  const { device, deviceType, isLocked, isConfigMode, isBootloader, isInitialized: deviceInitialized, setWorking } =
+    useDeviceStore();
   const [guided, setGuided] = useState(false);
   const [advancedSetup, setAdvancedSetup] = useState(false);
   const [classicStep, setClassicStep] = useState<ClassicStep>('Step1');
@@ -114,7 +116,7 @@ const Setup: React.FC = () => {
 
   const isDuo = deviceType === DeviceType.DUO;
   const inBootloader = isBootloader || deviceType === DeviceType.BOOTLOADER;
-  const isUninitialized = deviceType === DeviceType.UNINITIALIZED;
+  const isUninitialized = isUninitializedDevice({ isInitialized: deviceInitialized, deviceType });
   const isInitialized = !isUninitialized && !inBootloader;
 
   const run = async (fn: () => Promise<void>) => {

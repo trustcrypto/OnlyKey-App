@@ -9,6 +9,7 @@ const AppFooter: React.FC = () => {
     recentMessages,
     isConnected,
     deviceType,
+    isInitialized,
     deviceTypeSource,
     usbProductId,
     maxLabelSlot,
@@ -20,7 +21,7 @@ const AppFooter: React.FC = () => {
   const pidHex =
     usbProductId != null ? `0x${usbProductId.toString(16).toUpperCase()}` : '—';
 
-  const deviceLabel = !isConnected ? '' : connectedDeviceLabel(deviceType, version);
+  const deviceLabel = !isConnected ? '' : connectedDeviceLabel(deviceType, version, isInitialized);
 
   return (
     <footer className="app-footer shrink-0">

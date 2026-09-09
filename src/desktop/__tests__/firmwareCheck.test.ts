@@ -63,6 +63,13 @@ describe('firmwareCheck', () => {
     expect(sessionStorage.getItem('ok-fw-checked-session')).toBe('1');
   });
 
+  it('treats first-use as upgrade-required even when hardware type is Classic', async () => {
+    userPreferences.autoUpdateFW = false;
+    const result = await checkForNewFirmware('v3.0.4-testc', 'classic', false);
+    expect(result.upgradeRequired).toBe(true);
+    expect(result.fwUpdateSupport).toBe(true);
+  });
+
   it('skips GitHub when in-app updates are unsupported', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

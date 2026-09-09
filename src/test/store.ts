@@ -13,6 +13,7 @@ type StoreSeed = Partial<
     | 'isLocked'
     | 'isConfigMode'
     | 'isBootloader'
+    | 'isInitialized'
     | 'isRefreshingLabels'
     | 'isPolling'
     | 'deviceType'
