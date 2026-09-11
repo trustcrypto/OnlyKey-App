@@ -42,7 +42,7 @@ So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw
 | `src/desktop/updater.ts` `checkForAppUpdate(io?: AppUpdateIo)` | One function does check + confirm + download + hash + show-folder. Early-return if `typeof nw === 'undefined'` **or** `!userPreferences.autoUpdate`. Default package read is `require(path.join(nw.App.startPath, 'package.json'))` — **broken on Finder-launched macOS** (`docs/desktop-tray.md`: `startPath` is `/`). |
 | Manifest URL | `package.json` / `manifest.json` / `scripts/release.mjs` `buildProductionPackageJson` bake `https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json`. |
 | Live S3 object (fetched 2026-09-10) | `{ version: "5.3.4", packages: { linux64, win64, mac64 } }` with `url` + `size` only — **no `sha256`**. HTTP 200, **no redirect**. mac filename `OnlyKey.App.5.3.4.dmg` (do not revive). |
-| Integrity | HTTPS-only (`isHttpsUrl`). **Requires `remotePkg.sha256`**. Verifies size if present + SHA-256 via `js-sha256`. Hashes **before** write; no re-hash at apply (there is no apply). |
+| Integrity | HTTPS-only (`isHttpsUrl`). **Requires `remotePkg.sha256`**. Verifies SHA-256 via `js-sha256`. Manifest `size` is a progress estimate (5.6 published rounded MB, e.g. `67000000`) — **not** an integrity check. Hashes **before** write; no re-hash at apply (there is no apply). |
 | Apply | Write `os.tmpdir()/onlykey-app-updates/<basename>`; `nw.Shell.showItemInFolder`. **Does not launch the installer.** |
 | Errors | `console.error` then **rethrow**. `initDesktop` does `checkForAppUpdate().catch(console.error)` — user sees nothing. |
 | Tests | `src/desktop/__tests__/updater.test.ts` covers helpers, autoUpdate-off, HTTPS, sha256, size, decline, missing URL. Injectable `AppUpdateIo`. |
@@ -127,7 +127,7 @@ flowchart LR
     B5 -->|Download| B6[downloadAndVerify]
     B6 --> B7[Install now / Show folder]
     B7 -->|Install now| B8[rehash + detached spawn + quit]
-    B6 -->|hash/size/HTTP fail| B9[visible error + discard file]
+    B6 -->|hash/HTTP fail| B9[visible error + discard file]
   end
 ```
 
@@ -160,7 +160,7 @@ flowchart LR
 Normative state machine is in **Apply state machine** below. Summary:
 
 1. Refuse unless `destPath` is inside `path.resolve(tmpDir)` + expected extension + no ADS/`..`.
-2. `readFile` + `verifySha256` (+ size if known). Mismatch → **`unlinkDest`** (default `fs.unlinkSync`), `sha256-mismatch` / `size-mismatch`, **no spawn, no quit**.
+2. `readFile` + `verifySha256`. Mismatch → **`unlinkDest`** (default `fs.unlinkSync`), `sha256-mismatch`, **no spawn, no quit**. Manifest `size` is progress-only (5.6 rounded MB); do not compare `byteLength` to it.
 3. `spawnInstaller` waits on the `'spawn'` event. `'error'` → `apply-failed`, `showItemInFolder`, **no quit**.
 4. On `'spawn'`: `unref()`, optional `applyDelayMs` (default 400, **0 in tests**), then `nw.App.quit()`.
 5. `windowsHide: true` hides a **console** window; it must not be assumed to hide the NSIS GUI (GUI subsystem).
@@ -215,10 +215,10 @@ Do **not** wait for a device to be connected — searching overlay may be up. St
 
 - Manifest URL and package URL must be `https:`.
 - Fetch with `{ cache: 'no-store', redirect: 'error' }` so a 302 to `http://` cannot bypass `isHttpsUrl`. Live prod GET (2026-09-10) is HTTP 200 with **no** redirect. If staging ever 301s to `s3.<region>.amazonaws.com`, every check fails closed — operator note in PR 4/5: dump `Location` and either host on a non-redirecting URL or (only if needed) allow **HTTPS** redirects whose **final** URL still passes `isAllowedUpdateUrl`. **Do not follow HTTP.**
-- `sha256` is **required** (already). Normalize with existing `normalizeSha256`.
-- `size`, if present, must match `byteLength` exactly (already).
+- `sha256` is **required** (already). Normalize with existing `normalizeSha256`. SHA-256 is the **only** payload integrity check.
+- Manifest `size` is **progress-bar metadata**, matching 5.6 (`nw-autoupdater` emitted `(bytesSoFar, release.size)` and never rejected on mismatch). Live 5.3.4 uses rounded MB (`67000000` / `64000000` / `105000000`). Prefer `Content-Length` for progress when present; else `size`. Never throw on `byteLength !== size`.
 - Package URL must share the **exact** hostname (no suffix match) and sit under the manifest’s origin + path prefix (see `isAllowedUpdateUrl`). That blocks `https://s3.amazonaws.com/other-bucket/malware.exe` and `https://evil.s3.amazonaws.com/…`. A fully compromised **OnlyKey** prefix still wins — residual, already in the threat table.
-- On hash or size mismatch (download **or** apply re-hash): delete the dest file; surface a visible error; do not spawn.
+- On hash mismatch (download **or** apply re-hash): delete the dest file; surface a visible error; do not spawn.
 - Authenticode / Apple notarization / Debian `debsig` are **not** part of the updater protocol (**Q2, decided**). Residual release risk only. Show-in-folder fallback still works if SmartScreen or Gatekeeper blocks launch.
 
 **Rationale:** SHA-256 over HTTPS is the bar already written in `updater.ts`. Path prefix is the cheapest extra check that actually matches the threat (substituted JSON pointing at another S3 bucket).
@@ -343,7 +343,7 @@ sequenceDiagram
   Store->>Upd: downloadAndVerify(remotePackage)
   Upd->>CDN: GET url (https, prefix allowlist, redirect:error)
   CDN-->>Upd: bytes
-  Upd->>Upd: size + sha256
+  Upd->>Upd: sha256
   alt mismatch
     Upd->>FS: unlink if present
     Upd-->>Store: throw AppUpdateError
@@ -525,10 +525,6 @@ export async function applyAppUpdate(
   } catch {
     throw new AppUpdateError('Could not read the downloaded installer.', 'io');
   }
-  if (expected.bytes != null && body.byteLength !== expected.bytes) {
-    unlinkDest(safe, io);
-    throw new AppUpdateError('Update package size does not match the manifest.', 'size-mismatch');
-  }
   try {
     verifySha256(body, expected.sha256);
   } catch {
@@ -549,7 +545,7 @@ export async function applyAppUpdate(
 }
 ```
 
-`downloadAndVerify` uses the same `unlinkDest` after a size/sha256 failure (including the stream-to-disk path that hashes after write). Tests 16–17 / 19b inject `io.unlink` and assert it was called; production with empty `io` still deletes via `fs.unlinkSync`.
+`downloadAndVerify` uses the same `unlinkDest` after a sha256 failure (including the stream-to-disk path that hashes after write). Tests 17 / 19b inject `io.unlink` and assert it was called; production with empty `io` still deletes via `fs.unlinkSync`. Test 16: rounded `size` still succeeds when the hash matches.
 
 `AppUpdateIo.spawnInstaller` in tests: resolve on call (simulates `'spawn'`). A separate test rejects to cover `apply-failed` (show-folder, no quit).
 
@@ -659,7 +655,7 @@ export type AppUpdateCheckResult =
 | Non-HTTPS / prefix fail | **throw** `not-https` / `host-not-allowed` | error modal (security) | error modal |
 | HTTP / TypeError / bad JSON on manifest | **throw** `http-manifest` / `invalid-manifest` / `io` | **phase `error`, `promptVisible` false**, Tools line + console | error modal |
 | Package GET fail | **throw** `http-package` | error modal | error modal |
-| Size / sha256 at download or apply | **throw** `size-mismatch` / `sha256-mismatch` | error modal; `unlinkDest` | error modal; `unlinkDest` |
+| sha256 at download or apply | **throw** `sha256-mismatch` | error modal; `unlinkDest` | error modal; `unlinkDest` |
 | Spawn `'error'` | **throw** `apply-failed` | error modal; show folder; no quit | same |
 
 Copy:
@@ -672,7 +668,6 @@ Copy:
 | `not-https` / `host-not-allowed` | `Update refused: the download location is not an allowed HTTPS path.` |
 | `missing-sha256` | `The update manifest did not include a SHA-256 checksum. The download was not started.` |
 | `sha256-mismatch` | `The downloaded installer failed integrity verification (SHA-256). The file was discarded.` |
-| `size-mismatch` | `The downloaded installer size does not match the update manifest. The file was discarded.` |
 | `missing-platform` | `No installer is published for this operating system yet.` |
 | `apply-failed` | `Could not open the installer. It is still at {destPath}.` |
 | `not-desktop` | not shown (Chrome / tests) |
@@ -703,7 +698,7 @@ Firmware uses `firmwareCheckInFlight`. App store:
 
 5.6 used `nw-autoupdater` `"download"` events (assumed). `fetch()` + `arrayBuffer()` has no progress.
 
-1. Prefer `response.body.getReader()` and accumulate (or write chunks to disk, then read back for hash). Report `received / expected` where `expected = remotePkg.size ?? Number(content-length) || null`.
+1. Prefer `response.body.getReader()` and accumulate (or write chunks to disk, then read back for hash). Report `received / expected` where `expected = Content-Length if present, else remotePkg.size` (progress estimate only).
 2. If the reader path is awkward under happy-dom, keep `arrayBuffer()` as default `fetchFn` behavior and expose `onProgress` on `AppUpdateIo`. Production should stream when `body` exists.
 
 Expected payload size (live 5.3.4): Windows ~67 MB, Linux ~64 MB, macOS ~105 MB. Holding ~100 MB in RAM for hash is acceptable; do not invent a streaming hasher in PR 1.
@@ -744,7 +739,6 @@ export class AppUpdateError extends Error {
       | 'invalid-manifest'
       | 'missing-sha256'
       | 'sha256-mismatch'
-      | 'size-mismatch'
       | 'io'
       | 'apply-failed',
     readonly httpStatus?: number,
@@ -1013,7 +1007,7 @@ Current implementation splits on `[.+-]`, so `5.7.0` and `5.7.0-beta` compare **
 
 ### Remote manifest (S3 / staging)
 
-Target document, replacing the live 5.3.4 object **only when PR 4+5 are done**. `size` is the real byte length from `fs.stat` (example values are illustrative, not placeholders of `0`):
+Target document, replacing the live 5.3.4 object **only when PR 4+5 are done**. `size` is optional progress metadata (5.7 emitter may write `fs.stat` bytes; 5.6 published rounded MB). Clients **must not** require `byteLength === size`. Example values are illustrative:
 
 ```json
 {
@@ -1173,7 +1167,7 @@ Tests for this live in `tests/desktop/release-packaging.static.test.mjs` (alread
 | HTTP downgrade / cleartext installer | High | `isHttpsUrl` + `redirect: 'error'` (HTTPS-only redirect exception is operator-gated) |
 | Manifest points at attacker HTTPS host | High | Exact hostname + path prefix of manifest / `updateBaseUrl` |
 | Manifest points at another S3 bucket on `s3.amazonaws.com` | High | Path prefix, not host allowlist |
-| Truncated / swapped installer at download | High | Required SHA-256; size; unlink |
+| Truncated / swapped installer at download | High | Required SHA-256; unlink |
 | Swapped installer in tmpdir before Install now | High | Re-hash in `applyAppUpdate`; `assertSafeUpdatePath`; unlink |
 | Manifest without hash (today’s 5.3.4 object) | High if we downloaded it | Refuse download (`missing-sha256`) |
 | Auto-update on against unhashed channel | Medium | Remote `5.3.4 < 5.7.0` → `kind: 'current'`, no download; newer without `sha256` → `missing-sha256`, no GET |
@@ -1292,7 +1286,7 @@ Keep existing cases; retarget them at the split API.
 | 13 | newer, no `sha256` | throw `missing-sha256` (no GET of the installer) |
 | 14 | user/store does not call download | no second fetch |
 | 15 | download HTTP 502 | `http-package` |
-| 16 | size mismatch | throw; `unlinkDest` invoked (`io.unlink` in tests; default `fs.unlinkSync` when omitted) |
+| 16 | rounded/approximate manifest `size` (e.g. `67000000`) vs real byte length | **succeeds** if SHA-256 matches; `size` used only for `onProgress` total |
 | 17 | sha256 mismatch | throw; `unlinkDest` invoked |
 | 18 | happy download | write dest; progress callback; result path |
 | 19 | `applyAppUpdate` win32 | re-hash; `spawnInstaller`; then `quitApp`; no `showInFolder` |

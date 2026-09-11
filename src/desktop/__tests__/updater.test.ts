@@ -497,21 +497,33 @@ describe('downloadAndVerify', () => {
     ).rejects.toMatchObject({ code: 'http-package', httpStatus: 502 });
   });
 
-  it('throws size-mismatch and unlinks (16)', async () => {
+  it('treats a rounded manifest size as progress only, not integrity (16)', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    const written: Array<{ path: string; data: Uint8Array }> = [];
     const unlink = vi.fn();
-    await expect(
-      downloadAndVerify(
-        '5.7.1',
-        { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 99 },
-        {
-          fetchFn: vi.fn(async () => binRes(body)) as never,
-          readPackage: readPkg(),
-          unlink,
-          tmpDir: () => '/tmp/ok-updates',
-        },
-      ),
-    ).rejects.toMatchObject({ code: 'size-mismatch' });
-    expect(unlink).toHaveBeenCalled();
+    const onProgress = vi.fn();
+    const result = await downloadAndVerify(
+      '5.7.1',
+      { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 67_000_000 },
+      {
+        fetchFn: vi.fn(async () => ({
+          ok: true,
+          headers: { get: () => null },
+          arrayBuffer: async () =>
+            body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
+        })) as never,
+        readPackage: readPkg(),
+        writeFile: (destPath, data) => written.push({ path: destPath, data }),
+        unlink,
+        tmpDir: () => '/tmp/ok-updates',
+        onProgress,
+      },
+    );
+    expect(written).toHaveLength(1);
+    expect(written[0].data).toEqual(body);
+    expect(result.bytes).toBe(3);
+    expect(unlink).not.toHaveBeenCalled();
+    expect(onProgress).toHaveBeenCalledWith(3, 67_000_000);
   });
 
   it('throws sha256-mismatch and unlinks (17)', async () => {
@@ -735,9 +747,9 @@ describe('checkForAppUpdate', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 
-  it('rejects a failed package download and a size mismatch', async () => {
+  it('rejects a failed package download', async () => {
     userPreferences.autoUpdate = true;
-    const { body, hash } = hashBody([1, 2]);
+    const { hash } = hashBody([1, 2]);
     const pkg = {
       url: 'https://example.com/OnlyKey.exe',
       sha256: hash,
@@ -758,18 +770,6 @@ describe('checkForAppUpdate', () => {
         readPackage: readPkg(),
       }),
     ).rejects.toThrow(/Update download failed: HTTP 502/);
-
-    await expect(
-      checkForAppUpdate({
-        fetchFn: vi
-          .fn()
-          .mockResolvedValueOnce(jsonRes(manifest))
-          .mockResolvedValueOnce(binRes(body)) as never,
-        confirmFn: () => true,
-        readPackage: readPkg(),
-        unlink: vi.fn(),
-      }),
-    ).rejects.toThrow(/size does not match/);
   });
 
   it('rejects a failed manifest fetch', async () => {

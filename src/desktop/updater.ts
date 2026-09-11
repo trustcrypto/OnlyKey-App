@@ -31,7 +31,6 @@ export type AppUpdateErrorCode =
   | 'invalid-manifest'
   | 'missing-sha256'
   | 'sha256-mismatch'
-  | 'size-mismatch'
   | 'io'
   | 'apply-failed';
 
@@ -438,14 +437,16 @@ export async function downloadAndVerify(
     throw asAppUpdateError(e, 'io');
   }
 
+  // Manifest `size` is a 5.6-style progress estimate (often rounded MB), not integrity.
   const lengthHeader = Number(downloadRes.headers?.get?.('content-length'));
-  const expectedTotal = remotePackage.size ?? (Number.isFinite(lengthHeader) ? lengthHeader : null);
-  io.onProgress?.(body.byteLength, expectedTotal);
+  const progressTotal =
+    Number.isFinite(lengthHeader) && lengthHeader > 0
+      ? lengthHeader
+      : remotePackage.size && remotePackage.size > 0
+        ? remotePackage.size
+        : null;
+  io.onProgress?.(body.byteLength, progressTotal);
 
-  if (remotePackage.size && body.byteLength !== remotePackage.size) {
-    unlinkDest(destPath, io);
-    throw new AppUpdateError('Update package size does not match the manifest.', 'size-mismatch');
-  }
   try {
     verifySha256(body, remotePackage.sha256);
   } catch {
