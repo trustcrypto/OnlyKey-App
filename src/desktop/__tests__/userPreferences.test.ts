@@ -6,10 +6,15 @@ describe('userPreferences', () => {
     localStorage.clear();
   });
 
-  it('defaults autoUpdate off and other flags on', () => {
+  it('defaults autoUpdate on like 5.6 when the key is absent', () => {
     expect(userPreferences.closeToTray).toBe(true);
     expect(userPreferences.autoLaunch).toBe(true);
     expect(userPreferences.autoUpdateFW).toBe(true);
+    expect(userPreferences.autoUpdate).toBe(true);
+  });
+
+  it('honors a stored autoUpdate false', () => {
+    localStorage.setItem('autoUpdate', 'false');
     expect(userPreferences.autoUpdate).toBe(false);
   });
 

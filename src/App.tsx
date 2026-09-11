@@ -13,6 +13,7 @@ import Advanced from './components/Advanced';
 import Tools from './components/Tools';
 import DeviceDialogs from './components/DeviceDialogs';
 import WorkingDialog from './components/dialogs/WorkingDialog';
+import AppUpdateHost from './components/AppUpdateHost';
 import ThemeToggle from './components/ThemeToggle';
 import DeviceMessages from './components/DeviceMessages';
 import { HelpTip } from './components/ui/HelpTip';
@@ -49,6 +50,8 @@ const App: React.FC = () => {
       {/* sessionEpoch forces remount — wipes WorkingDialog / SlotEditor local state */}
       <WorkingDialog key={`working-${sessionEpoch}`} />
       <SlotEditor key={`slot-editor-${sessionEpoch}`} />
+      {/* Outside sessionEpoch so a lock/unplug does not abort an in-flight download. */}
+      <AppUpdateHost />
 
       <div className="w-56 shrink-0 bg-ok-gray flex flex-col min-h-0 h-full border-r border-white/10">
         <div className="sidebar-brand shrink-0 p-3 flex items-center justify-between gap-2 min-w-0">
@@ -73,6 +76,10 @@ const App: React.FC = () => {
         </nav>
 
         <div className="sidebar-status" data-testid="sidebar-status">
+          <div className="sidebar-status-row" data-testid="app-version">
+            <span>App</span>
+            <span>v5.7.0</span>
+          </div>
           <div className="sidebar-status-row">
             <span>Status</span>
             <span className={`sidebar-status-connection ${isConnected ? 'sidebar-status-connection--on' : 'sidebar-status-connection--off'}`}>

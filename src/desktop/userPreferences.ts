@@ -1,11 +1,24 @@
+import { loadDesktopShell } from './appRoot';
+
 type PreferenceKey = 'autoLaunch' | 'autoUpdate' | 'autoUpdateFW' | 'closeToTray';
 
 const DEFAULTS: Record<PreferenceKey, boolean> = {
   autoLaunch: true,
-  autoUpdate: false,
+  autoUpdate: true,
   autoUpdateFW: true,
   closeToTray: true,
 };
+
+export const AUTO_UPDATE_PREF_EVENT = 'onlykey-autoUpdate-changed';
+
+export function notifyAutoUpdatePrefChanged(): void {
+  try {
+    window.dispatchEvent(new Event(AUTO_UPDATE_PREF_EVENT));
+  } catch {
+    /* ignore */
+  }
+  loadDesktopShell()?.refreshTrayMenu?.();
+}
 
 function getBoolean(value: string | boolean | null | undefined): boolean {
   if (typeof value === 'boolean') return value;
@@ -51,6 +64,7 @@ class UserPreferences {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, getBooleanString(this.cache[key]!));
     }
+    if (key === 'autoUpdate') notifyAutoUpdatePrefChanged();
   }
 }
 

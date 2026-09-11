@@ -1,14 +1,9 @@
-import { resolveAppRoot } from './appRoot';
-import { checkForAppUpdate } from './updater';
+import { loadDesktopShell } from './appRoot';
 import { bindWindowVisibilityHandlers } from './windowVisibility';
 
 function ensureDesktopStarted(): void {
   try {
-    const path = require('path') as typeof import('path');
-    const desktop = require(path.join(resolveAppRoot(), 'desktopBg.cjs')) as {
-      start?: () => void;
-    };
-    desktop.start?.();
+    loadDesktopShell()?.start?.();
   } catch (error) {
     console.error('Desktop start fallback failed:', error);
   }
@@ -22,8 +17,6 @@ export async function initDesktop(): Promise<void> {
     ensureDesktopStarted();
     bindWindowVisibilityHandlers(win);
   }, 100);
-
-  checkForAppUpdate().catch(console.error);
 
   document.addEventListener('click', (e) => {
     const target = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;

@@ -1,3 +1,5 @@
+import { loadDesktopShell } from './appRoot';
+
 declare const nw: any;
 
 type NwWindow = {
@@ -15,6 +17,7 @@ type NwWindow = {
   moveTo: (x: number, y: number) => void;
   on: (event: string, callback: () => void) => void;
   hide: () => void;
+  setShowInTaskbar?: (show: boolean) => void;
 };
 
 export function isDevRuntime(): boolean {
@@ -41,6 +44,33 @@ export function ensureWindowVisible(win: NwWindow): void {
   if (isSuppressShow(win)) return;
   if (win.isMinimized && win.restore) win.restore();
   if (!win.isVisible) win.show(true);
+  win.focus();
+}
+
+/** Reveal the main window even when hide-to-tray has set suppress-show. */
+export function forceShowMainWindow(win: NwWindow): void {
+  win._onlykeySuppressShow = false;
+  const shell = loadDesktopShell();
+  if (shell?.setSuppressShow) {
+    shell.setSuppressShow(false);
+  } else {
+    try {
+      localStorage.removeItem('onlykeySuppressShow');
+    } catch {
+      /* ignore */
+    }
+  }
+  try {
+    if (win.isMinimized && win.restore) win.restore();
+  } catch {
+    /* ignore */
+  }
+  try {
+    win.setShowInTaskbar?.(true);
+  } catch {
+    /* ignore */
+  }
+  win.show(true);
   win.focus();
 }
 

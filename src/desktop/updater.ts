@@ -78,8 +78,6 @@ export type LocalAppPackage = {
 
 export interface AppUpdateIo {
   fetchFn?: typeof fetch;
-  /** PR 1 compatibility wrapper only. */
-  confirmFn?: (message: string) => boolean;
   readPackage?: () => {
     version?: string;
     version_name?: string;
@@ -480,29 +478,4 @@ export async function downloadAndVerify(
 
 export function showUpdateInFolder(destPath: string, io: AppUpdateIo = {}): void {
   (io.showInFolder ?? ((p: string) => nw.Shell.showItemInFolder(p)))(destPath);
-}
-
-/**
- * PR 1 compatibility wrapper. Preserves today's confirm + download + show-folder
- * UX. Deleted in PR 2 once AppUpdateHost owns the flow.
- *
- * `force: true` so the session gate does not change launch-every-time behavior.
- */
-export async function checkForAppUpdate(io: AppUpdateIo = {}): Promise<void> {
-  if (!isDesktop(io) || !autoUpdateEnabled(io)) return;
-
-  const confirmFn = io.confirmFn ?? ((message: string) => confirm(message));
-
-  try {
-    const result = await checkAppUpdate(io, { force: true });
-    if (result.kind !== 'available') return;
-
-    if (!confirmFn(`Version ${result.latestVersion} is available. Download the update?`)) return;
-
-    const downloaded = await downloadAndVerify(result.latestVersion, result.remotePackage, io);
-    showUpdateInFolder(downloaded.destPath, io);
-  } catch (e) {
-    console.error('App update check failed:', e);
-    throw e;
-  }
 }

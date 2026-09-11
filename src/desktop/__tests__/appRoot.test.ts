@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { resolveAppRoot } from '../appRoot';
+import { loadDesktopShell, resolveAppRoot } from '../appRoot';
 
 describe('resolveAppRoot', () => {
   afterEach(() => {
@@ -40,6 +40,10 @@ describe('resolveAppRoot', () => {
     });
     vi.spyOn(fs, 'existsSync').mockReturnValue(false);
     expect(() => resolveAppRoot()).toThrow();
+  });
+
+  it('loadDesktopShell returns null when nw is undefined', () => {
+    expect(loadDesktopShell()).toBeNull();
   });
 
   it('probes the darwin app.nw path from execPath', () => {

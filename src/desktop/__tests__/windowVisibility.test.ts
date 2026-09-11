@@ -4,8 +4,15 @@ import {
   bindWindowVisibilityHandlers,
   centerWindowOnScreen,
   ensureWindowVisible,
+  forceShowMainWindow,
   isDevRuntime,
 } from '../windowVisibility';
+
+const setSuppressShow = vi.fn();
+
+vi.mock('../appRoot', () => ({
+  loadDesktopShell: () => ({ setSuppressShow }),
+}));
 
 function fakeWin(overrides: Record<string, unknown> = {}) {
   return {
@@ -21,6 +28,8 @@ function fakeWin(overrides: Record<string, unknown> = {}) {
     moveTo: vi.fn(),
     hide: vi.fn(),
     on: vi.fn(),
+    setShowInTaskbar: vi.fn(),
+    _onlykeySuppressShow: false,
     ...overrides,
   };
 }
@@ -57,6 +66,23 @@ describe('windowVisibility', () => {
     const win = fakeWin();
     ensureWindowVisible(win);
     expect(win.show).not.toHaveBeenCalled();
+  });
+
+  it('forceShowMainWindow clears suppress-show and shows the window', () => {
+    setSuppressShow.mockClear();
+    localStorage.setItem('onlykeySuppressShow', '1');
+    const win = fakeWin({
+      isMinimized: true,
+      setShowInTaskbar: vi.fn(),
+      _onlykeySuppressShow: true,
+    });
+    forceShowMainWindow(win);
+    expect(win._onlykeySuppressShow).toBe(false);
+    expect(setSuppressShow).toHaveBeenCalledWith(false);
+    expect(win.restore).toHaveBeenCalled();
+    expect(win.setShowInTaskbar).toHaveBeenCalledWith(true);
+    expect(win.show).toHaveBeenCalledWith(true);
+    expect(win.focus).toHaveBeenCalled();
   });
 
   it('centers on the primary screen', () => {

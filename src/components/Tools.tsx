@@ -2,6 +2,7 @@ import React from 'react';
 import { TOOLTIPS } from '../data/tooltips';
 import { HelpTip } from './ui/HelpTip';
 import { Tooltip } from './ui/Tooltip';
+import AppUpdateSettings from './AppUpdateSettings';
 
 const WEBCRYPT_TOOLS = [
   { label: 'Encrypt Messages', href: 'https://apps.crp.to/app/encrypt', icon: '🔒', tip: TOOLTIPS.encryptMessages.text },
@@ -31,6 +32,8 @@ const Tools: React.FC = () => (
       <h2>Tools</h2>
     </header>
     <div className="page-body content-panel">
+      <AppUpdateSettings />
+
       <section className="tools-section">
         <h3 className="tools-section-title">
           Securely use OpenPGP in the browser with OnlyKey WebCrypt{' '}

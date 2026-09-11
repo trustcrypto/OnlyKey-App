@@ -9,7 +9,6 @@ import {
   AppUpdateError,
   DEFAULT_MANIFEST_URL,
   checkAppUpdate,
-  checkForAppUpdate,
   compareSemver,
   downloadAndVerify,
   isAllowedUpdateUrl,
@@ -182,6 +181,7 @@ describe('checkAppUpdate', () => {
   });
 
   it('skips when autoUpdate is off and force is false (1)', async () => {
+    userPreferences.autoUpdate = false;
     const fetchFn = vi.fn();
     await expect(
       checkAppUpdate({ fetchFn: fetchFn as never, readPackage: readPkg() }),
@@ -648,168 +648,10 @@ describe('downloadAndVerify', () => {
   });
 });
 
-describe('checkForAppUpdate', () => {
-  beforeEach(() => {
-    localStorage.clear();
-    vi.stubGlobal('nw', { App: { startPath: '/tmp' }, Shell: { showItemInFolder: vi.fn() } });
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(console, 'info').mockImplementation(() => {});
-  });
-
-  it('does nothing when autoUpdate is off', async () => {
-    const fetchFn = vi.fn();
-    await checkForAppUpdate({ fetchFn: fetchFn as never });
-    expect(fetchFn).not.toHaveBeenCalled();
-  });
-
-  it('refuses a non-HTTPS manifest', async () => {
-    userPreferences.autoUpdate = true;
-    await expect(
-      checkForAppUpdate({
-        readPackage: () => ({ version: '5.7.0', manifestUrl: 'http://evil.example/manifest.json' }),
-      }),
-    ).rejects.toThrow(/non-HTTPS/);
-  });
-
-  it('downloads only after sha256 and size match', async () => {
-    userPreferences.autoUpdate = true;
-    const { body, hash } = hashBody([9, 8, 7]);
-    const written: Array<{ path: string; data: Uint8Array }> = [];
-    const showInFolder = vi.fn();
-    const fetchFn = vi.fn(async (url: string) => {
-      if (String(url).includes('manifest')) {
-        return jsonRes({
-          version: '5.7.1',
-          packages: packagesFor('https://example.com/OnlyKey_5.7.1.exe', hash, 3),
-        });
-      }
-      return binRes(body);
-    });
-
-    await checkForAppUpdate({
-      fetchFn: fetchFn as never,
-      confirmFn: () => true,
-      readPackage: readPkg(),
-      writeFile: (destPath, data) => written.push({ path: destPath, data }),
-      tmpDir: () => '/tmp/ok-updates',
-      showInFolder,
-    });
-
-    expect(written).toHaveLength(1);
-    expect(written[0].data).toEqual(body);
-    expect(showInFolder).toHaveBeenCalledOnce();
-  });
-
-  it('rejects a package with no sha256', async () => {
-    userPreferences.autoUpdate = true;
-    const fetchFn = vi.fn(async () =>
-      jsonRes({
-        version: '5.7.1',
-        packages: {
-          win64: { url: 'https://example.com/OnlyKey.exe' },
-          mac64: { url: 'https://example.com/OnlyKey.dmg' },
-          linux64: { url: 'https://example.com/OnlyKey.deb' },
-        },
-      }),
-    );
-
-    await expect(
-      checkForAppUpdate({
-        fetchFn: fetchFn as never,
-        confirmFn: () => true,
-        readPackage: readPkg(),
-      }),
-    ).rejects.toThrow(/missing sha256/);
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-  });
-
-  it('skips download when the user declines or versions are equal', async () => {
-    userPreferences.autoUpdate = true;
-    const fetchFn = vi.fn(async () => jsonRes({ version: '5.7.0', packages: {} }));
-    await checkForAppUpdate({
-      fetchFn: fetchFn as never,
-      confirmFn: () => false,
-      readPackage: readPkg(),
-    });
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-
-    fetchFn.mockResolvedValue(
-      jsonRes({
-        version: '5.7.1',
-        packages: packagesFor('https://example.com/OnlyKey.exe', 'abcd', 1),
-      }) as never,
-    );
-    await checkForAppUpdate({
-      fetchFn: fetchFn as never,
-      confirmFn: () => false,
-      readPackage: readPkg(),
-    });
-    expect(fetchFn).toHaveBeenCalledTimes(2);
-  });
-
-  it('rejects a failed package download', async () => {
-    userPreferences.autoUpdate = true;
-    const { hash } = hashBody([1, 2]);
-    const pkg = {
-      url: 'https://example.com/OnlyKey.exe',
-      sha256: hash,
-      size: 99,
-    };
-    const manifest = {
-      version: '5.7.1',
-      packages: { win64: pkg, mac64: pkg, linux64: pkg },
-    };
-
-    await expect(
-      checkForAppUpdate({
-        fetchFn: vi
-          .fn()
-          .mockResolvedValueOnce(jsonRes(manifest))
-          .mockResolvedValueOnce({ ok: false, status: 502 }) as never,
-        confirmFn: () => true,
-        readPackage: readPkg(),
-      }),
-    ).rejects.toThrow(/Update download failed: HTTP 502/);
-  });
-
-  it('rejects a failed manifest fetch', async () => {
-    userPreferences.autoUpdate = true;
-    await expect(
-      checkForAppUpdate({
-        fetchFn: vi.fn().mockResolvedValue({ ok: false, status: 404 }) as never,
-        readPackage: readPkg(),
-      }),
-    ).rejects.toThrow(/Manifest fetch failed/);
-  });
-
-  it('does not throw when the platform package is missing', async () => {
-    userPreferences.autoUpdate = true;
-    const fetchFn = vi.fn(async () => jsonRes({ version: '5.7.1', packages: {} }));
-    await checkForAppUpdate({
-      fetchFn: fetchFn as never,
-      confirmFn: () => true,
-      readPackage: readPkg(),
-    });
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-  });
-
+describe('showUpdateInFolder', () => {
   it('reveals the downloaded file in the folder', () => {
     const showInFolder = vi.fn();
     showUpdateInFolder('/tmp/ok-updates/OnlyKey.exe', { showInFolder });
     expect(showInFolder).toHaveBeenCalledWith('/tmp/ok-updates/OnlyKey.exe');
-  });
-
-  it('wraps failures as AppUpdateError', async () => {
-    userPreferences.autoUpdate = true;
-    try {
-      await checkForAppUpdate({
-        fetchFn: vi.fn().mockResolvedValue({ ok: false, status: 502 }) as never,
-        readPackage: readPkg(),
-      });
-      expect.unreachable();
-    } catch (e) {
-      expect(e).toBeInstanceOf(AppUpdateError);
-      expect((e as AppUpdateError).code).toBe('http-manifest');
-    }
   });
 });

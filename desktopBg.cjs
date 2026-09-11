@@ -134,6 +134,7 @@ const state = {
   mainAppWindow: null,
   stopped: false,
   pendingTimers: [],
+  autoLaunch: null,
 };
 
 const osx = os.platform() === 'darwin';
@@ -650,6 +651,11 @@ function attachToAppWindows() {
  * tray menu with remove()/insert() often leaves an EMPTY right-click menu.
  * Always build a fresh Menu and reassign tray.menu instead.
  */
+function refreshTrayMenu() {
+  if (!state.tray) return;
+  assignTrayMenu(buildTrayMenu(state.autoLaunch));
+}
+
 function assignTrayMenu(menu) {
   state.menu = menu;
   if (!state.tray) return;
@@ -796,6 +802,7 @@ async function initTray() {
 
   if (!trayInitActive()) return;
 
+  state.autoLaunch = autoLaunch;
   const settingsMenu = buildTrayMenu(autoLaunch);
   const iconPath = resolveTrayIconPath();
   const trayOptions = { icon: iconPath };
@@ -1003,6 +1010,7 @@ module.exports = {
   readCloseToTray,
   readSuppressShow,
   setSuppressShow,
+  refreshTrayMenu,
   isTrayReadyInBackground,
   isTrayReadyOnDisk,
   getTestState,

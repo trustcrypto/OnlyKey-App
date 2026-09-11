@@ -18,4 +18,10 @@ describe('Tools page', () => {
     const gpg = screen.getByRole('link', { name: /onlykey gpg agent/i });
     expect(gpg).toHaveAttribute('href', 'https://docs.crp.to/gpgagentquickstart.html');
   });
+
+  it('includes the app-update settings card', () => {
+    renderWithProviders(<Tools />);
+    expect(screen.getByTestId('app-update-settings')).toBeInTheDocument();
+    expect(screen.getByTestId('check-now')).toBeInTheDocument();
+  });
 });

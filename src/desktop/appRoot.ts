@@ -39,3 +39,20 @@ export function resolveAppRoot(): string {
   }
   return nw.App.startPath;
 }
+
+export type DesktopShell = {
+  start?: () => void;
+  refreshTrayMenu?: () => void;
+  setSuppressShow?: (value: boolean) => void;
+};
+
+/** `null` when `typeof nw === 'undefined'` or require fails (unit tests, Chrome). */
+export function loadDesktopShell(): DesktopShell | null {
+  if (typeof nw === 'undefined') return null;
+  try {
+    const path = require('path') as typeof import('path');
+    return require(path.join(resolveAppRoot(), 'desktopBg.cjs')) as DesktopShell;
+  } catch {
+    return null;
+  }
+}

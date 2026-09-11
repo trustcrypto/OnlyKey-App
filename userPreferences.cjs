@@ -14,8 +14,7 @@ function getBooleanString(value) {
   return value ? 'true' : 'false';
 }
 
-function defaultForKey(key) {
-  if (key === 'autoUpdate') return false;
+function defaultForKey(_key) {
   return true;
 }
 
@@ -47,14 +46,23 @@ class UserPreferences {
   }
 
   get autoUpdate() {
+    this._autoUpdate = readPreference('autoUpdate');
     return this._autoUpdate;
   }
   set autoUpdate(value) {
     this._autoUpdate = getBoolean(value);
     writePreference('autoUpdate', this._autoUpdate);
+    try {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new Event('onlykey-autoUpdate-changed'));
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   get autoUpdateFW() {
+    this._autoUpdateFW = readPreference('autoUpdateFW');
     return this._autoUpdateFW;
   }
   set autoUpdateFW(value) {
