@@ -8,6 +8,7 @@ import {
 } from '../store/useAppUpdateStore';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { forceShowMainWindow } from '../desktop/windowVisibility';
+import { userPreferences } from '../desktop/userPreferences';
 import AppUpdateDialog from './dialogs/AppUpdateDialog';
 
 function shouldPresent(phase: AppUpdatePhase): boolean {
@@ -31,14 +32,26 @@ const AppUpdateHost: React.FC = () => {
   const open = promptVisible && !deferred && shouldPresent(phase);
 
   useEffect(() => {
-    void startAutoCheck();
-    return bindAutoUpdatePrefListeners();
+    const unbind = bindAutoUpdatePrefListeners();
+    // After paint so React StrictMode does not start-then-cancel the first
+    // check, and so --devtools is more likely to record the GET.
+    const id = window.setTimeout(() => {
+      void startAutoCheck();
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      unbind();
+    };
   }, []);
 
   useEffect(() => {
     if (typeof nw === 'undefined') return;
     const win = nw.Window.get();
-    const onClose = () => abortAppUpdateFetches();
+    const onClose = () => {
+      // Hide-to-tray also fires `close`. Keep the startup GET running.
+      if (userPreferences.closeToTray) return;
+      abortAppUpdateFetches();
+    };
     win.on('close', onClose);
   }, []);
 

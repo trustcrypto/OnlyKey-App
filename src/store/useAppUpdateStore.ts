@@ -125,7 +125,12 @@ export function hydrateAutoUpdate(): void {
 
 export function bindAutoUpdatePrefListeners(): () => void {
   hydrateAutoUpdate();
-  const onChange = () => hydrateAutoUpdate();
+  const onChange = () => {
+    const wasOn = useAppUpdateStore.getState().autoCheck;
+    hydrateAutoUpdate();
+    const nowOn = useAppUpdateStore.getState().autoCheck;
+    if (nowOn && !wasOn) void startAutoCheck();
+  };
   window.addEventListener('focus', onChange);
   window.addEventListener(AUTO_UPDATE_PREF_EVENT, onChange);
   return () => {
@@ -176,6 +181,11 @@ async function runCheck(force: boolean): Promise<void> {
       return;
     }
     if (result.kind === 'current') {
+      if (!force) {
+        console.info(
+          `App update: ${result.currentVersion} is current (remote ${result.latestVersion})`,
+        );
+      }
       useAppUpdateStore.setState({
         phase: force ? 'up-to-date' : 'idle',
         promptVisible: force,
@@ -199,6 +209,9 @@ async function runCheck(force: boolean): Promise<void> {
       }
       return;
     }
+    if (result.kind === 'skipped') {
+      console.info(`App update: auto-check skipped (${result.reason})`);
+    }
     useAppUpdateStore.setState({ phase: 'idle', promptVisible: false });
   } catch (e) {
     const err = e instanceof AppUpdateError ? e : new AppUpdateError(String(e), 'io');
@@ -210,7 +223,10 @@ async function runCheck(force: boolean): Promise<void> {
 
 export async function startAutoCheck(): Promise<void> {
   hydrateAutoUpdate();
-  if (!useAppUpdateStore.getState().autoCheck) return;
+  if (!useAppUpdateStore.getState().autoCheck) {
+    console.info('App update: auto-check skipped (pref-disabled)');
+    return;
+  }
   if (isBusy()) return;
   const run = runCheck(false).finally(() => {
     if (inFlight === run) inFlight = null;
@@ -282,8 +298,10 @@ export function dismissUpdatePrompt(): void {
 }
 
 export function setAutoCheck(value: boolean): void {
+  const wasOn = useAppUpdateStore.getState().autoCheck;
   userPreferences.autoUpdate = value;
   hydrateAutoUpdate();
+  if (value && !wasOn) void startAutoCheck();
 }
 
 export function resetAppUpdateStoreForTests(): void {

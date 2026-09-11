@@ -16,7 +16,9 @@ vi.mock('../../desktop/updater', async (importOriginal) => {
   };
 });
 
+import { AUTO_UPDATE_PREF_EVENT } from '../../desktop/userPreferences';
 import {
+  bindAutoUpdatePrefListeners,
   checkNow,
   confirmDownload,
   dismissUpdatePrompt,
@@ -50,6 +52,7 @@ describe('useAppUpdateStore', () => {
     userPreferences.autoUpdate = true;
     resetAppUpdateStoreForTests();
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'info').mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -61,6 +64,33 @@ describe('useAppUpdateStore', () => {
     await startAutoCheck();
     expect(checkAppUpdate).not.toHaveBeenCalled();
     expect(useAppUpdateStore.getState().phase).toBe('idle');
+  });
+
+  it('starts an auto-check when the pref is turned on', async () => {
+    checkAppUpdate.mockResolvedValue({
+      kind: 'current',
+      currentVersion: '5.7.0',
+      latestVersion: '5.3.4',
+    });
+    setAutoCheck(false);
+    expect(checkAppUpdate).not.toHaveBeenCalled();
+    setAutoCheck(true);
+    await vi.waitFor(() => expect(checkAppUpdate).toHaveBeenCalled());
+    expect(checkAppUpdate.mock.calls[0][1]).toEqual({ force: false });
+  });
+
+  it('starts an auto-check when the tray pref event turns the flag on', async () => {
+    checkAppUpdate.mockResolvedValue({
+      kind: 'current',
+      currentVersion: '5.7.0',
+      latestVersion: '5.3.4',
+    });
+    setAutoCheck(false);
+    const unbind = bindAutoUpdatePrefListeners();
+    userPreferences.autoUpdate = true;
+    window.dispatchEvent(new Event(AUTO_UPDATE_PREF_EVENT));
+    await vi.waitFor(() => expect(checkAppUpdate).toHaveBeenCalled());
+    unbind();
   });
 
   it('opens the available prompt on auto-check', async () => {
