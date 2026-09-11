@@ -39,7 +39,12 @@ declare const nw: {
     showItemInFolder: (path: string) => void;
   };
   App: {
-    manifest: { version_name: string };
+    manifest: {
+      version?: string;
+      version_name: string;
+      manifestUrl?: string;
+      updateBaseUrl?: string;
+    };
     startPath: string;
     quit: () => void;
   };

@@ -12,6 +12,10 @@ vi.mock('../windowVisibility', () => ({
   bindWindowVisibilityHandlers: (...args: unknown[]) => bindWindowVisibilityHandlers(...args),
 }));
 
+vi.mock('../appRoot', () => ({
+  resolveAppRoot: () => '/__onlykey-missing-app-root__',
+}));
+
 describe('initDesktop', () => {
   beforeEach(() => {
     start.mockClear();
@@ -26,6 +30,7 @@ describe('initDesktop', () => {
       if (id.includes('desktopBg.cjs')) return { start };
       return require(id);
     });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
