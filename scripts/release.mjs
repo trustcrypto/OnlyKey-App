@@ -11,6 +11,15 @@
  *
  * Always stages a runnable app bundle under tmp/release/<name>/ before packaging.
  * On macOS, app.nw is the app payload only (not a nested nwjs.app).
+ *
+ * After a successful artifact, hashes it and merges `releases/manifest.json`
+ * (see `update-manifest.mjs`). Does not upload. Channel env:
+ *   ONLYKEY_UPDATE_MANIFEST_URL  — packaged package.json `manifestUrl`
+ *                                  (wins over repo `manifest.json`)
+ *   ONLYKEY_UPDATE_BASE_URL      — package URL prefix + packaged `updateBaseUrl`
+ *
+ * Client fetches are fail-closed (`redirect: 'error'`). If a staging GET throws
+ * TypeError, dump `Location`; do not follow HTTP.
  */
 import { execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -22,6 +31,12 @@ import {
   mergeUniversalApp,
   officialNwVersion,
 } from './mac-universal.mjs';
+import {
+  DEFAULT_UPDATE_MANIFEST_URL,
+  normalizeManifestUrl,
+  normalizeUpdateBaseUrl,
+  recordReleaseArtifact,
+} from './update-manifest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
@@ -125,16 +140,20 @@ function resolveMakensis() {
   return 'makensis';
 }
 
-function buildProductionPackageJson(source) {
-  let manifestUrl = 'https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json';
-  try {
-    const updateManifest = JSON.parse(
-      fs.readFileSync(path.join(rootDir, 'manifest.json'), 'utf8')
-    );
-    if (updateManifest.manifestUrl) manifestUrl = updateManifest.manifestUrl;
-  } catch {
-    /* optional */
+export function buildProductionPackageJson(source) {
+  let manifestUrl = process.env.ONLYKEY_UPDATE_MANIFEST_URL;
+  if (!manifestUrl) {
+    try {
+      const updateManifest = JSON.parse(
+        fs.readFileSync(path.join(rootDir, 'manifest.json'), 'utf8')
+      );
+      if (updateManifest.manifestUrl) manifestUrl = updateManifest.manifestUrl;
+    } catch {
+      /* optional */
+    }
   }
+  manifestUrl = normalizeManifestUrl(manifestUrl || DEFAULT_UPDATE_MANIFEST_URL);
+  const updateBaseUrl = normalizeUpdateBaseUrl(process.env.ONLYKEY_UPDATE_BASE_URL);
 
   return {
     name: source.name,
@@ -144,6 +163,7 @@ function buildProductionPackageJson(source) {
     description: source.description,
     main: 'dist/index.html',
     manifestUrl,
+    ...(updateBaseUrl ? { updateBaseUrl } : {}),
     'chromium-args': source['chromium-args'],
     window: {
       ...source.window,
@@ -544,7 +564,17 @@ async function main() {
   }
 
   console.log('Release build complete.');
-  if (artifact) console.log('Artifact:', artifact);
+  if (artifact) {
+    console.log('Artifact:', artifact);
+    recordReleaseArtifact({
+      artifactPath: artifact,
+      version: manifest.version,
+      platform: process.platform,
+      releasesDir,
+      name: manifest.name,
+      productName: manifest.productName,
+    });
+  }
 }
 
 function isMainModule() {

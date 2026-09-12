@@ -47,6 +47,7 @@ export default defineConfig({
             'src/**/*.{test,spec}.{ts,tsx}',
             'src/**/*.ui.test.{ts,tsx}',
             'tests/desktop/release-packaging.static.test.mjs',
+            'tests/desktop/update-manifest.static.test.mjs',
           ],
           exclude: ['node_modules', 'dist'],
           env: {
