@@ -9,6 +9,11 @@ import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import * as keyImportService from '../../services/keyImport/keyImportService';
 import * as keyBundleParser from '../../services/keyImport/keyBundleParser';
+import * as firmwareDownload from '../../desktop/firmwareDownload';
+import {
+  resetFirmwareUpdateStoreForTests,
+  useFirmwareUpdateStore,
+} from '../../store/useFirmwareUpdateStore';
 
 vi.mock('../../services/keyImport/keyImportService', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../services/keyImport/keyImportService')>();
@@ -39,6 +44,7 @@ describe('Setup page', () => {
     vi.mocked(keyImportService.importPemKey).mockReset();
     vi.mocked(keyImportService.importPemKey).mockResolvedValue({ loadedCount: 1, usedSelection: false });
     vi.mocked(keyBundleParser.parseKeyBundle).mockReset();
+    resetFirmwareUpdateStoreForTests();
   });
 
   it('shows firmware and guided-setup actions for an uninitialized device', () => {
@@ -52,6 +58,7 @@ describe('Setup page', () => {
     expect(screen.getByRole('button', { name: /load firmware/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
     expect(screen.getByText(/begin the guided setup wizard/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /download latest/i })).not.toBeInTheDocument();
   });
 
   it('occupies the firmware prompt on PIN steps but not Step 1 landing', async () => {
@@ -810,5 +817,73 @@ describe('Setup page', () => {
     expect(screen.getByRole('button', { name: /load firmware to onlykey/i })).toBeDisabled();
     await chooseSetupFirmwareFile(user);
     expect(screen.getByRole('button', { name: /load firmware to onlykey/i })).toBeEnabled();
+  });
+
+  it('offers Download Latest on Step 11 when uninitialized and does not occupy the prompt', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+      isBootloader: false,
+      isInitialized: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    expect(screen.getByRole('heading', { name: /load firmware/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download latest firmware/i })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /use downloaded/i })).not.toBeInTheDocument();
+    expect(useDeviceStore.getState().setupOccupiesFirmwarePrompt).toBe(false);
+  });
+
+  it('downloads and applies latest firmware from Step 11 in bootloader', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    vi.spyOn(firmwareDownload, 'downloadLatestFirmware').mockResolvedValue({
+      version: 'v3.0.4-prod',
+      blocks: ['aa', 'bb'],
+      downloadUrl: 'https://example.com/fw.txt',
+      sha256: 'abc',
+    });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.BOOTLOADER,
+      isLocked: false,
+      isBootloader: true,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    await user.click(screen.getByRole('button', { name: /download latest firmware/i }));
+    await waitFor(() => {
+      expect(device.loadFirmwareBlocks).toHaveBeenCalledWith(['aa', 'bb'], expect.any(Function));
+    });
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+  });
+
+  it('uses already-downloaded firmware blocks on Step 11', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    const downloadLatest = vi.spyOn(firmwareDownload, 'downloadLatestFirmware');
+    useFirmwareUpdateStore.setState({
+      blocks: ['ccdd'],
+      latestVersion: 'v3.0.4-prod',
+      phase: 'idle',
+    });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+      isBootloader: false,
+      isInitialized: false,
+    });
+    renderWithProviders(<Setup />);
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    await user.click(screen.getByRole('button', { name: /use downloaded v3\.0\.4-prod/i }));
+    await waitFor(() => {
+      expect(device.triggerBootloader).toHaveBeenCalled();
+    });
+    expect(JSON.parse(sessionStorage.getItem('ok-pending-firmware') ?? 'null')).toEqual(['ccdd']);
+    expect(downloadLatest).not.toHaveBeenCalled();
+    expect(device.loadFirmwareBlocks).not.toHaveBeenCalled();
   });
 });

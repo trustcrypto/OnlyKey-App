@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
+import { useFirmwareUpdateStore } from '../store/useFirmwareUpdateStore';
 import { DeviceType } from '../api/device/types';
 import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import { PIN_ENTRY_CANCELLED } from '../api/device/OnlyKeyDevice';
 import { parseBackupData, parseFirmwareData } from '../api/device/utils';
 import { applyFirmwareBlocks } from '../desktop/firmwareApply';
+import { downloadLatestFirmware } from '../desktop/firmwareDownload';
 import { importPemKey, isSelectionRequiredError } from '../services/keyImport/keyImportService';
 import { parseKeyBundle } from '../services/keyImport/keyBundleParser';
 import PrivateKeySelectDialog from './dialogs/PrivateKeySelectDialog';
@@ -91,6 +93,8 @@ const StepNav: React.FC<{
 const Setup: React.FC = () => {
   const { device, deviceType, isLocked, isConfigMode, isBootloader, isInitialized: deviceInitialized, setWorking } =
     useDeviceStore();
+  const downloadedBlocks = useFirmwareUpdateStore((s) => s.blocks);
+  const downloadedVersion = useFirmwareUpdateStore((s) => s.latestVersion);
   const [guided, setGuided] = useState(false);
   const [advancedSetup, setAdvancedSetup] = useState(false);
   const [classicStep, setClassicStep] = useState<ClassicStep>('Step1');
@@ -122,6 +126,11 @@ const Setup: React.FC = () => {
   const inBootloader = isBootloader || deviceType === DeviceType.BOOTLOADER;
   const isUninitialized = isUninitializedDevice({ isInitialized: deviceInitialized, deviceType });
   const isInitialized = !isUninitialized && !inBootloader;
+  const allowLatestDownload = inBootloader || isUninitialized;
+  const useDownloadedLabel =
+    allowLatestDownload && downloadedBlocks && downloadedBlocks.length > 0 && downloadedVersion
+      ? `Use downloaded ${downloadedVersion}`
+      : null;
 
   useEffect(() => {
     const step = isDuo ? duoStep : classicStep;
@@ -298,17 +307,34 @@ const Setup: React.FC = () => {
       }
     });
 
+  const applySetupFirmware = async (blocks: string[]) => {
+    if (!blocks.length) throw new Error('Could not parse firmware file.');
+    await applyFirmwareBlocks({
+      device: device!,
+      blocks,
+      isBootloader,
+      setWorking,
+    });
+    goToLanding();
+  };
+
   const handleFirmware = async (file: File) =>
     run(async () => {
       const blocks = parseFirmwareData(await file.text());
-      if (!blocks.length) throw new Error('Could not parse firmware file.');
-      await applyFirmwareBlocks({
-        device: device!,
-        blocks,
-        isBootloader,
-        setWorking,
-      });
-      goToLanding();
+      await applySetupFirmware(blocks);
+    });
+
+  const handleDownloadLatest = () =>
+    run(async () => {
+      const { blocks } = await downloadLatestFirmware();
+      await applySetupFirmware(blocks);
+    });
+
+  const handleUseDownloaded = () =>
+    run(async () => {
+      const blocks = useFirmwareUpdateStore.getState().blocks;
+      if (!blocks?.length) throw new Error('Could not parse firmware file.');
+      await applySetupFirmware(blocks);
     });
 
   const ConfigModeBlock: React.FC = () => (
@@ -513,6 +539,10 @@ const Setup: React.FC = () => {
               if (firmwareFile) void handleFirmware(firmwareFile);
             }}
             isProcessing={isProcessing}
+            allowLatestDownload={allowLatestDownload}
+            onDownloadLatest={handleDownloadLatest}
+            useDownloadedLabel={useDownloadedLabel}
+            onUseDownloaded={handleUseDownloaded}
           />
         )}
 
@@ -893,6 +923,10 @@ const Setup: React.FC = () => {
             if (firmwareFile) void handleFirmware(firmwareFile);
           }}
           isProcessing={isProcessing}
+          allowLatestDownload={allowLatestDownload}
+          onDownloadLatest={handleDownloadLatest}
+          useDownloadedLabel={useDownloadedLabel}
+          onUseDownloaded={handleUseDownloaded}
         />
       )}
 
@@ -1273,7 +1307,21 @@ const FirmwareStep: React.FC<{
   onFile: (f: File | null) => void;
   onLoad: () => void;
   isProcessing: boolean;
-}> = ({ inputRef, selectedFile, onFile, onLoad, isProcessing }) => (
+  allowLatestDownload: boolean;
+  onDownloadLatest: () => void;
+  useDownloadedLabel: string | null;
+  onUseDownloaded: () => void;
+}> = ({
+  inputRef,
+  selectedFile,
+  onFile,
+  onLoad,
+  isProcessing,
+  allowLatestDownload,
+  onDownloadLatest,
+  useDownloadedLabel,
+  onUseDownloaded,
+}) => (
   <div id="Step11">
     <h2>Load Firmware</h2>
     <div className="space-y-4">
@@ -1290,7 +1338,7 @@ const FirmwareStep: React.FC<{
       className="ok-file-input"
       onChange={(e) => onFile(e.target.files?.[0] ?? null)}
     />
-    <div className="mt-4">
+    <div className="mt-4 flex flex-wrap gap-2">
       <SetButton
         disabled={isProcessing || !selectedFile}
         onClick={onLoad}
@@ -1298,6 +1346,16 @@ const FirmwareStep: React.FC<{
       >
         {isProcessing ? 'Please wait…' : 'Load Firmware to OnlyKey'}
       </SetButton>
+      {allowLatestDownload && (
+        <SetButton disabled={isProcessing} onClick={onDownloadLatest}>
+          Download Latest Firmware
+        </SetButton>
+      )}
+      {useDownloadedLabel && (
+        <SetButton disabled={isProcessing} onClick={onUseDownloaded}>
+          {useDownloadedLabel}
+        </SetButton>
+      )}
     </div>
   </div>
 );

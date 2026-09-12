@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
+import { checkNow, useFirmwareUpdateStore } from '../store/useFirmwareUpdateStore';
 import { parseFirmwareData } from '../api/device/utils';
 import { applyFirmwareBlocks } from '../desktop/firmwareApply';
 import { downloadLatestFirmware } from '../desktop/firmwareDownload';
@@ -10,8 +11,19 @@ import { SetButton, StepFieldset } from './ui/forms';
 import { HelpTip } from './ui/HelpTip';
 
 const Firmware: React.FC = () => {
-  const { device, version, isBootloader, fwUpdateSupport, deviceType, isInitialized, setWorking } =
-    useDeviceStore();
+  const {
+    device,
+    version,
+    isBootloader,
+    fwUpdateSupport,
+    deviceType,
+    isInitialized,
+    isLocked,
+    isWorking,
+    setWorking,
+  } = useDeviceStore();
+  const storeError = useFirmwareUpdateStore((s) => s.error);
+  const fwPhase = useFirmwareUpdateStore((s) => s.phase);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +33,9 @@ const Firmware: React.FC = () => {
 
   const isUninitialized = isUninitializedDevice({ isInitialized, deviceType });
   const canLoadFirmware = isBootloader || isUninitialized || fwUpdateSupport;
+  const fwBusy = fwPhase === 'checking' || fwPhase === 'downloading' || fwPhase === 'applying';
+  const checkDisabled = isLoading || fwBusy || isLocked || isBootloader || isWorking;
+  const displayError = error || storeError;
 
   const runApply = async (blocks: string[]) => {
     if (!device) return;
@@ -154,6 +169,15 @@ const Firmware: React.FC = () => {
             Download Latest Firmware
           </SetButton>
         )}
+        <SetButton
+          onClick={() => {
+            void checkNow();
+          }}
+          disabled={checkDisabled}
+          data-testid="firmware-tab-check-now"
+        >
+          Check now
+        </SetButton>
       </div>
 
       {version && (
@@ -168,7 +192,7 @@ const Firmware: React.FC = () => {
           {status || 'Processing...'} {progress > 0 ? `(${progress}%)` : ''}
         </p>
       )}
-      {error && <p className="critical-text">{error}</p>}
+      {displayError && <p className="critical-text">{displayError}</p>}
       {!isLoading && status && <p className="status-success text-sm">{status}</p>}
     </div>
   );

@@ -7,11 +7,17 @@ import { DeviceType } from '../../api/device/types';
 import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
 import * as firmwareDownload from '../../desktop/firmwareDownload';
+import * as firmwareUpdateStore from '../../store/useFirmwareUpdateStore';
+import {
+  resetFirmwareUpdateStoreForTests,
+  useFirmwareUpdateStore,
+} from '../../store/useFirmwareUpdateStore';
 
 describe('Firmware page', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     sessionStorage.clear();
+    resetFirmwareUpdateStoreForTests();
   });
 
   it('shows only the config mode error when bootloader trigger fails', async () => {
@@ -190,6 +196,74 @@ describe('Firmware page', () => {
       expect(screen.getByText(/invalid hex/i)).toBeInTheDocument();
     });
     expect(sessionStorage.getItem('ok-pending-firmware')).toBeNull();
+  });
+
+  it('Check now calls the store even when auto-update firmware is off', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    const checkNow = vi.spyOn(firmwareUpdateStore, 'checkNow').mockResolvedValue(undefined);
+    const downloadLatest = vi.spyOn(firmwareDownload, 'downloadLatestFirmware');
+    localStorage.setItem('autoUpdateFW', 'false');
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.CLASSIC,
+      version: 'v2.1.1 STD',
+      fwUpdateSupport: true,
+      isBootloader: false,
+      isLocked: false,
+      isWorking: false,
+      isConnected: true,
+    });
+    useFirmwareUpdateStore.setState({ autoCheckFW: false });
+    renderWithProviders(<Firmware />);
+
+    await user.click(screen.getByRole('button', { name: /^check now$/i }));
+    expect(checkNow).toHaveBeenCalledTimes(1);
+    expect(downloadLatest).not.toHaveBeenCalled();
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+    expect(device.loadFirmwareBlocks).not.toHaveBeenCalled();
+  });
+
+  it('shows the last firmware-update error from the store', () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: true,
+      isBootloader: false,
+      version: 'v2.1.1 STD',
+    });
+    useFirmwareUpdateStore.setState({
+      phase: 'error',
+      error: 'Could not reach the firmware server (HTTP 502).',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByText(/could not reach the firmware server \(http 502\)/i)).toBeInTheDocument();
+  });
+
+  it('disables Check now in bootloader while Download Latest stays a one-shot apply', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    vi.spyOn(firmwareDownload, 'downloadLatestFirmware').mockResolvedValue({
+      version: 'v3.0.4',
+      blocks: ['aa', 'bb'],
+      downloadUrl: 'https://example.com/fw.txt',
+      sha256: 'abc',
+    });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.BOOTLOADER,
+      fwUpdateSupport: false,
+      isBootloader: true,
+      isLocked: false,
+      version: 'v1',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByTestId('firmware-tab-check-now')).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: /download latest firmware/i }));
+    await waitFor(() => {
+      expect(device.loadFirmwareBlocks).toHaveBeenCalledWith(['aa', 'bb'], expect.any(Function));
+    });
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
   });
 
   it('loads a chosen firmware file after bootloader kick', async () => {
