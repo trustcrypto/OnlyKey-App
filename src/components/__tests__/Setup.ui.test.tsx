@@ -6,6 +6,7 @@ import WorkingDialog from '../dialogs/WorkingDialog';
 import { DeviceType } from '../../api/device/types';
 import { renderWithProviders } from '../../test/render';
 import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
+import { useDeviceStore } from '../../store/useDeviceStore';
 import * as keyImportService from '../../services/keyImport/keyImportService';
 import * as keyBundleParser from '../../services/keyImport/keyBundleParser';
 
@@ -51,6 +52,25 @@ describe('Setup page', () => {
     expect(screen.getByRole('button', { name: /load firmware/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
     expect(screen.getByText(/begin the guided setup wizard/i)).toBeInTheDocument();
+  });
+
+  it('occupies the firmware prompt on PIN steps but not Step 1 landing', async () => {
+    const user = userEvent.setup();
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.UNINITIALIZED,
+      isLocked: false,
+      setupOccupiesFirmwarePrompt: false,
+    });
+    const { unmount } = renderWithProviders(<Setup />);
+    expect(useDeviceStore.getState().setupOccupiesFirmwarePrompt).toBe(false);
+
+    await user.click(screen.getByRole('button', { name: /^next$/i }));
+    expect(screen.getByRole('heading', { name: /enter pin on onlykey keypad/i })).toBeInTheDocument();
+    expect(useDeviceStore.getState().setupOccupiesFirmwarePrompt).toBe(true);
+
+    unmount();
+    expect(useDeviceStore.getState().setupOccupiesFirmwarePrompt).toBe(false);
   });
 
   it('shows firmware load, not ready-to-use, while in bootloader', () => {

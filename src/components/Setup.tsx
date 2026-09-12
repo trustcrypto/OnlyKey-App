@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { DeviceType } from '../api/device/types';
 import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
@@ -22,6 +22,10 @@ type ClassicStep =
   | 'Step8' | 'Step9' | 'Step10' | 'Step11';
 
 type DuoStep = 'Step1' | 'Step2' | 'Step8' | 'Step9' | 'Step10' | 'Step11';
+
+function setupStepOccupiesPrompt(step: ClassicStep | DuoStep): boolean {
+  return step !== 'Step1' && step !== 'Step11';
+}
 
 const BACKUP_RSA_SLOTS = [
   ...KEY_SLOTS.rsa.map((s) => ({ value: s, label: `RSA ${s}` })),
@@ -118,6 +122,15 @@ const Setup: React.FC = () => {
   const inBootloader = isBootloader || deviceType === DeviceType.BOOTLOADER;
   const isUninitialized = isUninitializedDevice({ isInitialized: deviceInitialized, deviceType });
   const isInitialized = !isUninitialized && !inBootloader;
+
+  useEffect(() => {
+    const step = isDuo ? duoStep : classicStep;
+    const occupy = setupStepOccupiesPrompt(step);
+    useDeviceStore.setState({ setupOccupiesFirmwarePrompt: occupy });
+    return () => {
+      useDeviceStore.setState({ setupOccupiesFirmwarePrompt: false });
+    };
+  }, [isDuo, classicStep, duoStep]);
 
   const run = async (fn: () => Promise<void>) => {
     setIsProcessing(true);

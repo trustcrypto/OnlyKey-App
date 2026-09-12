@@ -1,6 +1,5 @@
 import { DeviceType } from '../api/device/types';
 import type { DuoProfileId } from '../api/device/firmwareConstants';
-import type { FirmwareCheckResult } from '../desktop/firmwareCheck';
 
 /**
  * Zustand fields that MUST be wiped when the OnlyKey disconnects or the UI
@@ -30,8 +29,8 @@ export const disconnectedDeviceSnapshot = {
   error: null as string | null,
   pinError: null as string | null,
   recentMessages: [] as string[],
-  firmwareCheck: null as FirmwareCheckResult | null,
   fwUpdateSupport: false,
+  setupOccupiesFirmwarePrompt: false,
   selectedSlotId: null as number | null,
   isWorking: false,
   workingMessage: 'Please wait…',
@@ -49,7 +48,7 @@ export const lockedSessionWipeSnapshot = {
   error: null as string | null,
   pinError: null as string | null,
   recentMessages: [] as string[],
-  firmwareCheck: null as FirmwareCheckResult | null,
+  setupOccupiesFirmwarePrompt: false,
   selectedSlotId: null as number | null,
   isWorking: false,
   workingMessage: 'Please wait…',

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { userPreferences } from '../userPreferences';
+import { AUTO_UPDATE_FW_PREF_EVENT, userPreferences } from '../userPreferences';
 
 describe('userPreferences', () => {
   beforeEach(() => {
@@ -36,6 +36,16 @@ describe('userPreferences', () => {
     expect(userPreferences.closeToTray).toBe(false);
     userPreferences.closeToTray = true;
     expect(userPreferences.closeToTray).toBe(true);
+  });
+
+  it('dispatches onlykey-autoUpdateFW-changed when autoUpdateFW is set', () => {
+    const spy = vi.spyOn(window, 'dispatchEvent');
+    userPreferences.autoUpdateFW = false;
+    expect(
+      spy.mock.calls.some(
+        ([event]) => event instanceof Event && event.type === AUTO_UPDATE_FW_PREF_EVENT,
+      ),
+    ).toBe(true);
   });
 
   it('uses the in-memory cache when localStorage is unavailable', () => {

@@ -7,7 +7,6 @@ import {
   FW_API_URL,
   FW_CHECK_SESSION_KEY,
   checkFirmwareUpdate,
-  checkForNewFirmware,
   clearPendingFirmware,
   compareFirmwareVersion,
   firmwareVersionTuple,
@@ -287,40 +286,5 @@ describe('pending firmware helpers', () => {
   it('returns null for corrupt pending firmware JSON (11)', () => {
     sessionStorage.setItem('ok-pending-firmware', '{not-json');
     expect(getPendingFirmware()).toBeNull();
-  });
-});
-
-describe('checkForNewFirmware wrapper', () => {
-  beforeEach(() => {
-    sessionStorage.clear();
-    userPreferences.autoUpdateFW = true;
-    vi.stubGlobal('nw', {});
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network disabled in tests')));
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('maps available onto the legacy result shape', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => jsonRes(apiRelease())),
-    );
-    const result = await checkForNewFirmware('v2.1.2 STD', 'classic');
-    expect(result).toMatchObject({
-      updateAvailable: true,
-      currentVersion: 'v2.1.2 STD',
-      latestVersion: 'v3.0.4-prod',
-      fwUpdateSupport: true,
-    });
-  });
-
-  it('treats first-use as upgrade-required even when hardware type is Classic', async () => {
-    userPreferences.autoUpdateFW = false;
-    const result = await checkForNewFirmware('v3.0.4-testc', 'classic', false);
-    expect(result.upgradeRequired).toBe(true);
-    expect(result.fwUpdateSupport).toBe(true);
-    expect(result.updateAvailable).toBe(false);
   });
 });

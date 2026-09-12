@@ -10,14 +10,6 @@ export const FW_CHECK_SESSION_KEY = 'ok-fw-checked-session';
 export { FW_API_URL, FirmwareUpdateError } from './firmwareDownload';
 export type { FirmwareUpdateErrorCode, FirmwareUpdateIo } from './firmwareDownload';
 
-export interface FirmwareCheckResult {
-  updateAvailable: boolean;
-  currentVersion: string;
-  latestVersion?: string;
-  fwUpdateSupport: boolean;
-  upgradeRequired?: boolean;
-}
-
 export type FirmwareUpdateCheckResult =
   | { kind: 'skipped'; reason: 'not-desktop' | 'pref-disabled' | 'already-checked' | 'no-device' | 'unsafe-state' }
   | { kind: 'current'; currentVersion: string; latestVersion: string }
@@ -206,27 +198,6 @@ export async function checkFirmwareUpdate(
       currentVersion,
     });
   }
-}
-
-export async function checkForNewFirmware(
-  currentVersion: string,
-  deviceType: string,
-  isInitialized = true,
-): Promise<FirmwareCheckResult> {
-  const fwUpdateSupport = supportsAppFirmwareUpdate(currentVersion);
-  const upgradeRequired = !isInitialized || deviceType === 'uninitialized';
-  const result = await checkFirmwareUpdate(currentVersion, undefined, {
-    isInitialized: !upgradeRequired,
-  });
-  const latestVersion =
-    result.kind === 'available' || result.kind === 'current' ? result.latestVersion : undefined;
-  return {
-    updateAvailable: result.kind === 'available',
-    currentVersion,
-    latestVersion,
-    fwUpdateSupport,
-    upgradeRequired,
-  };
 }
 
 export const PENDING_FIRMWARE_KEY = 'ok-pending-firmware';

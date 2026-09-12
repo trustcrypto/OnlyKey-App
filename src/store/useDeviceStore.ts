@@ -8,11 +8,9 @@ import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import type { DuoProfileId } from '../api/device/firmwareConstants';
 import { isConnectErrorLikelyUdev, isLinux } from '../utils/platform';
 import {
-  checkForNewFirmware,
   getPendingFirmware,
   clearPendingFirmware,
   supportsAppFirmwareUpdate,
-  FirmwareCheckResult
 } from '../desktop/firmwareCheck';
 import { disconnectedDeviceSnapshot, lockedSessionWipeSnapshot } from './deviceStateReset';
 
@@ -38,7 +36,8 @@ interface DeviceState {
   /** 0–100 while a long job runs; null when indeterminate / inactive. */
   workingProgress: number | null;
   fwUpdateSupport: boolean;
-  firmwareCheck: FirmwareCheckResult | null;
+  /** Setup PIN / passphrase / PGP / restore — Host defers the firmware dialog. */
+  setupOccupiesFirmwarePrompt: boolean;
   labels: Record<number, string>;
   error: string | null;
   pinError: string | null;
@@ -102,7 +101,6 @@ const SUPPORTED_DEVICES = [
 ];
 
 let pollInterval: NodeJS.Timeout | null = null;
-let firmwareCheckInFlight: Promise<void> | null = null;
 let firmwareResumeInFlight: Promise<void> | null = null;
 /** In-flight connect mutex — separate from UI `isConnecting` so silent polls can run. */
 let connectInFlight = false;
@@ -146,49 +144,6 @@ function defaultTabForDevice(state: {
   return 'slots';
 }
 
-/** Wait for label-driven device type identification before any blocking firmware UI. */
-async function waitForLabelIdentification(
-  get: () => DeviceStore,
-  maxMs = 6000,
-): Promise<void> {
-  const started = Date.now();
-  while (get().isRefreshingLabels && Date.now() - started < maxMs) {
-    await new Promise((r) => setTimeout(r, 50));
-  }
-}
-
-async function promptFirmwareUpdateIfNeeded(
-  get: () => DeviceStore,
-  set: (partial: Partial<DeviceStore>) => void,
-  version: string,
-): Promise<void> {
-  if (firmwareCheckInFlight) return firmwareCheckInFlight;
-
-  firmwareCheckInFlight = (async () => {
-    try {
-      await waitForLabelIdentification(get);
-      const check = await checkForNewFirmware(version, get().deviceType, get().isInitialized);
-      set({ firmwareCheck: check });
-
-      if (check.updateAvailable && check.latestVersion) {
-        const shouldPrompt = userPreferencesAutoUpdateFW();
-        if (
-          shouldPrompt &&
-          confirm(
-            `Firmware ${check.latestVersion} is available. Your version is ${version}. Open the Firmware tab to update?`,
-          )
-        ) {
-          set({ activeTab: 'firmware' });
-        }
-      }
-    } finally {
-      firmwareCheckInFlight = null;
-    }
-  })();
-
-  return firmwareCheckInFlight;
-}
-
 export const useDeviceStore = create<DeviceStore>((set, get) => ({
   isConnected: false,
   isConnecting: false,
@@ -210,7 +165,7 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   workingMessage: 'Please wait…',
   workingProgress: null,
   fwUpdateSupport: false,
-  firmwareCheck: null,
+  setupOccupiesFirmwarePrompt: false,
   labels: {},
   error: null,
   pinError: null,
@@ -331,7 +286,6 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
           : {}),
       });
 
-      // Identify device type via labels before the firmware prompt can block the event loop.
       const shouldRefreshLabels =
         state.isConnected &&
         !isNowLocked &&
@@ -341,10 +295,6 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
 
       if (shouldRefreshLabels) {
         void get().refreshLabels();
-      }
-
-      if (state.version) {
-        void promptFirmwareUpdateIfNeeded(get, set, state.version);
       }
     });
 
@@ -568,11 +518,3 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
   clearPinError: () => set({ pinError: null }),
   dismissUdevDialog: () => set({ showUdevDialog: false }),
 }));
-
-function userPreferencesAutoUpdateFW(): boolean {
-  try {
-    return localStorage.getItem('autoUpdateFW') !== 'false';
-  } catch {
-    return true;
-  }
-}

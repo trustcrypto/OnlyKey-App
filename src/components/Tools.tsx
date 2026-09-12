@@ -3,6 +3,7 @@ import { TOOLTIPS } from '../data/tooltips';
 import { HelpTip } from './ui/HelpTip';
 import { Tooltip } from './ui/Tooltip';
 import AppUpdateSettings from './AppUpdateSettings';
+import FirmwareUpdateSettings from './FirmwareUpdateSettings';
 
 const WEBCRYPT_TOOLS = [
   { label: 'Encrypt Messages', href: 'https://apps.crp.to/app/encrypt', icon: '🔒', tip: TOOLTIPS.encryptMessages.text },
@@ -33,6 +34,7 @@ const Tools: React.FC = () => (
     </header>
     <div className="page-body content-panel">
       <AppUpdateSettings />
+      <FirmwareUpdateSettings />
 
       <section className="tools-section">
         <h3 className="tools-section-title">

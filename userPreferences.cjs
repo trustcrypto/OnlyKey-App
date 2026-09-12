@@ -68,6 +68,13 @@ class UserPreferences {
   set autoUpdateFW(value) {
     this._autoUpdateFW = getBoolean(value);
     writePreference('autoUpdateFW', this._autoUpdateFW);
+    try {
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        window.dispatchEvent(new Event('onlykey-autoUpdateFW-changed'));
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   get closeToTray() {

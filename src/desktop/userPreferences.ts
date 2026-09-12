@@ -10,10 +10,20 @@ const DEFAULTS: Record<PreferenceKey, boolean> = {
 };
 
 export const AUTO_UPDATE_PREF_EVENT = 'onlykey-autoUpdate-changed';
+export const AUTO_UPDATE_FW_PREF_EVENT = 'onlykey-autoUpdateFW-changed';
 
 export function notifyAutoUpdatePrefChanged(): void {
   try {
     window.dispatchEvent(new Event(AUTO_UPDATE_PREF_EVENT));
+  } catch {
+    /* ignore */
+  }
+  loadDesktopShell()?.refreshTrayMenu?.();
+}
+
+export function notifyAutoUpdateFWPrefChanged(): void {
+  try {
+    window.dispatchEvent(new Event(AUTO_UPDATE_FW_PREF_EVENT));
   } catch {
     /* ignore */
   }
@@ -65,6 +75,7 @@ class UserPreferences {
       localStorage.setItem(key, getBooleanString(this.cache[key]!));
     }
     if (key === 'autoUpdate') notifyAutoUpdatePrefChanged();
+    if (key === 'autoUpdateFW') notifyAutoUpdateFWPrefChanged();
   }
 }
 

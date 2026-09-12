@@ -1,14 +1,11 @@
-import { waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DeviceType } from '../../api/device/types';
 import { useDeviceStore } from '../useDeviceStore';
 import { createMockDeviceClient, resetDeviceStoreForTests } from '../../test/store';
-import * as firmwareCheck from '../../desktop/firmwareCheck';
 
 describe('useDeviceStore remaining branches', () => {
   beforeEach(async () => {
     await resetDeviceStoreForTests();
-    vi.stubGlobal('confirm', vi.fn(() => false));
   });
 
   afterEach(async () => {
@@ -92,14 +89,7 @@ describe('useDeviceStore remaining branches', () => {
     expect(useDeviceStore.getState().pinError).toMatch(/password attempts/i);
   });
 
-  it('applies label and message events and prompts for a firmware update', async () => {
-    vi.spyOn(firmwareCheck, 'checkForNewFirmware').mockResolvedValue({
-      updateAvailable: true,
-      currentVersion: 'v2.1.0',
-      latestVersion: 'v3.0.4',
-      fwUpdateSupport: true,
-    });
-    vi.stubGlobal('confirm', vi.fn(() => true));
+  it('applies label and message events without prompting for firmware', async () => {
     const listeners: Record<string, (...args: unknown[]) => void> = {};
     const device = createMockDeviceClient({
       on: vi.fn((event: string, fn: (...args: unknown[]) => void) => {
@@ -124,14 +114,13 @@ describe('useDeviceStore remaining branches', () => {
       deviceTypeSource: 'status',
       usbProductId: 0x0486,
       maxLabelSlot: 12,
-      lastStatusText: 'UNLOCKEDv2.1.0',
-      version: 'v2.1.0',
+      lastStatusText: 'UNLOCKEDv2.1.2 STD',
+      version: 'v2.1.2 STD',
       devicePinSet: true,
       labels: new Map(),
     });
-    await waitFor(() => {
-      expect(useDeviceStore.getState().activeTab).toBe('firmware');
-    });
+    expect(useDeviceStore.getState().fwUpdateSupport).toBe(true);
+    expect(useDeviceStore.getState().activeTab).not.toBe('firmware');
   });
 
   it('initialize(true) uses a mock transport and is idempotent', async () => {

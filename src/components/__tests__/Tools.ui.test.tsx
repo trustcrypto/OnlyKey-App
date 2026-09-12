@@ -24,4 +24,11 @@ describe('Tools page', () => {
     expect(screen.getByTestId('app-update-settings')).toBeInTheDocument();
     expect(screen.getByTestId('check-now')).toBeInTheDocument();
   });
+
+  it('includes the firmware-update settings card without a device', () => {
+    renderWithProviders(<Tools />);
+    expect(screen.getByTestId('firmware-update-settings')).toBeInTheDocument();
+    expect(screen.getByTestId('auto-update-fw-checkbox')).toBeEnabled();
+    expect(screen.getByTestId('firmware-check-now')).toBeDisabled();
+  });
 });

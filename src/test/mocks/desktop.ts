@@ -4,10 +4,9 @@ vi.mock('../../desktop/firmwareCheck', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../desktop/firmwareCheck')>();
   return {
     ...actual,
-    checkForNewFirmware: vi.fn(async (currentVersion: string) => ({
-      updateAvailable: false,
-      currentVersion,
-      fwUpdateSupport: false,
+    checkFirmwareUpdate: vi.fn(async () => ({
+      kind: 'skipped' as const,
+      reason: 'not-desktop' as const,
     })),
   };
 });

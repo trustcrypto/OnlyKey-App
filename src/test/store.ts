@@ -28,7 +28,7 @@ type StoreSeed = Partial<
     | 'workingMessage'
     | 'workingProgress'
     | 'fwUpdateSupport'
-    | 'firmwareCheck'
+    | 'setupOccupiesFirmwarePrompt'
     | 'labels'
     | 'error'
     | 'pinError'
