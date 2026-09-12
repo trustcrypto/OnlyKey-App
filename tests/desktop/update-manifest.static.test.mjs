@@ -8,8 +8,11 @@ import { buildProductionPackageJson } from '../../scripts/release.mjs';
 import {
   DEFAULT_UPDATE_BASE_URL,
   DEFAULT_UPDATE_MANIFEST_URL,
+  assertSignedArtifact,
   hashFile,
+  inferPlatformFromArtifact,
   mergeFragments,
+  parseUpdateManifestArgs,
   platformPackageKey,
   recordReleaseArtifact,
   writeFragment,
@@ -34,14 +37,32 @@ const sourcePkg = {
 };
 
 describe('release.mjs wiring', () => {
-  it('records the hashed artifact after a successful OS package', () => {
+  it('does not hash the unsigned installer; points at update-manifest after signing', () => {
     const src = fs.readFileSync(
       path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../scripts/release.mjs'),
       'utf8',
     );
-    expect(src).toContain('recordReleaseArtifact');
+    expect(src).not.toContain('recordReleaseArtifact');
+    expect(src).toContain('npm run update-manifest');
     expect(src).toContain('ONLYKEY_UPDATE_MANIFEST_URL');
     expect(src).toContain('ONLYKEY_UPDATE_BASE_URL');
+  });
+});
+
+describe('inferPlatformFromArtifact / CLI args', () => {
+  it('maps installer extensions to node platforms', () => {
+    expect(inferPlatformFromArtifact('OnlyKey_5.7.0.exe')).toBe('win32');
+    expect(inferPlatformFromArtifact('OnlyKey_5.7.0.dmg')).toBe('darwin');
+    expect(inferPlatformFromArtifact('OnlyKey_5.7.0_amd64.deb')).toBe('linux');
+    expect(inferPlatformFromArtifact('OnlyKey.bin')).toBeNull();
+  });
+
+  it('parses --artifact and --allow-unsigned', () => {
+    expect(parseUpdateManifestArgs(['--artifact', 'a.exe', '--allow-unsigned'])).toMatchObject({
+      artifact: 'a.exe',
+      allowUnsigned: true,
+    });
+    expect(() => parseUpdateManifestArgs(['--nope'])).toThrow(/Unknown argument/);
   });
 });
 
@@ -199,6 +220,31 @@ describe('hashFile / writeFragment / mergeFragments', () => {
   });
 });
 
+describe('assertSignedArtifact', () => {
+  it('refuses a Windows installer Authenticode reports as NotSigned', () => {
+    expect(() =>
+      assertSignedArtifact('C:\\signed\\OnlyKey.exe', 'win32', {
+        inspectAuthenticode: () => ({ status: 'NotSigned' }),
+      }),
+    ).toThrow(/unsigned Windows installer/i);
+  });
+
+  it('accepts Valid Authenticode', () => {
+    expect(
+      assertSignedArtifact('C:\\signed\\OnlyKey.exe', 'win32', {
+        inspectAuthenticode: () => ({ status: 'Valid', signer: 'CN=CryptoTrust' }),
+      }),
+    ).toMatchObject({ status: 'Valid' });
+  });
+
+  it('skips the check when requireSigned is false', () => {
+    expect(assertSignedArtifact('unsigned.exe', 'win32', { requireSigned: false })).toEqual({
+      status: 'skipped',
+      signer: '',
+    });
+  });
+});
+
 describe('recordReleaseArtifact', () => {
   it('writes fragment + merged manifest and notes a one-platform file', () => {
     const dir = makeDir();
@@ -214,6 +260,7 @@ describe('recordReleaseArtifact', () => {
         releasesDir: dir,
         baseUrl: DEFAULT_UPDATE_BASE_URL,
         now: '2026-09-11T00:00:00.000Z',
+        requireSigned: false,
         log: { log: (...args) => lines.push(args.join(' ')) },
       });
       expect(result.key).toBe('win64');
@@ -223,6 +270,38 @@ describe('recordReleaseArtifact', () => {
       expect(manifest.packages.win64.sha256).toBe(shaOf(body));
       expect(lines.join('\n')).toMatch(/one-platform manifest is publishable/i);
       expect(lines.join('\n')).toMatch(/does not upload/i);
+      expect(lines.join('\n')).toMatch(/signed file/i);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('hashes a file Authenticode reports Valid and refuses NotSigned', () => {
+    const dir = makeDir();
+    try {
+      const artifact = path.join(dir, 'OnlyKey_5.7.0.exe');
+      fs.writeFileSync(artifact, 'signed-bytes');
+      const ok = recordReleaseArtifact({
+        artifactPath: artifact,
+        version: '5.7.0',
+        platform: 'win32',
+        releasesDir: dir,
+        requireSigned: true,
+        inspectAuthenticode: () => ({ status: 'Valid', signer: 'CN=CryptoTrust' }),
+        log: { log: () => {} },
+      });
+      expect(ok.signature).toMatchObject({ status: 'Valid' });
+      expect(() =>
+        recordReleaseArtifact({
+          artifactPath: artifact,
+          version: '5.7.0',
+          platform: 'win32',
+          releasesDir: dir,
+          requireSigned: true,
+          inspectAuthenticode: () => ({ status: 'NotSigned' }),
+          log: { log: () => {} },
+        }),
+      ).toThrow(/unsigned Windows installer/i);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

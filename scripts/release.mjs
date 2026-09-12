@@ -12,8 +12,11 @@
  * Always stages a runnable app bundle under tmp/release/<name>/ before packaging.
  * On macOS, app.nw is the app payload only (not a nested nwjs.app).
  *
- * After a successful artifact, hashes it and merges `releases/manifest.json`
- * (see `update-manifest.mjs`). Does not upload. Channel env:
+ * After a successful artifact, prints the unsigned path. Hashing for the
+ * update channel happens later, on the SIGNED installer:
+ *   npm run update-manifest -- --artifact releases/OnlyKey_<ver>.exe
+ * (see `update-manifest.mjs`). Signing changes bytes; do not publish a hash
+ * of this unsigned build. Channel env:
  *   ONLYKEY_UPDATE_MANIFEST_URL  — packaged package.json `manifestUrl`
  *                                  (wins over repo `manifest.json`)
  *   ONLYKEY_UPDATE_BASE_URL      — package URL prefix + packaged `updateBaseUrl`
@@ -35,7 +38,6 @@ import {
   DEFAULT_UPDATE_MANIFEST_URL,
   normalizeManifestUrl,
   normalizeUpdateBaseUrl,
-  recordReleaseArtifact,
 } from './update-manifest.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -565,15 +567,10 @@ async function main() {
 
   console.log('Release build complete.');
   if (artifact) {
-    console.log('Artifact:', artifact);
-    recordReleaseArtifact({
-      artifactPath: artifact,
-      version: manifest.version,
-      platform: process.platform,
-      releasesDir,
-      name: manifest.name,
-      productName: manifest.productName,
-    });
+    console.log('Unsigned installer:', artifact);
+    console.log('Sign this file in place (Authenticode / notarize), then hash the signed copy:');
+    console.log(`  npm run update-manifest -- --artifact "${artifact}"`);
+    console.log('Do not upload an unsigned installer or a SHA-256 taken before signing.');
   }
 }
 
