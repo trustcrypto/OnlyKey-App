@@ -386,6 +386,59 @@ function defaultTmpDir(): string {
   return path.join(os.tmpdir(), 'onlykey-app-updates');
 }
 
+function progressTotalFor(
+  res: Response,
+  manifestSize?: number,
+): number | null {
+  const lengthHeader = Number(res.headers?.get?.('content-length'));
+  if (Number.isFinite(lengthHeader) && lengthHeader > 0) return lengthHeader;
+  if (manifestSize && manifestSize > 0) return manifestSize;
+  return null;
+}
+
+async function readResponseBody(
+  res: Response,
+  onProgress: ((received: number, total: number | null) => void) | undefined,
+  total: number | null,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  const reader =
+    res.body && typeof res.body.getReader === 'function' ? res.body.getReader() : null;
+  if (!reader) {
+    const body = new Uint8Array(await res.arrayBuffer());
+    onProgress?.(body.byteLength, total);
+    return body;
+  }
+
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  onProgress?.(0, total);
+  while (true) {
+    if (signal?.aborted) {
+      try {
+        await reader.cancel();
+      } catch {
+        /* ignore */
+      }
+      throw new AppUpdateError('Could not read or write the update files.', 'io');
+    }
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value?.byteLength) continue;
+    chunks.push(value);
+    received += value.byteLength;
+    onProgress?.(received, total);
+  }
+
+  const body = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
 export async function downloadAndVerify(
   latestVersion: string,
   remotePackage: { url: string; sha256: string; size?: number },
@@ -428,22 +481,15 @@ export async function downloadAndVerify(
     );
   }
 
+  const progressTotal = progressTotalFor(downloadRes, remotePackage.size);
+  io.onProgress?.(0, progressTotal);
+
   let body: Uint8Array;
   try {
-    body = new Uint8Array(await downloadRes.arrayBuffer());
+    body = await readResponseBody(downloadRes, io.onProgress, progressTotal, io.abortSignal);
   } catch (e) {
     throw asAppUpdateError(e, 'io');
   }
-
-  // Manifest `size` is a 5.6-style progress estimate (often rounded MB), not integrity.
-  const lengthHeader = Number(downloadRes.headers?.get?.('content-length'));
-  const progressTotal =
-    Number.isFinite(lengthHeader) && lengthHeader > 0
-      ? lengthHeader
-      : remotePackage.size && remotePackage.size > 0
-        ? remotePackage.size
-        : null;
-  io.onProgress?.(body.byteLength, progressTotal);
 
   try {
     verifySha256(body, remotePackage.sha256);

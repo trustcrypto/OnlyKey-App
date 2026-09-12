@@ -21,7 +21,7 @@ import {
 } from '../updater';
 
 const MANIFEST = 'https://example.com/manifest.json';
-const S3_MANIFEST = DEFAULT_MANIFEST_URL;
+const S3_MANIFEST = 'https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json';
 const S3_PKG = 'https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_5.7.1.exe';
 
 function hashBody(bytes: number[]): { body: Uint8Array; hash: string } {
@@ -39,6 +39,28 @@ function binRes(bytes: Uint8Array, ok = true, status = 200) {
     status,
     headers: { get: () => String(bytes.byteLength) },
     arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+  };
+}
+
+function streamBinRes(chunks: Uint8Array[], ok = true, status = 200) {
+  const total = chunks.reduce((n, c) => n + c.byteLength, 0);
+  let i = 0;
+  return {
+    ok,
+    status,
+    headers: { get: () => String(total) },
+    body: {
+      getReader: () => ({
+        read: async () => {
+          if (i >= chunks.length) return { done: true, value: undefined };
+          return { done: false, value: chunks[i++] };
+        },
+        cancel: async () => undefined,
+      }),
+    },
+    arrayBuffer: async () => {
+      throw new Error('stream path should not fall back to arrayBuffer');
+    },
   };
 }
 
@@ -562,6 +584,28 @@ describe('downloadAndVerify', () => {
     expect(written[0].data).toEqual(body);
     expect(result).toMatchObject({ version: '5.7.1', bytes: 3, sha256: hash });
     expect(onProgress).toHaveBeenCalledWith(3, 3);
+  });
+
+  it('reports incremental progress while streaming the body', async () => {
+    vi.spyOn(console, 'info').mockImplementation(() => {});
+    const onProgress = vi.fn();
+    const chunks = [new Uint8Array([9]), new Uint8Array([8, 7])];
+    const result = await downloadAndVerify(
+      '5.7.1',
+      { url: 'https://example.com/OnlyKey_5.7.1.exe', sha256: hash, size: 3 },
+      {
+        fetchFn: vi.fn(async () => streamBinRes(chunks)) as never,
+        readPackage: readPkg(),
+        writeFile: () => undefined,
+        tmpDir: () => '/tmp/ok-updates',
+        onProgress,
+      },
+    );
+    expect(result.bytes).toBe(3);
+    const received = onProgress.mock.calls.map((c) => c[0]);
+    expect(received).toContain(1);
+    expect(received).toContain(3);
+    expect(Math.max(...received)).toBe(3);
   });
 
   it('refuses non-HTTPS and off-prefix package URLs before fetch', async () => {
