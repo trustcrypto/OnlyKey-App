@@ -26,7 +26,7 @@ export type AppUpdateUiCode = AppUpdateErrorCode | 'missing-platform';
 export function appUpdateUserMessage(
   code: AppUpdateUiCode,
   httpStatus?: number,
-  destPath?: string | null,
+  _destPath?: string | null,
 ): string {
   switch (code) {
     case 'http-manifest':
@@ -48,9 +48,7 @@ export function appUpdateUserMessage(
     case 'missing-platform':
       return 'No installer is published for this operating system yet.';
     case 'apply-failed':
-      return destPath
-        ? `Could not open the installer. It is still at ${destPath}.`
-        : 'Could not open the installer.';
+      return 'Could not start the installer.';
     default:
       return 'App update failed.';
   }

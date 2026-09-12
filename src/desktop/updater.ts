@@ -610,15 +610,15 @@ export async function applyAppUpdate(
     await (io.spawnInstaller ?? defaultSpawnInstaller)(safe, platform);
   } catch {
     showUpdateInFolder(safe, io);
-    throw new AppUpdateError(
-      destPath
-        ? `Could not open the installer. It is still at ${safe}.`
-        : 'Could not open the installer.',
-      'apply-failed',
-    );
+    throw new AppUpdateError('Could not start the installer.', 'apply-failed');
   }
 
   const delay = io.applyDelayMs ?? 400;
   if (delay > 0) await new Promise((r) => setTimeout(r, delay));
-  (io.quitApp ?? (() => nw.App.quit()))();
+  try {
+    (io.quitApp ?? (() => nw.App.quit()))();
+  } catch {
+    showUpdateInFolder(safe, io);
+    throw new AppUpdateError('Could not start the installer.', 'apply-failed');
+  }
 }

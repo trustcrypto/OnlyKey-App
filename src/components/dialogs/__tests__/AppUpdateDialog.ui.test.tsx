@@ -36,8 +36,10 @@ describe('AppUpdateDialog', () => {
     expect(screen.getByRole('button', { name: /later/i })).toBeDisabled();
   });
 
-  it('ready state offers Install now, Show in folder, and Later', async () => {
+  it('ready state offers Install now and Later; Later opens the folder', async () => {
     const user = userEvent.setup();
+    const showItemInFolder = vi.fn();
+    vi.stubGlobal('nw', { Shell: { showItemInFolder } });
     useAppUpdateStore.setState({
       phase: 'ready',
       latestVersion: '5.7.1',
@@ -46,8 +48,13 @@ describe('AppUpdateDialog', () => {
     });
     renderWithProviders(<AppUpdateDialog open />);
     expect(screen.getByRole('button', { name: /install now/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /show in folder/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /show in folder/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Version 5.7.1 was downloaded and verified (SHA-256).'),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /later/i }));
+    expect(showItemInFolder).toHaveBeenCalledWith('/tmp/ok.exe');
     expect(useAppUpdateStore.getState().promptVisible).toBe(false);
+    vi.unstubAllGlobals();
   });
 });

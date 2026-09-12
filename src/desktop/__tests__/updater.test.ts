@@ -809,4 +809,24 @@ describe('applyAppUpdate', () => {
     expect(showInFolder).toHaveBeenCalled();
     expect(quitApp).not.toHaveBeenCalled();
   });
+
+  it('shows the folder when quit fails after spawn', async () => {
+    const tmp = path.join(os.tmpdir(), 'ok-apply-quit');
+    const dest = path.join(tmp, 'OnlyKey.exe');
+    const showInFolder = vi.fn();
+    await expect(
+      applyAppUpdate(dest, { sha256: hash }, {
+        platform: () => 'win32',
+        tmpDir: () => tmp,
+        readFile: () => body,
+        spawnInstaller: vi.fn().mockResolvedValue(undefined),
+        showInFolder,
+        quitApp: () => {
+          throw new Error('quit failed');
+        },
+        applyDelayMs: 0,
+      }),
+    ).rejects.toMatchObject({ code: 'apply-failed' });
+    expect(showInFolder).toHaveBeenCalled();
+  });
 });

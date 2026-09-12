@@ -16,7 +16,6 @@ const AppUpdateDialog: React.FC<AppUpdateDialogProps> = ({ open }) => {
   const currentVersion = useAppUpdateStore((s) => s.currentVersion);
   const latestVersion = useAppUpdateStore((s) => s.latestVersion);
   const error = useAppUpdateStore((s) => s.error);
-  const destPath = useAppUpdateStore((s) => s.destPath);
   const downloadReceived = useAppUpdateStore((s) => s.downloadReceived);
   const downloadTotal = useAppUpdateStore((s) => s.downloadTotal);
 
@@ -56,24 +55,20 @@ const AppUpdateDialog: React.FC<AppUpdateDialogProps> = ({ open }) => {
       /* no cancel while bytes are in flight */
     };
   } else if (phase === 'ready') {
-    title = 'Install update';
-    message = [
-      `Version ${latestVersion} was downloaded and verified (SHA-256). Install now? The app will quit so the installer can replace files.`,
-      destPath
-        ? `If Windows asks for permission and you choose No, open OnlyKey App from the Start Menu — the installer is still at ${destPath}. If Setup says files are in use, close the app and run that file.`
-        : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    title = 'Update downloaded';
+    message = `Version ${latestVersion} was downloaded and verified (SHA-256).`;
     confirmLabel = 'Install now';
     cancelLabel = 'Later';
     onConfirm = () => {
       void applyUpdate();
     };
-    onCancel = () => dismissUpdatePrompt();
+    onCancel = () => {
+      showDownloadedUpdate();
+      dismissUpdatePrompt();
+    };
   } else if (phase === 'applying') {
     title = 'Starting installer';
-    message = 'Launching the installer. OnlyKey App will quit…';
+    message = 'OnlyKey App will quit.';
     confirmLabel = null;
     cancelLabel = null;
   } else if (phase === 'up-to-date') {
@@ -121,15 +116,6 @@ const AppUpdateDialog: React.FC<AppUpdateDialogProps> = ({ open }) => {
               className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl font-semibold disabled:opacity-40"
             >
               {cancelLabel}
-            </button>
-          )}
-          {phase === 'ready' && (
-            <button
-              type="button"
-              onClick={() => showDownloadedUpdate()}
-              className="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl font-semibold"
-            >
-              Show in folder
             </button>
           )}
           {confirmLabel && (
