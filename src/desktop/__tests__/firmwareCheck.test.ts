@@ -249,6 +249,32 @@ describe('checkFirmwareUpdate', () => {
     expect(sessionStorage.getItem(FW_CHECK_SESSION_KEY)).toBe('1');
   });
 
+  it('does not write the session key when the fetch is aborted', async () => {
+    const ac = new AbortController();
+    const fetchFn = vi.fn(
+      (_url: string, init?: { signal?: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          const fail = () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          };
+          if (init?.signal?.aborted) {
+            fail();
+            return;
+          }
+          init?.signal?.addEventListener('abort', fail);
+        }),
+    ) as unknown as typeof fetch;
+    const pending = checkFirmwareUpdate(
+      'v2.1.2 STD',
+      io({ fetchFn, abortSignal: ac.signal }),
+    );
+    ac.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    expect(sessionStorage.getItem(FW_CHECK_SESSION_KEY)).toBeNull();
+  });
+
   it('does not write the session key on skipped unsafe-state or pref-disabled (10c)', async () => {
     const fetchFn = vi.fn();
     await expect(

@@ -19,6 +19,7 @@ declare const nw: {
       removeAllListeners: (event?: string) => void;
       setShowInTaskbar?: (show: boolean) => void;
       on: (event: string, callback: () => void) => void;
+      removeListener?: (event: string, callback: () => void) => void;
     };
     getAll?: (callback: (wins: Array<ReturnType<(typeof nw)['Window']['get']>>) => void) => void;
   };

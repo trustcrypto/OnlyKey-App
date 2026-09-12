@@ -36,7 +36,7 @@ interface DeviceState {
   /** 0–100 while a long job runs; null when indeterminate / inactive. */
   workingProgress: number | null;
   fwUpdateSupport: boolean;
-  /** Setup PIN / passphrase / PGP / restore — Host defers the firmware dialog. */
+  /** True while Setup is on a PIN / passphrase / PGP / restore step. */
   setupOccupiesFirmwarePrompt: boolean;
   labels: Record<number, string>;
   error: string | null;

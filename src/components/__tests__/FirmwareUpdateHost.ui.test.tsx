@@ -27,7 +27,7 @@ vi.mock('../../desktop/windowVisibility', () => ({
   forceShowMainWindow,
 }));
 
-const win = { id: 1, on: vi.fn() };
+const win = { id: 1, on: vi.fn(), removeListener: vi.fn() };
 
 describe('FirmwareUpdateHost', () => {
   beforeEach(() => {
@@ -221,5 +221,23 @@ describe('FirmwareUpdateHost', () => {
       promptVisible: false,
       blocks: null,
     });
+  });
+
+  it('does not show the firmware dialog while disconnected', () => {
+    seedDeviceStore({
+      isConnected: false,
+      isLocked: true,
+      isWorking: false,
+      isBootloader: false,
+      version: '',
+      setupOccupiesFirmwarePrompt: false,
+    });
+    useFirmwareUpdateStore.setState({
+      phase: 'error',
+      promptVisible: true,
+      error: 'Could not reach the firmware server.',
+    });
+    renderWithProviders(<FirmwareUpdateHost />);
+    expect(screen.queryByTestId('firmware-update-dialog')).not.toBeInTheDocument();
   });
 });

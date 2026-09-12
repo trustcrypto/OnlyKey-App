@@ -37,7 +37,7 @@ const FirmwareUpdateHost: React.FC = () => {
 
   const deferred =
     isWorking || (isConnected && isLocked) || occupy || isBootloader;
-  const open = promptVisible && !deferred && shouldPresent(phase);
+  const open = isConnected && promptVisible && !deferred && shouldPresent(phase);
 
   const wasConnectedRef = useRef(false);
 
@@ -76,6 +76,13 @@ const FirmwareUpdateHost: React.FC = () => {
       abortFirmwareUpdateFetches();
     };
     win.on('close', onClose);
+    return () => {
+      try {
+        win.removeListener?.('close', onClose);
+      } catch {
+        /* ignore */
+      }
+    };
   }, []);
 
   useEffect(() => {

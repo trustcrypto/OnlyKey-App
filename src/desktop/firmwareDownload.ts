@@ -190,7 +190,12 @@ function expectedFirmwareSha256(
   );
 }
 
+export function isAbortError(e: unknown): boolean {
+  return !!e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'AbortError';
+}
+
 function asFirmwareUpdateError(e: unknown, fallback: FirmwareUpdateErrorCode): FirmwareUpdateError {
+  if (isAbortError(e)) throw e;
   if (e instanceof FirmwareUpdateError) return e;
   const message = e instanceof Error ? e.message : 'Could not reach the firmware server.';
   return new FirmwareUpdateError(message, fallback);

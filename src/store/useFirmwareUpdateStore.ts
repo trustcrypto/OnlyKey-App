@@ -7,6 +7,7 @@ import {
 import {
   downloadLatestFirmware,
   FirmwareUpdateError,
+  isAbortError,
   type FirmwareUpdateErrorCode,
 } from '../desktop/firmwareDownload';
 import { AUTO_UPDATE_FW_PREF_EVENT, userPreferences } from '../desktop/userPreferences';
@@ -98,6 +99,28 @@ const initialState: FirmwareUpdateState = {
 
 let inFlight: Promise<void> | null = null;
 let abortController: AbortController | null = null;
+let generation = 0;
+
+function isStale(gen: number): boolean {
+  return gen !== generation;
+}
+
+function sessionAlreadyChecked(): boolean {
+  try {
+    return !!sessionStorage.getItem(FW_CHECK_SESSION_KEY);
+  } catch {
+    return false;
+  }
+}
+
+function isHeldAutoPhase(phase: FirmwareUpdatePhase): boolean {
+  return (
+    phase === 'available' ||
+    phase === 'downloading' ||
+    phase === 'ready' ||
+    phase === 'error'
+  );
+}
 
 function isBusy(): boolean {
   if (inFlight) return true;
@@ -128,7 +151,6 @@ function markSessionChecked(): void {
   }
 }
 
-/** Device + desktop gates that must hold before an auto or manual GitHub GET. */
 export function isSafeFirmwareCheckMoment(): boolean {
   if (typeof nw === 'undefined') return false;
   const d = useDeviceStore.getState();
@@ -186,6 +208,7 @@ function presentError(
 }
 
 async function runCheck(force: boolean): Promise<void> {
+  const gen = generation;
   const { version, isInitialized, isBootloader } = useDeviceStore.getState();
   useFirmwareUpdateStore.setState({
     phase: 'checking',
@@ -199,6 +222,7 @@ async function runCheck(force: boolean): Promise<void> {
       { abortSignal: beginAbort(15_000) },
       { force, isInitialized, isBootloader },
     );
+    if (isStale(gen)) return;
     if (result.kind === 'available') {
       presentAvailable(result);
       return;
@@ -237,6 +261,7 @@ async function runCheck(force: boolean): Promise<void> {
     }
     useFirmwareUpdateStore.setState({ phase: 'idle', promptVisible: false });
   } catch (e) {
+    if (isStale(gen) || isAbortError(e)) return;
     const err = e instanceof FirmwareUpdateError ? e : new FirmwareUpdateError(String(e), 'io');
     const prompt = force || autoDownloadErrorShowsModal(err.code);
     if (!prompt) console.error('Firmware update check failed:', err);
@@ -251,6 +276,12 @@ export async function startAutoCheck(): Promise<void> {
     return;
   }
   if (isBusy()) return;
+  const { phase } = useFirmwareUpdateStore.getState();
+  if (isHeldAutoPhase(phase)) return;
+  if (sessionAlreadyChecked()) {
+    console.info('Firmware update: auto-check skipped (already-checked)');
+    return;
+  }
   if (!isSafeFirmwareCheckMoment()) {
     console.info('Firmware update: auto-check skipped (unsafe-state)');
     return;
@@ -276,6 +307,7 @@ export async function confirmDownload(): Promise<void> {
   const state = useFirmwareUpdateStore.getState();
   if (isBusy() || state.phase !== 'available' || !state.latestVersion) return;
   const version = state.latestVersion;
+  const gen = generation;
   const run = (async () => {
     useFirmwareUpdateStore.setState({
       phase: 'downloading',
@@ -288,6 +320,7 @@ export async function confirmDownload(): Promise<void> {
         {
           abortSignal: beginAbort(60_000),
           onProgress: (received, total) => {
+            if (isStale(gen)) return;
             useFirmwareUpdateStore.setState({
               downloadReceived: received,
               downloadTotal: total,
@@ -296,6 +329,7 @@ export async function confirmDownload(): Promise<void> {
         },
         { latestVersion: version },
       );
+      if (isStale(gen)) return;
       const filename = useFirmwareUpdateStore.getState().filename;
       console.info(
         `Firmware update: downloaded ${filename ?? 'firmware'} (sha256 ok)`,
@@ -310,6 +344,7 @@ export async function confirmDownload(): Promise<void> {
         downloadTotal: downloaded.blocks.length,
       });
     } catch (e) {
+      if (isStale(gen) || isAbortError(e)) return;
       const err = e instanceof FirmwareUpdateError ? e : new FirmwareUpdateError(String(e), 'io');
       presentError(err.code, { prompt: true, httpStatus: err.httpStatus });
     }
@@ -338,8 +373,9 @@ export function dismiss(): void {
   });
 }
 
-/** Unplug: drop RAM blocks. Lock does not call this. */
+/** Drops RAM blocks; only Host unplug should call this. */
 export function resetOnDisconnect(): void {
+  generation += 1;
   abortFirmwareUpdateFetches();
   inFlight = null;
   useFirmwareUpdateStore.setState({
@@ -356,6 +392,7 @@ export function setAutoUpdateFW(value: boolean): void {
 }
 
 export function resetFirmwareUpdateStoreForTests(): void {
+  generation += 1;
   abortController = null;
   inFlight = null;
   useFirmwareUpdateStore.setState({

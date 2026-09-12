@@ -28,6 +28,7 @@ import {
   confirmDownload,
   dismiss,
   resetFirmwareUpdateStoreForTests,
+  resetOnDisconnect,
   setAutoUpdateFW,
   startAutoCheck,
   useFirmwareUpdateStore,
@@ -279,5 +280,123 @@ describe('useFirmwareUpdateStore', () => {
       latestVersion: 'v3.0.4-prod',
     });
     await first;
+  });
+
+  it('does not re-enter a check when available and the session is marked', async () => {
+    sessionStorage.setItem(FW_CHECK_SESSION_KEY, '1');
+    useFirmwareUpdateStore.setState({
+      phase: 'available',
+      promptVisible: true,
+      latestVersion: 'v3.0.4-prod',
+      currentVersion: 'v2.1.2 STD',
+      filename: 'Signed_OnlyKey_3_0_4_STD.txt',
+      blocks: ['aa'],
+    });
+    await startAutoCheck();
+    expect(checkFirmwareUpdate).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'available',
+      promptVisible: true,
+      blocks: ['aa'],
+    });
+  });
+
+  it('does not re-enter a check when ready or Tools error', async () => {
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      promptVisible: true,
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+    });
+    await startAutoCheck();
+    expect(checkFirmwareUpdate).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'ready',
+      promptVisible: true,
+      blocks: ['aa'],
+    });
+
+    useFirmwareUpdateStore.setState({
+      phase: 'error',
+      promptVisible: false,
+      error: 'Could not reach the firmware server.',
+      errorCode: 'http-release',
+      blocks: null,
+    });
+    await startAutoCheck();
+    expect(checkFirmwareUpdate).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'error',
+      promptVisible: false,
+      errorCode: 'http-release',
+    });
+  });
+
+  it('does not fetch again after Later when the session is marked', async () => {
+    sessionStorage.setItem(FW_CHECK_SESSION_KEY, '1');
+    useFirmwareUpdateStore.setState({ phase: 'idle', promptVisible: false });
+    await startAutoCheck();
+    expect(checkFirmwareUpdate).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState().phase).toBe('idle');
+  });
+
+  it('unplug during auto-check does not mark the session or present an error', async () => {
+    checkFirmwareUpdate.mockImplementation(
+      (_version: unknown, io: { abortSignal?: AbortSignal } = {}) =>
+        new Promise((_resolve, reject) => {
+          const fail = () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          };
+          if (io.abortSignal?.aborted) {
+            fail();
+            return;
+          }
+          io.abortSignal?.addEventListener('abort', fail);
+        }),
+    );
+    const pending = startAutoCheck();
+    await vi.waitFor(() => expect(checkFirmwareUpdate).toHaveBeenCalled());
+    seedDeviceStore({ isConnected: false });
+    resetOnDisconnect();
+    await pending;
+    expect(sessionStorage.getItem(FW_CHECK_SESSION_KEY)).toBeNull();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'idle',
+      promptVisible: false,
+      error: null,
+    });
+  });
+
+  it('unplug during download stays idle without an error modal', async () => {
+    checkFirmwareUpdate.mockResolvedValue(available);
+    downloadLatestFirmware.mockImplementation(
+      (io: { abortSignal?: AbortSignal } = {}) =>
+        new Promise((_resolve, reject) => {
+          const fail = () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          };
+          if (io.abortSignal?.aborted) {
+            fail();
+            return;
+          }
+          io.abortSignal?.addEventListener('abort', fail);
+        }),
+    );
+    await startAutoCheck();
+    const pending = confirmDownload();
+    await vi.waitFor(() => expect(downloadLatestFirmware).toHaveBeenCalled());
+    seedDeviceStore({ isConnected: false });
+    resetOnDisconnect();
+    await pending;
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'idle',
+      promptVisible: false,
+      error: null,
+      blocks: null,
+    });
   });
 });

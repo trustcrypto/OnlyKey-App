@@ -3,6 +3,7 @@ import {
   type FirmwareUpdateIo,
   buildFirmwareFilename,
   fetchFirmware,
+  isAbortError,
 } from './firmwareDownload';
 import { userPreferences } from './userPreferences';
 
@@ -191,6 +192,7 @@ export async function checkFirmwareUpdate(
       filename,
     });
   } catch (e) {
+    if (isAbortError(e)) throw e;
     console.error('Firmware update check failed:', e);
     return markCheckedIfAuto(io, force, {
       kind: 'unavailable',
