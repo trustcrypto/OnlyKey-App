@@ -240,6 +240,64 @@ describe('Firmware page', () => {
     expect(screen.getByText(/could not reach the firmware server \(http 502\)/i)).toBeInTheDocument();
   });
 
+  it('does not show a stale store error next to a successful firmware load', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    vi.spyOn(firmwareDownload, 'downloadLatestFirmware').mockResolvedValue({
+      version: 'v3.0.4',
+      blocks: ['aa'],
+      downloadUrl: 'https://example.com/fw.txt',
+      sha256: 'abc',
+    });
+    useFirmwareUpdateStore.setState({
+      phase: 'error',
+      error: 'Could not reach the firmware server (HTTP 502).',
+    });
+    seedDeviceStore({
+      device,
+      deviceType: DeviceType.BOOTLOADER,
+      fwUpdateSupport: false,
+      isBootloader: true,
+      isLocked: false,
+      version: 'v1',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByText(/could not reach the firmware server \(http 502\)/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /download latest firmware/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/firmware load complete/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/could not reach the firmware server/i)).not.toBeInTheDocument();
+  });
+
+  it('clears a local parse error on Check now so a store error can show', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(firmwareUpdateStore, 'checkNow').mockResolvedValue(undefined);
+    useFirmwareUpdateStore.setState({
+      phase: 'error',
+      error: 'Could not reach the firmware server (HTTP 502).',
+    });
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.UNINITIALIZED,
+      fwUpdateSupport: false,
+      isBootloader: false,
+      isLocked: false,
+      isWorking: false,
+      isConnected: true,
+      isInitialized: false,
+    });
+    renderWithProviders(<Firmware />);
+    const file = new File(['not firmware'], 'fw.txt', { type: 'text/plain' });
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, file);
+    await user.click(screen.getByRole('button', { name: /load firmware to onlykey/i }));
+    expect(await screen.findByText(/invalid hex/i)).toBeInTheDocument();
+    expect(screen.queryByText(/could not reach the firmware server/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^check now$/i }));
+    expect(screen.queryByText(/invalid hex/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/could not reach the firmware server \(http 502\)/i)).toBeInTheDocument();
+  });
+
   it('disables Check now in bootloader while Download Latest stays a one-shot apply', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();

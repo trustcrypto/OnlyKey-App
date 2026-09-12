@@ -35,7 +35,7 @@ const Firmware: React.FC = () => {
   const canLoadFirmware = isBootloader || isUninitialized || fwUpdateSupport;
   const fwBusy = fwPhase === 'checking' || fwPhase === 'downloading' || fwPhase === 'applying';
   const checkDisabled = isLoading || fwBusy || isLocked || isBootloader || isWorking;
-  const displayError = error || storeError;
+  const displayError = error || (status ? null : storeError);
 
   const runApply = async (blocks: string[]) => {
     if (!device) return;
@@ -171,6 +171,8 @@ const Firmware: React.FC = () => {
         )}
         <SetButton
           onClick={() => {
+            setError(null);
+            setStatus(null);
             void checkNow();
           }}
           disabled={checkDisabled}
