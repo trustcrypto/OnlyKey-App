@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sha256 } from 'js-sha256';
 import {
+  FW_API_URL,
+  FirmwareUpdateError,
   buildFirmwareFilename,
+  downloadLatestFirmware,
+  fetchFirmware,
   fetchLatestFirmwareRelease,
   parseFirmwareChecksumFromReleaseBody,
 } from '../firmwareDownload';
@@ -268,3 +272,128 @@ describe('fetchLatestFirmwareRelease', () => {
     await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/could not be parsed/);
   });
 });
+
+describe('fetchFirmware', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('refuses a non-HTTPS request URL (D3)', async () => {
+    const fetchFn = vi.fn();
+    await expect(
+      fetchFirmware(
+        `http://github.com/trustcrypto/OnlyKey-Firmware/releases/download/v3.0.4-prod/${STD}`,
+        { fetchFn: fetchFn as never },
+      ),
+    ).rejects.toMatchObject({ name: 'FirmwareUpdateError', code: 'not-https' });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('refuses a final response.url that is not HTTPS (D6)', async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      url: 'http://objects.githubusercontent.com/github-production-release-asset/x',
+      arrayBuffer: async () => signedBytes.buffer,
+    }));
+    await expect(
+      fetchFirmware(HTTPS, { fetchFn: fetchFn as never }),
+    ).rejects.toMatchObject({ code: 'not-https' });
+  });
+
+  it('allows objects.githubusercontent.com after a github.com download request (D5)', async () => {
+    const fetchFn = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      url: 'https://objects.githubusercontent.com/github-production-release-asset/abc',
+      arrayBuffer: async () => signedBytes.buffer.slice(signedBytes.byteOffset, signedBytes.byteOffset + signedBytes.byteLength),
+    }));
+    const res = await fetchFirmware(HTTPS, { fetchFn: fetchFn as never });
+    expect(res.ok).toBe(true);
+    expect(fetchFn).toHaveBeenCalledWith(
+      HTTPS,
+      expect.objectContaining({ cache: 'no-store', redirect: 'follow' }),
+    );
+  });
+});
+
+describe('downloadLatestFirmware', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('uses injectable fetchFn without stubbing global fetch (D1, D7)', async () => {
+    const fetchFn = vi.fn(async (url: string) => {
+      if (String(url).includes('api.github.com')) {
+        return jsonRes(
+          apiRelease({
+            tag_name: 'v3.0.4',
+            body: '',
+            assets: [{ name: STD, browser_download_url: HTTPS, digest: `sha256:${signedHash}` }],
+          }),
+        );
+      }
+      return binRes(signedBytes);
+    });
+
+    const result = await downloadLatestFirmware({ fetchFn: fetchFn as never });
+
+    expect(result.version).toBe('v3.0.4');
+    expect(result.blocks).toEqual(['aabbccdd']);
+    expect(result.sha256).toBe(signedHash);
+    expect(result.downloadUrl).toBe(HTTPS);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(String(fetchFn.mock.calls[0]?.[0])).toBe(FW_API_URL);
+  });
+
+  it('refuses a browser_download_url on a non-GitHub host (D2)', async () => {
+    const fetchFn = vi.fn(async (url: string) => {
+      if (String(url).includes('api.github.com')) {
+        return jsonRes(
+          apiRelease({
+            body: '',
+            assets: [
+              {
+                name: STD,
+                browser_download_url: 'https://evil.example/fw.txt',
+                digest: `sha256:${signedHash}`,
+              },
+            ],
+          }),
+        );
+      }
+      return binRes(signedBytes);
+    });
+
+    await expect(downloadLatestFirmware({ fetchFn: fetchFn as never })).rejects.toMatchObject({
+      code: 'host-not-allowed',
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('allows a CDN final URL after requesting the github.com download (D5)', async () => {
+    const cdn = 'https://objects.githubusercontent.com/github-production-release-asset/xyz';
+    const fetchFn = vi.fn(async (url: string) => {
+      if (String(url).includes('api.github.com')) {
+        return { ...jsonRes(apiRelease()), url: FW_API_URL };
+      }
+      return { ...binRes(signedBytes), url: cdn };
+    });
+
+    const result = await downloadLatestFirmware({ fetchFn: fetchFn as never });
+    expect(result.blocks).toEqual(['aabbccdd']);
+    expect(result.sha256).toBe(signedHash);
+  });
+
+  it('throws FirmwareUpdateError codes for HTTP lookup failures', async () => {
+    const fetchFn = vi.fn(async () => jsonRes({}, false, 503));
+    await expect(downloadLatestFirmware({ fetchFn: fetchFn as never })).rejects.toBeInstanceOf(
+      FirmwareUpdateError,
+    );
+    await expect(downloadLatestFirmware({ fetchFn: fetchFn as never })).rejects.toMatchObject({
+      code: 'http-release',
+      httpStatus: 503,
+    });
+  });
+});
+
