@@ -78,6 +78,7 @@ describe('useFirmwareUpdateStore', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     resetFirmwareUpdateStoreForTests();
   });
 
@@ -398,5 +399,81 @@ describe('useFirmwareUpdateStore', () => {
       error: null,
       blocks: null,
     });
+  });
+
+  it('check timeout presents http-release and unblocks later checks', async () => {
+    vi.useFakeTimers();
+    checkFirmwareUpdate.mockImplementation(
+      (_version: unknown, io: { abortSignal?: AbortSignal } = {}) =>
+        new Promise((_resolve, reject) => {
+          const fail = () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          };
+          if (io.abortSignal?.aborted) {
+            fail();
+            return;
+          }
+          io.abortSignal?.addEventListener('abort', fail);
+        }),
+    );
+    const pending = startAutoCheck();
+    expect(checkFirmwareUpdate).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(15_000);
+    await pending;
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'error',
+      errorCode: 'http-release',
+      promptVisible: false,
+    });
+    dismiss();
+    checkFirmwareUpdate.mockResolvedValue({
+      kind: 'current',
+      currentVersion: 'v2.1.2 STD',
+      latestVersion: 'v3.0.4-prod',
+    });
+    await checkNow();
+    expect(checkFirmwareUpdate).toHaveBeenCalledTimes(2);
+    expect(useFirmwareUpdateStore.getState().phase).toBe('up-to-date');
+  });
+
+  it('download timeout presents http-firmware and unblocks later checks', async () => {
+    checkFirmwareUpdate.mockResolvedValue(available);
+    await startAutoCheck();
+    vi.useFakeTimers();
+    downloadLatestFirmware.mockImplementation(
+      (io: { abortSignal?: AbortSignal } = {}) =>
+        new Promise((_resolve, reject) => {
+          const fail = () => {
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+          };
+          if (io.abortSignal?.aborted) {
+            fail();
+            return;
+          }
+          io.abortSignal?.addEventListener('abort', fail);
+        }),
+    );
+    const pending = confirmDownload();
+    expect(downloadLatestFirmware).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(60_000);
+    await pending;
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'error',
+      errorCode: 'http-firmware',
+      promptVisible: true,
+    });
+    dismiss();
+    checkFirmwareUpdate.mockResolvedValue({
+      kind: 'current',
+      currentVersion: 'v2.1.2 STD',
+      latestVersion: 'v3.0.4-prod',
+    });
+    await checkNow();
+    expect(checkFirmwareUpdate).toHaveBeenCalledTimes(2);
+    expect(useFirmwareUpdateStore.getState().phase).toBe('up-to-date');
   });
 });

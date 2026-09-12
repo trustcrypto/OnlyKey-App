@@ -261,7 +261,12 @@ async function runCheck(force: boolean): Promise<void> {
     }
     useFirmwareUpdateStore.setState({ phase: 'idle', promptVisible: false });
   } catch (e) {
-    if (isStale(gen) || isAbortError(e)) return;
+    if (isStale(gen)) return;
+    if (isAbortError(e)) {
+      if (!force) console.error('Firmware update check failed:', e);
+      presentError('http-release', { prompt: force });
+      return;
+    }
     const err = e instanceof FirmwareUpdateError ? e : new FirmwareUpdateError(String(e), 'io');
     const prompt = force || autoDownloadErrorShowsModal(err.code);
     if (!prompt) console.error('Firmware update check failed:', err);
@@ -344,7 +349,11 @@ export async function confirmDownload(): Promise<void> {
         downloadTotal: downloaded.blocks.length,
       });
     } catch (e) {
-      if (isStale(gen) || isAbortError(e)) return;
+      if (isStale(gen)) return;
+      if (isAbortError(e)) {
+        presentError('http-firmware', { prompt: true });
+        return;
+      }
       const err = e instanceof FirmwareUpdateError ? e : new FirmwareUpdateError(String(e), 'io');
       presentError(err.code, { prompt: true, httpStatus: err.httpStatus });
     }
