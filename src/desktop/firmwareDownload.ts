@@ -294,7 +294,3 @@ export async function downloadLatestFirmware(
 
   return { version, blocks, downloadUrl: asset.browser_download_url, sha256: actual };
 }
-
-export async function fetchLatestFirmwareRelease(): Promise<FirmwareDownloadResult> {
-  return downloadLatestFirmware();
-}

@@ -19,7 +19,7 @@ describe('Firmware page', () => {
     const device = createMockDeviceClient();
     device.triggerBootloader = vi.fn().mockRejectedValue(new Error('Error: Not in Config Mode'));
 
-    vi.spyOn(firmwareDownload, 'fetchLatestFirmwareRelease').mockResolvedValue({
+    vi.spyOn(firmwareDownload, 'downloadLatestFirmware').mockResolvedValue({
       version: 'v2.1.2',
       blocks: ['deadbeef'],
       downloadUrl: 'https://example.com/fw.txt',
@@ -85,7 +85,7 @@ describe('Firmware page', () => {
   it('loads firmware blocks directly while in bootloader mode', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();
-    vi.spyOn(firmwareDownload, 'fetchLatestFirmwareRelease').mockResolvedValue({
+    vi.spyOn(firmwareDownload, 'downloadLatestFirmware').mockResolvedValue({
       version: 'v3.0.4',
       blocks: ['aa', 'bb'],
       downloadUrl: 'https://example.com/fw.txt',

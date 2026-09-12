@@ -1,10 +1,12 @@
 import React from 'react';
 import {
+  applyFirmware,
   confirmDownload,
   dismiss,
   openFirmwareTab,
   useFirmwareUpdateStore,
 } from '../../store/useFirmwareUpdateStore';
+import { useDeviceStore } from '../../store/useDeviceStore';
 
 interface FirmwareUpdateDialogProps {
   open: boolean;
@@ -17,6 +19,10 @@ const FirmwareUpdateDialog: React.FC<FirmwareUpdateDialogProps> = ({ open }) => 
   const error = useFirmwareUpdateStore((s) => s.error);
   const downloadReceived = useFirmwareUpdateStore((s) => s.downloadReceived);
   const downloadTotal = useFirmwareUpdateStore((s) => s.downloadTotal);
+  const isBootloader = useDeviceStore((s) => s.isBootloader);
+  const isInitialized = useDeviceStore((s) => s.isInitialized);
+  const isConfigMode = useDeviceStore((s) => s.isConfigMode);
+  const canLoadNow = isBootloader || !isInitialized || isConfigMode;
 
   if (!open) return null;
 
@@ -55,12 +61,26 @@ const FirmwareUpdateDialog: React.FC<FirmwareUpdateDialogProps> = ({ open }) => 
     };
   } else if (phase === 'ready') {
     title = 'Firmware downloaded';
-    message = `Firmware ${latestVersion} was downloaded and verified (SHA-256).`;
-    confirmLabel = 'Open Firmware tab';
-    cancelLabel = 'Later';
-    onConfirm = () => {
-      openFirmwareTab();
-    };
+    if (canLoadNow) {
+      message = `Firmware ${latestVersion} was downloaded and verified (SHA-256). Load onto OnlyKey? The key will restart. Do not remove OnlyKey.`;
+      confirmLabel = 'Load firmware';
+      cancelLabel = 'Later';
+      onConfirm = () => {
+        void applyFirmware();
+      };
+    } else {
+      message = `Firmware ${latestVersion} was downloaded and verified (SHA-256). To load it, put OnlyKey in config mode. For OnlyKey hold down button #6 for 5+ seconds and release. For OnlyKey DUO hold down button #1 for 10+ seconds and release. The light will turn off; if a PIN was set, re-enter it. OnlyKey flashes red in config mode.`;
+      confirmLabel = 'Open Firmware tab';
+      cancelLabel = 'Later';
+      onConfirm = () => {
+        openFirmwareTab();
+      };
+    }
+  } else if (phase === 'applying') {
+    title = 'Loading firmware';
+    message = 'Do not remove OnlyKey.';
+    confirmLabel = null;
+    cancelLabel = null;
   } else if (phase === 'up-to-date') {
     title = 'Firmware update';
     message = `Firmware ${currentVersion} is up to date.`;

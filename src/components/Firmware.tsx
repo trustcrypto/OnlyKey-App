@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
 import { parseFirmwareData } from '../api/device/utils';
-import { clearPendingFirmware, storePendingFirmware } from '../desktop/firmwareCheck';
-import { fetchLatestFirmwareRelease } from '../desktop/firmwareDownload';
+import { applyFirmwareBlocks } from '../desktop/firmwareApply';
+import { downloadLatestFirmware } from '../desktop/firmwareDownload';
 import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import { TOOLTIPS } from '../data/tooltips';
 import ConfigModeInstructions from './ConfigModeInstructions';
@@ -22,41 +22,26 @@ const Firmware: React.FC = () => {
   const isUninitialized = isUninitializedDevice({ isInitialized, deviceType });
   const canLoadFirmware = isBootloader || isUninitialized || fwUpdateSupport;
 
-  const applyFirmwareBlocks = async (blocks: string[]) => {
+  const runApply = async (blocks: string[]) => {
     if (!device) return;
-
-    if (isBootloader) {
-      // Already in bootloader: load now. Do not persist pending — that is only
-      // for the kick → reconnect gap. Leftover pending would reflash on the next
-      // bootloader PID.
-      clearPendingFirmware();
-      setStatus('Sending firmware blocks...');
-      setWorking(true, 'Loading firmware… 0%', 0);
-      try {
-        await device.loadFirmwareBlocks(blocks, (pct) => {
-          setProgress(pct);
-          setWorking(true, `Loading firmware… ${Math.round(pct)}%`, pct);
-        });
-      } finally {
-        setWorking(false);
-      }
+    if (isBootloader) setStatus('Sending firmware blocks...');
+    else setStatus('Triggering reboot to bootloader — do not remove OnlyKey...');
+    const result = await applyFirmwareBlocks({
+      device,
+      blocks,
+      isBootloader,
+      setWorking: (active, message, progress) => {
+        if (typeof progress === 'number') setProgress(progress);
+        setWorking(active, message, progress);
+      },
+    });
+    if (result === 'streamed') {
       setStatus('Firmware load complete!');
-      return;
+    } else {
+      setStatus(
+        'Device rebooting to bootloader. Reconnect and the update will resume automatically.',
+      );
     }
-
-    setStatus('Triggering reboot to bootloader — do not remove OnlyKey...');
-    setWorking(true, 'Triggering reboot to bootloader — do not remove OnlyKey…');
-    try {
-      await device.triggerBootloader();
-    } catch (err) {
-      clearPendingFirmware();
-      setWorking(false);
-      setStatus(null);
-      throw err;
-    }
-    storePendingFirmware(blocks);
-    setWorking(false);
-    setStatus('Device rebooting to bootloader. Reconnect and the update will resume automatically.');
   };
 
   const handleDownloadLatest = async () => {
@@ -66,9 +51,9 @@ const Firmware: React.FC = () => {
     setStatus(null);
     setProgress(0);
     try {
-      const { version: latestVersion, blocks } = await fetchLatestFirmwareRelease();
+      const { version: latestVersion, blocks } = await downloadLatestFirmware();
       setStatus(`Downloaded firmware ${latestVersion}. Starting update...`);
-      await applyFirmwareBlocks(blocks);
+      await runApply(blocks);
     } catch (err: unknown) {
       setStatus(null);
       setError(err instanceof Error ? err.message : String(err));
@@ -88,7 +73,7 @@ const Firmware: React.FC = () => {
     try {
       const blocks = parseFirmwareData(await selectedFile.text());
       if (!blocks.length) throw new Error('Could not parse firmware file.');
-      await applyFirmwareBlocks(blocks);
+      await runApply(blocks);
     } catch (err: unknown) {
       setStatus(null);
       setError(err instanceof Error ? err.message : String(err));

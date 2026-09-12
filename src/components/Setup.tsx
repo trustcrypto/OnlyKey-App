@@ -4,7 +4,7 @@ import { DeviceType } from '../api/device/types';
 import { isUninitializedDevice } from '../api/device/deviceTypeFromStatus';
 import { PIN_ENTRY_CANCELLED } from '../api/device/OnlyKeyDevice';
 import { parseBackupData, parseFirmwareData } from '../api/device/utils';
-import { clearPendingFirmware, storePendingFirmware } from '../desktop/firmwareCheck';
+import { applyFirmwareBlocks } from '../desktop/firmwareApply';
 import { importPemKey, isSelectionRequiredError } from '../services/keyImport/keyImportService';
 import { parseKeyBundle } from '../services/keyImport/keyBundleParser';
 import PrivateKeySelectDialog from './dialogs/PrivateKeySelectDialog';
@@ -302,31 +302,12 @@ const Setup: React.FC = () => {
     run(async () => {
       const blocks = parseFirmwareData(await file.text());
       if (!blocks.length) throw new Error('Could not parse firmware file.');
-      setWorking(
-        true,
-        isBootloader
-          ? 'Loading firmware… 0%'
-          : 'Triggering reboot to bootloader — do not remove OnlyKey…',
-        isBootloader ? 0 : null,
-      );
-      try {
-        if (isBootloader) {
-          await device!.loadFirmwareBlocks(blocks, (pct) => {
-            setWorking(true, `Loading firmware… ${Math.round(pct)}%`, pct);
-          });
-          clearPendingFirmware();
-        } else {
-          try {
-            await device!.triggerBootloader();
-          } catch (err) {
-            clearPendingFirmware();
-            throw err;
-          }
-          storePendingFirmware(blocks);
-        }
-      } finally {
-        setWorking(false);
-      }
+      await applyFirmwareBlocks({
+        device: device!,
+        blocks,
+        isBootloader,
+        setWorking,
+      });
       goToLanding();
     });
 

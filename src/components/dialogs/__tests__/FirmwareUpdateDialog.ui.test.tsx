@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import FirmwareUpdateDialog from '../FirmwareUpdateDialog';
 import { renderWithProviders } from '../../../test/render';
@@ -8,6 +8,7 @@ import {
   useFirmwareUpdateStore,
 } from '../../../store/useFirmwareUpdateStore';
 import { useDeviceStore } from '../../../store/useDeviceStore';
+import { createMockDeviceClient, seedDeviceStore } from '../../../test/store';
 
 describe('FirmwareUpdateDialog', () => {
   beforeEach(() => {
@@ -51,8 +52,14 @@ describe('FirmwareUpdateDialog', () => {
     expect(screen.getByRole('button', { name: /later/i })).toBeDisabled();
   });
 
-  it('ready state offers Open Firmware tab and Later, not Load', async () => {
+  it('ready needs config mode: Open Firmware tab / Later, not Load', async () => {
     const user = userEvent.setup();
+    seedDeviceStore({
+      isInitialized: true,
+      isConfigMode: false,
+      isBootloader: false,
+      isLocked: false,
+    });
     useFirmwareUpdateStore.setState({
       phase: 'ready',
       latestVersion: 'v3.0.4-prod',
@@ -64,12 +71,64 @@ describe('FirmwareUpdateDialog', () => {
     expect(screen.getByRole('button', { name: /open firmware tab/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^load/i })).not.toBeInTheDocument();
     expect(
-      screen.getByText('Firmware v3.0.4-prod was downloaded and verified (SHA-256).'),
+      screen.getByText(/Firmware v3\.0\.4-prod was downloaded and verified \(SHA-256\)/i),
     ).toBeInTheDocument();
+    expect(screen.getByText(/put OnlyKey in config mode/i)).toBeInTheDocument();
+    expect(screen.getByText(/button #6/i)).toBeInTheDocument();
+    expect(screen.getByText(/button #1/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /open firmware tab/i }));
     expect(useDeviceStore.getState().activeTab).toBe('firmware');
     expect(useFirmwareUpdateStore.getState().promptVisible).toBe(false);
     expect(useFirmwareUpdateStore.getState().blocks).toEqual(['aa']);
+  });
+
+  it('ready can load now: Load firmware / Later with brick-risk copy', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({
+      device,
+      isInitialized: true,
+      isConfigMode: true,
+      isBootloader: false,
+      isLocked: false,
+      isWorking: false,
+    });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+      sha256: 'abc',
+      promptVisible: true,
+    });
+    renderWithProviders(<FirmwareUpdateDialog open />);
+    expect(screen.getByRole('button', { name: /load firmware/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /open firmware tab/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Load onto OnlyKey\? The key will restart\. Do not remove OnlyKey/i),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /load firmware/i }));
+    await waitFor(() => expect(device.triggerBootloader).toHaveBeenCalled());
+    expect(useFirmwareUpdateStore.getState().promptVisible).toBe(false);
+    expect(useFirmwareUpdateStore.getState().blocks).toEqual(['aa']);
+  });
+
+  it('ready Load firmware while uninitialized does not require config mode', async () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      isInitialized: false,
+      isConfigMode: false,
+      isBootloader: false,
+      isLocked: false,
+    });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+      promptVisible: true,
+    });
+    renderWithProviders(<FirmwareUpdateDialog open />);
+    expect(screen.getByRole('button', { name: /load firmware/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /open firmware tab/i })).not.toBeInTheDocument();
   });
 
   it('Later from ready hides the prompt and keeps RAM blocks', async () => {

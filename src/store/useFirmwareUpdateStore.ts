@@ -4,6 +4,7 @@ import {
   FW_CHECK_SESSION_KEY,
   type FirmwareUpdateCheckResult,
 } from '../desktop/firmwareCheck';
+import { applyFirmwareBlocks } from '../desktop/firmwareApply';
 import {
   downloadLatestFirmware,
   FirmwareUpdateError,
@@ -25,7 +26,14 @@ export type FirmwareUpdatePhase =
 
 export type FirmwareUpdateUiCode = FirmwareUpdateErrorCode | 'unsupported' | 'missing-std-asset';
 
-export function firmwareUpdateUserMessage(code: FirmwareUpdateUiCode, httpStatus?: number): string {
+const CONFIG_MODE_HOLD_COPY =
+  'For OnlyKey hold down button #6 for 5+ seconds and release. For OnlyKey DUO hold down button #1 for 10+ seconds and release. The light will turn off; if a PIN was set, re-enter it. OnlyKey flashes red in config mode.';
+
+export function firmwareUpdateUserMessage(
+  code: FirmwareUpdateUiCode,
+  httpStatus?: number,
+  detail?: string,
+): string {
   switch (code) {
     case 'http-release':
     case 'http-firmware':
@@ -44,9 +52,9 @@ export function firmwareUpdateUserMessage(code: FirmwareUpdateUiCode, httpStatus
     case 'invalid-firmware':
       return 'The firmware file could not be parsed.';
     case 'config-mode':
-      return 'OnlyKey is not in config mode.';
+      return `OnlyKey is not in config mode. ${CONFIG_MODE_HOLD_COPY}`;
     case 'apply-failed':
-      return 'Firmware load failed.';
+      return detail ? `Firmware load failed. ${detail}` : 'Firmware load failed.';
     case 'unsupported':
       return 'This firmware cannot be updated from the app. Follow the loading instructions at docs.crp.to.';
     case 'missing-std-asset':
@@ -197,13 +205,13 @@ function presentAvailable(result: Extract<FirmwareUpdateCheckResult, { kind: 'av
 
 function presentError(
   code: FirmwareUpdateUiCode,
-  opts: { prompt: boolean; httpStatus?: number },
+  opts: { prompt: boolean; httpStatus?: number; detail?: string },
 ): void {
   useFirmwareUpdateStore.setState({
     phase: 'error',
     promptVisible: opts.prompt,
     errorCode: code,
-    error: firmwareUpdateUserMessage(code, opts.httpStatus),
+    error: firmwareUpdateUserMessage(code, opts.httpStatus, opts.detail),
   });
 }
 
@@ -364,6 +372,72 @@ export async function confirmDownload(): Promise<void> {
   return run;
 }
 
+export async function applyFirmware(): Promise<void> {
+  const state = useFirmwareUpdateStore.getState();
+  if (isBusy() || state.phase !== 'ready' || !state.blocks?.length) return;
+  const deviceState = useDeviceStore.getState();
+  if (deviceState.isWorking || deviceState.isLocked) return;
+
+  if (deviceState.isInitialized && !deviceState.isConfigMode && !deviceState.isBootloader) {
+    presentError('config-mode', { prompt: true });
+    return;
+  }
+
+  const device = deviceState.device;
+  if (!device) return;
+
+  const blocks = state.blocks;
+  const isBootloader = deviceState.isBootloader;
+  const gen = generation;
+  const run = (async () => {
+    useFirmwareUpdateStore.setState({ phase: 'applying', promptVisible: true });
+    try {
+      const result = await applyFirmwareBlocks({
+        device,
+        blocks,
+        isBootloader,
+        setWorking: (active, message, progress) => {
+          useDeviceStore.getState().setWorking(active, message, progress);
+        },
+      });
+      if (isStale(gen)) return;
+      if (result === 'streamed') {
+        console.info('Firmware update: load complete');
+      } else {
+        console.info('Firmware update: bootloader kick; pending blocks stored');
+      }
+      markSessionChecked();
+      useFirmwareUpdateStore.setState({
+        phase: 'idle',
+        promptVisible: false,
+      });
+    } catch (e) {
+      if (isStale(gen)) return;
+      if (e instanceof FirmwareUpdateError) {
+        console.error('Firmware update:', e.code);
+        presentError(e.code, {
+          prompt: true,
+          httpStatus: e.httpStatus,
+          detail: e.code === 'apply-failed' ? e.message : undefined,
+        });
+        return;
+      }
+      const message = e instanceof Error ? e.message : String(e);
+      if (/not in config mode/i.test(message)) {
+        console.error('Firmware update: config-mode');
+        presentError('config-mode', { prompt: true });
+        return;
+      }
+      console.error('Firmware update: apply-failed');
+      presentError('apply-failed', { prompt: true, detail: message });
+    }
+  })().finally(() => {
+    if (inFlight === run) inFlight = null;
+  });
+  inFlight = run;
+  return run;
+}
+
 export function openFirmwareTab(): void {
   const { phase } = useFirmwareUpdateStore.getState();
   if (phase === 'downloading' || phase === 'checking' || phase === 'applying') return;
@@ -414,6 +488,7 @@ interface FirmwareUpdateStore extends FirmwareUpdateState {
   startAutoCheck: typeof startAutoCheck;
   checkNow: typeof checkNow;
   confirmDownload: typeof confirmDownload;
+  applyFirmware: typeof applyFirmware;
   openFirmwareTab: typeof openFirmwareTab;
   dismiss: typeof dismiss;
   resetOnDisconnect: typeof resetOnDisconnect;
@@ -426,6 +501,7 @@ export const useFirmwareUpdateStore = create<FirmwareUpdateStore>((set) => ({
   startAutoCheck,
   checkNow,
   confirmDownload,
+  applyFirmware,
   openFirmwareTab,
   dismiss,
   resetOnDisconnect,

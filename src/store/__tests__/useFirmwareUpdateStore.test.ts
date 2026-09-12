@@ -23,6 +23,7 @@ vi.mock('../../desktop/firmwareDownload', async (importOriginal) => {
 });
 
 import {
+  applyFirmware,
   bindAutoUpdateFWPrefListeners,
   checkNow,
   confirmDownload,
@@ -33,7 +34,7 @@ import {
   startAutoCheck,
   useFirmwareUpdateStore,
 } from '../useFirmwareUpdateStore';
-import { seedDeviceStore } from '../../test/store';
+import { createMockDeviceClient, seedDeviceStore } from '../../test/store';
 
 const available = {
   kind: 'available' as const,
@@ -210,6 +211,105 @@ describe('useFirmwareUpdateStore', () => {
     useFirmwareUpdateStore.setState({ phase: 'downloading', promptVisible: true });
     await checkNow();
     expect(checkFirmwareUpdate).not.toHaveBeenCalled();
+  });
+
+  it('ignores applyFirmware while isWorking and keeps blocks (S7)', async () => {
+    const device = createMockDeviceClient();
+    seedSafeDevice({ isWorking: true, isConfigMode: true, isLocked: false, device });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+      promptVisible: true,
+    });
+    await applyFirmware();
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+    expect(device.loadFirmwareBlocks).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'ready',
+      blocks: ['aa'],
+      promptVisible: true,
+    });
+  });
+
+  it('applyFirmware while initialized not config is config-mode without HID (S8)', async () => {
+    const device = createMockDeviceClient();
+    seedSafeDevice({
+      isWorking: false,
+      isLocked: false,
+      isInitialized: true,
+      isConfigMode: false,
+      isBootloader: false,
+      device,
+    });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+      promptVisible: true,
+    });
+    await applyFirmware();
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+    expect(device.loadFirmwareBlocks).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'error',
+      errorCode: 'config-mode',
+      promptVisible: true,
+      blocks: ['aa'],
+    });
+    expect(useFirmwareUpdateStore.getState().error).toMatch(/not in config mode/i);
+  });
+
+  it('ignores applyFirmware while locked', async () => {
+    const device = createMockDeviceClient();
+    seedSafeDevice({ isLocked: true, isConfigMode: true, isWorking: false, device });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+      promptVisible: true,
+    });
+    await applyFirmware();
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'ready',
+      blocks: ['aa'],
+    });
+  });
+
+  it('applyFirmware in config mode kicks bootloader and stores pending', async () => {
+    const device = createMockDeviceClient();
+    seedSafeDevice({ isConfigMode: true, isLocked: false, isWorking: false, device });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa'],
+      promptVisible: true,
+    });
+    await applyFirmware();
+    expect(device.triggerBootloader).toHaveBeenCalledTimes(1);
+    expect(device.loadFirmwareBlocks).not.toHaveBeenCalled();
+    expect(JSON.parse(sessionStorage.getItem('ok-pending-firmware') ?? 'null')).toEqual(['aa']);
+    expect(useFirmwareUpdateStore.getState()).toMatchObject({
+      phase: 'idle',
+      promptVisible: false,
+      blocks: ['aa'],
+    });
+  });
+
+  it('applyFirmware in bootloader streams blocks', async () => {
+    const device = createMockDeviceClient();
+    seedSafeDevice({ isBootloader: true, isLocked: false, isWorking: false, device });
+    useFirmwareUpdateStore.setState({
+      phase: 'ready',
+      latestVersion: 'v3.0.4-prod',
+      blocks: ['aa', 'bb'],
+      promptVisible: true,
+    });
+    await applyFirmware();
+    expect(device.loadFirmwareBlocks).toHaveBeenCalledWith(['aa', 'bb'], expect.any(Function));
+    expect(device.triggerBootloader).not.toHaveBeenCalled();
+    expect(useFirmwareUpdateStore.getState().phase).toBe('idle');
   });
 
   it('opens the available prompt on auto-check', async () => {

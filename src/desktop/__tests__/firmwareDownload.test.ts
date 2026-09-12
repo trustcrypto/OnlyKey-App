@@ -6,7 +6,6 @@ import {
   buildFirmwareFilename,
   downloadLatestFirmware,
   fetchFirmware,
-  fetchLatestFirmwareRelease,
   parseFirmwareChecksumFromReleaseBody,
 } from '../firmwareDownload';
 
@@ -73,7 +72,7 @@ describe('parseFirmwareChecksumFromReleaseBody', () => {
   });
 });
 
-describe('fetchLatestFirmwareRelease', () => {
+describe('downloadLatestFirmware (global fetch)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
@@ -93,7 +92,7 @@ describe('fetchLatestFirmwareRelease', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await fetchLatestFirmwareRelease();
+    const result = await downloadLatestFirmware();
 
     expect(result.version).toBe('v3.0.4');
     expect(result.blocks).toEqual(['aabbccdd']);
@@ -108,7 +107,7 @@ describe('fetchLatestFirmwareRelease', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await fetchLatestFirmwareRelease();
+    const result = await downloadLatestFirmware();
 
     expect(result.version).toBe('v3.0.4-prod');
     expect(result.blocks).toEqual(['aabbccdd']);
@@ -129,18 +128,18 @@ describe('fetchLatestFirmwareRelease', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await fetchLatestFirmwareRelease();
+    const result = await downloadLatestFirmware();
     expect(result.sha256).toBe(signedHash);
   });
 
   it('throws when the release has no tag', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonRes({ assets: [] })));
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/Could not determine latest firmware/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/Could not determine latest firmware/);
   });
 
   it('throws when the GitHub API lookup fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonRes({}, false, 503)));
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/Firmware release lookup failed \(503\)/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/Firmware release lookup failed \(503\)/);
   });
 
   it('throws when the firmware download fails', async () => {
@@ -157,7 +156,7 @@ describe('fetchLatestFirmwareRelease', () => {
         )
         .mockResolvedValueOnce(binRes(signedBytes, false, 404)),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/Firmware download failed \(404\)/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/Firmware download failed \(404\)/);
   });
 
   it('throws when digest is null and the release body has no checksum', async () => {
@@ -171,7 +170,7 @@ describe('fetchLatestFirmwareRelease', () => {
         }),
       ),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/missing a SHA-256 digest/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/missing a SHA-256 digest/);
   });
 
   it('throws when the downloaded bytes do not match the digest', async () => {
@@ -189,7 +188,7 @@ describe('fetchLatestFirmwareRelease', () => {
         )
         .mockResolvedValueOnce(binRes(signedBytes)),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/does not match/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/does not match/);
   });
 
   it('throws when the body checksum does not match the downloaded bytes', async () => {
@@ -207,7 +206,7 @@ describe('fetchLatestFirmwareRelease', () => {
         )
         .mockResolvedValueOnce(binRes(signedBytes)),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/does not match/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/does not match/);
   });
 
   it('throws when the asset URL is not HTTPS', async () => {
@@ -221,7 +220,7 @@ describe('fetchLatestFirmwareRelease', () => {
         ),
       ),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/missing HTTPS asset/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/missing HTTPS asset/);
   });
 
   it('throws when the asset list does not include the STD file', async () => {
@@ -229,7 +228,7 @@ describe('fetchLatestFirmwareRelease', () => {
       'fetch',
       vi.fn().mockResolvedValue(jsonRes(apiRelease({ assets: [] }))),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/missing HTTPS asset/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/missing HTTPS asset/);
   });
 
   it('throws when the downloaded file is not hex firmware', async () => {
@@ -249,7 +248,7 @@ describe('fetchLatestFirmwareRelease', () => {
         )
         .mockResolvedValueOnce(binRes(html)),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/Invalid hex/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/Invalid hex/);
   });
 
   it('throws when the signed file has no firmware blocks', async () => {
@@ -269,7 +268,7 @@ describe('fetchLatestFirmwareRelease', () => {
         )
         .mockResolvedValueOnce(binRes(emptySigned)),
     );
-    await expect(fetchLatestFirmwareRelease()).rejects.toThrow(/could not be parsed/);
+    await expect(downloadLatestFirmware()).rejects.toThrow(/could not be parsed/);
   });
 });
 
