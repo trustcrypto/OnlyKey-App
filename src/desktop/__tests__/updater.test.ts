@@ -8,6 +8,8 @@ import {
   APP_UPDATE_SESSION_KEY,
   AppUpdateError,
   DEFAULT_MANIFEST_URL,
+  applyAppUpdate,
+  assertSafeUpdatePath,
   checkAppUpdate,
   compareSemver,
   downloadAndVerify,
@@ -697,5 +699,114 @@ describe('showUpdateInFolder', () => {
     const showInFolder = vi.fn();
     showUpdateInFolder('/tmp/ok-updates/OnlyKey.exe', { showInFolder });
     expect(showInFolder).toHaveBeenCalledWith('/tmp/ok-updates/OnlyKey.exe');
+  });
+});
+
+describe('applyAppUpdate', () => {
+  const body = new Uint8Array([1, 2, 3]);
+  const hash = sha256(body);
+
+  it('re-hashes, spawns, then quits on win32 (19)', async () => {
+    const tmp = path.join(os.tmpdir(), 'ok-apply-win');
+    const dest = path.join(tmp, 'OnlyKey.exe');
+    const spawnInstaller = vi.fn().mockResolvedValue(undefined);
+    const quitApp = vi.fn();
+    const showInFolder = vi.fn();
+    await applyAppUpdate(dest, { sha256: hash }, {
+      platform: () => 'win32',
+      tmpDir: () => tmp,
+      readFile: () => body,
+      spawnInstaller,
+      quitApp,
+      showInFolder,
+      applyDelayMs: 0,
+    });
+    expect(spawnInstaller).toHaveBeenCalledWith(path.resolve(dest), 'win32');
+    expect(quitApp).toHaveBeenCalledOnce();
+    expect(showInFolder).not.toHaveBeenCalled();
+  });
+
+  it('refuses a tampered dest file and unlinks (19b)', async () => {
+    const tmp = path.join(os.tmpdir(), 'ok-apply-tamper');
+    const dest = path.join(tmp, 'OnlyKey.exe');
+    const unlink = vi.fn();
+    const spawnInstaller = vi.fn();
+    const quitApp = vi.fn();
+    await expect(
+      applyAppUpdate(dest, { sha256: hash }, {
+        platform: () => 'win32',
+        tmpDir: () => tmp,
+        readFile: () => new Uint8Array([9, 9, 9]),
+        unlink,
+        spawnInstaller,
+        quitApp,
+        applyDelayMs: 0,
+      }),
+    ).rejects.toMatchObject({ code: 'sha256-mismatch' });
+    expect(unlink).toHaveBeenCalled();
+    expect(spawnInstaller).not.toHaveBeenCalled();
+    expect(quitApp).not.toHaveBeenCalled();
+  });
+
+  it('rejects destPath outside tmpDir, ADS names, and wrong extension (19c)', () => {
+    const tmp = path.join(os.tmpdir(), 'ok-apply-safe');
+    expect(() =>
+      assertSafeUpdatePath(path.join(os.tmpdir(), 'other', 'OnlyKey.exe'), tmp, 'win32'),
+    ).toThrow(/outside/);
+    expect(() => assertSafeUpdatePath(path.join(tmp, 'OnlyKey.exe:ads'), tmp, 'win32')).toThrow(
+      /not allowed/,
+    );
+    expect(() => assertSafeUpdatePath(path.join(tmp, 'OnlyKey.dmg'), tmp, 'win32')).toThrow(
+      /file type/,
+    );
+  });
+
+  it('spawns open / xdg-open then quits on darwin and linux (20)', async () => {
+    const spawnInstaller = vi.fn().mockResolvedValue(undefined);
+    const quitApp = vi.fn();
+    const macTmp = path.join(os.tmpdir(), 'ok-apply-mac');
+    const macDest = path.join(macTmp, 'OnlyKey.dmg');
+    await applyAppUpdate(macDest, { sha256: hash }, {
+      platform: () => 'darwin',
+      tmpDir: () => macTmp,
+      readFile: () => body,
+      spawnInstaller,
+      quitApp,
+      applyDelayMs: 0,
+    });
+    expect(spawnInstaller).toHaveBeenCalledWith(path.resolve(macDest), 'darwin');
+
+    const linTmp = path.join(os.tmpdir(), 'ok-apply-lin');
+    const linDest = path.join(linTmp, 'OnlyKey.deb');
+    await applyAppUpdate(linDest, { sha256: hash }, {
+      platform: () => 'linux',
+      tmpDir: () => linTmp,
+      readFile: () => body,
+      spawnInstaller,
+      quitApp,
+      applyDelayMs: 0,
+    });
+    expect(spawnInstaller).toHaveBeenCalledWith(path.resolve(linDest), 'linux');
+    expect(quitApp).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the folder and does not quit when spawn fails (21)', async () => {
+    const tmp = path.join(os.tmpdir(), 'ok-apply-fail');
+    const dest = path.join(tmp, 'OnlyKey.exe');
+    const showInFolder = vi.fn();
+    const quitApp = vi.fn();
+    await expect(
+      applyAppUpdate(dest, { sha256: hash }, {
+        platform: () => 'win32',
+        tmpDir: () => tmp,
+        readFile: () => body,
+        spawnInstaller: vi.fn().mockRejectedValue(new Error('ENOENT')),
+        showInFolder,
+        quitApp,
+        applyDelayMs: 0,
+      }),
+    ).rejects.toMatchObject({ code: 'apply-failed' });
+    expect(showInFolder).toHaveBeenCalled();
+    expect(quitApp).not.toHaveBeenCalled();
   });
 });

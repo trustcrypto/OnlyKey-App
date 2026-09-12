@@ -37,6 +37,7 @@ declare const nw: {
   Shell: {
     openExternal: (url: string) => void;
     showItemInFolder: (path: string) => void;
+    openItem?: (path: string) => void;
   };
   App: {
     manifest: {

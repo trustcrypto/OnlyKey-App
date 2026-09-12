@@ -5,6 +5,7 @@ import { userPreferences } from '../../desktop/userPreferences';
 const checkAppUpdate = vi.fn();
 const downloadAndVerify = vi.fn();
 const showUpdateInFolder = vi.fn();
+const applyAppUpdate = vi.fn();
 
 vi.mock('../../desktop/updater', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../desktop/updater')>();
@@ -13,11 +14,13 @@ vi.mock('../../desktop/updater', async (importOriginal) => {
     checkAppUpdate: (...args: unknown[]) => checkAppUpdate(...args),
     downloadAndVerify: (...args: unknown[]) => downloadAndVerify(...args),
     showUpdateInFolder: (...args: unknown[]) => showUpdateInFolder(...args),
+    applyAppUpdate: (...args: unknown[]) => applyAppUpdate(...args),
   };
 });
 
 import { AUTO_UPDATE_PREF_EVENT } from '../../desktop/userPreferences';
 import {
+  applyUpdate,
   bindAutoUpdatePrefListeners,
   checkNow,
   confirmDownload,
@@ -28,6 +31,7 @@ import {
   startAutoCheck,
   useAppUpdateStore,
 } from '../useAppUpdateStore';
+import { seedDeviceStore } from '../../test/store';
 
 const available = {
   kind: 'available' as const,
@@ -49,6 +53,9 @@ describe('useAppUpdateStore', () => {
     checkAppUpdate.mockReset();
     downloadAndVerify.mockReset();
     showUpdateInFolder.mockReset();
+    applyAppUpdate.mockReset();
+    applyAppUpdate.mockResolvedValue(undefined);
+    seedDeviceStore({ isWorking: false });
     userPreferences.autoUpdate = true;
     resetAppUpdateStoreForTests();
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -178,5 +185,26 @@ describe('useAppUpdateStore', () => {
     useAppUpdateStore.setState({ destPath: '/tmp/ok.exe' });
     showDownloadedUpdate();
     expect(showUpdateInFolder).toHaveBeenCalledWith('/tmp/ok.exe');
+  });
+
+  it('applyUpdate spawns the installer from ready', async () => {
+    useAppUpdateStore.setState({
+      phase: 'ready',
+      destPath: '/tmp/ok.exe',
+      expectedSha256: 'abc',
+    });
+    await applyUpdate();
+    expect(applyAppUpdate).toHaveBeenCalledWith('/tmp/ok.exe', { sha256: 'abc' });
+  });
+
+  it('applyUpdate no-ops while a device job is running', async () => {
+    seedDeviceStore({ isWorking: true });
+    useAppUpdateStore.setState({
+      phase: 'ready',
+      destPath: '/tmp/ok.exe',
+      expectedSha256: 'abc',
+    });
+    await applyUpdate();
+    expect(applyAppUpdate).not.toHaveBeenCalled();
   });
 });

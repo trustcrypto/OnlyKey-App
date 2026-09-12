@@ -16,6 +16,7 @@ function shouldPresent(phase: AppUpdatePhase): boolean {
     phase === 'available' ||
     phase === 'downloading' ||
     phase === 'ready' ||
+    phase === 'applying' ||
     phase === 'error' ||
     phase === 'up-to-date'
   );

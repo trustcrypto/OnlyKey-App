@@ -3,11 +3,13 @@ import {
   AppUpdateError,
   type AppUpdateCheckResult,
   type AppUpdateErrorCode,
+  applyAppUpdate,
   checkAppUpdate,
   downloadAndVerify,
   showUpdateInFolder,
 } from '../desktop/updater';
 import { AUTO_UPDATE_PREF_EVENT, userPreferences } from '../desktop/userPreferences';
+import { useDeviceStore } from './useDeviceStore';
 
 export type AppUpdatePhase =
   | 'idle'
@@ -291,6 +293,27 @@ export function showDownloadedUpdate(): void {
   showUpdateInFolder(destPath);
 }
 
+export async function applyUpdate(): Promise<void> {
+  const state = useAppUpdateStore.getState();
+  if (isBusy() || state.phase !== 'ready' || !state.destPath || !state.expectedSha256) return;
+  if (useDeviceStore.getState().isWorking) return;
+  const destPath = state.destPath;
+  const sha256 = state.expectedSha256;
+  const run = (async () => {
+    useAppUpdateStore.setState({ phase: 'applying', promptVisible: true });
+    try {
+      await applyAppUpdate(destPath, { sha256 });
+    } catch (e) {
+      const err = e instanceof AppUpdateError ? e : new AppUpdateError(String(e), 'io');
+      presentError(err.code, { prompt: true, destPath, httpStatus: err.httpStatus });
+    }
+  })().finally(() => {
+    if (inFlight === run) inFlight = null;
+  });
+  inFlight = run;
+  return run;
+}
+
 export function dismissUpdatePrompt(): void {
   const { phase } = useAppUpdateStore.getState();
   if (phase === 'downloading' || phase === 'applying' || phase === 'checking') return;
@@ -315,6 +338,7 @@ interface AppUpdateStore extends AppUpdateState {
   checkNow: typeof checkNow;
   confirmDownload: typeof confirmDownload;
   showDownloadedUpdate: typeof showDownloadedUpdate;
+  applyUpdate: typeof applyUpdate;
   dismissUpdatePrompt: typeof dismissUpdatePrompt;
   setAutoCheck: typeof setAutoCheck;
   hydrateAutoUpdate: typeof hydrateAutoUpdate;
@@ -326,6 +350,7 @@ export const useAppUpdateStore = create<AppUpdateStore>((set) => ({
   checkNow,
   confirmDownload,
   showDownloadedUpdate,
+  applyUpdate,
   dismissUpdatePrompt,
   setAutoCheck,
   hydrateAutoUpdate: () => set({ autoCheck: userPreferences.autoUpdate }),

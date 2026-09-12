@@ -525,3 +525,100 @@ export async function downloadAndVerify(
 export function showUpdateInFolder(destPath: string, io: AppUpdateIo = {}): void {
   (io.showInFolder ?? ((p: string) => nw.Shell.showItemInFolder(p)))(destPath);
 }
+
+const INSTALLER_EXT: Partial<Record<NodeJS.Platform, string>> = {
+  win32: '.exe',
+  darwin: '.dmg',
+  linux: '.deb',
+};
+
+export function assertSafeUpdatePath(
+  destPath: string,
+  tmpDir: string,
+  platform: NodeJS.Platform,
+): string {
+  const path = require('path') as typeof import('path');
+  const resolved = path.resolve(destPath);
+  const root = path.resolve(tmpDir);
+  const prefix = root.endsWith(path.sep) ? root : root + path.sep;
+  if (resolved !== root && !resolved.startsWith(prefix)) {
+    throw new AppUpdateError('Installer path is outside the updates directory.', 'io');
+  }
+  const base = path.basename(resolved);
+  if (base.includes(':') || base.includes('\0') || base === '..' || base === '.') {
+    throw new AppUpdateError('Installer path is not allowed.', 'io');
+  }
+  const expected = INSTALLER_EXT[platform];
+  if (!expected || path.extname(resolved).toLowerCase() !== expected) {
+    throw new AppUpdateError('Installer file type does not match this OS.', 'io');
+  }
+  return resolved;
+}
+
+function defaultSpawnInstaller(destPath: string, platform: NodeJS.Platform): Promise<void> {
+  const { spawn } = require('child_process') as typeof import('child_process');
+  const cmd = platform === 'win32' ? destPath : platform === 'darwin' ? 'open' : 'xdg-open';
+  const args = platform === 'win32' ? [] : [destPath];
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const child = spawn(cmd, args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      shell: false,
+    });
+    child.once('error', (err) => {
+      if (settled) return;
+      settled = true;
+      reject(err);
+    });
+    child.once('spawn', () => {
+      if (settled) return;
+      settled = true;
+      child.unref();
+      resolve();
+    });
+  });
+}
+
+export async function applyAppUpdate(
+  destPath: string,
+  expected: { sha256: string; bytes?: number },
+  io: AppUpdateIo = {},
+): Promise<void> {
+  const platform = io.platform?.() ?? process.platform;
+  const tmp = io.tmpDir?.() ?? defaultTmpDir();
+  const safe = assertSafeUpdatePath(destPath, tmp, platform);
+
+  let body: Uint8Array;
+  try {
+    body = io.readFile?.(safe) ?? new Uint8Array(require('fs').readFileSync(safe));
+  } catch {
+    throw new AppUpdateError('Could not read the downloaded installer.', 'io');
+  }
+  try {
+    verifySha256(body, expected.sha256);
+  } catch {
+    unlinkDest(safe, io);
+    throw new AppUpdateError(
+      'Update package SHA-256 does not match the manifest.',
+      'sha256-mismatch',
+    );
+  }
+
+  try {
+    await (io.spawnInstaller ?? defaultSpawnInstaller)(safe, platform);
+  } catch {
+    showUpdateInFolder(safe, io);
+    throw new AppUpdateError(
+      destPath
+        ? `Could not open the installer. It is still at ${safe}.`
+        : 'Could not open the installer.',
+      'apply-failed',
+    );
+  }
+
+  const delay = io.applyDelayMs ?? 400;
+  if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+  (io.quitApp ?? (() => nw.App.quit()))();
+}

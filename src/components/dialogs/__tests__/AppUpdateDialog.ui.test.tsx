@@ -36,7 +36,7 @@ describe('AppUpdateDialog', () => {
     expect(screen.getByRole('button', { name: /later/i })).toBeDisabled();
   });
 
-  it('ready state is Show in folder / OK, not Install now', async () => {
+  it('ready state offers Install now, Show in folder, and Later', async () => {
     const user = userEvent.setup();
     useAppUpdateStore.setState({
       phase: 'ready',
@@ -45,9 +45,9 @@ describe('AppUpdateDialog', () => {
       promptVisible: true,
     });
     renderWithProviders(<AppUpdateDialog open />);
-    expect(screen.queryByRole('button', { name: /install now/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /install now/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /show in folder/i })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /ok/i }));
+    await user.click(screen.getByRole('button', { name: /later/i }));
     expect(useAppUpdateStore.getState().promptVisible).toBe(false);
   });
 });
