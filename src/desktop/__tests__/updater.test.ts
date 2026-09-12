@@ -6,7 +6,6 @@ import { sha256 } from 'js-sha256';
 import { userPreferences } from '../userPreferences';
 import {
   APP_UPDATE_SESSION_KEY,
-  AppUpdateError,
   DEFAULT_MANIFEST_URL,
   applyAppUpdate,
   assertSafeUpdatePath,
