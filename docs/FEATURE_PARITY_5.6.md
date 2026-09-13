@@ -85,7 +85,7 @@ Legend: **Done** = present with real UI + device API (unverified on hardware unl
 | File pick + parse signed FW | Unverified | `parseFirmwareData` + Firmware tab — mocked UI tests only; lab Classic/DUO not signed off |
 | Bootloader kick + stream | Unverified | `applyFirmwareBlocks` HID bootloader stream (`triggerBootloader` / `loadFirmwareBlocks`) — not run on a key |
 | Download latest | Unverified | `downloadLatestFirmware` fetches GitHub `Signed_OnlyKey_*_STD.txt`; SHA-256 from `asset.digest` or release-body hash (`normalizeSha256`); fail-closed |
-| Auto-check / alert | Unverified | `FirmwareUpdateHost` + `FirmwareUpdateDialog` (React, not `window.confirm`); Firmware tab Check now / load; Tools is the auto-check checkbox only (same `autoUpdateFW` key as the tray); defaults **on** |
+| Auto-check / alert | Unverified | `FirmwareUpdateHost` + `FirmwareUpdateDialog` (React, not `window.confirm`); Firmware tab Check now / load + auto-check checkbox (same `autoUpdateFW` key as the tray); defaults **on** |
 | Resume after reboot | Unverified | `sessionStorage` pending store — lost if the app window is closed |
 
 ### Preferences

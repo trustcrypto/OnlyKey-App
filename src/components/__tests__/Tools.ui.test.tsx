@@ -25,11 +25,9 @@ describe('Tools page', () => {
     expect(screen.getByTestId('check-now')).toBeInTheDocument();
   });
 
-  it('includes the firmware auto-check checkbox without a Check now control', () => {
+  it('does not host firmware update controls', () => {
     renderWithProviders(<Tools />);
-    expect(screen.getByTestId('firmware-update-settings')).toBeInTheDocument();
-    expect(screen.getByTestId('auto-update-fw-checkbox')).toBeEnabled();
-    expect(screen.getByTestId('auto-update-fw-checkbox')).toBeChecked();
-    expect(screen.queryByTestId('firmware-check-now')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('auto-update-fw-checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/automatically check for firmware updates/i)).not.toBeInTheDocument();
   });
 });

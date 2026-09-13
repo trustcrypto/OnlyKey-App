@@ -12,11 +12,14 @@ import {
   resetFirmwareUpdateStoreForTests,
   useFirmwareUpdateStore,
 } from '../../store/useFirmwareUpdateStore';
+import { AUTO_UPDATE_FW_PREF_EVENT } from '../../desktop/userPreferences';
+import * as appRoot from '../../desktop/appRoot';
 
 describe('Firmware page', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     sessionStorage.clear();
+    localStorage.clear();
     resetFirmwareUpdateStoreForTests();
   });
 
@@ -70,6 +73,7 @@ describe('Firmware page', () => {
     renderWithProviders(<Firmware />);
     expect(screen.getByText(/does not support this feature/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /download latest firmware/i })).not.toBeInTheDocument();
+    expect(screen.getByTestId('auto-update-fw-checkbox')).toBeInTheDocument();
   });
 
   it('enables load in bootloader even when the previous firmware lacked in-app updates', () => {
@@ -342,5 +346,56 @@ describe('Firmware page', () => {
       expect(device.triggerBootloader).toHaveBeenCalled();
     });
     expect(JSON.parse(sessionStorage.getItem('ok-pending-firmware') ?? 'null')).toEqual(['aabb']);
+  });
+
+  it('shows the auto-check checkbox default on, matching the tray label', () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: true,
+      isBootloader: false,
+      version: 'v2.1.1 STD',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByTestId('auto-update-fw-checkbox')).toBeChecked();
+    expect(screen.getByLabelText(/automatically check for firmware updates/i)).toBeInTheDocument();
+  });
+
+  it('toggles the auto-check preference and rebuilds the tray menu', async () => {
+    const user = userEvent.setup();
+    const refreshTrayMenu = vi.fn();
+    vi.spyOn(appRoot, 'loadDesktopShell').mockReturnValue({ refreshTrayMenu });
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: true,
+      isBootloader: false,
+      version: 'v2.1.1 STD',
+    });
+    renderWithProviders(<Firmware />);
+    await user.click(screen.getByTestId('auto-update-fw-checkbox'));
+    expect(useFirmwareUpdateStore.getState().autoCheckFW).toBe(false);
+    expect(localStorage.getItem('autoUpdateFW')).toBe('false');
+    expect(refreshTrayMenu).toHaveBeenCalled();
+  });
+
+  it('mirrors a tray pref change via onlykey-autoUpdateFW-changed', async () => {
+    seedDeviceStore({
+      device: createMockDeviceClient(),
+      deviceType: DeviceType.CLASSIC,
+      fwUpdateSupport: true,
+      isBootloader: false,
+      version: 'v2.1.1 STD',
+    });
+    renderWithProviders(<Firmware />);
+    expect(screen.getByTestId('auto-update-fw-checkbox')).toBeChecked();
+
+    localStorage.setItem('autoUpdateFW', 'false');
+    window.dispatchEvent(new Event(AUTO_UPDATE_FW_PREF_EVENT));
+
+    await waitFor(() => {
+      expect(useFirmwareUpdateStore.getState().autoCheckFW).toBe(false);
+      expect(screen.getByTestId('auto-update-fw-checkbox')).not.toBeChecked();
+    });
   });
 });

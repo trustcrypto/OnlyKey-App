@@ -1,6 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
-import { checkNow, useFirmwareUpdateStore } from '../store/useFirmwareUpdateStore';
+import {
+  bindAutoUpdateFWPrefListeners,
+  checkNow,
+  setAutoUpdateFW,
+  useFirmwareUpdateStore,
+} from '../store/useFirmwareUpdateStore';
 import { parseFirmwareData } from '../api/device/utils';
 import { applyFirmwareBlocks } from '../desktop/firmwareApply';
 import { downloadLatestFirmware } from '../desktop/firmwareDownload';
@@ -24,6 +29,7 @@ const Firmware: React.FC = () => {
   } = useDeviceStore();
   const storeError = useFirmwareUpdateStore((s) => s.error);
   const fwPhase = useFirmwareUpdateStore((s) => s.phase);
+  const autoCheckFW = useFirmwareUpdateStore((s) => s.autoCheckFW);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +42,8 @@ const Firmware: React.FC = () => {
   const fwBusy = fwPhase === 'checking' || fwPhase === 'downloading' || fwPhase === 'applying';
   const checkDisabled = isLoading || fwBusy || isLocked || isBootloader || isWorking;
   const displayError = error || (status ? null : storeError);
+
+  useEffect(() => bindAutoUpdateFWPrefListeners(), []);
 
   const runApply = async (blocks: string[]) => {
     if (!device) return;
@@ -144,6 +152,16 @@ const Firmware: React.FC = () => {
           Load Firmware <HelpTip href={TOOLTIPS.firmware.href} tooltip={TOOLTIPS.firmware.text} />
         </h2>
       </header>
+
+      <label className="flex items-center gap-2 text-sm text-secondary">
+        <input
+          type="checkbox"
+          checked={autoCheckFW}
+          onChange={(e) => setAutoUpdateFW(e.target.checked)}
+          data-testid="auto-update-fw-checkbox"
+        />
+        Automatically check for firmware updates
+      </label>
 
       <StepFieldset>{firmwareInstructions()}</StepFieldset>
 
