@@ -193,7 +193,7 @@ Do **not** wait for a device to be connected — searching overlay may be up. St
 
 **Before presenting**, call **`forceShowMainWindow()`** in `src/desktop/windowVisibility.ts` — **not** `ensureWindowVisible`. See **Force-show helper**.
 
-**Rationale:** 5.6 parity of “a confirm appears” without blocking HID. Firmware still uses `confirm()` after unlock; this work does not have to fix firmware, but it must not copy that pattern or cover DUO PIN.
+**Rationale:** 5.6 parity of “a confirm appears” without blocking HID. Firmware still uses `confirm()` after unlock; this work does not have to fix firmware, but it must not copy that pattern or cover DUO PIN. **Update (2026-09-12):** firmware auto-check now uses `FirmwareUpdateDialog`, not `window.confirm`.
 
 ### K5 — Respect 5.6 auto-update preference; code default **on** when the key is absent
 
