@@ -12,3 +12,7 @@ const dialogMgr = new DialogMgr();
         dialogMgr.close(btn.parentNode);
     });
 });
+
+// Last script on the page: start the wizard even if DOMContentLoaded never fires.
+window.startOnlyKeyWizard && window.startOnlyKeyWizard();
+window.startOnlyKeyComm && window.startOnlyKeyComm();

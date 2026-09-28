@@ -36,10 +36,17 @@
 
   const autoLaunch = new AutoLaunch(autoLaunchOptions);
   let autoLaunchEnabledInOSAtLaunch;
-  await autoLaunch.isEnabled().then(isEnabled => {
-    autoLaunchEnabledInOSAtLaunch = isEnabled;
-    userPreferences.autoLaunch = isEnabled;
-  });
+  if (osx) {
+    // On macOS isEnabled() runs AppleScript against System Events, which raises an
+    // Automation permission popup at startup and stalls the page until it is answered.
+    // Use the stored preference instead; the OS is only asked when the item is clicked.
+    autoLaunchEnabledInOSAtLaunch = userPreferences.autoLaunch;
+  } else {
+    await autoLaunch.isEnabled().then(isEnabled => {
+      autoLaunchEnabledInOSAtLaunch = isEnabled;
+      userPreferences.autoLaunch = isEnabled;
+    });
+  }
 
   const autoLaunchMenuItem = new nw.MenuItem({
     label: 'Auto-launch app on system login',

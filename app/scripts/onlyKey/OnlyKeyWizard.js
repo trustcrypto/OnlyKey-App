@@ -1470,7 +1470,12 @@ if (chrome.passwordsPrivate) {
     this.onlyKey.flushMessage.call(this.onlyKey, this.setNewCurrentStep.bind(this, null));
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  // nw.js on macOS can leave the page in readyState "loading" forever, so
+  // DOMContentLoaded never fires. dialog-links.js (the last script) calls this too.
+  let wizardStarted = false;
+  window.startOnlyKeyWizard = () => {
+    if (wizardStarted) return;
+    wizardStarted = true;
     console.info("Creating wizard instance...");
     onlyKeyConfigWizard = new Wizard();
     OnlyKeyHID(onlyKeyConfigWizard);
@@ -1480,7 +1485,8 @@ if (chrome.passwordsPrivate) {
 
     // SPECIAL EVENT LISTENERS
     document.addEventListener('click', setupSpecialEventListeners.bind(onlyKeyConfigWizard));
-  }, false);
+  };
+  document.addEventListener('DOMContentLoaded', window.startOnlyKeyWizard, false);
 })();
 
 function clearRadios(name) {
