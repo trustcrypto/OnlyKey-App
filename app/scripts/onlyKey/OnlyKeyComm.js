@@ -221,6 +221,8 @@ function OnlyKey(params = {}) {
     BACKUPKEYMODE: 20,
     derivedchallengeMode: 21,
     storedchallengeMode: 22,
+    webAgentDeriveMode: 30,
+    webcryptPolicy: 31,
     SECPROFILEMODE: 23,
     TYPESPEED: 13,
     LEDBRIGHTNESS: 24,
@@ -942,6 +944,18 @@ OnlyKey.prototype.setstoredchallengeMode = function (storedchallengeMode) {
   });
 };
 
+OnlyKey.prototype.setwebAgentDeriveMode = function (webAgentDeriveMode) {
+  this.setSlot("XX", "webAgentDeriveMode", webAgentDeriveMode, async () => {
+    return await this.listenforvalue("web and agent derived key mode");
+  });
+};
+
+OnlyKey.prototype.setwebcryptPolicy = function (webcryptPolicy) {
+  this.setSlot("XX", "webcryptPolicy", webcryptPolicy, async () => {
+    return await this.listenforvalue("webcrypt policy");
+  });
+};
+
 OnlyKey.prototype.sethmacchallengeMode = function (hmacchallengeMode) {
   this.setSlot("XX", "hmacchallengeMode", hmacchallengeMode, async () => {
     return await this.listenforvalue("HMAC Challenge Mode");
@@ -1602,15 +1616,11 @@ function enableAuthForms() {
   const backupModeBtn = document.getElementById("backupModeBtn");
   backupModeBtn.addEventListener("click", (e) => submitBackupMode(e, 1));
 
-  const storedKeyChallengeCodeBtn = document.getElementById("storedKeyChallengeCodeBtn");
-  storedKeyChallengeCodeBtn.addEventListener("click", (e) => submitstoredchallengeMode(e, 0));
-  const storedKeyBtnPressBtn = document.getElementById("storedKeyBtnPressBtn");
-  storedKeyBtnPressBtn.addEventListener("click", (e) => submitstoredchallengeMode(e, 1));
+  const userInputModesSaveBtn = document.getElementById("userInputModesSaveBtn");
+  userInputModesSaveBtn.addEventListener("click", (e) => submitUserInputModes(e));
 
-  const derivedKeyChallengeCodeBtn = document.getElementById("derivedKeyChallengeCodeBtn");
-  derivedKeyChallengeCodeBtn.addEventListener("click", (e) => submitderivedchallengeMode(e, 0));
-  const derivedKeyBtnPressBtn = document.getElementById("derivedKeyBtnPressBtn");
-  derivedKeyBtnPressBtn.addEventListener("click", (e) => submitderivedchallengeMode(e, 1));
+  const webcryptPolicySaveBtn = document.getElementById("webcryptPolicySaveBtn");
+  webcryptPolicySaveBtn.addEventListener("click", (e) => submitWebcryptPolicy(e));
 
   const disableModkeyModeBtn = document.getElementById("disableModkeyModeBtn");
   disableModkeyModeBtn.addEventListener("click", (e) => submitmodkeyMode(e, 0));
@@ -2472,9 +2482,31 @@ function submitstoredchallengeMode(e, storedchallengeMode) {
   return myOnlyKey.setstoredchallengeMode(storedchallengeMode);
 }
 
-function submitderivedchallengeMode(e, derivedchallengeMode) {
+// User input modes: field 21 (derived keys), 22 (stored keys) and 30 (web and
+// agent derived keys). 0 = challenge code, 1 = button press, 2 = no press.
+// Release firmware refuses 2 for fields 21 and 22, so only field 30 offers it.
+function selectedRadioValue(name, fallback) {
+  const el = document.querySelector('input[name="' + name + '"]:checked');
+  return el ? parseInt(el.value, 10) : fallback;
+}
+
+function submitUserInputModes(e) {
   e && e.preventDefault && e.preventDefault();
-  return myOnlyKey.setderivedchallengeMode(derivedchallengeMode);
+  myOnlyKey.setderivedchallengeMode(selectedRadioValue("derivedKeyInput", 0));
+  myOnlyKey.setstoredchallengeMode(selectedRadioValue("storedKeyInput", 0));
+  return myOnlyKey.setwebAgentDeriveMode(selectedRadioValue("webAgentDeriveInput", 1));
+}
+
+// Field 31: bit 0 allows stored-key use by the web app, bit 1 turns off the
+// FIDO2 extension.
+function submitWebcryptPolicy(e) {
+  e && e.preventDefault && e.preventDefault();
+
+  var policy = 0;
+  if (document.getElementById("webAllowStoredKey").checked) policy |= 0x01;
+  if (document.getElementById("webDisableExtension").checked) policy |= 0x02;
+
+  return myOnlyKey.setwebcryptPolicy(policy);
 }
 
 function submithmacchallengeMode(e, hmacchallengeMode) {
