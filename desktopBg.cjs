@@ -55,6 +55,26 @@ function resolveAppRoot() {
   return __dirname;
 }
 
+function tmpDirCandidates() {
+  const dirs = [];
+  const push = (dir) => {
+    if (!dir || dirs.includes(dir)) return;
+    dirs.push(dir);
+  };
+  try {
+    push(path.join(resolveAppRoot(), 'tmp'));
+  } catch {
+    // ignore
+  }
+  try {
+    push(path.join(os.homedir(), '.config', 'OnlyKey', 'app-tmp'));
+  } catch {
+    // ignore
+  }
+  push(path.join(os.tmpdir(), 'onlykey-app'));
+  return dirs;
+}
+
 function tmpDir() {
   // Dev checkouts can write under the app root. Installed copies under
   // /Applications or /opt/OnlyKey are not writable, so fall back to a
@@ -104,6 +124,21 @@ function clearTrayArtifacts() {
     console.error('clearTrayArtifacts failed:', error);
   }
 
+  // A launcher may have dropped a show request in a different writable tmp
+  // than the one this process picked. Drop those on a real startup so a stale
+  // file cannot pop the window during autostart-to-tray. Desktop unit tests
+  // share the developer profile and must not unlink it.
+  if (!isDesktopTestMode()) {
+    for (const dir of tmpDirCandidates()) {
+      try {
+        const commandPath = path.join(dir, 'tray-command.json');
+        if (fs.existsSync(commandPath)) fs.unlinkSync(commandPath);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   try {
     localStorage.removeItem('onlykeyTrayReady');
     localStorage.removeItem(SUPPRESS_SHOW_KEY);
@@ -114,6 +149,26 @@ function clearTrayArtifacts() {
 
 function trayCommandPath() {
   return path.join(tmpDir(), 'tray-command.json');
+}
+
+function trayCommandCandidatePaths() {
+  const paths = [];
+  const push = (filePath) => {
+    if (!filePath || paths.includes(filePath)) return;
+    paths.push(filePath);
+  };
+  try {
+    push(trayCommandPath());
+  } catch {
+    // ignore
+  }
+  // Unit tests must not read a show request out of the developer profile.
+  if (!isDesktopTestMode()) {
+    for (const dir of tmpDirCandidates()) {
+      push(path.join(dir, 'tray-command.json'));
+    }
+  }
+  return paths;
 }
 
 function suppressShowPath() {
@@ -408,28 +463,42 @@ function revealWindow(win) {
 }
 
 function executeShowMainWindow() {
-  state.quitting = false;
-  setSuppressShow(false);
-  trayLog('executeShowMainWindow', {
-    hasMainRef: !!state.mainAppWindow,
-    inHost: state.backgroundStarted,
-  });
+  const reveal = () => {
+    if (state.quitting || state.stopped || !hasNw()) return;
+    state.quitting = false;
+    setSuppressShow(false);
+    trayLog('executeShowMainWindow', {
+      hasMainRef: !!state.mainAppWindow,
+      inHost: state.backgroundStarted,
+    });
 
-  if (state.mainAppWindow && !isTrayHostWindow(state.mainAppWindow)) {
-    try {
-      revealWindow(state.mainAppWindow);
-      trayLog('executeShowMainWindow via mainAppWindow ref');
-      return;
-    } catch (error) {
-      trayLog('mainAppWindow reveal failed', { error: String(error) });
-      state.mainAppWindow = null;
+    if (state.mainAppWindow && !isTrayHostWindow(state.mainAppWindow)) {
+      try {
+        revealWindow(state.mainAppWindow);
+        trayLog('executeShowMainWindow via mainAppWindow ref');
+        return;
+      } catch (error) {
+        trayLog('mainAppWindow reveal failed', { error: String(error) });
+        state.mainAppWindow = null;
+      }
     }
-  }
 
-  forEachMainWindow((win) => {
-    trayLog('executeShowMainWindow reveal', { href: windowHref(win) });
-    revealWindow(win);
-  });
+    forEachMainWindow((win) => {
+      trayLog('executeShowMainWindow reveal', { href: windowHref(win) });
+      revealWindow(win);
+    });
+  };
+
+  reveal();
+  // A window that was hidden to the tray sometimes ignores the first show
+  // until a later turn of the event loop.
+  for (const delayMs of [50, 300]) {
+    const id = setTimeout(() => {
+      state.pendingTimers = state.pendingTimers.filter((timer) => timer !== id);
+      reveal();
+    }, delayMs);
+    state.pendingTimers.push(id);
+  }
 }
 
 function finishQuit() {
@@ -547,47 +616,137 @@ function dispatchTrayCommand(command) {
   }
 }
 
+function readPendingTrayCommand() {
+  for (const commandPath of trayCommandCandidatePaths()) {
+    try {
+      if (!fs.existsSync(commandPath)) continue;
+      const payload = JSON.parse(fs.readFileSync(commandPath, 'utf8'));
+      return { commandPath, payload };
+    } catch {
+      // try the next location
+    }
+  }
+  return null;
+}
+
 function pollTrayCommands() {
   // Only the main renderer runs start() and owns mainAppWindow.
   if (!state.mainStarted || !hasNw()) return;
 
-  let payload = null;
+  const pending = readPendingTrayCommand();
+  if (!pending?.payload?.command || String(pending.payload.ts) === state.lastCommandTs) return;
 
+  state.lastCommandTs = String(pending.payload.ts);
   try {
-    if (!fs.existsSync(trayCommandPath())) return;
-    payload = JSON.parse(fs.readFileSync(trayCommandPath(), 'utf8'));
-  } catch {
-    return;
-  }
-
-  if (!payload?.command || String(payload.ts) === state.lastCommandTs) return;
-
-  state.lastCommandTs = String(payload.ts);
-  try {
-    fs.unlinkSync(trayCommandPath());
+    fs.unlinkSync(pending.commandPath);
   } catch {
     // ignore
   }
 
-  processTrayCommand(payload.command);
+  processTrayCommand(pending.payload.command);
 }
 
 function showMainWindow() {
   dispatchTrayCommand('show');
 }
 
+function collectArgv() {
+  const values = [];
+  const pushAll = (list) => {
+    if (!list || typeof list[Symbol.iterator] !== 'function') return;
+    for (const item of list) values.push(String(item));
+  };
+  try {
+    pushAll(nw.App.argv);
+  } catch {
+    // ignore
+  }
+  try {
+    pushAll(nw.App.fullArgv);
+  } catch {
+    // ignore
+  }
+  try {
+    pushAll(process.argv);
+  } catch {
+    // ignore
+  }
+  return values;
+}
+
+/** True when this process was started by the OS login entry (--hidden). */
+function launchedHiddenToTray() {
+  return collectArgv().some((arg) => arg === '--hidden' || arg.startsWith('--hidden='));
+}
+
+function isHiddenLaunchCommand(cmdline) {
+  const line = Array.isArray(cmdline) ? cmdline.map(String).join(' ') : String(cmdline || '');
+  return /(?:^|[\s"'=])--hidden(?:\s|"|'|=|$)/.test(line);
+}
+
 /**
- * Chromium single-instance: a second desktop-menu launch does not start a new
- * process — it prints "Opening in existing browser session" and exits. Without
- * App.on('open'), the already-running (often hide-to-tray) window never appears,
- * so the launcher looks broken. Reopen covers macOS dock clicks.
+ * Autostart-to-tray: keep the window off-screen and off the taskbar.
+ * Returns true when this launch should stay in the tray.
+ */
+function applyLaunchVisibility(win) {
+  if (!launchedHiddenToTray()) return false;
+  setSuppressShow(true);
+  if (!win) return true;
+  try {
+    if (typeof win.setShowInTaskbar === 'function') win.setShowInTaskbar(false);
+  } catch {
+    // ignore
+  }
+  try {
+    win.hide();
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
+function bindAppEvent(event, handler) {
+  try {
+    nw.App.on(event, handler);
+    return true;
+  } catch (error) {
+    if (event === 'open') console.error('nw.App.on(open) failed:', error);
+    return false;
+  }
+}
+
+function rebindAppEvent(event, handler) {
+  // Some NW.js builds drop the open listener after a single dispatch.
+  // Re-add it so the next Start menu / Dock / CLI launch still restores.
+  try {
+    if (typeof nw.App.removeListener !== 'function') return;
+    nw.App.removeListener(event, handler);
+  } catch {
+    return;
+  }
+  bindAppEvent(event, handler);
+}
+
+/**
+ * Chromium single-instance: a second launch (Start menu, Dock, Applications,
+ * taskbar pin, or the executable itself) does not start a new process. It
+ * prints "Opening in existing browser session" and exits. App.on('open') is
+ * that signal on Windows and Linux. App.on('reopen') is the macOS dock click.
+ * A --hidden autostart while we are already running must stay in the tray.
  */
 function bindSecondInstanceShow() {
   if (state.secondInstanceBound) return;
   state.secondInstanceBound = true;
 
   const onSecondLaunch = (cmdline) => {
-    trayLog('second-instance launch', { cmdline: String(cmdline || '') });
+    const line = Array.isArray(cmdline) ? cmdline.map(String).join(' ') : String(cmdline || '');
+    trayLog('second-instance launch', { cmdline: line });
+    rebindAppEvent('open', onSecondLaunch);
+    rebindAppEvent('reopen', onSecondLaunch);
+    if (isHiddenLaunchCommand(line)) {
+      trayLog('second-instance hidden autostart — stay in tray');
+      return;
+    }
     try {
       executeShowMainWindow();
     } catch (error) {
@@ -595,17 +754,9 @@ function bindSecondInstanceShow() {
     }
   };
 
-  try {
-    nw.App.on('open', onSecondLaunch);
-  } catch (error) {
-    console.error('nw.App.on(open) failed:', error);
-  }
-  try {
-    // macOS: click dock icon while running
-    nw.App.on('reopen', onSecondLaunch);
-  } catch {
-    // not available on all platforms
-  }
+  bindAppEvent('open', onSecondLaunch);
+  // macOS: click the dock icon, or open the app from Finder, while running.
+  bindAppEvent('reopen', onSecondLaunch);
 }
 
 function quitApp() {
@@ -680,7 +831,7 @@ function buildTrayMenu(autoLaunch) {
   });
 
   const autoLaunchMenuItem = new nw.MenuItem({
-    label: 'Auto-launch app on system login',
+    label: 'Autostart to tray',
     type: 'checkbox',
     checked: !!userPreferences.autoLaunch,
     click: function () {
@@ -757,7 +908,7 @@ function buildTrayMenu(autoLaunch) {
 
   state.menuLabels = [
     'Show OnlyKey App',
-    'Auto-launch app on system login',
+    'Autostart to tray',
     'Automatically check for app updates',
     'Automatically check for firmware updates',
     'Hide to system tray when window is closed',
@@ -767,22 +918,91 @@ function buildTrayMenu(autoLaunch) {
   return settingsMenu;
 }
 
+/**
+ * Login autostart used to open the window (and, on macOS, a visible login
+ * item). Rewrite an already-enabled entry once so the next login stays in
+ * the tray. Never call this from desktop unit tests — the dev execPath can
+ * resolve to a real HKCU Run value.
+ */
+async function adoptHiddenAutostart(autoLaunch, launchPath, appName) {
+  const marker = path.join(tmpDir(), 'autostart-hidden-synced');
+
+  if (osx && !fs.existsSync(marker)) {
+    try {
+      const AutoLaunch = require('auto-launch');
+      const legacy = new AutoLaunch({
+        name: appName,
+        path: launchPath,
+        isHidden: true,
+        mac: { useLaunchAgent: false },
+      });
+      if (await legacy.isEnabled()) {
+        await legacy.disable();
+        await autoLaunch.enable();
+        try {
+          fs.writeFileSync(marker, '1');
+        } catch {
+          // ignore
+        }
+        return;
+      }
+    } catch (error) {
+      console.error('Legacy login-item migration failed:', error);
+    }
+  }
+
+  let enabled = false;
+  try {
+    enabled = !!(await autoLaunch.isEnabled());
+  } catch {
+    return;
+  }
+
+  if (!enabled) {
+    try {
+      if (!fs.existsSync(marker)) fs.writeFileSync(marker, '1');
+    } catch {
+      // ignore
+    }
+    return;
+  }
+
+  if (fs.existsSync(marker)) return;
+
+  try {
+    await autoLaunch.disable();
+    await autoLaunch.enable();
+    fs.writeFileSync(marker, '1');
+  } catch (error) {
+    console.error('Could not update autostart to launch in the tray:', error);
+    try {
+      await autoLaunch.enable();
+    } catch {
+      // leave the previous attempt's error
+    }
+  }
+}
+
 async function initTray() {
   if (state.tray || !trayInitActive()) return;
 
   const appPath = process.execPath;
   const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
+  // Prefer the launcher wrapper when installed under /opt so login restart
+  // goes through the same path as the desktop entry.
+  const launchPath = fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
+    ? path.join(path.dirname(appPath), 'onlykey-launch')
+    : appPath;
   let autoLaunch = null;
   try {
     const AutoLaunch = require('auto-launch');
     autoLaunch = new AutoLaunch({
       name: appName,
-      // Prefer the launcher wrapper when installed under /opt so login restart
-      // goes through the same path as the desktop entry.
-      path: fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
-        ? path.join(path.dirname(appPath), 'onlykey-launch')
-        : appPath,
-      isHidden: !(osx || linux),
+      path: launchPath,
+      // --hidden on Windows/Linux; LaunchAgent ProgramArguments on macOS.
+      // The app honors --hidden by staying in the tray.
+      isHidden: true,
+      mac: { useLaunchAgent: true },
     });
   } catch (error) {
     console.error('AutoLaunch init skipped:', error);
@@ -792,6 +1012,10 @@ async function initTray() {
   // calling remove()/insert() emptied the Linux tray menu (Cinnamon/Mint).
   if (autoLaunch) {
     try {
+      if (!isDesktopTestMode()) {
+        await adoptHiddenAutostart(autoLaunch, launchPath, appName);
+      }
+      if (!trayInitActive()) return;
       const enabled = await autoLaunch.isEnabled();
       if (!trayInitActive()) return;
       userPreferences.autoLaunch = !!enabled;
@@ -911,12 +1135,16 @@ function start() {
   state.mainStarted = true;
   state.stopped = false;
 
+  const hiddenLaunch = launchedHiddenToTray();
   clearTrayArtifacts();
 
   const mainWin = nw.Window.get();
   state.mainAppWindow = mainWin;
+  // clearTrayArtifacts drops suppress-show. Put it back before any focus
+  // handler can paint the window for an autostart-to-tray launch.
+  if (hiddenLaunch) applyLaunchVisibility(mainWin);
   writeMainWindowMarker(mainWin);
-  trayLog('start main window', { href: windowHref(mainWin) });
+  trayLog('start main window', { href: windowHref(mainWin), hiddenLaunch });
 
   bindWindowCloseHandler(mainWin);
   bindSecondInstanceShow();
@@ -1004,6 +1232,8 @@ module.exports = {
   clearTrayArtifacts,
   showMainWindow,
   quitApp,
+  launchedHiddenToTray,
+  applyLaunchVisibility,
   dispatchTrayCommand,
   processTrayCommand,
   bindWindowCloseHandler,

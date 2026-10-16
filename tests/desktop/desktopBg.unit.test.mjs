@@ -8,8 +8,9 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.
 const require = createRequire(import.meta.url);
 const desktopModulePath = path.join(rootDir, 'desktopBg.cjs');
 
-function createNwMock() {
+function createNwMock(options = {}) {
   const listeners = new Map();
+  const appListeners = new Map();
   const win = {
     _onlykeyCloseBound: false,
     isVisible: true,
@@ -67,9 +68,21 @@ function createNwMock() {
     MenuItem,
     App: {
       startPath: rootDir,
-      argv: ['--onlykey-desktop-test'],
+      argv: options.argv || ['--onlykey-desktop-test'],
+      fullArgv: options.fullArgv || [],
       quit: vi.fn(),
-      on: vi.fn(),
+      on: vi.fn((event, callback) => {
+        const list = appListeners.get(event) || [];
+        list.push(callback);
+        appListeners.set(event, list);
+      }),
+      removeListener: vi.fn((event, callback) => {
+        const list = appListeners.get(event) || [];
+        appListeners.set(
+          event,
+          list.filter((fn) => fn !== callback),
+        );
+      }),
     },
   };
 
@@ -77,6 +90,7 @@ function createNwMock() {
     win,
     tray,
     listeners,
+    appListeners,
     menuItems,
     get trayOptions() {
       return trayOptions;
@@ -191,10 +205,12 @@ describe('desktopBg.cjs unit', () => {
     expect(menuItems.map((i) => i.label).filter(Boolean)).toEqual(
       expect.arrayContaining([
         'Show OnlyKey App',
+        'Autostart to tray',
         'Quit OnlyKey App',
         'Hide to system tray when window is closed',
       ]),
     );
+    expect(menuItems.some((i) => i.label === 'Auto-launch app on system login')).toBe(false);
 
     showItem.click();
     // Also exercise the public show API (same as click → dispatchTrayCommand('show')).
@@ -285,6 +301,120 @@ describe('desktopBg.cjs unit', () => {
 
     getAllCallback?.([win]);
     vi.useRealTimers();
+  });
+
+  it('starts in the tray when launched with --hidden', () => {
+    const { win } = createNwMock({ argv: ['--onlykey-desktop-test', '--hidden'] });
+    const desktop = loadDesktopModule();
+    desktop.start();
+
+    expect(desktop.launchedHiddenToTray()).toBe(true);
+    expect(win.hide).toHaveBeenCalled();
+    expect(win.setShowInTaskbar).toHaveBeenCalledWith(false);
+    expect(localStorage.getItem('onlykeySuppressShow')).toBe('1');
+    expect(win.show).not.toHaveBeenCalled();
+  });
+
+  it('registers autostart as a hidden to-tray launch', async () => {
+    const autoLaunchPath = require.resolve('auto-launch');
+    const previous = require.cache[autoLaunchPath];
+    function FakeAutoLaunch(opts) {
+      this.opts = opts;
+      FakeAutoLaunch.instances.push(this);
+      this.isEnabled = vi.fn(() => Promise.resolve(false));
+      this.enable = vi.fn(() => Promise.resolve());
+      this.disable = vi.fn(() => Promise.resolve());
+    }
+    FakeAutoLaunch.instances = [];
+    require.cache[autoLaunchPath] = {
+      id: autoLaunchPath,
+      filename: autoLaunchPath,
+      loaded: true,
+      exports: FakeAutoLaunch,
+    };
+
+    try {
+      createNwMock();
+      const desktop = loadDesktopModule();
+      desktop.start();
+      await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
+
+      expect(FakeAutoLaunch.instances.length).toBeGreaterThan(0);
+      expect(FakeAutoLaunch.instances[0].opts.isHidden).toBe(true);
+      expect(FakeAutoLaunch.instances[0].opts.mac).toEqual({ useLaunchAgent: true });
+      expect(FakeAutoLaunch.instances[0].enable).not.toHaveBeenCalled();
+      expect(FakeAutoLaunch.instances[0].disable).not.toHaveBeenCalled();
+    } finally {
+      if (previous) require.cache[autoLaunchPath] = previous;
+      else delete require.cache[autoLaunchPath];
+    }
+  });
+
+  it('restores a tray-hidden window when the executable is launched again', () => {
+    const { win, listeners, appListeners } = createNwMock();
+    localStorage.setItem('closeToTray', 'true');
+    const desktop = loadDesktopModule();
+    desktop.start();
+
+    listeners.get('close').call(win);
+    expect(localStorage.getItem('onlykeySuppressShow')).toBe('1');
+    win.show.mockClear();
+    win.focus.mockClear();
+
+    const openHandlers = appListeners.get('open');
+    expect(openHandlers?.length).toBeGreaterThan(0);
+    openHandlers[0]('C:\\Program Files\\OnlyKey\\nw.exe');
+
+    expect(localStorage.getItem('onlykeySuppressShow')).toBeNull();
+    expect(win.show).toHaveBeenCalledWith(true);
+    expect(win.focus).toHaveBeenCalled();
+    expect(win.setShowInTaskbar).toHaveBeenCalledWith(true);
+  });
+
+  it('stays in the tray when a second launch is autostart --hidden', () => {
+    const { win, listeners, appListeners } = createNwMock();
+    localStorage.setItem('closeToTray', 'true');
+    const desktop = loadDesktopModule();
+    desktop.start();
+
+    listeners.get('close').call(win);
+    win.show.mockClear();
+    appListeners.get('open')[0]('"C:\\Program Files\\OnlyKey\\nw.exe" --hidden');
+
+    expect(win.show).not.toHaveBeenCalled();
+    expect(localStorage.getItem('onlykeySuppressShow')).toBe('1');
+  });
+
+  it('restores the window when macOS reopens the app from the Dock', () => {
+    const { win, listeners, appListeners } = createNwMock();
+    localStorage.setItem('closeToTray', 'true');
+    const desktop = loadDesktopModule();
+    desktop.start();
+
+    listeners.get('close').call(win);
+    win.show.mockClear();
+    appListeners.get('reopen')[0]();
+
+    expect(win.show).toHaveBeenCalledWith(true);
+    expect(localStorage.getItem('onlykeySuppressShow')).toBeNull();
+  });
+
+  it('command poll restores a hidden window from a launcher show file', async () => {
+    const { win } = createNwMock();
+    win.isVisible = false;
+    const desktop = loadDesktopModule();
+    desktop.start();
+    localStorage.setItem('onlykeySuppressShow', '1');
+
+    const commandPath = path.join(rootDir, 'tmp', 'tray-command.json');
+    fs.mkdirSync(path.dirname(commandPath), { recursive: true });
+    fs.writeFileSync(commandPath, JSON.stringify({ command: 'show', ts: Date.now() }));
+
+    await vi.waitFor(() => {
+      expect(win.show).toHaveBeenCalledWith(true);
+    }, { timeout: 1000 });
+    expect(localStorage.getItem('onlykeySuppressShow')).toBeNull();
+    expect(fs.existsSync(commandPath)).toBe(false);
   });
 
   it('does not touch nw after stop() tears the mock down', async () => {

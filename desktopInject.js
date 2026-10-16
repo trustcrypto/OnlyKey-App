@@ -1,9 +1,33 @@
 // Injected into the main window at document-start (package.json inject_js_start).
+// package.json window.show is false so an autostart-to-tray launch never flashes
+// a window. This script shows the window immediately for every other launch.
 (function () {
   if (typeof nw === 'undefined') return;
 
   var win = nw.Window.get();
   if (!win) return;
+
+  var desktop = null;
+  try {
+    desktop = require('./desktopBg.cjs');
+  } catch {
+    try {
+      var resolvedPath = require('path');
+      desktop = require(resolvedPath.join(nw.App.startPath, 'desktopBg.cjs'));
+    } catch (error2) {
+      console.error('Desktop bootstrap failed:', error2);
+    }
+  }
+
+  // Set suppress-show before the first show. start() clears tray files, then
+  // applies the hidden launch again.
+  if (desktop && typeof desktop.applyLaunchVisibility === 'function') {
+    try {
+      desktop.applyLaunchVisibility(win);
+    } catch {
+      // best-effort
+    }
+  }
 
   var showWin = function () {
     try {
@@ -23,17 +47,5 @@
   win.on('focus', showWin);
   win.on('restore', showWin);
 
-  var desktop;
-  try {
-    desktop = require('./desktopBg.cjs');
-    if (typeof desktop.start === 'function') desktop.start();
-  } catch {
-    try {
-      var resolvedPath = require('path');
-      desktop = require(resolvedPath.join(nw.App.startPath, 'desktopBg.cjs'));
-      if (typeof desktop.start === 'function') desktop.start();
-    } catch (error2) {
-      console.error('Desktop bootstrap failed:', error2);
-    }
-  }
+  if (desktop && typeof desktop.start === 'function') desktop.start();
 })();

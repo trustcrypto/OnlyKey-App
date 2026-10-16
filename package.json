@@ -128,7 +128,7 @@
   "homepage": "https://github.com/trustcrypto/OnlyKey-App#readme",
   "window": {
     "icon": "icon.png",
-    "show": true,
+    "show": false,
     "toolbar": true,
     "width": 1024,
     "height": 768,

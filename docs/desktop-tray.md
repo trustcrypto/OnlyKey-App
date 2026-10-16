@@ -33,9 +33,11 @@ Do **not** pass `title: undefined` into `nw.Tray` — macOS draws that string ne
 ## Current rule
 
 1. `package.json` → `window.inject_js_start: desktopInject.js` calls `desktopBg.cjs` → `start()`.
-2. `start()` clears stale `tmp/tray-*`, binds close-to-tray, calls `initTray()` in the **main renderer**, polls `tmp/tray-command.json` (for tests / fallback).
-3. Tray menu `click` handlers call `dispatchTrayCommand()` → `processTrayCommand()` in the same renderer.
-4. `scripts/start-desktop.mjs` clears tray tmp files before launch and `taskkill`s stale `nw.exe` on exit.
+2. `window.show` is **false**. `desktopInject.js` shows the window at document-start, except an autostart launch (`--hidden`), which stays in the tray. Do not set `show` back to `true` — that flashes a window on login.
+3. `start()` clears stale `tmp/tray-*`, binds close-to-tray, calls `initTray()` in the **main renderer**, polls `tmp/tray-command.json` (for tests / fallback). It also polls `~/.config/OnlyKey/app-tmp/tray-command.json`, which the Linux `onlykey-launch` wrapper writes.
+4. Tray menu `click` handlers call `dispatchTrayCommand()` → `processTrayCommand()` in the same renderer. The autostart checkbox label is **Autostart to tray** (`isHidden: true`, macOS LaunchAgent).
+5. A second launch while the window is hidden (Start menu, Dock, Applications, taskbar pin, CLI — anything that hits the same executable) is Chromium single-instance. `nw.App` `open` (Windows/Linux) and `reopen` (macOS) call `executeShowMainWindow()`. A second `--hidden` autostart does not.
+6. `scripts/start-desktop.mjs` clears tray tmp files before launch and `taskkill`s stale `nw.exe` on exit.
 
 ## Hide-to-tray caveat
 

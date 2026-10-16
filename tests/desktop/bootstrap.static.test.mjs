@@ -8,7 +8,9 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.
 describe('desktop bootstrap static checks', () => {
   it('index.html boots desktopBg from the main window', () => {
     const html = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf8');
-    expect(html).toContain("require(require('path').join(appRoot, 'desktopBg.cjs')).start()");
+    expect(html).toContain("require(require('path').join(appRoot, 'desktopBg.cjs'))");
+    expect(html).toContain('desktopApi.start()');
+    expect(html).toContain('launchedHiddenToTray');
     expect(html).toContain('NW desktop bootstrap');
   });
 
@@ -16,6 +18,7 @@ describe('desktop bootstrap static checks', () => {
     const inject = fs.readFileSync(path.join(rootDir, 'desktopInject.js'), 'utf8');
     expect(inject).toContain('desktopBg.cjs');
     expect(inject).toContain('desktop.start');
+    expect(inject).toContain('applyLaunchVisibility');
   });
 
   it('desktopInject.js prefers a relative require so Finder launches still boot', () => {
@@ -29,6 +32,13 @@ describe('desktop bootstrap static checks', () => {
     expect(plist).not.toContain('com.intel.nw');
   });
 
+  it('linux launcher asks a running instance to show unless autostart is hidden', () => {
+    const launch = fs.readFileSync(path.join(rootDir, 'resources', 'linux', 'onlykey-launch'), 'utf8');
+    expect(launch).toContain('tray-command.json');
+    expect(launch).toContain('--hidden');
+    expect(launch).toContain('request_show');
+  });
+
   it('tray icon asset exists', () => {
     expect(fs.existsSync(path.join(rootDir, 'resources', 'ok-tray-logo.png'))).toBe(true);
   });
@@ -37,6 +47,7 @@ describe('desktop bootstrap static checks', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
     expect(pkg['bg-script']).toBeUndefined();
     expect(pkg.window?.inject_js_start).toBe('desktopInject.js');
+    expect(pkg.window?.show).toBe(false);
     expect(pkg.devDependencies?.nw).toBe('0.104.1');
     expect(pkg.scripts?.['verify:tray']).toBe('node scripts/verify-tray.mjs');
     expect(fs.existsSync(path.join(rootDir, 'desktopBg.cjs'))).toBe(true);
@@ -51,6 +62,7 @@ describe('desktop bootstrap static checks', () => {
     const distIndex = path.join(rootDir, 'dist', 'index.html');
     expect(fs.existsSync(distIndex), 'dist/index.html missing — run npm run build').toBe(true);
     const html = fs.readFileSync(distIndex, 'utf8');
-    expect(html).toContain("require(require('path').join(appRoot, 'desktopBg.cjs')).start()");
+    expect(html).toContain("require(require('path').join(appRoot, 'desktopBg.cjs'))");
+    expect(html).toContain('desktopApi.start()');
   });
 });

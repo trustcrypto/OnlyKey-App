@@ -29,21 +29,6 @@
       if (typeof nw !== 'undefined') {
         try {
           var win = nw.Window.get();
-          var showWin = function () {
-            try {
-              if (localStorage.getItem('onlykeySuppressShow') === '1') return;
-              var fs = require('fs');
-              var path = require('path');
-              if (fs.existsSync(path.join(nw.App.startPath, 'tmp', 'suppress-show.json'))) return;
-            } catch (e) {}
-            if (win.isMinimized && win.restore) win.restore();
-            if (!win.isVisible) win.show(true);
-            win.focus();
-          };
-          showWin();
-          win.on('focus', showWin);
-          win.on('restore', showWin);
-
           var path = require('path');
           var fs = require('fs');
           var appRoot = (function () {
@@ -69,7 +54,23 @@
             }
             return nw.App.startPath;
           })();
-          require(require('path').join(appRoot, 'desktopBg.cjs')).start();
+          var desktopApi = require(require('path').join(appRoot, 'desktopBg.cjs'));
+          if (desktopApi.launchedHiddenToTray && desktopApi.launchedHiddenToTray()) {
+            try { desktopApi.setSuppressShow(true); } catch (e) {}
+          }
+          var showWin = function () {
+            try {
+              if (localStorage.getItem('onlykeySuppressShow') === '1') return;
+              if (fs.existsSync(path.join(nw.App.startPath, 'tmp', 'suppress-show.json'))) return;
+            } catch (e) {}
+            if (win.isMinimized && win.restore) win.restore();
+            if (!win.isVisible) win.show(true);
+            win.focus();
+          };
+          showWin();
+          win.on('focus', showWin);
+          win.on('restore', showWin);
+          desktopApi.start();
 
           if ((nw.App.argv || []).some(function (arg) {
             return arg.indexOf('--devtools') !== -1 || arg.indexOf('--onlykey-tray-debug') !== -1;

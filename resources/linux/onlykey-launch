@@ -13,8 +13,18 @@ APP_TMP="${USER_DATA}/app-tmp"
 
 mkdir -p "${APP_TMP}"
 
-# Drop a show request for the running instance's 50ms command poll (belt+suspenders).
-printf '{"command":"show","ts":%s}\n' "$(date +%s%3N)" > "${APP_TMP}/tray-command.json" 2>/dev/null || true
+# Drop a show request for the running instance's command poll, unless this
+# is an autostart-to-tray launch (--hidden). A fresh process clears the file
+# in start(); an already-running tray instance sees it and restores the UI.
+request_show=1
+for arg in "$@"; do
+  if [ "$arg" = "--hidden" ]; then
+    request_show=0
+  fi
+done
+if [ "$request_show" -eq 1 ]; then
+  printf '{"command":"show","ts":%s}\n' "$(date +%s%3N)" > "${APP_TMP}/tray-command.json" 2>/dev/null || true
+fi
 
 # Stale singleton after a crash blocks launch with "Opening in existing browser session"
 # and no live process. If no nw is alive for this app, clear locks.
