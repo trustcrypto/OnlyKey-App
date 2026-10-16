@@ -35,11 +35,11 @@ import { seedDeviceStore } from '../../test/store';
 
 const available = {
   kind: 'available' as const,
-  currentVersion: '5.7.0',
-  latestVersion: '5.7.1',
+  currentVersion: '6.0.0',
+  latestVersion: '6.0.1',
   platformKey: 'win64' as const,
   remotePackage: {
-    url: 'https://example.com/OnlyKey_5.7.1.exe',
+    url: 'https://example.com/OnlyKey_6.0.1.exe',
     sha256: 'abc',
     size: 3,
   },
@@ -76,7 +76,7 @@ describe('useAppUpdateStore', () => {
   it('starts an auto-check when the pref is turned on', async () => {
     checkAppUpdate.mockResolvedValue({
       kind: 'current',
-      currentVersion: '5.7.0',
+      currentVersion: '6.0.0',
       latestVersion: '5.3.4',
     });
     setAutoCheck(false);
@@ -89,7 +89,7 @@ describe('useAppUpdateStore', () => {
   it('starts an auto-check when the tray pref event turns the flag on', async () => {
     checkAppUpdate.mockResolvedValue({
       kind: 'current',
-      currentVersion: '5.7.0',
+      currentVersion: '6.0.0',
       latestVersion: '5.3.4',
     });
     setAutoCheck(false);
@@ -106,14 +106,14 @@ describe('useAppUpdateStore', () => {
     expect(useAppUpdateStore.getState()).toMatchObject({
       phase: 'available',
       promptVisible: true,
-      latestVersion: '5.7.1',
+      latestVersion: '6.0.1',
     });
   });
 
   it('leaves auto current as idle without a prompt', async () => {
     checkAppUpdate.mockResolvedValue({
       kind: 'current',
-      currentVersion: '5.7.0',
+      currentVersion: '6.0.0',
       latestVersion: '5.3.4',
     });
     await startAutoCheck();
@@ -126,8 +126,8 @@ describe('useAppUpdateStore', () => {
   it('shows up-to-date only for a manual check', async () => {
     checkAppUpdate.mockResolvedValue({
       kind: 'current',
-      currentVersion: '5.7.0',
-      latestVersion: '5.7.0',
+      currentVersion: '6.0.0',
+      latestVersion: '6.0.0',
     });
     await checkNow();
     expect(useAppUpdateStore.getState()).toMatchObject({
@@ -158,8 +158,8 @@ describe('useAppUpdateStore', () => {
   it('downloads after confirm and reaches ready', async () => {
     checkAppUpdate.mockResolvedValue(available);
     downloadAndVerify.mockResolvedValue({
-      destPath: '/tmp/ok-updates/OnlyKey_5.7.1.exe',
-      version: '5.7.1',
+      destPath: '/tmp/ok-updates/OnlyKey_6.0.1.exe',
+      version: '6.0.1',
       sha256: 'abc',
       bytes: 3,
     });
@@ -168,7 +168,7 @@ describe('useAppUpdateStore', () => {
     expect(downloadAndVerify).toHaveBeenCalled();
     expect(useAppUpdateStore.getState()).toMatchObject({
       phase: 'ready',
-      destPath: '/tmp/ok-updates/OnlyKey_5.7.1.exe',
+      destPath: '/tmp/ok-updates/OnlyKey_6.0.1.exe',
       promptVisible: true,
     });
   });

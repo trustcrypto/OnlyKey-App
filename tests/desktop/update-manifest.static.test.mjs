@@ -29,8 +29,8 @@ function shaOf(buf) {
 const sourcePkg = {
   name: 'OnlyKey',
   productName: 'OnlyKey App',
-  version: '5.7.0',
-  version_name: '5.7.0',
+  version: '6.0.0',
+  version_name: '6.0.0',
   description: 'Setup and configure OnlyKey',
   'chromium-args': '--disable-background-timer-throttling',
   window: { inject_js_start: 'desktopInject.js' },
@@ -51,9 +51,9 @@ describe('release.mjs wiring', () => {
 
 describe('inferPlatformFromArtifact / CLI args', () => {
   it('maps installer extensions to node platforms', () => {
-    expect(inferPlatformFromArtifact('OnlyKey_5.7.0.exe')).toBe('win32');
-    expect(inferPlatformFromArtifact('OnlyKey_5.7.0.dmg')).toBe('darwin');
-    expect(inferPlatformFromArtifact('OnlyKey_5.7.0_amd64.deb')).toBe('linux');
+    expect(inferPlatformFromArtifact('OnlyKey_6.0.0.exe')).toBe('win32');
+    expect(inferPlatformFromArtifact('OnlyKey_6.0.0.dmg')).toBe('darwin');
+    expect(inferPlatformFromArtifact('OnlyKey_6.0.0_amd64.deb')).toBe('linux');
     expect(inferPlatformFromArtifact('OnlyKey.bin')).toBeNull();
   });
 
@@ -88,7 +88,7 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     const dir = makeDir();
     dirs.push(dir);
     const body = Buffer.from('onlykey-update-bytes');
-    const file = path.join(dir, 'OnlyKey_5.7.0.exe');
+    const file = path.join(dir, 'OnlyKey_6.0.0.exe');
     fs.writeFileSync(file, body);
     expect(hashFile(file)).toEqual({ sha256: shaOf(body), size: body.byteLength });
   });
@@ -99,18 +99,18 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     const body = Buffer.from('win-artifact');
     const dest = writeFragment(dir, {
       platformKey: 'win64',
-      version: '5.7.0',
-      artifactName: 'OnlyKey_5.7.0.exe',
+      version: '6.0.0',
+      artifactName: 'OnlyKey_6.0.0.exe',
       sha256: shaOf(body),
       size: body.byteLength,
       baseUrl: DEFAULT_UPDATE_BASE_URL,
     });
     const fragment = JSON.parse(fs.readFileSync(dest, 'utf8'));
     expect(fragment).toEqual({
-      version: '5.7.0',
+      version: '6.0.0',
       key: 'win64',
       package: {
-        url: `${DEFAULT_UPDATE_BASE_URL}/OnlyKey_5.7.0.exe`,
+        url: `${DEFAULT_UPDATE_BASE_URL}/OnlyKey_6.0.0.exe`,
         size: body.byteLength,
         sha256: shaOf(body),
       },
@@ -123,15 +123,15 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     const sha = shaOf(Buffer.from('x'));
     writeFragment(dir, {
       platformKey: 'linux64',
-      version: '5.7.0',
-      artifactName: 'OnlyKey_5.7.0_amd64.deb',
+      version: '6.0.0',
+      artifactName: 'OnlyKey_6.0.0_amd64.deb',
       sha256: sha,
       size: 1,
-      baseUrl: 'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/',
+      baseUrl: 'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/',
     });
     const fragment = JSON.parse(fs.readFileSync(path.join(dir, 'linux64.json'), 'utf8'));
     expect(fragment.package.url).toBe(
-      'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/OnlyKey_5.7.0_amd64.deb',
+      'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/OnlyKey_6.0.0_amd64.deb',
     );
   });
 
@@ -142,26 +142,26 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     const lin = Buffer.from('linux');
     writeFragment(dir, {
       platformKey: 'win64',
-      version: '5.7.0',
-      artifactName: 'OnlyKey_5.7.0.exe',
+      version: '6.0.0',
+      artifactName: 'OnlyKey_6.0.0.exe',
       sha256: shaOf(win),
       size: win.byteLength,
       baseUrl: DEFAULT_UPDATE_BASE_URL,
     });
     writeFragment(dir, {
       platformKey: 'linux64',
-      version: '5.7.0',
-      artifactName: 'OnlyKey_5.7.0_amd64.deb',
+      version: '6.0.0',
+      artifactName: 'OnlyKey_6.0.0_amd64.deb',
       sha256: shaOf(lin),
       size: lin.byteLength,
       baseUrl: DEFAULT_UPDATE_BASE_URL,
     });
-    const merged = mergeFragments(dir, { version: '5.7.0', now: '2026-09-11T00:00:00.000Z' });
+    const merged = mergeFragments(dir, { version: '6.0.0', now: '2026-09-11T00:00:00.000Z' });
     expect(Object.keys(merged.packages).sort()).toEqual(['linux64', 'win64']);
     expect(merged.packages.mac64).toBeUndefined();
     expect(merged.packages.win64.sha256).toBe(shaOf(win));
     expect(merged.packages.linux64.sha256).toBe(shaOf(lin));
-    expect(merged.version).toBe('5.7.0');
+    expect(merged.version).toBe('6.0.0');
   });
 
   it('refuses a fragment missing sha256', () => {
@@ -170,12 +170,12 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     fs.writeFileSync(
       path.join(dir, 'win64.json'),
       `${JSON.stringify({
-        version: '5.7.0',
+        version: '6.0.0',
         key: 'win64',
-        package: { url: `${DEFAULT_UPDATE_BASE_URL}/OnlyKey_5.7.0.exe`, size: 1 },
+        package: { url: `${DEFAULT_UPDATE_BASE_URL}/OnlyKey_6.0.0.exe`, size: 1 },
       })}\n`,
     );
-    expect(() => mergeFragments(dir, { version: '5.7.0' })).toThrow(/missing sha256/);
+    expect(() => mergeFragments(dir, { version: '6.0.0' })).toThrow(/missing sha256/);
   });
 
   it('refuses a fragment whose sha256 is not 64 hex chars', () => {
@@ -184,8 +184,8 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     expect(() =>
       writeFragment(dir, {
         platformKey: 'win64',
-        version: '5.7.0',
-        artifactName: 'OnlyKey_5.7.0.exe',
+        version: '6.0.0',
+        artifactName: 'OnlyKey_6.0.0.exe',
         sha256: 'not-a-hash',
         size: 1,
         baseUrl: DEFAULT_UPDATE_BASE_URL,
@@ -200,8 +200,8 @@ describe('hashFile / writeFragment / mergeFragments', () => {
     const stale = Buffer.from('old');
     writeFragment(dir, {
       platformKey: 'win64',
-      version: '5.7.0',
-      artifactName: 'OnlyKey_5.7.0.exe',
+      version: '6.0.0',
+      artifactName: 'OnlyKey_6.0.0.exe',
       sha256: shaOf(current),
       size: current.byteLength,
       baseUrl: DEFAULT_UPDATE_BASE_URL,
@@ -214,7 +214,7 @@ describe('hashFile / writeFragment / mergeFragments', () => {
       size: stale.byteLength,
       baseUrl: DEFAULT_UPDATE_BASE_URL,
     });
-    const merged = mergeFragments(dir, { version: '5.7.0', now: '2026-09-11T00:00:00.000Z' });
+    const merged = mergeFragments(dir, { version: '6.0.0', now: '2026-09-11T00:00:00.000Z' });
     expect(merged.packages.win64).toBeTruthy();
     expect(merged.packages.mac64).toBeUndefined();
   });
@@ -250,12 +250,12 @@ describe('recordReleaseArtifact', () => {
     const dir = makeDir();
     try {
       const body = Buffer.from('installer');
-      const artifact = path.join(dir, 'OnlyKey_5.7.0.exe');
+      const artifact = path.join(dir, 'OnlyKey_6.0.0.exe');
       fs.writeFileSync(artifact, body);
       const lines = [];
       const result = recordReleaseArtifact({
         artifactPath: artifact,
-        version: '5.7.0',
+        version: '6.0.0',
         platform: 'win32',
         releasesDir: dir,
         baseUrl: DEFAULT_UPDATE_BASE_URL,
@@ -266,7 +266,7 @@ describe('recordReleaseArtifact', () => {
       expect(result.key).toBe('win64');
       expect(result.sha256).toBe(shaOf(body));
       const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
-      expect(manifest.packages.win64.url).toBe(`${DEFAULT_UPDATE_BASE_URL}/OnlyKey_5.7.0.exe`);
+      expect(manifest.packages.win64.url).toBe(`${DEFAULT_UPDATE_BASE_URL}/OnlyKey_6.0.0.exe`);
       expect(manifest.packages.win64.sha256).toBe(shaOf(body));
       expect(lines.join('\n')).toMatch(/one-platform manifest is publishable/i);
       expect(lines.join('\n')).toMatch(/does not upload/i);
@@ -279,11 +279,11 @@ describe('recordReleaseArtifact', () => {
   it('hashes a file Authenticode reports Valid and refuses NotSigned', () => {
     const dir = makeDir();
     try {
-      const artifact = path.join(dir, 'OnlyKey_5.7.0.exe');
+      const artifact = path.join(dir, 'OnlyKey_6.0.0.exe');
       fs.writeFileSync(artifact, 'signed-bytes');
       const ok = recordReleaseArtifact({
         artifactPath: artifact,
-        version: '5.7.0',
+        version: '6.0.0',
         platform: 'win32',
         releasesDir: dir,
         requireSigned: true,
@@ -294,7 +294,7 @@ describe('recordReleaseArtifact', () => {
       expect(() =>
         recordReleaseArtifact({
           artifactPath: artifact,
-          version: '5.7.0',
+          version: '6.0.0',
           platform: 'win32',
           releasesDir: dir,
           requireSigned: true,
@@ -338,15 +338,15 @@ describe('buildProductionPackageJson', () => {
   it('uses ONLYKEY_UPDATE_MANIFEST_URL over repo manifest.json', () => {
     stashEnv();
     process.env.ONLYKEY_UPDATE_MANIFEST_URL =
-      'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/manifest.json';
+      'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/manifest.json';
     process.env.ONLYKEY_UPDATE_BASE_URL =
-      'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging';
+      'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging';
     const pkg = buildProductionPackageJson(sourcePkg);
     expect(pkg.manifestUrl).toBe(
-      'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/manifest.json',
+      'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/manifest.json',
     );
     expect(pkg.updateBaseUrl).toBe(
-      'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/',
+      'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/',
     );
   });
 });

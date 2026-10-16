@@ -1,11 +1,11 @@
-# OnlyKey App 5.7 — App auto-update (check, alert, preference, apply)
+# OnlyKey App 6.0 — App auto-update (check, alert, preference, apply)
 
 | Field | Value |
 |-------|--------|
 | **Author** | TBD |
 | **Date** | 2026-09-10 |
 | **Status** | Accepted (rev 5) |
-| **Product** | OnlyKey desktop app 5.7.0 (`release/5.7.0-modern-rewrite`) |
+| **Product** | OnlyKey desktop app 6.0.0 (`release/6.0.0-modern-rewrite`) |
 | **Scope** | **App** updates (NW.js desktop installer). Not firmware. |
 | **Runtime** | NW.js **0.104.1** (pinned; do not bump — see `docs/desktop-tray.md`) |
 
@@ -13,9 +13,9 @@
 
 ## Overview
 
-5.7 already ships a partial app updater (`src/desktop/updater.ts`): it can fetch an HTTPS manifest, compare semver, require SHA-256, write the installer to a temp dir, and reveal it in the OS file manager. That path is not product-complete. Auto-check is gated on `userPreferences.autoUpdate` (tree today defaults **off** — a 5.7-only interlock that silently opts out 5.6 upgraders who never wrote the key), uses a blocking `window.confirm`, swallows failures at `initDesktop`, never launches the installer, and still points `manifestUrl` at the live **5.6/5.3.4** S3 channel — a channel whose published `manifest.json` has **no `sha256`**. `docs/FEATURE_PARITY_5.6.md` is stale on several of these facts.
+6.0 already ships a partial app updater (`src/desktop/updater.ts`): it can fetch an HTTPS manifest, compare semver, require SHA-256, write the installer to a temp dir, and reveal it in the OS file manager. That path is not product-complete. Auto-check is gated on `userPreferences.autoUpdate` (tree today defaults **off** — a 6.0-only interlock that silently opts out 5.6 upgraders who never wrote the key), uses a blocking `window.confirm`, swallows failures at `initDesktop`, never launches the installer, and still points `manifestUrl` at the live **5.6/5.3.4** S3 channel — a channel whose published `manifest.json` has **no `sha256`**. `docs/FEATURE_PARITY_5.6.md` is stale on several of these facts.
 
-This design brings the user-facing flow to 5.6 parity (startup check, notify, opt-out, download, **default auto-check on when the key is absent**) and then defines a 5.7 **apply** step that 5.6 never actually shipped: re-hash the on-disk installer, launch it as a **detached** OS process (NSIS `.exe` / `open` `.dmg` / `xdg-open` `.deb`), wait for the `'spawn'` event, then quit so files can be replaced. **`nw-autoupdater` stays out.** Protocol and I/O stay in typed desktop modules with injectable `AppUpdateIo`; React only renders a non-blocking dialog and a Tools settings card. The release script gains a real remote-manifest emitter (per-platform `url` + `size` + `sha256`). Safety is **fail-closed integrity** (HTTPS + required SHA-256 + path prefix), not an opt-out default. The production channel stays the existing 5.6 S3 `latest/` prefix; `release.mjs` writes local files and prints an upload reminder — no AWS credentials in this repo.
+This design brings the user-facing flow to 5.6 parity (startup check, notify, opt-out, download, **default auto-check on when the key is absent**) and then defines a 6.0 **apply** step that 5.6 never actually shipped: re-hash the on-disk installer, launch it as a **detached** OS process (NSIS `.exe` / `open` `.dmg` / `xdg-open` `.deb`), wait for the `'spawn'` event, then quit so files can be replaced. **`nw-autoupdater` stays out.** Protocol and I/O stay in typed desktop modules with injectable `AppUpdateIo`; React only renders a non-blocking dialog and a Tools settings card. The release script gains a real remote-manifest emitter (per-platform `url` + `size` + `sha256`). Safety is **fail-closed integrity** (HTTPS + required SHA-256 + path prefix), not an opt-out default. The production channel stays the existing 5.6 S3 `latest/` prefix; `release.mjs` writes local files and prints an upload reminder — no AWS credentials in this repo.
 
 ---
 
@@ -33,9 +33,9 @@ The following is **assumed from** trustcrypto/OnlyKey-App `master` (`app/scripts
 6. **In-place unpack/swap is commented out** (`updater.unpack`, `restartToSwap`). Production 5.6 ends with `nw.Shell.showItemInFolder(updateFile)` — “until installer bugs are fixed.”
 7. Failures: red `App update failed` in the sidebar for 5 seconds, plus `console.error`. No rethrow to crash the UI.
 
-So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw` replacement. 5.7 must match that user-visible check/notify/opt-out/download story, then add a verified installer launch (the missing “apply”) without reintroducing `nw-autoupdater` (unfixed decompress).
+So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw` replacement. 6.0 must match that user-visible check/notify/opt-out/download story, then add a verified installer launch (the missing “apply”) without reintroducing `nw-autoupdater` (unfixed decompress).
 
-### What 5.7 already has (verified in tree, 2026-09-10)
+### What 6.0 already has (verified in tree, 2026-09-10)
 
 | Piece | Current truth |
 |-------|----------------|
@@ -50,7 +50,7 @@ So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw
 | Release | `scripts/release.mjs` produces `releases/OnlyKey_<ver>.exe` / `.dmg` / `_amd64.deb`. **Does not emit a remote update manifest.** |
 | Firmware analog | `firmwareCheck.ts` + `promptFirmwareUpdateIfNeeded` in `useDeviceStore.ts`: session-gated (`ok-fw-checked-session`), still `window.confirm`, then `activeTab = 'firmware'`. App updater is **not** session-gated today. |
 | Confirm UI | `src/components/dialogs/ConfirmDialog.tsx` exists (`z-[200]`); updater and firmware still use blocking `confirm()`. |
-| App version in UI | 5.6 wrote `#appVersion` (assumed). 5.7 `App.tsx` does **not** show the desktop app version. |
+| App version in UI | 5.6 wrote `#appVersion` (assumed). 6.0 `App.tsx` does **not** show the desktop app version. |
 | Hide-to-tray | `bindCloseToTrayOrQuit` / `desktopBg.cjs` set `localStorage.onlykeySuppressShow = '1'` and `tmp/suppress-show.json`. `ensureWindowVisible` is a **no-op** when that flag is set. Real restore is `desktopBg.cjs` `revealWindow()` (clears suppress, `setShowInTaskbar(true)`, `show(true)`). |
 | Bootstrap order | `src/main.tsx` **renders `<App />` first**, then dynamically imports `initDesktop`. |
 | NSIS | `resources/windows/installer.nsi`: `InstallDir $PROGRAMFILES\OnlyKey`, `RMDir /r $INSTDIR` then `File /r`. **No `RequestExecutionLevel`.** First page is directory (`MUI_PAGE_DIRECTORY`), then instfiles. |
@@ -60,7 +60,7 @@ So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw
 **Stale claims in `docs/FEATURE_PARITY_5.6.md` (must be corrected in PR 5):**
 
 - Desktop table says updater has “No hash/signature” — **false**; SHA-256 is required in `updater.ts`.
-- Same table and residual risk #2 say `autoUpdate` “Defaults **on**” — **false in today’s tree** (both TS and CJS default it **off**). That 5.7-only default-off silently opts out 5.6 upgraders who never wrote the key. This design restores **default on** (K5) so FEATURE_PARITY’s “defaults on” becomes true again after PR 2.
+- Same table and residual risk #2 say `autoUpdate` “Defaults **on**” — **false in today’s tree** (both TS and CJS default it **off**). That 6.0-only default-off silently opts out 5.6 upgraders who never wrote the key. This design restores **default on** (K5) so FEATURE_PARITY’s “defaults on” becomes true again after PR 2.
 - Residual risk #2 “unsigned” conflates updater-protocol integrity (hash, present) with OS code-signing (Authenticode/notarization, still absent).
 - Firmware row still says download-latest has “no SHA-256 check” — **false** in tree; `firmwareDownload.ts` verifies GitHub digest / release-body hash via `normalizeSha256`. Out of this feature’s runtime scope; PR 5’s doc edit must not leave that lie (fix the sentence or mark “not this PR”).
 
@@ -69,8 +69,8 @@ So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw
 1. Blocking `confirm()` on the main renderer can freeze HID/setup work and is invisible or surprising when the window is hidden-to-tray (`docs/desktop-tray.md`).
 2. Auto-check failures are silent; hash mismatch is a security event the user never sees.
 3. “Apply” is reveal-in-folder only; NSIS `RMDir /r $INSTDIR` cannot replace a running `nw.exe`.
-4. No manual “Check now”, so a user who opted out (or who was silently defaulted off by today’s 5.7 tree) has no in-app path.
-5. Publishing 5.7 with auto-update on against today’s S3 manifest is a no-op (`5.3.4 < 5.7.0`) and would fail closed on missing `sha256` if a higher unhashed version were ever published.
+4. No manual “Check now”, so a user who opted out (or who was silently defaulted off by today’s 6.0 tree) has no in-app path.
+5. Publishing 6.0 with auto-update on against today’s S3 manifest is a no-op (`5.3.4 < 6.0.0`) and would fail closed on missing `sha256` if a higher unhashed version were ever published.
 6. `FEATURE_PARITY_5.6.md` will mislead a release reviewer if left as-is.
 7. Tray CJS and React TS each cache `autoUpdate` differently; a Tools checkbox and the tray glyph will desync without a read-through + menu rebuild.
 8. Default package read uses `nw.App.startPath`, which is `/` on Finder-launched macOS (`docs/desktop-tray.md`), so a packaged Mac auto-check can throw before it hits the channel.
@@ -108,7 +108,7 @@ So “5.6 apply” in the wild is **download + show folder**, not silent `app.nw
 
 ```mermaid
 flowchart LR
-  subgraph today [5.7 today]
+  subgraph today [6.0 today]
     A1[initDesktop] --> A2{autoUpdate?}
     A2 -->|no| A3[return]
     A2 -->|yes| A4[fetch manifest]
@@ -119,7 +119,7 @@ flowchart LR
     A6 -->|throw| A9[console.error only]
   end
 
-  subgraph target [5.7 target]
+  subgraph target [6.0 target]
     B1[AppUpdateHost mount] --> B2{autoUpdate AND not session-checked?}
     B2 -->|no| B3[idle — manual still allowed]
     B2 -->|yes| B4[checkAppUpdate — no download]
@@ -139,7 +139,7 @@ flowchart LR
 
 **Decision:** Keep the existing comment’s constraint. Fetch the installer as bytes (or stream-to-disk), hash it, write a regular OS installer, hand it to the OS.
 
-**Rationale:** `nw-autoupdater` is the reason 5.7 already forked away; it pulls an unfixed decompress path. Silently replacing `app.nw` while NW is running is the same class of bug 5.6 disabled in production (assumed). The artifacts we already build are a full NSIS/DMG/deb — those are the apply mechanism.
+**Rationale:** `nw-autoupdater` is the reason 6.0 already forked away; it pulls an unfixed decompress path. Silently replacing `app.nw` while NW is running is the same class of bug 5.6 disabled in production (assumed). The artifacts we already build are a full NSIS/DMG/deb — those are the apply mechanism.
 
 ### K2 — Check does not download; download does not apply
 
@@ -197,14 +197,14 @@ Do **not** wait for a device to be connected — searching overlay may be up. St
 
 ### K5 — Respect 5.6 auto-update preference; code default **on** when the key is absent
 
-**Decision (final):** 5.6 defaulted `autoUpdate` **on** when `localStorage.autoUpdate` was absent, and persisted the tray checkbox in that same key. Today’s 5.7 tree defaults **off** when absent — that **silently opts out** 5.6 upgraders who never toggled the item (key never written). Restore 5.6 continuity:
+**Decision (final):** 5.6 defaulted `autoUpdate` **on** when `localStorage.autoUpdate` was absent, and persisted the tray checkbox in that same key. Today’s 6.0 tree defaults **off** when absent — that **silently opts out** 5.6 upgraders who never toggled the item (key never written). Restore 5.6 continuity:
 
 1. If `localStorage.autoUpdate` is `'true'` or `'false'`, **honor it**. Never overwrite a stored choice. No migration that turns `'false'` back on.
-2. If the key is **absent**, treat it as **true** (5.6 default). Fresh 5.7 installs also default **on**.
-3. Flip `DEFAULTS.autoUpdate` / `userPreferences.cjs` `defaultForKey('autoUpdate')` to **`true`** in **PR 2** (with the UI work). Not gated on naming an S3 owner. Not gated on a hashed 5.7 object existing.
-4. Integrity stays fail-closed, so default-on is safe against today’s unhashed 5.3.4 S3 object: remote `5.3.4 < 5.7.0` → `kind: 'current'`, no download. A newer manifest without `sha256` throws `missing-sha256` and does **not** GET the installer.
+2. If the key is **absent**, treat it as **true** (5.6 default). Fresh 6.0 installs also default **on**.
+3. Flip `DEFAULTS.autoUpdate` / `userPreferences.cjs` `defaultForKey('autoUpdate')` to **`true`** in **PR 2** (with the UI work). Not gated on naming an S3 owner. Not gated on a hashed 6.0 object existing.
+4. Integrity stays fail-closed, so default-on is safe against today’s unhashed 5.3.4 S3 object: remote `5.3.4 < 6.0.0` → `kind: 'current'`, no download. A newer manifest without `sha256` throws `missing-sha256` and does **not** GET the installer.
 5. Channel publish stays the existing 5.6 path: `s3://onlykey-app/releases/latest/manifest.json` plus per-OS installers. `release.mjs` writes local files and prints an upload reminder. **Do not** add AWS credentials to this repo. **Do not** invent a new publisher role as a product blocker for check/alert/apply. Whoever already publishes 5.6 artifacts uploads the new objects the same way.
-6. PR 5 does **not** flip the pref default (already true). PR 5 is: upload the hashed 5.7 manifest to `latest/`, record a Windows smoke (macOS/Linux noted), correct `FEATURE_PARITY_5.6.md`, tick “App update against a real 5.7 HTTPS manifest (with integrity).”
+6. PR 5 does **not** flip the pref default (already true). PR 5 is: upload the hashed 6.0 manifest to `latest/`, record a Windows smoke (macOS/Linux noted), correct `FEATURE_PARITY_5.6.md`, tick “App update against a real 6.0 HTTPS manifest (with integrity).”
 7. Tray label stays **“Automatically check for app updates.”** Manual Check now on Tools still ignores the pref (always allowed).
 
 **Rationale:** Preference continuity is the product requirement. The safety interlock is SHA-256-required + HTTPS + path prefix, not an opt-out default that changes 5.6 users’ behavior.
@@ -253,15 +253,15 @@ No interval: 5.6 had none (assumed); this is a config app, not an always-on daem
 
 Do **not** add a “This computer” row to device Preferences (`setTypeSpeed`, layouts, wipe mode). That tab `return null` without a device and would be read as a device pref. Dual surfaces also widen the tray/React desync (K7). **Q4, decided:** Tools + tray only. No Preferences tab row. No “tray only.”
 
-### K10 — 5.6 ↔ 5.7 channel coexistence
+### K10 — 5.6 ↔ 6.0 channel coexistence
 
-**Decision:** Keep the production URL `https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json`. Extra JSON fields (`sha256`) are ignored by 5.6 `nw-autoupdater` (assumed). When we publish a 5.7.x manifest:
+**Decision:** Keep the production URL `https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json`. Extra JSON fields (`sha256`) are ignored by 5.6 `nw-autoupdater` (assumed). When we publish a 6.0.x manifest:
 
 - 5.6 clients with auto-update on will see a newer version, download the installer, and **show in folder** (their production apply). That is the upgrade ramp.
-- 5.7 clients against the **current** 5.3.4 object: `compareSemver('5.3.4','5.7.0') < 0` → `kind: 'current'`. Missing `sha256` is only fatal if we would download.
-- 5.7 clients against a newer manifest **without** `sha256`: check returns throw `missing-sha256` (no installer GET). Closed-fail.
+- 6.0 clients against the **current** 5.3.4 object: `compareSemver('5.3.4','6.0.0') < 0` → `kind: 'current'`. Missing `sha256` is only fatal if we would download.
+- 6.0 clients against a newer manifest **without** `sha256`: check returns throw `missing-sha256` (no installer GET). Closed-fail.
 
-Do **not** put 5.7-only keys that would make 5.6 `readRemoteManifest` throw. Stick to `{ version, packages: { win64|mac64|linux64: { url, size, sha256 } } }` plus optional unused fields (`name`, `productName`, `publishedAt`).
+Do **not** put 6.0-only keys that would make 5.6 `readRemoteManifest` throw. Stick to `{ version, packages: { win64|mac64|linux64: { url, size, sha256 } } }` plus optional unused fields (`name`, `productName`, `publishedAt`).
 
 Staging: pack-time `ONLYKEY_UPDATE_MANIFEST_URL` (and matching `ONLYKEY_UPDATE_BASE_URL` for artifact links) override `manifest.json`. Default remains the live S3 URL.
 
@@ -999,7 +999,7 @@ App: {
 
 ### `compareSemver` note
 
-Current implementation splits on `[.+-]`, so `5.7.0` and `5.7.0-beta` compare **equal**. Production tags are `x.y.z`. PR 1: add a test documenting this; optional tiny fix — compare numeric core first, then treat a pre-release as **less** than the same core without a pre-release. Do not invent full semver. Do not treat a lower remote (`5.3.4` vs `5.7.0`) as an update.
+Current implementation splits on `[.+-]`, so `6.0.0` and `6.0.0-beta` compare **equal**. Production tags are `x.y.z`. PR 1: add a test documenting this; optional tiny fix — compare numeric core first, then treat a pre-release as **less** than the same core without a pre-release. Do not invent full semver. Do not treat a lower remote (`5.3.4` vs `6.0.0`) as an update.
 
 ---
 
@@ -1007,27 +1007,27 @@ Current implementation splits on `[.+-]`, so `5.7.0` and `5.7.0-beta` compare **
 
 ### Remote manifest (S3 / staging)
 
-Target document, replacing the live 5.3.4 object **only when PR 4+5 are done**. `size` is optional progress metadata (5.7 emitter may write `fs.stat` bytes; 5.6 published rounded MB). Clients **must not** require `byteLength === size`. Example values are illustrative:
+Target document, replacing the live 5.3.4 object **only when PR 4+5 are done**. `size` is optional progress metadata (6.0 emitter may write `fs.stat` bytes; 5.6 published rounded MB). Clients **must not** require `byteLength === size`. Example values are illustrative:
 
 ```json
 {
   "name": "OnlyKey",
   "productName": "OnlyKey App",
-  "version": "5.7.0",
+  "version": "6.0.0",
   "publishedAt": "2026-09-10T00:00:00.000Z",
   "packages": {
     "win64": {
-      "url": "https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_5.7.0.exe",
+      "url": "https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_6.0.0.exe",
       "size": 70123456,
       "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     },
     "mac64": {
-      "url": "https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_5.7.0.dmg",
+      "url": "https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_6.0.0.dmg",
       "size": 110123456,
       "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     },
     "linux64": {
-      "url": "https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_5.7.0_amd64.deb",
+      "url": "https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_6.0.0_amd64.deb",
       "size": 67123456,
       "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
     }
@@ -1037,9 +1037,9 @@ Target document, replacing the live 5.3.4 object **only when PR 4+5 are done**. 
 
 Filenames **must** match `scripts/release.mjs`:
 
-- Windows: `${name}_${version}.exe` → `OnlyKey_5.7.0.exe`
-- macOS: `${name}_${version}.dmg` → `OnlyKey_5.7.0.dmg` (live 5.3.4 used `OnlyKey.App.5.3.4.dmg`; do not revive that)
-- Linux: `${name}_${version}_amd64.deb` → `OnlyKey_5.7.0_amd64.deb`
+- Windows: `${name}_${version}.exe` → `OnlyKey_6.0.0.exe`
+- macOS: `${name}_${version}.dmg` → `OnlyKey_6.0.0.dmg` (live 5.3.4 used `OnlyKey.App.5.3.4.dmg`; do not revive that)
+- Linux: `${name}_${version}_amd64.deb` → `OnlyKey_6.0.0_amd64.deb`
 
 Platform keys stay `win64` / `mac64` / `linux64`. There is no `win32` / `darwin` key.
 
@@ -1049,7 +1049,7 @@ Already written by `buildProductionPackageJson`:
 
 ```json
 {
-  "version": "5.7.0",
+  "version": "6.0.0",
   "manifestUrl": "https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json"
 }
 ```
@@ -1057,8 +1057,8 @@ Already written by `buildProductionPackageJson`:
 Override at pack time:
 
 ```text
-ONLYKEY_UPDATE_MANIFEST_URL=https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/manifest.json
-ONLYKEY_UPDATE_BASE_URL=https://s3.amazonaws.com/onlykey-app/releases/5.7-staging
+ONLYKEY_UPDATE_MANIFEST_URL=https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/manifest.json
+ONLYKEY_UPDATE_BASE_URL=https://s3.amazonaws.com/onlykey-app/releases/6.0-staging
 ```
 
 `buildProductionPackageJson` must read `process.env.ONLYKEY_UPDATE_MANIFEST_URL` **before** `manifest.json`. If `ONLYKEY_UPDATE_BASE_URL` is set, also write `updateBaseUrl` (trailing slash normalized).
@@ -1082,9 +1082,9 @@ No schema migration. Boolean parsing stays `getBoolean` (`'false'` is false; any
 
 ```text
 releases/
-  OnlyKey_5.7.0.exe
-  OnlyKey_5.7.0.dmg
-  OnlyKey_5.7.0_amd64.deb
+  OnlyKey_6.0.0.exe
+  OnlyKey_6.0.0.dmg
+  OnlyKey_6.0.0_amd64.deb
   update-manifest.d/
     win64.json
     mac64.json
@@ -1141,14 +1141,14 @@ Tests for this live in `tests/desktop/release-packaging.static.test.mjs` (alread
 ### A6 — Blocking `confirm()` like 5.6 and like firmware
 
 - **Pros:** Zero new UI.
-- **Cons:** Blocks HID; hidden-window miss; covers PIN; 5.7 already has `ConfirmDialog`.
+- **Cons:** Blocks HID; hidden-window miss; covers PIN; 6.0 already has `ConfirmDialog`.
 - **Rejected for app updates.**
 
 ### A7 — Interval polling (6 h / 24 h)
 
 - **Pros:** Long-lived tray sessions would see a release without relaunch.
 - **Cons:** 5.6 did not (assumed); hide-to-tray throttling.
-- **Rejected for 5.7.**
+- **Rejected for 6.0.**
 
 ### A8 — Call `ensureWindowVisible` to restore hide-to-tray
 
@@ -1170,7 +1170,7 @@ Tests for this live in `tests/desktop/release-packaging.static.test.mjs` (alread
 | Truncated / swapped installer at download | High | Required SHA-256; unlink |
 | Swapped installer in tmpdir before Install now | High | Re-hash in `applyAppUpdate`; `assertSafeUpdatePath`; unlink |
 | Manifest without hash (today’s 5.3.4 object) | High if we downloaded it | Refuse download (`missing-sha256`) |
-| Auto-update on against unhashed channel | Medium | Remote `5.3.4 < 5.7.0` → `kind: 'current'`, no download; newer without `sha256` → `missing-sha256`, no GET |
+| Auto-update on against unhashed channel | Medium | Remote `5.3.4 < 6.0.0` → `kind: 'current'`, no download; newer without `sha256` → `missing-sha256`, no GET |
 | Prompt during PIN / restore | Medium | Defer modal while `isWorking` **or** `isConnected && isLocked`; refuse `applyUpdate` while `isWorking` |
 | Silent apply / zip unpack | High | Not implemented; user confirms Download and Install now |
 | Compromised OnlyKey S3 prefix | High | Hash does not help if attacker sets both bytes and `sha256`. Residual: OS code-signing, bucket IAM |
@@ -1191,9 +1191,9 @@ No metrics backend exists. Stay on `console`:
 | Event | Level | Example |
 |-------|--------|---------|
 | Auto-check skipped (pref/session) | omit | — |
-| Manifest fetched, no update | `info` | `App update: 5.7.0 is current (remote 5.7.0)` |
-| Update available | `info` | `App update: 5.7.1 available (have 5.7.0)` |
-| `unavailable missing-platform` | `error` | `App update: no package for linux64 in 5.7.1` |
+| Manifest fetched, no update | `info` | `App update: 6.0.0 is current (remote 6.0.0)` |
+| Update available | `info` | `App update: 6.0.1 available (have 6.0.0)` |
+| `unavailable missing-platform` | `error` | `App update: no package for linux64 in 6.0.1` |
 | Download complete | `info` | existing `Downloaded update to ${destPath}` |
 | Apply re-hash + spawn | `info` | `App update: launching installer ${destPath}` |
 | Any `AppUpdateError` | `error` | `App update: sha256-mismatch` |
@@ -1218,10 +1218,10 @@ Do not add alerts. QA uses the dialog + Tools status line.
    - macOS: `'spawn'` of `open` on the DMG then quit (Q3)
    - Record SmartScreen / unsigned DMG / pkexec notes (manual; not CI). Launch block → show-in-folder still works (Q2).
 3. Promote the same objects to `s3://onlykey-app/releases/latest/` (overwrite, matching 5.6).
-4. **PR 5** does **not** flip the pref default. Record a Windows smoke (macOS/Linux noted). Update `FEATURE_PARITY_5.6.md` (updater rows **and** firmware-download hash sentence). Residual risk #2 becomes “channel exercised; OS signatures still N/A.” Tick “App update against a real 5.7 HTTPS manifest (with integrity).”
+4. **PR 5** does **not** flip the pref default. Record a Windows smoke (macOS/Linux noted). Update `FEATURE_PARITY_5.6.md` (updater rows **and** firmware-download hash sentence). Residual risk #2 becomes “channel exercised; OS signatures still N/A.” Tick “App update against a real 6.0 HTTPS manifest (with integrity).”
 5. **Rollback:**
    - Client: uncheck tray pref (immediate; next auto-check skipped).
-   - Channel: restore previous `manifest.json`. 5.7 clients see `latest <= current` and idle. Do **not** publish a *lower* version expecting a downgrade.
+   - Channel: restore previous `manifest.json`. 6.0 clients see `latest <= current` and idle. Do **not** publish a *lower* version expecting a downgrade.
    - Bad installer: publish a new **higher** version; do not mutate `sha256` of a version string already in the wild.
 
 Feature flag is the pref itself. No compile-time flag beyond `typeof nw`.
@@ -1230,10 +1230,10 @@ Feature flag is the pref itself. No compile-time flag beyond `typeof nw`.
 
 ```bash
 # pack
-set ONLYKEY_UPDATE_MANIFEST_URL=https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/manifest.json
-set ONLYKEY_UPDATE_BASE_URL=https://s3.amazonaws.com/onlykey-app/releases/5.7-staging
+set ONLYKEY_UPDATE_MANIFEST_URL=https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/manifest.json
+set ONLYKEY_UPDATE_BASE_URL=https://s3.amazonaws.com/onlykey-app/releases/6.0-staging
 npm run release
-# upload releases/OnlyKey_5.7.0.exe and the merged manifest to that prefix
+# upload releases/OnlyKey_6.0.0.exe and the merged manifest to that prefix
 ```
 
 Dev/HMR (`npm run dev:server`) uses repo `package.json`, which has **no** `manifestUrl` today; `updater.ts` already falls back to `DEFAULT_MANIFEST_URL`. To test without touching prod, pass `readPackage` in unit tests (already) or temporarily set `manifestUrl` in repo `package.json` (do not commit a staging URL).
@@ -1249,7 +1249,7 @@ Dev/HMR (`npm run dev:server`) uses repo `package.json`, which has **no** `manif
 | UAC No after quit | Medium | Ready-dialog copy; old files remain; Start Menu works |
 | Linux `xdg-open` no-op (exit 0) | Medium | Cannot detect; copy includes `destPath`; show-folder fallback only on spawn **error** |
 | macOS Gatekeeper / unsigned DMG / MOTW | Medium | Residual; file remains; smoke note |
-| Live 5.3.4 manifest left as prod | Low | 5.7 vs 5.3.4 is `kind: 'current'`; no download without sha256 |
+| Live 5.3.4 manifest left as prod | Low | 6.0 vs 5.3.4 is `kind: 'current'`; no download without sha256 |
 | One-platform manifest alarms other OSes | Low | Auto: `unavailable` idle; manual: `missing-platform` copy |
 | S3 regional redirect vs `redirect: 'error'` | Medium | Operator note; fail closed; optional HTTPS-only redirect to allowed prefix |
 | Tray / Tools pref desync | Medium | CJS read-through; `autoCheck` mirror; `notifyAutoUpdatePrefChanged` → `loadDesktopShell().refreshTrayMenu` |
@@ -1281,7 +1281,7 @@ Keep existing cases; retarget them at the split API.
 | 8 | HTTP 404/502 manifest | `http-manifest` |
 | 9 | `redirect: 'error'` simulated | refused |
 | 10 | equal version | `{ kind: 'current' }` |
-| 11 | remote older (`5.3.4` vs `5.7.0`) | `{ kind: 'current' }` |
+| 11 | remote older (`5.3.4` vs `6.0.0`) | `{ kind: 'current' }` |
 | 12 | newer, missing platform package | `{ kind: 'unavailable', code: 'missing-platform' }` — **does not throw** |
 | 13 | newer, no `sha256` | throw `missing-sha256` (no GET of the installer) |
 | 14 | user/store does not call download | no second fetch |
@@ -1295,10 +1295,10 @@ Keep existing cases; retarget them at the split API.
 | 20 | `applyAppUpdate` darwin/linux | spawn `open` / `xdg-open` args; then quit |
 | 21 | spawn rejects | `apply-failed`; `showInFolder`; no quit |
 | 22 | `showUpdateInFolder` | `showInFolder` only; no quit |
-| 23 | `compareSemver` 5.7.1 > 5.7.0 > 5.6.9 | existing |
+| 23 | `compareSemver` 6.0.1 > 6.0.0 > 5.6.9 | existing |
 | 24 | `normalizeSha256('SHA256:AbC')` | existing |
 | 25 | overlapping `checkAppUpdate` while inFlight (store) | second call ignored |
-| 26 | `readLocalAppPackage()` with `nw.App.startPath === '/'`, no `io.readPackage`, `nw.App.manifest = { version: '5.7.0', version_name: '5.7.0', manifestUrl: DEFAULT_MANIFEST_URL }` | `{ version: '5.7.0', manifestUrl: DEFAULT_MANIFEST_URL }`; **does not** `require('/package.json')` |
+| 26 | `readLocalAppPackage()` with `nw.App.startPath === '/'`, no `io.readPackage`, `nw.App.manifest = { version: '6.0.0', version_name: '6.0.0', manifestUrl: DEFAULT_MANIFEST_URL }` | `{ version: '6.0.0', manifestUrl: DEFAULT_MANIFEST_URL }`; **does not** `require('/package.json')` |
 | 26b | same `startPath: '/'`, empty `nw.App.manifest`, `io.resolveAppRoot` returns a fixture dir with `package.json` | reads version + `manifestUrl` from that file |
 
 ### Store (`src/store/__tests__/useAppUpdateStore.test.ts`)
@@ -1358,7 +1358,7 @@ Optional smoke only if cheap: packaged `package.json` contains `manifestUrl`. **
 
 No remaining product blockers for PRs 1–4. PR 5 is operations (upload the hashed manifest the same way 5.6 was published), not an open product question.
 
-1. **S3 publisher + 5.6 preference continuity (Q1, decided).** Keep `s3://onlykey-app/releases/latest/manifest.json` and the existing human publish path. `release.mjs` writes local files and prints an upload reminder. No AWS credentials in this repo. No new publisher role as a product blocker. **Honor stored `localStorage.autoUpdate` `'true'`/`'false'`; absent key = `true` (5.6 default).** Today’s 5.7 default-off would silently opt out 5.6 upgraders who never wrote the key. Safety is fail-closed integrity (no download without sha256), not pref-off. See K5.
+1. **S3 publisher + 5.6 preference continuity (Q1, decided).** Keep `s3://onlykey-app/releases/latest/manifest.json` and the existing human publish path. `release.mjs` writes local files and prints an upload reminder. No AWS credentials in this repo. No new publisher role as a product blocker. **Honor stored `localStorage.autoUpdate` `'true'`/`'false'`; absent key = `true` (5.6 default).** Today’s 6.0 default-off would silently opt out 5.6 upgraders who never wrote the key. Safety is fail-closed integrity (no download without sha256), not pref-off. See K5.
 2. **Signing (Q2, decided).** Authenticode / Apple notarization / Debian `debsig` are **not** part of the updater protocol. Residual release risk only. Show-in-folder fallback still works if SmartScreen or Gatekeeper blocks launch.
 3. **macOS quit (Q3, decided).** **Yes — quit after `'spawn'` of `open` on the DMG**, same apply model as Windows/Linux (K3). Drag-to-Applications can replace `OnlyKey App.app`.
 4. **In-app surface (Q4, decided).** **Tools + tray only.** No Preferences tab row. No “tray only.”
@@ -1373,7 +1373,7 @@ No remaining product blockers for PRs 1–4. PR 5 is operations (upload the hash
 - `src/desktop/appRoot.ts` — shared `resolveAppRoot` (PR 1) / `loadDesktopShell` (PR 2)
 - `src/types/nw.d.ts` — `App.manifest` version / `manifestUrl` / `updateBaseUrl` (PR 1)
 - `src/main.tsx` — renders App, then `import('./desktop/initDesktop')`
-- `src/desktop/userPreferences.ts`, `userPreferences.cjs` — tree today defaults `autoUpdate` **false** (5.7-only); this design restores **true** when the key is absent (K5 / PR 2). CJS `closeToTray` already re-reads.
+- `src/desktop/userPreferences.ts`, `userPreferences.cjs` — tree today defaults `autoUpdate` **false** (6.0-only); this design restores **true** when the key is absent (K5 / PR 2). CJS `closeToTray` already re-reads.
 - `desktopBg.cjs` `buildTrayMenu` / `revealWindow` / `setSuppressShow` / `assignTrayMenu`
 - `src/desktop/firmwareCheck.ts`, `src/store/useDeviceStore.ts` `promptFirmwareUpdateIfNeeded` — session gate analog
 - `src/desktop/firmwareDownload.ts` — HTTPS + SHA-256; imports `normalizeSha256`
@@ -1425,9 +1425,9 @@ Incremental, independently reviewable. Do not merge Install-now into PR 2. Code 
 
 ### PR 5 — Channel smoke + parity doc
 
-- **Title:** `docs: record 5.7 app-update channel smoke and FEATURE_PARITY`
+- **Title:** `docs: record 6.0 app-update channel smoke and FEATURE_PARITY`
 - **Files:** `docs/FEATURE_PARITY_5.6.md`
 - **Depends on:** PRs 1–4 **and** a recorded smoke test against the published HTTPS manifest (Windows required; macOS/Linux noted). Upload uses the existing 5.6 S3 `latest/` path — operations, not a product gate on naming a new owner.
-- **Description:** Does **not** flip `autoUpdate` (already `true` from PR 2). Correct FEATURE_PARITY updater rows; fix or explicitly “not this PR” the firmware-download “no SHA-256” sentence. Tick “App update against a real 5.7 HTTPS manifest (with integrity).” Residual risk #2: channel exercised; OS signatures still N/A.
+- **Description:** Does **not** flip `autoUpdate` (already `true` from PR 2). Correct FEATURE_PARITY updater rows; fix or explicitly “not this PR” the firmware-download “no SHA-256” sentence. Tick “App update against a real 6.0 HTTPS manifest (with integrity).” Residual risk #2: channel exercised; OS signatures still N/A.
 
 **Suggested merge order:** 1 → 2 → 3, with 4 in parallel after 1. 5 last (ops smoke + docs).

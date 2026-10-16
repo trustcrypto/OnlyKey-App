@@ -6,6 +6,7 @@ Thumbs.db
 /dist/
 /releases/
 /tmp/
+/local/
 /coverage/
 /playwright-report/
 /test-results/

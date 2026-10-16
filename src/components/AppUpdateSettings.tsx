@@ -11,9 +11,9 @@ import { PrefRow } from './ui/PrefRow';
 
 function appVersion(): string {
   try {
-    return readLocalAppPackage().version || '5.7.0';
+    return readLocalAppPackage().version || '6.0.0';
   } catch {
-    return '5.7.0';
+    return '6.0.0';
   }
 }
 

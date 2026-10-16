@@ -23,7 +23,7 @@ import {
 
 const MANIFEST = 'https://example.com/manifest.json';
 const S3_MANIFEST = 'https://s3.amazonaws.com/onlykey-app/releases/latest/manifest.json';
-const S3_PKG = 'https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_5.7.1.exe';
+const S3_PKG = 'https://s3.amazonaws.com/onlykey-app/releases/latest/OnlyKey_6.0.1.exe';
 
 function hashBody(bytes: number[]): { body: Uint8Array; hash: string } {
   const body = new Uint8Array(bytes);
@@ -71,20 +71,20 @@ function packagesFor(url: string, sha256Hex: string, size?: number) {
 }
 
 function readPkg(manifestUrl = MANIFEST) {
-  return () => ({ version: '5.7.0', manifestUrl });
+  return () => ({ version: '6.0.0', manifestUrl });
 }
 
 describe('updater helpers', () => {
   it('compares semver', () => {
-    expect(compareSemver('5.7.1', '5.7.0')).toBe(1);
-    expect(compareSemver('5.7.0', '5.7.0')).toBe(0);
-    expect(compareSemver('5.6.9', '5.7.0')).toBe(-1);
+    expect(compareSemver('6.0.1', '6.0.0')).toBe(1);
+    expect(compareSemver('6.0.0', '6.0.0')).toBe(0);
+    expect(compareSemver('5.6.9', '6.0.0')).toBe(-1);
   });
 
   it('treats a pre-release as less than the same numeric core', () => {
-    expect(compareSemver('5.7.0-beta', '5.7.0')).toBe(-1);
-    expect(compareSemver('5.7.0', '5.7.0-beta')).toBe(1);
-    expect(compareSemver('v5.7.0-beta', '5.7.0-beta')).toBe(0);
+    expect(compareSemver('6.0.0-beta', '6.0.0')).toBe(-1);
+    expect(compareSemver('6.0.0', '6.0.0-beta')).toBe(1);
+    expect(compareSemver('v6.0.0-beta', '6.0.0-beta')).toBe(0);
   });
 
   it('accepts only https URLs', () => {
@@ -104,8 +104,8 @@ describe('updater helpers', () => {
     expect(updateUrlPrefix(S3_MANIFEST)).toBe(
       'https://s3.amazonaws.com/onlykey-app/releases/latest/',
     );
-    expect(updateUrlPrefix(S3_MANIFEST, 'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging')).toBe(
-      'https://s3.amazonaws.com/onlykey-app/releases/5.7-staging/',
+    expect(updateUrlPrefix(S3_MANIFEST, 'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging')).toBe(
+      'https://s3.amazonaws.com/onlykey-app/releases/6.0-staging/',
     );
   });
 
@@ -133,15 +133,15 @@ describe('readLocalAppPackage', () => {
   it('uses io.readPackage as the test seam', () => {
     expect(
       readLocalAppPackage({
-        readPackage: () => ({ version: '5.7.0', manifestUrl: MANIFEST, updateBaseUrl: 'https://example.com/' }),
+        readPackage: () => ({ version: '6.0.0', manifestUrl: MANIFEST, updateBaseUrl: 'https://example.com/' }),
       }),
     ).toEqual({
-      version: '5.7.0',
+      version: '6.0.0',
       manifestUrl: MANIFEST,
       updateBaseUrl: 'https://example.com/',
     });
-    expect(readLocalAppPackage({ readPackage: () => ({ version_name: '5.7.0' }) })).toEqual({
-      version: '5.7.0',
+    expect(readLocalAppPackage({ readPackage: () => ({ version_name: '6.0.0' }) })).toEqual({
+      version: '6.0.0',
       manifestUrl: DEFAULT_MANIFEST_URL,
       updateBaseUrl: undefined,
     });
@@ -152,8 +152,8 @@ describe('readLocalAppPackage', () => {
       App: {
         startPath: '/',
         manifest: {
-          version: '5.7.0',
-          version_name: '5.7.0',
+          version: '6.0.0',
+          version_name: '6.0.0',
           manifestUrl: DEFAULT_MANIFEST_URL,
         },
       },
@@ -165,7 +165,7 @@ describe('readLocalAppPackage', () => {
       resolveAppRoot: () => '/',
     });
     expect(pkg).toEqual({
-      version: '5.7.0',
+      version: '6.0.0',
       manifestUrl: DEFAULT_MANIFEST_URL,
       updateBaseUrl: undefined,
     });
@@ -178,15 +178,15 @@ describe('readLocalAppPackage', () => {
       fs.writeFileSync(
         path.join(dir, 'package.json'),
         JSON.stringify({
-          version: '5.7.0',
-          version_name: '5.7.0',
+          version: '6.0.0',
+          version_name: '6.0.0',
           manifestUrl: DEFAULT_MANIFEST_URL,
         }),
       );
       vi.stubGlobal('nw', { App: { startPath: '/', manifest: {} } });
       const pkg = readLocalAppPackage({ resolveAppRoot: () => dir });
       expect(pkg).toEqual({
-        version: '5.7.0',
+        version: '6.0.0',
         manifestUrl: DEFAULT_MANIFEST_URL,
         updateBaseUrl: undefined,
       });
@@ -200,7 +200,7 @@ describe('checkAppUpdate', () => {
   beforeEach(() => {
     localStorage.clear();
     sessionStorage.clear();
-    vi.stubGlobal('nw', { App: { startPath: '/tmp', manifest: { version_name: '5.7.0' } } });
+    vi.stubGlobal('nw', { App: { startPath: '/tmp', manifest: { version_name: '6.0.0' } } });
   });
 
   it('skips when autoUpdate is off and force is false (1)', async () => {
@@ -213,7 +213,7 @@ describe('checkAppUpdate', () => {
   });
 
   it('fetches when force is true even if the pref is off (2)', async () => {
-    const fetchFn = vi.fn(async () => jsonRes({ version: '5.7.0', packages: {} }));
+    const fetchFn = vi.fn(async () => jsonRes({ version: '6.0.0', packages: {} }));
     const result = await checkAppUpdate(
       { fetchFn: fetchFn as never, readPackage: readPkg() },
       { force: true },
@@ -232,7 +232,7 @@ describe('checkAppUpdate', () => {
 
   it('skips a second auto-check in the same session (4)', async () => {
     userPreferences.autoUpdate = true;
-    const fetchFn = vi.fn(async () => jsonRes({ version: '5.7.0', packages: {} }));
+    const fetchFn = vi.fn(async () => jsonRes({ version: '6.0.0', packages: {} }));
     const io = { fetchFn: fetchFn as never, readPackage: readPkg() };
     await checkAppUpdate(io);
     fetchFn.mockClear();
@@ -246,7 +246,7 @@ describe('checkAppUpdate', () => {
 
   it('hits the network on force even with a session key (5)', async () => {
     sessionStorage.setItem(APP_UPDATE_SESSION_KEY, '1');
-    const fetchFn = vi.fn(async () => jsonRes({ version: '5.7.0', packages: {} }));
+    const fetchFn = vi.fn(async () => jsonRes({ version: '6.0.0', packages: {} }));
     const result = await checkAppUpdate(
       { fetchFn: fetchFn as never, readPackage: readPkg() },
       { force: true },
@@ -258,7 +258,7 @@ describe('checkAppUpdate', () => {
   it('refuses a non-HTTPS manifest (6)', async () => {
     await expect(
       checkAppUpdate({
-        readPackage: () => ({ version: '5.7.0', manifestUrl: 'http://evil.example/manifest.json' }),
+        readPackage: () => ({ version: '6.0.0', manifestUrl: 'http://evil.example/manifest.json' }),
       }, { force: true }),
     ).rejects.toMatchObject({ code: 'not-https' });
   });
@@ -267,7 +267,7 @@ describe('checkAppUpdate', () => {
     const { hash } = hashBody([1]);
     const fetchFn = vi.fn(async () =>
       jsonRes({
-        version: '5.7.1',
+        version: '6.0.1',
         packages: packagesFor('https://example.com/OnlyKey.exe', hash, 1),
       }),
     );
@@ -280,7 +280,7 @@ describe('checkAppUpdate', () => {
 
     fetchFn.mockResolvedValueOnce(
       jsonRes({
-        version: '5.7.1',
+        version: '6.0.1',
         packages: packagesFor('https://s3.amazonaws.com/other-bucket/malware.exe', hash, 1),
       }) as never,
     );
@@ -293,7 +293,7 @@ describe('checkAppUpdate', () => {
 
     fetchFn.mockResolvedValueOnce(
       jsonRes({
-        version: '5.7.1',
+        version: '6.0.1',
         packages: packagesFor(
           'https://evil.s3.amazonaws.com/onlykey-app/releases/latest/x.exe',
           hash,
@@ -315,7 +315,7 @@ describe('checkAppUpdate', () => {
       {
         fetchFn: vi.fn(async () =>
           jsonRes({
-            version: '5.7.1',
+            version: '6.0.1',
             packages: packagesFor(S3_PKG, hash, 3),
           }),
         ) as never,
@@ -325,7 +325,7 @@ describe('checkAppUpdate', () => {
     );
     expect(result).toMatchObject({
       kind: 'available',
-      latestVersion: '5.7.1',
+      latestVersion: '6.0.1',
       remotePackage: { url: S3_PKG, sha256: hash, size: 3 },
     });
   });
@@ -343,7 +343,7 @@ describe('checkAppUpdate', () => {
   });
 
   it('fetches the manifest with redirect: error (9)', async () => {
-    const fetchFn = vi.fn(async () => jsonRes({ version: '5.7.0', packages: {} }));
+    const fetchFn = vi.fn(async () => jsonRes({ version: '6.0.0', packages: {} }));
     await checkAppUpdate({ fetchFn: fetchFn as never, readPackage: readPkg() }, { force: true });
     expect(fetchFn).toHaveBeenCalledWith(
       MANIFEST,
@@ -354,12 +354,12 @@ describe('checkAppUpdate', () => {
   it('treats an equal version as current (10)', async () => {
     const result = await checkAppUpdate(
       {
-        fetchFn: vi.fn(async () => jsonRes({ version: '5.7.0', packages: {} })) as never,
+        fetchFn: vi.fn(async () => jsonRes({ version: '6.0.0', packages: {} })) as never,
         readPackage: readPkg(),
       },
       { force: true },
     );
-    expect(result).toEqual({ kind: 'current', currentVersion: '5.7.0', latestVersion: '5.7.0' });
+    expect(result).toEqual({ kind: 'current', currentVersion: '6.0.0', latestVersion: '6.0.0' });
   });
 
   it('treats an older remote as current (11)', async () => {
@@ -370,13 +370,13 @@ describe('checkAppUpdate', () => {
       },
       { force: true },
     );
-    expect(result).toEqual({ kind: 'current', currentVersion: '5.7.0', latestVersion: '5.3.4' });
+    expect(result).toEqual({ kind: 'current', currentVersion: '6.0.0', latestVersion: '5.3.4' });
   });
 
   it('returns unavailable when the platform package is missing (12)', async () => {
     const result = await checkAppUpdate(
       {
-        fetchFn: vi.fn(async () => jsonRes({ version: '5.7.1', packages: {} })) as never,
+        fetchFn: vi.fn(async () => jsonRes({ version: '6.0.1', packages: {} })) as never,
         readPackage: readPkg(),
         platform: () => 'win32',
       },
@@ -385,15 +385,15 @@ describe('checkAppUpdate', () => {
     expect(result).toEqual({
       kind: 'unavailable',
       code: 'missing-platform',
-      currentVersion: '5.7.0',
-      latestVersion: '5.7.1',
+      currentVersion: '6.0.0',
+      latestVersion: '6.0.1',
     });
   });
 
   it('throws missing-sha256 without GET of the installer (13)', async () => {
     const fetchFn = vi.fn(async () =>
       jsonRes({
-        version: '5.7.1',
+        version: '6.0.1',
         packages: packagesFor('https://example.com/OnlyKey.exe', ''),
       }),
     );
@@ -455,7 +455,7 @@ describe('checkAppUpdate', () => {
         {
           fetchFn: vi.fn(async () =>
             jsonRes({
-              version: '5.7.1',
+              version: '6.0.1',
               packages: packagesFor('http://example.com/OnlyKey.exe', hash, 1),
             }),
           ) as never,
@@ -469,7 +469,7 @@ describe('checkAppUpdate', () => {
       {
         fetchFn: vi.fn(async () =>
           jsonRes({
-            version: '5.7.1',
+            version: '6.0.1',
             packages: packagesFor('https://example.com/OnlyKey.exe', hash, 1),
           }),
         ) as never,
@@ -486,7 +486,7 @@ describe('downloadAndVerify', () => {
   const { body, hash } = hashBody([9, 8, 7]);
 
   beforeEach(() => {
-    vi.stubGlobal('nw', { App: { startPath: '/tmp', manifest: { version_name: '5.7.0' } } });
+    vi.stubGlobal('nw', { App: { startPath: '/tmp', manifest: { version_name: '6.0.0' } } });
   });
 
   it('does not fetch the installer when checkAppUpdate returns available (14)', async () => {
@@ -495,7 +495,7 @@ describe('downloadAndVerify', () => {
       {
         fetchFn: vi.fn(async () =>
           jsonRes({
-            version: '5.7.1',
+            version: '6.0.1',
             packages: packagesFor('https://example.com/OnlyKey.exe', hash, 3),
           }),
         ) as never,
@@ -510,7 +510,7 @@ describe('downloadAndVerify', () => {
   it('throws http-package on HTTP 502 (15)', async () => {
     await expect(
       downloadAndVerify(
-        '5.7.1',
+        '6.0.1',
         { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 3 },
         {
           fetchFn: vi.fn(async () => ({ ok: false, status: 502 })) as never,
@@ -526,7 +526,7 @@ describe('downloadAndVerify', () => {
     const unlink = vi.fn();
     const onProgress = vi.fn();
     const result = await downloadAndVerify(
-      '5.7.1',
+      '6.0.1',
       { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 67_000_000 },
       {
         fetchFn: vi.fn(async () => ({
@@ -553,7 +553,7 @@ describe('downloadAndVerify', () => {
     const unlink = vi.fn();
     await expect(
       downloadAndVerify(
-        '5.7.1',
+        '6.0.1',
         { url: 'https://example.com/OnlyKey.exe', sha256: 'deadbeef', size: 3 },
         {
           fetchFn: vi.fn(async () => binRes(body)) as never,
@@ -571,8 +571,8 @@ describe('downloadAndVerify', () => {
     const written: Array<{ path: string; data: Uint8Array }> = [];
     const onProgress = vi.fn();
     const result = await downloadAndVerify(
-      '5.7.1',
-      { url: 'https://example.com/OnlyKey_5.7.1.exe', sha256: hash, size: 3 },
+      '6.0.1',
+      { url: 'https://example.com/OnlyKey_6.0.1.exe', sha256: hash, size: 3 },
       {
         fetchFn: vi.fn(async () => binRes(body)) as never,
         readPackage: readPkg(),
@@ -583,7 +583,7 @@ describe('downloadAndVerify', () => {
     );
     expect(written).toHaveLength(1);
     expect(written[0].data).toEqual(body);
-    expect(result).toMatchObject({ version: '5.7.1', bytes: 3, sha256: hash });
+    expect(result).toMatchObject({ version: '6.0.1', bytes: 3, sha256: hash });
     expect(onProgress).toHaveBeenCalledWith(3, 3);
   });
 
@@ -592,8 +592,8 @@ describe('downloadAndVerify', () => {
     const onProgress = vi.fn();
     const chunks = [new Uint8Array([9]), new Uint8Array([8, 7])];
     const result = await downloadAndVerify(
-      '5.7.1',
-      { url: 'https://example.com/OnlyKey_5.7.1.exe', sha256: hash, size: 3 },
+      '6.0.1',
+      { url: 'https://example.com/OnlyKey_6.0.1.exe', sha256: hash, size: 3 },
       {
         fetchFn: vi.fn(async () => streamBinRes(chunks)) as never,
         readPackage: readPkg(),
@@ -611,24 +611,24 @@ describe('downloadAndVerify', () => {
 
   it('refuses non-HTTPS and off-prefix package URLs before fetch', async () => {
     await expect(
-      downloadAndVerify('5.7.1', { url: 'http://example.com/OnlyKey.exe', sha256: hash }, { readPackage: readPkg() }),
+      downloadAndVerify('6.0.1', { url: 'http://example.com/OnlyKey.exe', sha256: hash }, { readPackage: readPkg() }),
     ).rejects.toMatchObject({ code: 'not-https' });
     await expect(
       downloadAndVerify(
-        '5.7.1',
+        '6.0.1',
         { url: 'https://evil.example/OnlyKey.exe', sha256: hash },
         { readPackage: readPkg() },
       ),
     ).rejects.toMatchObject({ code: 'host-not-allowed' });
     await expect(
-      downloadAndVerify('5.7.1', { url: 'https://example.com/OnlyKey.exe', sha256: '' }, { readPackage: readPkg() }),
+      downloadAndVerify('6.0.1', { url: 'https://example.com/OnlyKey.exe', sha256: '' }, { readPackage: readPkg() }),
     ).rejects.toMatchObject({ code: 'missing-sha256' });
   });
 
   it('maps fetch, arrayBuffer, and write failures to AppUpdateError', async () => {
     await expect(
       downloadAndVerify(
-        '5.7.1',
+        '6.0.1',
         { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 3 },
         {
           fetchFn: vi.fn(async () => {
@@ -641,7 +641,7 @@ describe('downloadAndVerify', () => {
 
     await expect(
       downloadAndVerify(
-        '5.7.1',
+        '6.0.1',
         { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 3 },
         {
           fetchFn: vi.fn(async () => ({
@@ -658,7 +658,7 @@ describe('downloadAndVerify', () => {
 
     await expect(
       downloadAndVerify(
-        '5.7.1',
+        '6.0.1',
         { url: 'https://example.com/OnlyKey.exe', sha256: hash, size: 3 },
         {
           fetchFn: vi.fn(async () => binRes(body)) as never,
@@ -678,8 +678,8 @@ describe('downloadAndVerify', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ok-dl-'));
     try {
       const result = await downloadAndVerify(
-        '5.7.1',
-        { url: 'https://example.com/OnlyKey_5.7.1.exe', sha256: hash, size: 3 },
+        '6.0.1',
+        { url: 'https://example.com/OnlyKey_6.0.1.exe', sha256: hash, size: 3 },
         {
           fetchFn: vi.fn(async () => binRes(body)) as never,
           readPackage: readPkg(),

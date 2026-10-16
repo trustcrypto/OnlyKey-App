@@ -29,8 +29,8 @@ describe('AppUpdateHost', () => {
     useAppUpdateStore.setState({
       phase: 'available',
       promptVisible: true,
-      latestVersion: '5.7.1',
-      currentVersion: '5.7.0',
+      latestVersion: '6.0.1',
+      currentVersion: '6.0.0',
     });
     renderWithProviders(<AppUpdateHost />);
     expect(screen.getByTestId('app-update-dialog')).toBeInTheDocument();
@@ -41,8 +41,8 @@ describe('AppUpdateHost', () => {
     useAppUpdateStore.setState({
       phase: 'available',
       promptVisible: true,
-      latestVersion: '5.7.1',
-      currentVersion: '5.7.0',
+      latestVersion: '6.0.1',
+      currentVersion: '6.0.0',
     });
     renderWithProviders(<AppUpdateHost />);
     expect(screen.queryByTestId('app-update-dialog')).not.toBeInTheDocument();
@@ -53,8 +53,8 @@ describe('AppUpdateHost', () => {
     useAppUpdateStore.setState({
       phase: 'available',
       promptVisible: true,
-      latestVersion: '5.7.1',
-      currentVersion: '5.7.0',
+      latestVersion: '6.0.1',
+      currentVersion: '6.0.0',
     });
     renderWithProviders(<AppUpdateHost />);
     expect(screen.queryByTestId('app-update-dialog')).not.toBeInTheDocument();

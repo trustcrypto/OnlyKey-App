@@ -80,7 +80,7 @@ const App: React.FC = () => {
         <div className="sidebar-status" data-testid="sidebar-status">
           <div className="sidebar-status-row" data-testid="app-version">
             <span>App</span>
-            <span>v5.7.0</span>
+            <span>v6.0.0</span>
           </div>
           <div className="sidebar-status-row">
             <span>Status</span>

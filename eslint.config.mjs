@@ -38,7 +38,7 @@ export default tseslint.config(
     rules: {
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-      // Existing 5.7 patterns: typed EventEmitter merge, NW `require()`,
+      // Existing app patterns: typed EventEmitter merge, NW `require()`,
       // and in-render setup helpers. Tighten these in a dedicated pass.
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-require-imports': 'off',

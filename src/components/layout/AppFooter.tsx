@@ -2,7 +2,7 @@ import React from 'react';
 import { useDeviceStore } from '../../store/useDeviceStore';
 import { connectedDeviceLabel } from '../../data/deviceProduct';
 
-const APP_VERSION = '5.7.0';
+const APP_VERSION = '6.0.0';
 
 const AppFooter: React.FC = () => {
   const {

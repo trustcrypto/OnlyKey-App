@@ -1,5 +1,5 @@
 /**
- * Release packaging for OnlyKey App 5.7
+ * Release packaging for OnlyKey App 6.0
  *
  * Usage (on the target OS):
  *   npm run release

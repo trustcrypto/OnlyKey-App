@@ -5,7 +5,7 @@
  *
  *   npm run release
  *   # sign in place (same filename: OnlyKey_<ver>.exe / .dmg / _amd64.deb)
- *   npm run update-manifest -- --artifact releases/OnlyKey_5.7.0.exe
+ *   npm run update-manifest -- --artifact releases/OnlyKey_6.0.0.exe
  *
  * Writes `releases/update-manifest.d/<win64|mac64|linux64>.json` and merges
  * same-version fragments into `releases/manifest.json`. A one-platform file is
@@ -69,7 +69,7 @@ export function platformPackageKey(platform = process.platform) {
   return null;
 }
 
-/** Infer node platform from the installer filename (`OnlyKey_5.7.0.exe` → win32). */
+/** Infer node platform from the installer filename (`OnlyKey_6.0.0.exe` → win32). */
 export function inferPlatformFromArtifact(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.exe') return 'win32';

@@ -41,7 +41,6 @@ npm run release      # OS-specific installer; run on the target OS
 - `scripts/` — start, release, tray verify
 - `resources/` — icons, NSIS, udev, macOS plist
 - `docs/desktop-tray.md` — tray architecture; read before changing tray/window code
-- `docs/FEATURE_PARITY_5.6.md` — 5.6 vs 5.7 product checklist
 
 ## Constraints
 

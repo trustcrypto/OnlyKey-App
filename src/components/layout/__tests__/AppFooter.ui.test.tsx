@@ -18,7 +18,7 @@ describe('AppFooter', () => {
       recentMessages: ['UNLOCKEDv2.1.0-prod', 'older-one', 'older-two'],
     });
     renderWithProviders(<AppFooter />);
-    expect(screen.getByText(/App v5\.7\.0/)).toBeInTheDocument();
+    expect(screen.getByText(/App v6\.0\.0/)).toBeInTheDocument();
     expect(screen.getByText('OnlyKey v2.1.0-prod')).toBeInTheDocument();
     expect(screen.queryByText(/classic/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/UNLOCKEDv2\.1\.0-prod/).length).toBeGreaterThan(0);
