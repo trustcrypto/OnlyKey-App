@@ -900,6 +900,8 @@ it('should timeout if hardware does not respond', async () => {
     await device.setDerivedChallengeMode(1);
     await device.setStoredChallengeMode(1);
     await device.setHmacChallengeMode(1);
+    await device.setWebAgentDeriveMode(2);
+    await device.setWebcryptPolicy(1);
     await device.setModKeyMode(1);
     await device.setBackupKeyMode(1);
     await device.setLockout(5);

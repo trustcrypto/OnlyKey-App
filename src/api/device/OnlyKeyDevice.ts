@@ -1158,6 +1158,21 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
     );
   }
 
+  public async setWebAgentDeriveMode(mode: number): Promise<void> {
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.WEB_AGENT_DERIVE_MODE, [mode], 10000,
+      this.matchPrefText('web and agent derived key mode'),
+    );
+  }
+
+  /** Field 31: bit 0 lets the web app use stored keys, bit 1 turns off the FIDO2 extension. */
+  public async setWebcryptPolicy(policy: number): Promise<void> {
+    await this.sendRequest(
+      MessageID.OKSETSLOT, 'XX', FieldID.WEBCRYPT_POLICY, [policy], 10000,
+      this.matchPrefText('webcrypt policy'),
+    );
+  }
+
   public async setModKeyMode(mode: number): Promise<void> {
     await this.sendRequest(
       MessageID.OKSETSLOT, 'XX', FieldID.MODKEY_MODE, [mode], 10000,

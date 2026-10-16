@@ -41,6 +41,8 @@ const FIELD_CONFIRMATIONS: Partial<Record<number, string>> = {
   [FieldID.STORED_CHALLENGE_MODE]: 'Successfully set stored key challenge mode',
   [FieldID.HMAC_CHALLENGE_MODE]: 'Successfully set HMAC Challenge Mode',
   [FieldID.MODKEY_MODE]: 'Successfully set Sysadmin Mode',
+  [FieldID.WEB_AGENT_DERIVE_MODE]: 'Successfully set web and agent derived key mode',
+  [FieldID.WEBCRYPT_POLICY]: 'Successfully set webcrypt policy',
   [FieldID.BACKUPKEYMODE]: 'Successfully set Backup Key Mode',
   [FieldID.YUBIAUTH]: 'Successfully set AES Key',
   [FieldID.SEC_PROFILE_MODE]: 'Successfully set 2nd profile mode',

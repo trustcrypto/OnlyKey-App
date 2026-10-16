@@ -835,6 +835,35 @@ html.light .help-tip-link:hover .help-tip-icon {
   gap: 0.65rem;
 }
 
+.pref-choice-group {
+  width: 100%;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  border: 0;
+}
+
+.pref-choice-group legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.3rem;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ok-text);
+}
+
+.pref-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  width: 100%;
+  color: var(--ok-text-secondary);
+  cursor: pointer;
+}
+
 .pref-row-hint {
   margin: 0.35rem 0 0;
   font-size: 0.8125rem;

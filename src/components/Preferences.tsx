@@ -4,10 +4,54 @@ import { KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABELS, WIPE_MODE_FULL } from '../api
 import { SYSADMIN_MODE_PREF_HINT } from '../data/configMode';
 import { TOOLTIPS } from '../data/tooltips';
 import { CautionButton, SetButton } from './ui/forms';
+import { HelpTip } from './ui/HelpTip';
 import { PrefRow } from './ui/PrefRow';
 import { PseudoTabBar, PseudoTabPanel } from './ui/PseudoTabs';
 
 type PrefTab = 'standard' | 'advanced';
+
+type Tip = { href?: string; text: string };
+type Choice = { value: number; label: string; tooltip?: Tip };
+
+// 0 = challenge code, 1 = button press, 2 = no press. Release firmware refuses
+// 2 for fields 21 and 22, so only field 30 offers it.
+const CODE_OR_PRESS: Choice[] = [
+  { value: 0, label: 'Challenge Code (enter 3 digits)' },
+  { value: 1, label: 'Button Press (tap any button)' },
+];
+const WEB_AGENT_CHOICES: Choice[] = [
+  ...CODE_OR_PRESS,
+  { value: 2, label: 'None (no confirmation) - for unattended agents', tooltip: TOOLTIPS.webAgentNoInput },
+];
+
+const ChoiceGroup: React.FC<{
+  legend: string;
+  name: string;
+  value: number;
+  onChange: (value: number) => void;
+  choices: Choice[];
+  tooltip?: Tip;
+}> = ({ legend, name, value, onChange, choices, tooltip }) => (
+  <fieldset className="pref-choice-group">
+    <legend>
+      {legend}
+      {tooltip && <HelpTip href={tooltip.href} tooltip={tooltip.text} />}
+    </legend>
+    {choices.map((c) => (
+      <label key={c.value} className="pref-choice">
+        <input
+          type="radio"
+          name={name}
+          checked={value === c.value}
+          onChange={() => onChange(c.value)}
+          className="ok-control"
+        />
+        {c.label}
+        {c.tooltip && <HelpTip href={c.tooltip.href} tooltip={c.tooltip.text} />}
+      </label>
+    ))}
+  </fieldset>
+);
 
 const Preferences: React.FC = () => {
   const { device } = useDeviceStore();
@@ -17,6 +61,11 @@ const Preferences: React.FC = () => {
   const [led, setLed] = useState('');
   const [lockout, setLockout] = useState('');
   const [lockButton, setLockButton] = useState('');
+  const [derivedInput, setDerivedInput] = useState(0);
+  const [storedInput, setStoredInput] = useState(0);
+  const [webAgentInput, setWebAgentInput] = useState(1);
+  const [webAllowStored, setWebAllowStored] = useState(true);
+  const [webOff, setWebOff] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -206,28 +255,78 @@ const Preferences: React.FC = () => {
   const advancedRight = (
     <>
       <PrefRow
-        title="Derived Key User Input Mode"
-        tooltip={TOOLTIPS.challengeMode}
-        description="Enable or disable challenge for derived keys (SSH/PGP)"
+        title="User Input Modes"
+        tooltip={TOOLTIPS.userInputModes}
+        description={<em>How you confirm an operation on the device. Each family is its own setting.</em>}
       >
-        <SetButton disabled={busy} onClick={() => run('Derived key mode', () => device.setDerivedChallengeMode(0))}>
-          Challenge Code
-        </SetButton>
-        <SetButton disabled={busy} onClick={() => run('Derived key mode', () => device.setDerivedChallengeMode(1))}>
-          Button Press
+        <ChoiceGroup
+          legend="SSH/GPG derived keys"
+          name="derivedKeyInput"
+          value={derivedInput}
+          onChange={setDerivedInput}
+          choices={CODE_OR_PRESS}
+        />
+        <ChoiceGroup
+          legend="Stored keys (PGP, SSH, RSA and ECC slots)"
+          name="storedKeyInput"
+          value={storedInput}
+          onChange={setStoredInput}
+          choices={CODE_OR_PRESS}
+        />
+        <ChoiceGroup
+          legend="Web and agent derived keys"
+          name="webAgentDeriveInput"
+          value={webAgentInput}
+          onChange={setWebAgentInput}
+          choices={WEB_AGENT_CHOICES}
+          tooltip={TOOLTIPS.webAgentDerive}
+        />
+        <SetButton
+          disabled={busy}
+          onClick={() =>
+            run('User input modes', async () => {
+              await device.setDerivedChallengeMode(derivedInput);
+              await device.setStoredChallengeMode(storedInput);
+              await device.setWebAgentDeriveMode(webAgentInput);
+            })
+          }
+        >
+          Save User Input Modes
         </SetButton>
       </PrefRow>
 
       <PrefRow
-        title="Stored Key User Input Mode"
-        tooltip={TOOLTIPS.challengeMode}
-        description="Enable or disable challenge for stored keys (SSH/PGP)"
+        title="Webcrypt Access"
+        tooltip={TOOLTIPS.webcryptAccess}
+        description={<em>What the OnlyKey web app is allowed to do. Saved as one setting.</em>}
       >
-        <SetButton disabled={busy} onClick={() => run('Stored key mode', () => device.setStoredChallengeMode(0))}>
-          Challenge Code
-        </SetButton>
-        <SetButton disabled={busy} onClick={() => run('Stored key mode', () => device.setStoredChallengeMode(1))}>
-          Button Press
+        <label className="pref-choice">
+          <input
+            type="checkbox"
+            checked={webAllowStored}
+            onChange={(e) => setWebAllowStored(e.target.checked)}
+            className="ok-control"
+          />
+          Allow Webcrypt to use my stored keys (PGP)
+          <HelpTip tooltip={TOOLTIPS.webAllowStoredKey.text} />
+        </label>
+        <label className="pref-choice">
+          <input
+            type="checkbox"
+            checked={webOff}
+            onChange={(e) => setWebOff(e.target.checked)}
+            className="ok-control"
+          />
+          Turn off Webcrypt entirely
+          <HelpTip tooltip={TOOLTIPS.webDisableExtension.text} />
+        </label>
+        <SetButton
+          disabled={busy}
+          onClick={() =>
+            run('Webcrypt access', () => device.setWebcryptPolicy((webAllowStored ? 0x01 : 0) | (webOff ? 0x02 : 0)))
+          }
+        >
+          Save Webcrypt Access
         </SetButton>
       </PrefRow>
 

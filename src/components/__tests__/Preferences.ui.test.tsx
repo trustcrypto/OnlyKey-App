@@ -101,16 +101,44 @@ describe('Preferences page', () => {
     expect(device.setHmacChallengeMode).toHaveBeenCalledWith(1);
     await user.click(screen.getByRole('button', { name: /lock backup key/i }));
     expect(device.setBackupKeyMode).toHaveBeenCalledWith(1);
-    const challenge = screen.getAllByRole('button', { name: /challenge code/i });
-    const press = screen.getAllByRole('button', { name: /button press/i });
-    await user.click(challenge[0]);
-    expect(device.setDerivedChallengeMode).toHaveBeenCalledWith(0);
-    await user.click(press[0]);
+  });
+
+  it('saves the three user input modes together', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({ device });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+
+    const derived = screen.getByRole('group', { name: /^SSH\/GPG derived keys/ });
+    const stored = screen.getByRole('group', { name: /^Stored keys/ });
+    const web = screen.getByRole('group', { name: /^Web and agent derived keys/ });
+    expect(within(derived).queryByRole('radio', { name: /none/i })).toBeNull();
+    expect(within(stored).queryByRole('radio', { name: /none/i })).toBeNull();
+    expect(within(web).getByRole('radio', { name: /button press/i })).toBeChecked();
+
+    await user.click(within(derived).getByRole('radio', { name: /button press/i }));
+    await user.click(within(web).getByRole('radio', { name: /none/i }));
+    await user.click(screen.getByRole('button', { name: /save user input modes/i }));
     expect(device.setDerivedChallengeMode).toHaveBeenCalledWith(1);
-    await user.click(challenge[1]);
     expect(device.setStoredChallengeMode).toHaveBeenCalledWith(0);
-    await user.click(press[1]);
-    expect(device.setStoredChallengeMode).toHaveBeenCalledWith(1);
+    expect(device.setWebAgentDeriveMode).toHaveBeenCalledWith(2);
+  });
+
+  it('saves Webcrypt access as one policy byte', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({ device });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+
+    const save = screen.getByRole('button', { name: /save webcrypt access/i });
+    await user.click(save);
+    expect(device.setWebcryptPolicy).toHaveBeenLastCalledWith(0x01);
+    await user.click(screen.getByRole('checkbox', { name: /allow webcrypt to use my stored keys/i }));
+    await user.click(screen.getByRole('checkbox', { name: /turn off webcrypt entirely/i }));
+    await user.click(save);
+    expect(device.setWebcryptPolicy).toHaveBeenLastCalledWith(0x02);
   });
 
   it('surfaces preference errors', async () => {
