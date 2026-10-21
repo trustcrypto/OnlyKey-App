@@ -103,42 +103,104 @@ describe('Preferences page', () => {
     expect(device.setBackupKeyMode).toHaveBeenCalledWith(1);
   });
 
-  it('saves the three user input modes together', async () => {
+  it('writes only the user input families the user chose', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();
-    seedDeviceStore({ device });
+    seedDeviceStore({ device, version: 'v3.1.0-prodc' });
     renderWithProviders(<Preferences />);
     await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+
+    const save = screen.getByRole('button', { name: /save user input modes/i });
+    expect(save).toBeDisabled();
+    for (const radio of screen.getAllByRole('radio')) expect(radio).not.toBeChecked();
 
     const derived = screen.getByRole('group', { name: /^SSH\/GPG derived keys/ });
     const stored = screen.getByRole('group', { name: /^Stored keys/ });
     const web = screen.getByRole('group', { name: /^Web and agent derived keys/ });
     expect(within(derived).queryByRole('radio', { name: /none/i })).toBeNull();
     expect(within(stored).queryByRole('radio', { name: /none/i })).toBeNull();
-    expect(within(web).getByRole('radio', { name: /button press/i })).toBeChecked();
 
-    await user.click(within(derived).getByRole('radio', { name: /button press/i }));
-    await user.click(within(web).getByRole('radio', { name: /none/i }));
-    await user.click(screen.getByRole('button', { name: /save user input modes/i }));
-    expect(device.setDerivedChallengeMode).toHaveBeenCalledWith(1);
-    expect(device.setStoredChallengeMode).toHaveBeenCalledWith(0);
+    await user.click(within(web).getByRole('radio', { name: /^None/ }));
+    await user.click(save);
     expect(device.setWebAgentDeriveMode).toHaveBeenCalledWith(2);
+    expect(device.setDerivedChallengeMode).not.toHaveBeenCalled();
+    expect(device.setStoredChallengeMode).not.toHaveBeenCalled();
   });
 
-  it('saves Webcrypt access as one policy byte', async () => {
+  it('says which user input families were saved when a later write fails', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient({
+      setWebAgentDeriveMode: vi.fn().mockRejectedValue(new Error('Request OKSETSLOT timed out after 10000ms')),
+    });
+    seedDeviceStore({ device, version: 'v3.1.0-prodc' });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+
+    const derived = screen.getByRole('group', { name: /^SSH\/GPG derived keys/ });
+    const web = screen.getByRole('group', { name: /^Web and agent derived keys/ });
+    await user.click(within(derived).getByRole('radio', { name: /button press/i }));
+    await user.click(within(web).getByRole('radio', { name: /button press/i }));
+    await user.click(screen.getByRole('button', { name: /save user input modes/i }));
+
+    expect(device.setDerivedChallengeMode).toHaveBeenCalledWith(1);
+    expect(device.setStoredChallengeMode).not.toHaveBeenCalled();
+    const err = await screen.findByTestId('pref-error');
+    expect(err).toHaveTextContent(/timed out/i);
+    expect(err).toHaveTextContent(/already saved: SSH\/GPG derived keys\./i);
+  });
+
+  it('a help icon beside a choice does not select it', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();
-    seedDeviceStore({ device });
+    seedDeviceStore({ device, version: 'v3.1.0-prodc' });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+
+    const web = screen.getByRole('group', { name: /^Web and agent derived keys/ });
+    const none = within(web).getByRole('radio', { name: /^None/ });
+    const row = none.closest('.pref-choice-row') as HTMLElement;
+    await user.click(within(row).getByRole('img', { name: 'Help' }));
+    expect(none).not.toBeChecked();
+    expect(none).toHaveAccessibleName('None (no confirmation) - for unattended agents');
+  });
+
+  it('saves Webcrypt access only after a choice, as one policy byte', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({ device, version: 'v3.1.0-prodc' });
     renderWithProviders(<Preferences />);
     await user.click(screen.getByRole('tab', { name: 'Advanced' }));
 
     const save = screen.getByRole('button', { name: /save webcrypt access/i });
+    expect(save).toBeDisabled();
+    const group = screen.getByRole('group', { name: /^The web app can use/ });
+    await user.click(within(group).getByRole('radio', { name: /^Derived keys only/ }));
     await user.click(save);
-    expect(device.setWebcryptPolicy).toHaveBeenLastCalledWith(0x01);
-    await user.click(screen.getByRole('checkbox', { name: /allow webcrypt to use my stored keys/i }));
-    await user.click(screen.getByRole('checkbox', { name: /turn off webcrypt entirely/i }));
+    expect(device.setWebcryptPolicy).toHaveBeenLastCalledWith(0x00);
+    await user.click(within(group).getByRole('radio', { name: /^Off/ }));
     await user.click(save);
     expect(device.setWebcryptPolicy).toHaveBeenLastCalledWith(0x02);
+    await user.click(within(group).getByRole('radio', { name: /^Stored and derived keys/ }));
+    await user.click(save);
+    expect(device.setWebcryptPolicy).toHaveBeenLastCalledWith(0x01);
+  });
+
+  it('offers only the derived and stored settings on firmware before 3.1.0', async () => {
+    const user = userEvent.setup();
+    const device = createMockDeviceClient();
+    seedDeviceStore({ device, version: 'v3.0.4-prodc' });
+    renderWithProviders(<Preferences />);
+    await user.click(screen.getByRole('tab', { name: 'Advanced' }));
+
+    expect(screen.queryByRole('group', { name: /^Web and agent derived keys/ })).toBeNull();
+    expect(screen.queryByText('Webcrypt Access')).toBeNull();
+    expect(screen.getByText(/need firmware 3\.1\.0 or later/i)).toBeInTheDocument();
+
+    const stored = screen.getByRole('group', { name: /^Stored keys/ });
+    await user.click(within(stored).getByRole('radio', { name: /challenge code/i }));
+    await user.click(screen.getByRole('button', { name: /save user input modes/i }));
+    expect(device.setStoredChallengeMode).toHaveBeenCalledWith(0);
+    expect(device.setWebAgentDeriveMode).not.toHaveBeenCalled();
   });
 
   it('surfaces preference errors', async () => {

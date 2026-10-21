@@ -43,7 +43,7 @@ export const TOOLTIPS = {
   },
   userInputModes: {
     href: 'https://docs.crp.to/usersguide.html#challenge-mode',
-    text: 'How you confirm an operation on the OnlyKey itself. Each key family has its own setting; they are saved together when you press Save but stored separately on the device.',
+    text: 'How you confirm an operation on the OnlyKey itself. Each key family is its own setting on the device. The app cannot read the current settings, so Save writes only the families you choose.',
   },
   webAgentDerive: {
     text: 'Keys derived on demand from a label, shared by the OnlyKey web app and by local tools over USB (python-onlykey and its age plugin). SSH and GPG keys from onlykey-agent use the SSH/GPG derived keys setting above.',
@@ -55,11 +55,14 @@ export const TOOLTIPS = {
     href: 'https://docs.crp.to/webcrypt.html',
     text: 'What Webcrypt - the OnlyKey web app - is allowed to do with this OnlyKey. The origins that can reach the key are compiled into the firmware; this is not a list you can add to. Separate from the confirmation settings above.',
   },
-  webAllowStoredKey: {
-    text: 'On until you save this setting, as on older firmware. Untick and save to stop the web app using the keys stored on this OnlyKey; it can still use derived keys, which are label-scoped and reproducible.',
+  webcryptStored: {
+    text: 'The web app can use the keys stored on this OnlyKey (PGP) as well as derived keys. This is the default, as on older firmware.',
   },
-  webDisableExtension: {
-    text: 'Turns off the OnlyKey FIDO2 extension completely, including derived keys, so the web app cannot reach this key at all. If you had this turned off on older firmware, it stays off until you change it here.',
+  webcryptDerivedOnly: {
+    text: 'The web app can use derived keys only. Derived keys are label-scoped and reproducible; the keys stored on this OnlyKey stay out of its reach.',
+  },
+  webcryptOff: {
+    text: 'Turns off the OnlyKey FIDO2 extension, so the web app cannot reach this key at all, derived keys included. If you turned it off on older firmware, it stays off until you save a choice here.',
   },
   backupKeyMode: {
     href: 'https://docs.crp.to/usersguide.html#backup-key-mode',

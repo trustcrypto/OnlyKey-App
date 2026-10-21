@@ -853,13 +853,19 @@ html.light .help-tip-link:hover .help-tip-icon {
   color: var(--ok-text);
 }
 
+.pref-choice-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
 .pref-choice {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   font-size: 0.875rem;
   line-height: 1.5;
-  width: 100%;
   color: var(--ok-text-secondary);
   cursor: pointer;
 }

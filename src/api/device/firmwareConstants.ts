@@ -123,6 +123,16 @@ export function deviceTypeFromProductId(productId: number): DeviceType | undefin
 }
 
 /** DUO version suffix 'n' = Duo_config[0]==1, no device PIN (okcore.cpp / OnlyKeyComm.js). */
+/** True when a firmware version such as `v3.1.0-prodc` is at least major.minor.patch. */
+export function firmwareAtLeast(version: string, major: number, minor: number, patch: number): boolean {
+  const m = /(\d+)\.(\d+)\.(\d+)/.exec(version || '');
+  if (!m) return false;
+  const [a, b, c] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (a !== major) return a > major;
+  if (b !== minor) return b > minor;
+  return c >= patch;
+}
+
 export function isDuoNoPinVersion(version: string): boolean {
   const last = version.trim().slice(-1).toLowerCase();
   return last === 'n';
