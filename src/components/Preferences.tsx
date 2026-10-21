@@ -1,22 +1,81 @@
 import React, { useState } from 'react';
 import { useDeviceStore } from '../store/useDeviceStore';
-import { KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABELS, WIPE_MODE_FULL } from '../api/device/firmwareConstants';
+import { KEYBOARD_LAYOUTS, KEYBOARD_LAYOUT_LABELS, WIPE_MODE_FULL, firmwareAtLeast } from '../api/device/firmwareConstants';
 import { SYSADMIN_MODE_PREF_HINT } from '../data/configMode';
 import { TOOLTIPS } from '../data/tooltips';
 import { CautionButton, SetButton } from './ui/forms';
+import { HelpTip } from './ui/HelpTip';
 import { PrefRow } from './ui/PrefRow';
 import { PseudoTabBar, PseudoTabPanel } from './ui/PseudoTabs';
 
 type PrefTab = 'standard' | 'advanced';
 
+type Tip = { href?: string; text: string };
+type Choice = { value: number; label: string; tooltip?: Tip };
+
+// 0 = challenge code, 1 = button press, 2 = no press. Release firmware refuses
+// 2 for fields 21 and 22, so only field 30 offers it.
+const CODE_OR_PRESS: Choice[] = [
+  { value: 0, label: 'Challenge Code (enter 3 digits)' },
+  { value: 1, label: 'Button Press (tap any button)' },
+];
+const WEB_AGENT_CHOICES: Choice[] = [
+  ...CODE_OR_PRESS,
+  { value: 2, label: 'None (no confirmation) - for unattended agents', tooltip: TOOLTIPS.webAgentNoInput },
+];
+// Field 31: bit 0 lets the web app use stored keys, bit 1 turns off the FIDO2
+// extension. 0x03 is not offered: with bit 1 set, bit 0 means nothing.
+const WEBCRYPT_CHOICES: Choice[] = [
+  { value: 0x01, label: 'Stored and derived keys', tooltip: TOOLTIPS.webcryptStored },
+  { value: 0x00, label: 'Derived keys only', tooltip: TOOLTIPS.webcryptDerivedOnly },
+  { value: 0x02, label: 'Off - the web app cannot reach this key', tooltip: TOOLTIPS.webcryptOff },
+];
+
+const ChoiceGroup: React.FC<{
+  legend: string;
+  name: string;
+  value: number | null;
+  onChange: (value: number) => void;
+  choices: Choice[];
+  tooltip?: Tip;
+}> = ({ legend, name, value, onChange, choices, tooltip }) => (
+  <fieldset className="pref-choice-group">
+    <legend>
+      {legend}
+      {tooltip && <HelpTip href={tooltip.href} tooltip={tooltip.text} />}
+    </legend>
+    {choices.map((c) => (
+      <div key={c.value} className="pref-choice-row">
+        <label className="pref-choice">
+          <input
+            type="radio"
+            name={name}
+            checked={value === c.value}
+            onChange={() => onChange(c.value)}
+            className="ok-control"
+          />
+          {c.label}
+        </label>
+        {c.tooltip && <HelpTip href={c.tooltip.href} tooltip={c.tooltip.text} />}
+      </div>
+    ))}
+  </fieldset>
+);
+
 const Preferences: React.FC = () => {
-  const { device } = useDeviceStore();
+  const { device, version } = useDeviceStore();
   const [activeTab, setActiveTab] = useState<PrefTab>('standard');
   const [typeSpeed, setTypeSpeed] = useState('');
   const [layout, setLayout] = useState(0x01);
   const [led, setLed] = useState('');
   const [lockout, setLockout] = useState('');
   const [lockButton, setLockButton] = useState('');
+  // null = not chosen. The app cannot read these settings back from the key,
+  // so only a family the user picks is written.
+  const [derivedInput, setDerivedInput] = useState<number | null>(null);
+  const [storedInput, setStoredInput] = useState<number | null>(null);
+  const [webAgentInput, setWebAgentInput] = useState<number | null>(null);
+  const [webcryptPolicy, setWebcryptPolicy] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -203,33 +262,103 @@ const Preferences: React.FC = () => {
     </>
   );
 
+  // Fields 30 and 31 exist only on firmware 3.1.0 and later; older firmware
+  // gives no reply to them, so the request would only time out.
+  const has310 = firmwareAtLeast(version, 3, 1, 0);
+  const inputModeWrites: { name: string; write: () => Promise<void> }[] = [];
+  if (derivedInput !== null) {
+    inputModeWrites.push({ name: 'SSH/GPG derived keys', write: () => device.setDerivedChallengeMode(derivedInput) });
+  }
+  if (storedInput !== null) {
+    inputModeWrites.push({ name: 'stored keys', write: () => device.setStoredChallengeMode(storedInput) });
+  }
+  if (has310 && webAgentInput !== null) {
+    inputModeWrites.push({ name: 'web and agent derived keys', write: () => device.setWebAgentDeriveMode(webAgentInput) });
+  }
+  // Each family is its own write; if a later one fails, say which were already saved.
+  const saveUserInputModes = () =>
+    run('User input modes', async () => {
+      const saved: string[] = [];
+      for (const { name, write } of inputModeWrites) {
+        try {
+          await write();
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          const end = /[.!?]$/.test(msg) ? '' : '.';
+          throw new Error(saved.length ? `${msg}${end} Already saved: ${saved.join(', ')}.` : msg);
+        }
+        saved.push(name);
+      }
+    });
+
   const advancedRight = (
     <>
       <PrefRow
-        title="Derived Key User Input Mode"
-        tooltip={TOOLTIPS.challengeMode}
-        description="Enable or disable challenge for derived keys (SSH/PGP)"
+        title="User Input Modes"
+        tooltip={TOOLTIPS.userInputModes}
+        description={
+          <em>
+            How you confirm an operation on the device. The app cannot read the current settings, so only the
+            families you choose here are written.
+          </em>
+        }
+        hint={has310 ? undefined : 'Web and agent derived keys and Webcrypt Access need firmware 3.1.0 or later.'}
       >
-        <SetButton disabled={busy} onClick={() => run('Derived key mode', () => device.setDerivedChallengeMode(0))}>
-          Challenge Code
-        </SetButton>
-        <SetButton disabled={busy} onClick={() => run('Derived key mode', () => device.setDerivedChallengeMode(1))}>
-          Button Press
+        <ChoiceGroup
+          legend="SSH/GPG derived keys"
+          name="derivedKeyInput"
+          value={derivedInput}
+          onChange={setDerivedInput}
+          choices={CODE_OR_PRESS}
+        />
+        <ChoiceGroup
+          legend="Stored keys (PGP, SSH, RSA and ECC slots)"
+          name="storedKeyInput"
+          value={storedInput}
+          onChange={setStoredInput}
+          choices={CODE_OR_PRESS}
+        />
+        {has310 && (
+          <ChoiceGroup
+            legend="Web and agent derived keys"
+            name="webAgentDeriveInput"
+            value={webAgentInput}
+            onChange={setWebAgentInput}
+            choices={WEB_AGENT_CHOICES}
+            tooltip={TOOLTIPS.webAgentDerive}
+          />
+        )}
+        <SetButton disabled={busy || !inputModeWrites.length} onClick={saveUserInputModes}>
+          Save User Input Modes
         </SetButton>
       </PrefRow>
 
-      <PrefRow
-        title="Stored Key User Input Mode"
-        tooltip={TOOLTIPS.challengeMode}
-        description="Enable or disable challenge for stored keys (SSH/PGP)"
-      >
-        <SetButton disabled={busy} onClick={() => run('Stored key mode', () => device.setStoredChallengeMode(0))}>
-          Challenge Code
-        </SetButton>
-        <SetButton disabled={busy} onClick={() => run('Stored key mode', () => device.setStoredChallengeMode(1))}>
-          Button Press
-        </SetButton>
-      </PrefRow>
+      {has310 && (
+        <PrefRow
+          title="Webcrypt Access"
+          tooltip={TOOLTIPS.webcryptAccess}
+          description={
+            <em>
+              What the OnlyKey web app is allowed to do. The app cannot read the current setting, so nothing is
+              written until you choose one.
+            </em>
+          }
+        >
+          <ChoiceGroup
+            legend="The web app can use"
+            name="webcryptPolicy"
+            value={webcryptPolicy}
+            onChange={setWebcryptPolicy}
+            choices={WEBCRYPT_CHOICES}
+          />
+          <SetButton
+            disabled={busy || webcryptPolicy === null}
+            onClick={() => webcryptPolicy !== null && run('Webcrypt access', () => device.setWebcryptPolicy(webcryptPolicy))}
+          >
+            Save Webcrypt Access
+          </SetButton>
+        </PrefRow>
+      )}
 
       <PrefRow
         title="Backup Key Mode"

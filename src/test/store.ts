@@ -114,6 +114,8 @@ export function createMockDeviceClient(overrides: Partial<DeviceClient> = {}): D
     setDerivedChallengeMode: mockResolved(),
     setStoredChallengeMode: mockResolved(),
     setHmacChallengeMode: mockResolved(),
+    setWebAgentDeriveMode: mockResolved(),
+    setWebcryptPolicy: mockResolved(),
     setModKeyMode: mockResolved(),
     setSecProfileMode: mockResolved(),
     on: vi.fn(),

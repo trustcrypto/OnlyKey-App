@@ -422,6 +422,38 @@ describe('OnlyKeyDevice', () => {
     await expect(device.setModKeyMode(1)).rejects.toThrow(/config mode/i);
   });
 
+  it('writes fields 30 and 31 as global OKSETSLOT requests', async () => {
+    const transport = new MockTransport({ deviceType: 'classic', startLocked: false });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    transport.sentPackets.length = 0;
+
+    await device.setWebAgentDeriveMode(2);
+    await device.setWebcryptPolicy(0x02);
+
+    const sets = transport.sentPackets.filter((p) => p[4] === MessageID.OKSETSLOT);
+    expect(sets.map((p) => [p[5], p[6], p[7]])).toEqual([
+      [GLOBAL_SLOT, FieldID.WEB_AGENT_DERIVE_MODE, 2],
+      [GLOBAL_SLOT, FieldID.WEBCRYPT_POLICY, 0x02],
+    ]);
+  });
+
+  it('fields 30 and 31 need config mode when requireConfigMode', async () => {
+    const transport = new MockTransport({
+      deviceType: 'classic',
+      startLocked: false,
+      requireConfigMode: true,
+      unlockEntersConfigMode: false,
+    });
+    const device = new OnlyKeyDevice(transport);
+    await device.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    transport.setLocked(false);
+    transport.setConfigMode(false);
+
+    await expect(device.setWebAgentDeriveMode(1)).rejects.toThrow(/config mode/i);
+    await expect(device.setWebcryptPolicy(0x01)).rejects.toThrow(/config mode/i);
+  });
+
   it('keeps DUO device type after unlock without -D suffix', async () => {
     const transport = new MockTransport();
     (transport as any).deviceType = 'duo';
@@ -900,6 +932,8 @@ it('should timeout if hardware does not respond', async () => {
     await device.setDerivedChallengeMode(1);
     await device.setStoredChallengeMode(1);
     await device.setHmacChallengeMode(1);
+    await device.setWebAgentDeriveMode(2);
+    await device.setWebcryptPolicy(1);
     await device.setModKeyMode(1);
     await device.setBackupKeyMode(1);
     await device.setLockout(5);

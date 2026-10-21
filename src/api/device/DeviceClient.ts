@@ -49,6 +49,8 @@ export interface DeviceClient {
   setDerivedChallengeMode(mode: number): Promise<void>;
   setStoredChallengeMode(mode: number): Promise<void>;
   setHmacChallengeMode(mode: number): Promise<void>;
+  setWebAgentDeriveMode(mode: number): Promise<void>;
+  setWebcryptPolicy(policy: number): Promise<void>;
   setModKeyMode(mode: number): Promise<void>;
   setSecProfileMode(mode: number): Promise<void>;
 }
