@@ -1,7 +1,8 @@
-Package: {{name}}
+Package: onlykey
 Version: {{version}}
 Maintainer: {{author}}
 Priority: optional
 Architecture: amd64
 Installed-Size: {{size}}
+Section: utils
 Description: {{description}}

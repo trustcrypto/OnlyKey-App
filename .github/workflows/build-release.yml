@@ -1,0 +1,76 @@
+name: Build Release
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  release:
+    name: ${{ matrix.os }} installer
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install NSIS (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
+            choco install nsis
+          }
+
+      # Full install so the pinned NW.js 0.104.1 runtime is downloaded.
+      # Use the production (non-SDK) build — tray/HID regressions show up there.
+      # macOS release additionally fetches official osx-x64 + osx-arm64 zips
+      # and lipo-merges them into a universal .app (scripts/mac-universal.mjs).
+      - name: Install dependencies
+        run: npm ci
+
+      # release:skip-audit skips "npm audit" (not useful for CI test builds).
+      # Internally calls "npm run build" (Vite) then stages + packages.
+      - name: Build release package
+        run: npm run release:skip-audit
+
+      - name: Upload release artifact
+        id: upload-artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: onlykey-installer-${{ runner.os }}
+          path: releases/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Output artifact download URL
+        run: |
+          echo "Installer artifact uploaded."
+          echo "Download URL: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}#artifacts"
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+
+      - name: List built installer
+        continue-on-error: true
+        run: node -e "const fs=require('fs');const path=require('path');for (const n of fs.readdirSync('releases')) { const s=fs.statSync(path.join('releases',n)); console.log(n, s.size, 'bytes'); }"

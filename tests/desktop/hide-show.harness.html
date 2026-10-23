@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OnlyKey Hide/Show Harness</title>
+  </head>
+  <body>
+    <script>
+      (async function runHarness() {
+        const fs = require('fs');
+        const path = require('path');
+
+        const resultArg = (nw.App.argv || []).find((arg) => arg.startsWith('--onlykey-test-result='));
+        const resultPath = resultArg
+          ? resultArg.slice('--onlykey-test-result='.length)
+          : path.join(nw.App.startPath, 'tmp', 'desktop-test-result.json');
+
+        const result = {
+          ok: false,
+          scenario: 'hide-show.harness',
+          state: null,
+          error: null,
+        };
+
+        function finish(exitCode) {
+          fs.mkdirSync(path.dirname(resultPath), { recursive: true });
+          fs.writeFileSync(resultPath, JSON.stringify(result, null, 2));
+          if (exitCode === 0) {
+            try {
+              require(path.join(nw.App.startPath, 'desktopBg.cjs')).dispatchTrayCommand('quit');
+            } catch {
+              nw.App.quit();
+            }
+          } else {
+            nw.App.quit();
+            setTimeout(() => process.exit(exitCode), 200);
+          }
+        }
+
+        const { createTrayTestHelpers } = require(path.join(
+          nw.App.startPath,
+          'tests/desktop/tray-test-helpers.js'
+        ));
+        const { waitForTrayReady, waitUntil } = createTrayTestHelpers(nw, fs, path);
+
+        try {
+          const desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs'));
+          desktop.start();
+          await waitForTrayReady(8000);
+
+          const win = nw.Window.get();
+          desktop.setSuppressShow(true);
+          win.hide();
+          await new Promise((resolve) => setTimeout(resolve, 200));
+
+          const hiddenBeforeShow = !win.isVisible;
+          desktop.dispatchTrayCommand('show');
+          await waitUntil(() => nw.Window.get().isVisible !== false, 5000, 'window restore after tray show');
+          await waitUntil(() => !desktop.readSuppressShow(), 3000, 'suppress flag cleared after tray show');
+
+          result.state = desktop.getTestState();
+          result.state.hiddenBeforeShow = hiddenBeforeShow;
+          result.state.visibleAfterShow = nw.Window.get().isVisible !== false;
+          result.state.suppressCleared = !desktop.readSuppressShow();
+
+          result.ok =
+            result.state.trayInMainContext &&
+            hiddenBeforeShow &&
+            result.state.visibleAfterShow &&
+            result.state.suppressCleared;
+        } catch (error) {
+          result.error = String(error);
+        }
+
+        finish(result.ok ? 0 : 1);
+      })();
+    </script>
+  </body>
+</html>

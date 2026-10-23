@@ -4,7 +4,7 @@ This is the official app for **OnlyKey**
 
 OnlyKey can be purchased here: [OnlyKey order](http://www.crp.to/p/)
 
-## Geting Started
+## Getting Started
 
 Just getting started with OnlyKey?
 
@@ -19,17 +19,17 @@ Just getting started with OnlyKey?
 - Loading keys for PGP, SSH, and secure backup (Keys)
 - Backup and restore of OnlyKey (Backup/Restore)
 - Setting OnlyKey preferences (Preferences)
-- Setting advanced options such as Yubikey and U2F security info (Advanced)
+- Setting advanced options such as Yubikey AES and ECC/HMAC keys (Advanced)
 
 *The app is required on all systems where OATH-TOTP (Google Authenticator) is used*
 
-For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html) or [OnlyKey DUO User's Guide](https://docs.crp.to/usersguide.html) 
+For information on using the app see the [OnlyKey User's Guide](https://docs.crp.to/usersguide.html) or [OnlyKey DUO User's Guide](https://docs.crp.to/duousersguide.html) 
 
 ## Installation
 
 To use the **standalone app:**
 
-- Obtain an installer from https://github.com/trustcrypto/OnlyKey-Chrome-App/releases/latest
+- Obtain an installer from https://github.com/trustcrypto/OnlyKey-App/releases/latest
 - Install and launch the app.
 
 Linux users installing the deb package should verify the GPG signature using `debsig-verify`. There is an article outlining this process [here](https://www.unboundsecurity.com/docs/UKC/UKC_Code_Signing_IG/HTML/Content/Products/UKC-EKM/UKC_Code_Signing_IG/LinuxPackage/SignDebian.html#h3_4).
@@ -44,36 +44,39 @@ To use the **OnlyKey Chrome App:** (Chromebook Users)
 
 ## Support ##
 
-Check out the [OnlyKey Support Forum](https://groups.google.com/forum/#!forum/onlykey)
+Check out the [OnlyKey Support Forum](https://onlykey.discourse.group/)
 
 Check out the [OnlyKey Documentation](https://docs.crp.to)
 
 ## Developer Notes
 
-This repository contains shared code that can be used to build multiple types of
-apps.
+This repository uses **Vite 7** for building the frontend (React 19 + TypeScript) and **NW.js 0.104.1** as the desktop runtime.
 
-To run this code as a Chrome app:
-
-    $ npm run chrome
-
-To run as NWJS app:
+To start the desktop app (`vite build` + NW.js on `dist/index.html`):
 
     $ npm start
+
+To run with Vite HMR:
+
+    $ npm run dev:server
+
+To build the project:
+
+    $ npm run build
 
 To create releases:
 
     $ npm run release
 
-This will create an installer in the `releases/` subfolder. The installer is created for the current OS; this means you will need to run the `release` command on Windows, Linux, and Mac OS to generate all the installers.
+This will bundle the app and create an installer in the `releases/` subfolder.
 
-On Windows, you need to install [NSIS][nsis] first, and ensure that it's present in your shell's `%PATH%`. That is, add `C:/Program Files (x86)/NSIS` or similar to your `%PATH%` in the operating system settings. On Mac OS, you need to install an optional NPM dependecy: `npm install appdmg`.
+On Windows, you need [NSIS][nsis] installed and in your `%PATH%`. On macOS, `hdiutil` is used (built in). On Linux, `fakeroot` and `dpkg-deb` are required for the `.deb`.
 
 To run tests:
 
     $ npm test
 
-Running tests requires the SDK version of NWJS, which comes with a `chromedriver` that handles automated Selenium tests. To install that version, run `npm install nw --nwjs_build_type=sdk`. Note that to create releases, you should install the non-sdk variant again; otherwise the installer will be unnecessarily large.
+Unit tests do not require NW.js. Desktop tests use the NW.js runtime from `npm install` (`nw@0.104.1`, normal flavor).
 
 ## Cryptography Notice
 
@@ -92,4 +95,4 @@ For more information on export restrictions see: http://www.apache.org/licenses/
 
 ## Source
 
-[OnlyKey App on Github](https://github.com/trustcrypto/OnlyKey-Chrome-App)
+[OnlyKey App on Github](https://github.com/trustcrypto/OnlyKey-App)

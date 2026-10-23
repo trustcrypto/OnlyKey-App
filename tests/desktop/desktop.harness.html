@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>OnlyKey Desktop Harness</title>
+  </head>
+  <body>
+    <script>
+      (async function runHarness() {
+        const fs = require('fs');
+        const path = require('path');
+
+        const resultArg = (nw.App.argv || []).find((arg) => arg.startsWith('--onlykey-test-result='));
+        const resultPath = resultArg
+          ? resultArg.slice('--onlykey-test-result='.length)
+          : path.join(nw.App.startPath, 'tmp', 'desktop-test-result.json');
+
+        const result = {
+          ok: false,
+          scenario: 'desktop.harness',
+          state: null,
+          error: null,
+        };
+
+        function finish(exitCode) {
+          fs.mkdirSync(path.dirname(resultPath), { recursive: true });
+          fs.writeFileSync(resultPath, JSON.stringify(result, null, 2));
+          if (exitCode === 0) {
+            try {
+              require(path.join(nw.App.startPath, 'desktopBg.cjs')).dispatchTrayCommand('quit');
+            } catch {
+              nw.App.quit();
+            }
+          } else {
+            nw.App.quit();
+            setTimeout(() => process.exit(exitCode), 200);
+          }
+        }
+
+        const { createTrayTestHelpers } = require(path.join(
+          nw.App.startPath,
+          'tests/desktop/tray-test-helpers.js'
+        ));
+        const { waitForTrayReady } = createTrayTestHelpers(nw, fs, path);
+
+        try {
+          const desktop = require(path.join(nw.App.startPath, 'desktopBg.cjs'));
+          desktop.start();
+          await waitForTrayReady(8000);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          result.state = desktop.getTestState();
+          result.ok =
+            result.state.started &&
+            result.state.trayInMainContext &&
+            result.state.closeHandlerBound &&
+            result.state.iconExists;
+        } catch (error) {
+          result.error = String(error);
+        }
+
+        finish(result.ok ? 0 : 1);
+      })();
+    </script>
+  </body>
+</html>

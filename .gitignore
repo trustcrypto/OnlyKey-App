@@ -3,6 +3,13 @@ node_modules
 .DS_Store
 Thumbs.db
 /build/
+/dist/
 /releases/
 /tmp/
-/release_node_modules/
+/local/
+/coverage/
+/playwright-report/
+/test-results/
+/agent-tools/
+/terminals/
+# Keep package-lock.json committed so installs and npm audit stay reproducible.
