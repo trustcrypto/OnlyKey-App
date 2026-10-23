@@ -60,12 +60,12 @@
   "chromium-args": "--disable-features=CalculateNativeWinOcclusion --disable-renderer-backgrounding --disable-background-timer-throttling",
   "dependencies": {
     "auto-launch": "^5.0.5",
-    "js-sha256": "0.9.0",
-    "openpgp": "^6.3.1",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "js-sha256": "1.0.0",
+    "openpgp": "^6.3.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "sshpk": "^1.18.0",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -75,8 +75,8 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/chrome": "^0.1.37",
     "@types/node": "^25.3.5",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.1.11",
     "@vitest/ui": "^4.1.11",
