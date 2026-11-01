@@ -767,9 +767,18 @@ function bindWindowCloseHandler(win) {
   if (!win || win._onlykeyCloseBound) return;
   win._onlykeyCloseBound = true;
 
-  win.on('close', function onClose() {
+  // NW.js passes 'quit' when the close comes from the app quitting rather than
+  // the window's close button: Cmd+Q, Quit in the Dock menu, and macOS logging
+  // out, restarting or shutting down. Hiding to the tray then cancels the quit,
+  // and macOS reports "OnlyKey App failed to quit" and stops the restart.
+  win.on('close', function onClose(why) {
     if (state.quitting) {
       this.close(true);
+      return;
+    }
+
+    if (why === 'quit') {
+      executeQuitApp();
       return;
     }
 

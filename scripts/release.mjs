@@ -24,7 +24,7 @@
  * Client fetches are fail-closed (`redirect: 'error'`). If a staging GET throws
  * TypeError, dump `Location`; do not follow HTTP.
  */
-import { execSync, spawn } from 'node:child_process';
+import { execFileSync, execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -201,7 +201,73 @@ export const APP_NW_ALLOWLIST = new Set([
  * Only these two are loaded via require() at runtime (sshpk is externalized
  * in vite.config.ts; auto-launch is required by desktopBg.cjs).
  */
-const RUNTIME_DEPS = ['sshpk', 'auto-launch'];
+export const RUNTIME_DEPS = ['sshpk', 'auto-launch'];
+
+/**
+ * Every package the RUNTIME_DEPS load, as package-lock.json `packages` keys
+ * (`node_modules/x`, or a nested `node_modules/a/node_modules/x`).
+ *
+ * Copying the two names alone shipped them WITHOUT their own dependencies:
+ * auto-launch needs applescript, untildify, mkdirp and winreg, so
+ * `require('auto-launch')` threw inside the packaged app, autostart was never
+ * registered, and the tray's "Autostart to tray" box could be unticked but
+ * never ticked again. sshpk was missing all of its own the same way.
+ *
+ * Resolution follows node's: the nearest node_modules above the requiring
+ * package first, then the top level. A dependency the lock does not have is
+ * an error unless it is optional.
+ */
+export function runtimeDependencyClosure(lock, roots = RUNTIME_DEPS) {
+  const pkgs = (lock && lock.packages) || {};
+  const found = new Set();
+  const queue = roots.map((name) => `node_modules/${name}`);
+  while (queue.length) {
+    const key = queue.shift();
+    if (found.has(key)) continue;
+    if (!pkgs[key]) throw new Error(`release: ${key} is not in package-lock.json`);
+    found.add(key);
+    const meta = pkgs[key];
+    const optional = meta.optionalDependencies || {};
+    for (const dep of Object.keys({ ...(meta.dependencies || {}), ...optional })) {
+      let at = key;
+      let resolved = null;
+      for (;;) {
+        const candidate = `${at}/node_modules/${dep}`;
+        if (pkgs[candidate]) { resolved = candidate; break; }
+        const cut = at.lastIndexOf('/node_modules/');
+        if (cut < 0) break;
+        at = at.slice(0, cut);
+      }
+      if (!resolved && pkgs[`node_modules/${dep}`]) resolved = `node_modules/${dep}`;
+      if (!resolved) {
+        if (dep in optional) continue;
+        throw new Error(`release: ${key} needs ${dep}, which package-lock.json does not have`);
+      }
+      queue.push(resolved);
+    }
+  }
+  return [...found].sort();
+}
+
+/**
+ * Load every RUNTIME_DEP from the staged payload, in a child node, and fail
+ * unless everything it loaded came from inside the payload. The payload sits
+ * under the repo (tmp/release), so a missing package would otherwise be found
+ * by node walking up to the repo's own node_modules and the check would pass.
+ */
+export function verifyStagedRuntimeDeps(destDir, roots = RUNTIME_DEPS) {
+  const script = [
+    "const path = require('node:path');",
+    "const { createRequire } = require('node:module');",
+    // realpath: require.cache keys are real paths (macOS /tmp is /private/tmp).
+    "const dir = require('node:fs').realpathSync(path.resolve(process.argv[1]));",
+    "const req = createRequire(path.join(dir, 'package.json'));",
+    'for (const dep of JSON.parse(process.argv[2])) req(dep);',
+    'const outside = Object.keys(require.cache).filter((f) => !f.startsWith(dir + path.sep));',
+    "if (outside.length) { console.error('loaded from outside the app payload:\\n  ' + outside.join('\\n  ')); process.exit(1); }",
+  ].join('\n');
+  execFileSync(process.execPath, ['-e', script, destDir, JSON.stringify(roots)], { stdio: 'inherit' });
+}
 
 // Keep only English locale files. Handles Windows/Linux locales/,
 // macOS .app bundle Contents/Resources/locales/, macOS framework
@@ -320,12 +386,16 @@ function copyAppPayloadFromRepo(destDir, manifest) {
     `${JSON.stringify(buildProductionPackageJson(manifest), null, 2)}\n`
   );
 
-  const prodModules = path.join(destDir, 'node_modules');
-  fs.mkdirSync(prodModules, { recursive: true });
-  for (const dep of RUNTIME_DEPS) {
-    const src = path.join(rootDir, 'node_modules', dep);
-    if (fs.existsSync(src)) copyDir(src, path.join(prodModules, dep));
+  fs.mkdirSync(path.join(destDir, 'node_modules'), { recursive: true });
+  const lock = JSON.parse(fs.readFileSync(path.join(rootDir, 'package-lock.json'), 'utf8'));
+  const closure = runtimeDependencyClosure(lock);
+  for (const key of closure) {
+    const src = path.join(rootDir, key);
+    if (!fs.existsSync(src)) throw new Error(`release: ${key} is not installed - run npm ci first`);
+    copyDir(src, path.join(destDir, key));
   }
+  console.log(`Runtime modules staged: ${closure.map((k) => k.replace(/^.*node_modules\//, '')).join(', ')}`);
+  verifyStagedRuntimeDeps(destDir);
 }
 
 function stageApplication(manifest) {

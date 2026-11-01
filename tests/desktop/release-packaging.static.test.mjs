@@ -5,7 +5,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   APP_NW_ALLOWLIST,
+  RUNTIME_DEPS,
   copyAllowlistedAppPayload,
+  runtimeDependencyClosure,
+  verifyStagedRuntimeDeps,
 } from '../../scripts/release.mjs';
 import {
   ensureOfficialNwjsApp,
@@ -375,6 +378,49 @@ describe('ensureOfficialNwjsApp', () => {
       expect(apps.x64App.includes(`${path.sep}osx-x64${path.sep}`)).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('runtime node_modules in the app payload', () => {
+  const lock = JSON.parse(fs.readFileSync(path.join(rootDir, 'package-lock.json'), 'utf8'));
+
+  it('ships what auto-launch and sshpk require, not just the two packages', () => {
+    const closure = runtimeDependencyClosure(lock).map((k) => k.replace(/^.*node_modules\//, ''));
+    for (const dep of ['auto-launch', 'applescript', 'untildify', 'mkdirp', 'winreg',
+      'sshpk', 'asn1', 'bcrypt-pbkdf', 'ecc-jsbn', 'jsbn', 'safer-buffer', 'tweetnacl']) {
+      expect(closure).toContain(dep);
+    }
+  });
+
+  it('refuses a dependency the lock does not have', () => {
+    const fake = { packages: { 'node_modules/a': { dependencies: { b: '^1.0.0' } } } };
+    expect(() => runtimeDependencyClosure(fake, ['a'])).toThrow(/needs b/);
+  });
+
+  it('prefers a nested copy, as node does', () => {
+    const fake = {
+      packages: {
+        'node_modules/a': { dependencies: { b: '^2.0.0' } },
+        'node_modules/a/node_modules/b': {},
+        'node_modules/b': {},
+      },
+    };
+    expect(runtimeDependencyClosure(fake, ['a'])).toEqual(['node_modules/a', 'node_modules/a/node_modules/b']);
+  });
+
+  it('a staged payload loads its runtime deps from inside itself, and a missing one fails', () => {
+    const dest = makeTree();
+    try {
+      fs.writeFileSync(path.join(dest, 'package.json'), '{"name":"payload"}\n');
+      for (const key of runtimeDependencyClosure(lock)) {
+        fs.cpSync(path.join(rootDir, key), path.join(dest, key), { recursive: true });
+      }
+      expect(() => verifyStagedRuntimeDeps(dest, RUNTIME_DEPS)).not.toThrow();
+      fs.rmSync(path.join(dest, 'node_modules', 'asn1'), { recursive: true, force: true });
+      expect(() => verifyStagedRuntimeDeps(dest, RUNTIME_DEPS)).toThrow();
+    } finally {
+      fs.rmSync(dest, { recursive: true, force: true });
     }
   });
 });

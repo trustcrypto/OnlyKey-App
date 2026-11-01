@@ -172,6 +172,24 @@ describe('desktopBg.cjs unit', () => {
     expect(localStorage.getItem('onlykeySuppressShow')).toBe('1');
   });
 
+  it('quits instead of hiding when the close comes from the app quitting (macOS restart/shutdown, Cmd+Q)', async () => {
+    const { win, listeners } = createNwMock();
+    localStorage.setItem('closeToTray', 'true');
+
+    const desktop = loadDesktopModule();
+    desktop.start();
+
+    const onClose = listeners.get('close');
+    onClose.call(win, 'quit');
+
+    expect(win.hide).not.toHaveBeenCalled();
+    expect(desktop.getTestState().quitting).toBe(true);
+    await vi.waitFor(() => {
+      expect(win.close).toHaveBeenCalledWith(true);
+      expect(nw.App.quit).toHaveBeenCalled();
+    }, { timeout: 2000 });
+  });
+
   it('dispatches quit on close when closeToTray is disabled', () => {
     const { win, listeners } = createNwMock();
     localStorage.setItem('closeToTray', 'false');
