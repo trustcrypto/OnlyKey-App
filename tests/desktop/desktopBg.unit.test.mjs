@@ -321,7 +321,8 @@ describe('desktopBg.cjs unit', () => {
     vi.useRealTimers();
   });
 
-  it('macOS autostart launches the app bundle, not the NW.js helper that execPath names', () => {
+  // macOS-only code path; the bundle paths it parses are POSIX paths.
+  it.skipIf(process.platform === 'win32')('macOS autostart launches the app bundle, not the NW.js helper that execPath names', () => {
     createNwMock();
     const desktop = loadDesktopModule();
     const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ok-bundle-'));
@@ -339,7 +340,7 @@ describe('desktopBg.cjs unit', () => {
     }
   });
 
-  it('removes a LaunchAgent an earlier build wrote for a helper of this bundle, and only that one', () => {
+  it.skipIf(process.platform === 'win32')('removes a LaunchAgent an earlier build wrote for a helper of this bundle, and only that one', () => {
     createNwMock();
     const desktop = loadDesktopModule();
     const os = require('os');
