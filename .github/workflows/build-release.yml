@@ -38,9 +38,16 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          if (-not (Get-Command makensis -ErrorAction SilentlyContinue)) {
-            choco install nsis
+          # The Chocolatey feed sometimes times out (504); retry, then fail here
+          # rather than later with "spawn makensis ENOENT".
+          $nsisDir = 'C:\Program Files (x86)\NSIS'
+          for ($i = 1; $i -le 4; $i++) {
+            if ((Get-Command makensis -ErrorAction SilentlyContinue) -or (Test-Path "$nsisDir\makensis.exe")) { break }
+            choco install nsis -y --no-progress
+            if (-not (Test-Path "$nsisDir\makensis.exe")) { Start-Sleep -Seconds (15 * $i) }
           }
+          if (Test-Path "$nsisDir\makensis.exe") { Add-Content -Path $env:GITHUB_PATH -Value $nsisDir }
+          elseif (-not (Get-Command makensis -ErrorAction SilentlyContinue)) { throw 'NSIS (makensis) could not be installed' }
 
       # Full install so the pinned NW.js 0.104.1 runtime is downloaded.
       # Use the production (non-SDK) build — tray/HID regressions show up there.
