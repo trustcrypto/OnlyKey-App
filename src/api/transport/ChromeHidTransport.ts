@@ -4,6 +4,22 @@ import { TransportInterface, DeviceFilter } from './Transport.interface';
 
 const BETA8_USAGE_PAGE = 0xFFAB; // 65451
 const BETA8_SERIAL = '1000000000';
+/**
+ * OnlyKey interfaces the app never talks to: the keyboard (Generic Desktop),
+ * FIDO (F1D0) and the debug serial emulation (FFC9). Opening the keyboard
+ * interface makes macOS ask for Input Monitoring ("would like to receive
+ * keystrokes from any application").
+ */
+const NON_APP_USAGE_PAGES = new Set([0x01, 0xF1D0, 0xFFC9]);
+
+function usagePagesOf(device: chrome.hid.Device): number[] {
+  return (device.collections ?? []).map((c) => c.usagePage);
+}
+
+function isNonAppInterface(device: chrome.hid.Device): boolean {
+  const pages = usagePagesOf(device);
+  return pages.length > 0 && pages.every((p) => NON_APP_USAGE_PAGES.has(p));
+}
 /** chrome.hid can report a false "disconnected" on receive/send right after open. */
 export const HID_RECONNECT_GRACE_MS = 400;
 /** chrome.hid.connect / getDevices can hang if the device is yanked mid-callback. */
@@ -115,8 +131,12 @@ export class ChromeHidTransport implements TransportInterface {
   }
 
   /**
-   * Mirrors v5.5 device selection: Beta 8+ uses FFAB + serial 1000000000;
-   * older Classic devices use any matching VID/PID with a different serial.
+   * Beta 8+ talks over the raw HID interface (usage page FFAB, serial
+   * 1000000000); older Classic devices use their one matching interface with a
+   * different serial. Never falls back to the keyboard, FIDO or serial-debug
+   * interface: onDeviceAdded fires once per interface, so the first probe after
+   * a plug can see only the keyboard. Returning null there lets the next
+   * onDeviceAdded or poll find the raw HID interface.
    */
   private selectDevice(devices: chrome.hid.Device[], filter: DeviceFilter): chrome.hid.Device | null {
     const matches = devices.filter(
@@ -124,24 +144,18 @@ export class ChromeHidTransport implements TransportInterface {
     );
 
     if (!matches.length) return null;
+    if (filter.productId === 0xB001) return matches[0];
 
-    for (const device of matches) {
-      const serial = device.serialNumber ?? '';
-      const usagePages = (device.collections ?? []).map((c) => c.usagePage);
+    const raw = matches.find((d) => usagePagesOf(d).includes(BETA8_USAGE_PAGE));
+    if (raw) return raw;
 
-      if (filter.productId === 0xB001) return device;
+    const classic = matches.find(
+      (d) => (d.serialNumber ?? '') !== BETA8_SERIAL && !isNonAppInterface(d)
+    );
+    if (classic) return classic;
 
-      if (usagePages.includes(BETA8_USAGE_PAGE) && serial === BETA8_SERIAL) {
-        return device;
-      }
-
-      if (serial !== BETA8_SERIAL) {
-        return device;
-      }
-    }
-
-    console.warn('ChromeHidTransport: fallback HID interface for', filter);
-    return matches[0];
+    console.warn('ChromeHidTransport: no app HID interface yet for', filter);
+    return null;
   }
 
   private async findDevice(filter: DeviceFilter): Promise<chrome.hid.Device | null> {

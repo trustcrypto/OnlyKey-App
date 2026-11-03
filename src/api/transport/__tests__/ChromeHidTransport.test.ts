@@ -156,11 +156,33 @@ describe('ChromeHidTransport', () => {
     expect(beta.getConnectedDevice()).toEqual({ vendorId: 0x16c0, productId: 0x0486 });
   });
 
-  it('falls back to the first matching HID interface', async () => {
-    devices = [hidDevice({ serialNumber: '1000000000', collections: [{ usagePage: 0x1 }] })];
+  it('never opens the keyboard interface, which makes macOS ask for Input Monitoring', async () => {
+    // First onDeviceAdded after a plug: only the keyboard interface has enumerated.
+    devices = [hidDevice({ deviceId: 1, serialNumber: '1000000000', collections: [{ usagePage: 0x1 }] })];
+    const t = new ChromeHidTransport();
+    await expect(t.connect({ vendorId: 0x16c0, productId: 0x0486 })).rejects.toThrow(/not found/);
+    expect(hid.connect).not.toHaveBeenCalled();
+
+    // Later probe: every interface is there; the raw HID one is chosen.
+    devices = [
+      hidDevice({ deviceId: 1, serialNumber: '1000000000', collections: [{ usagePage: 0x1 }] }),
+      hidDevice({ deviceId: 2, serialNumber: '1000000000', collections: [{ usagePage: 0xf1d0 }] }),
+      hidDevice({ deviceId: 4, serialNumber: '1000000000', collections: [{ usagePage: 0xffc9 }] }),
+      hidDevice({ deviceId: 3, serialNumber: '1000000000', collections: [{ usagePage: 0xffab }] }),
+    ];
+    await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
+    expect(hid.connect).toHaveBeenCalledTimes(1);
+    expect(hid.connect.mock.calls[0][0]).toBe(3);
+  });
+
+  it('skips the keyboard interface of an older Classic device too', async () => {
+    devices = [
+      hidDevice({ deviceId: 1, serialNumber: 'other', collections: [{ usagePage: 0x1 }] }),
+      hidDevice({ deviceId: 2, serialNumber: 'other', collections: [{ usagePage: 0xff00 }] }),
+    ];
     const t = new ChromeHidTransport();
     await t.connect({ vendorId: 0x16c0, productId: 0x0486 });
-    expect(t.getConnectedDevice()?.productId).toBe(0x0486);
+    expect(hid.connect.mock.calls[0][0]).toBe(2);
   });
 
   it('sends only the view window of a sliced Uint8Array', async () => {
