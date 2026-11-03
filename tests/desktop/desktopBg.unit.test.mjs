@@ -321,6 +321,47 @@ describe('desktopBg.cjs unit', () => {
     vi.useRealTimers();
   });
 
+  it('macOS autostart launches the app bundle, not the NW.js helper that execPath names', () => {
+    createNwMock();
+    const desktop = loadDesktopModule();
+    const tmp = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ok-bundle-'));
+    try {
+      const root = path.join(tmp, 'OnlyKey App.app');
+      fs.mkdirSync(path.join(root, 'Contents', 'MacOS'), { recursive: true });
+      fs.writeFileSync(path.join(root, 'Contents', 'MacOS', 'OnlyKey App'), '');
+      const helper = path.join(root, 'Contents', 'Frameworks', 'nwjs Framework.framework', 'Versions', '141.0.7390.55',
+        'Helpers', 'nwjs Helper (Renderer).app', 'Contents', 'MacOS', 'nwjs Helper (Renderer)');
+      expect(desktop.macBundleRoot(helper)).toBe(root);
+      expect(desktop.macLaunchPath(helper)).toBe(path.join(root, 'Contents', 'MacOS', 'OnlyKey App'));
+      expect(desktop.macLaunchPath('/usr/bin/nw')).toBe('/usr/bin/nw');
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it('removes a LaunchAgent an earlier build wrote for a helper of this bundle, and only that one', () => {
+    createNwMock();
+    const desktop = loadDesktopModule();
+    const os = require('os');
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ok-home-'));
+    const spy = vi.spyOn(os, 'homedir').mockReturnValue(home);
+    try {
+      const agents = path.join(home, 'Library', 'LaunchAgents');
+      fs.mkdirSync(agents, { recursive: true });
+      const root = '/Applications/OnlyKey App.app';
+      const helper = `${root}/Contents/Frameworks/nwjs Framework.framework/Versions/1/Helpers/nwjs Helper (Renderer).app/Contents/MacOS/nwjs Helper (Renderer)`;
+      fs.writeFileSync(path.join(agents, 'nwjs Helper (Renderer).plist'), `<string>${helper}</string><string>--hidden</string>`);
+      fs.writeFileSync(path.join(agents, 'other.plist'), '<string>/Applications/Other.app/Contents/MacOS/Other</string>');
+      expect(desktop.removeHelperLaunchAgents(helper)).toBe(true);
+      expect(fs.existsSync(path.join(agents, 'nwjs Helper (Renderer).plist'))).toBe(false);
+      expect(fs.existsSync(path.join(agents, 'other.plist'))).toBe(true);
+      expect(desktop.removeHelperLaunchAgents(helper)).toBe(false);
+    } finally {
+      spy.mockRestore();
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   it('starts in the tray when launched with --hidden', () => {
     const { win } = createNwMock({ argv: ['--onlykey-desktop-test', '--hidden'] });
     const desktop = loadDesktopModule();

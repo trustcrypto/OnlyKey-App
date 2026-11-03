@@ -992,6 +992,69 @@ async function adoptHiddenAutostart(autoLaunch, launchPath, appName) {
   }
 }
 
+/**
+ * macOS: the path a login entry must launch.
+ *
+ * process.execPath in NW.js's node context is a Chromium HELPER, not the app:
+ * …/OnlyKey App.app/Contents/Frameworks/nwjs Framework.framework/Versions/<v>/
+ * Helpers/nwjs Helper (Renderer).app/Contents/MacOS/nwjs Helper (Renderer).
+ * auto-launch only knows Electron's helper layout, so it kept that path - and
+ * named the LaunchAgent after it - and at login macOS started the renderer
+ * helper with --hidden instead of the app. Use the outer bundle's own
+ * executable (Contents/MacOS/<CFBundleExecutable>).
+ */
+function macBundleRoot(execPath) {
+  const match = /^(.+?\.app)(?:\/|$)/.exec(String(execPath || ''));
+  return match ? match[1] : null;
+}
+
+function macLaunchPath(execPath) {
+  const root = macBundleRoot(execPath);
+  if (!root) return execPath;
+  const dir = path.join(root, 'Contents', 'MacOS');
+  try {
+    const names = fs.readdirSync(dir).filter((name) => !name.startsWith('.'));
+    const own = path.basename(root, '.app');
+    if (names.includes(own)) return path.join(dir, own);
+    if (names.length) return path.join(dir, names[0]);
+  } catch {
+    // fall through
+  }
+  return execPath;
+}
+
+/**
+ * Remove LaunchAgents an earlier 6.0.0 build wrote for one of this bundle's
+ * helpers ("nwjs Helper (Renderer).plist"). Returns true when one was removed,
+ * i.e. the user had autostart on and it never worked.
+ */
+function removeHelperLaunchAgents(execPath) {
+  const root = macBundleRoot(execPath);
+  if (!root) return false;
+  const dir = path.join(os.homedir(), 'Library', 'LaunchAgents');
+  let removed = false;
+  let names = [];
+  try {
+    names = fs.readdirSync(dir).filter((name) => name.endsWith('.plist'));
+  } catch {
+    return false;
+  }
+  for (const name of names) {
+    const file = path.join(dir, name);
+    try {
+      const text = fs.readFileSync(file, 'utf8');
+      if (text.includes(`${root}/Contents/Frameworks/`)) {
+        fs.unlinkSync(file);
+        removed = true;
+        trayLog('removed helper LaunchAgent', { file });
+      }
+    } catch (error) {
+      console.error('Could not check LaunchAgent', file, error);
+    }
+  }
+  return removed;
+}
+
 async function initTray() {
   if (state.tray || !trayInitActive()) return;
 
@@ -999,9 +1062,10 @@ async function initTray() {
   const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
   // Prefer the launcher wrapper when installed under /opt so login restart
   // goes through the same path as the desktop entry.
-  const launchPath = fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
+  let launchPath = fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
     ? path.join(path.dirname(appPath), 'onlykey-launch')
     : appPath;
+  if (osx) launchPath = macLaunchPath(appPath);
   let autoLaunch = null;
   try {
     const AutoLaunch = require('auto-launch');
@@ -1022,6 +1086,10 @@ async function initTray() {
   if (autoLaunch) {
     try {
       if (!isDesktopTestMode()) {
+        if (osx && removeHelperLaunchAgents(appPath)) {
+          // Autostart was on but pointed at a helper: register the app itself.
+          await autoLaunch.enable();
+        }
         await adoptHiddenAutostart(autoLaunch, launchPath, appName);
       }
       if (!trayInitActive()) return;
@@ -1246,6 +1314,9 @@ module.exports = {
   dispatchTrayCommand,
   processTrayCommand,
   bindWindowCloseHandler,
+  macBundleRoot,
+  macLaunchPath,
+  removeHelperLaunchAgents,
   readCloseToTray,
   readSuppressShow,
   setSuppressShow,
