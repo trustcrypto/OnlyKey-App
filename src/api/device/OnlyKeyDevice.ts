@@ -33,6 +33,17 @@ export const PIN_ENTRY_CANCELED_MESSAGE = 'Canceled';
 const PIN_FLUSH_NOISE =
   /error pin is not between|error pins don.?t match|enter your|re-enter your|successful pin|successfully set pin/i;
 
+/**
+ * Firmware stores slot text one byte per character, so anything above U+00FF
+ * would be silently truncated to its low byte (€ U+20AC becomes ¬ 0xAC).
+ */
+export function firstNonLatin1Index(text: string): number {
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) > 0xff) return i;
+  }
+  return -1;
+}
+
 /** Four big-endian unix-seconds bytes for OKSETTIME (firmware set_time reads buffer[5..8]). */
 export function encodeUnixTimeBytes(epochSec = Math.round(Date.now() / 1000)): Uint8Array {
   const hex = (epochSec >>> 0).toString(16).padStart(8, '0').slice(-8);
@@ -785,6 +796,9 @@ export class OnlyKeyDevice extends TypedEmitter implements DeviceClient {
   }
 
   public async setSlot(slotId: number, fieldId: FieldID, value: string | number[]): Promise<void> {
+     if (typeof value === 'string' && firstNonLatin1Index(value) >= 0) {
+       throw new Error('OnlyKey slots store Latin-1 (ISO-8859-1) text only; remove characters such as € or emoji');
+     }
      const res = await this.sendRequest(MessageID.OKSETSLOT, slotId, fieldId, value);
      if (res.type === 'error') throw new Error(res.error);
   }
