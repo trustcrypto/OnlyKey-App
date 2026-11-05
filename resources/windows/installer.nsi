@@ -103,6 +103,27 @@ Section "Install"
     
     ; Create start menu shortcut
     CreateShortCut "$SMPROGRAMS\${name}.lnk" "$INSTDIR\${exec}" "" "$INSTDIR\icon.ico"
+
+    ; Migrate the old auto-launch value named "nw" (Task Manager shows that name,
+    ; and a disabled StartupApproved flag keeps it from running). A disabled
+    ; OnlyKey value is left alone.
+    ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "OnlyKey"
+    ${If} $0 == ""
+        ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "nw"
+        ${If} $0 != ""
+            StrCpy $1 "$INSTDIR\nw.exe"
+            Push $0
+            Push $1
+            Call StrContains
+            Pop $2
+            ${If} $2 == "1"
+                WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "OnlyKey" "$\"$INSTDIR\nw.exe$\" $\"$INSTDIR$\" --hidden --onlykey-autostart"
+                WriteRegBin HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "OnlyKey" 020000000000000000000000
+                DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "nw"
+                DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "nw"
+            ${EndIf}
+        ${EndIf}
+    ${EndIf}
     
     WriteUninstaller "${uninstaller}"
     
@@ -116,6 +137,65 @@ SectionEnd
 ; --------------------------------
 
 ShowUninstDetails hide
+
+; $0 = 1 when the string contains the substring.
+; Push string, push substring, Call StrContains, Pop result.
+Function StrContains
+    Exch $R0
+    Exch
+    Exch $R1
+    Push $R2
+    Push $R3
+    Push $R4
+    StrLen $R2 $R0
+    StrCpy $R3 0
+    inst_str_loop:
+        StrCpy $R4 $R1 $R2 $R3
+        StrCmp $R4 "" inst_str_notfound
+        StrCmp $R4 $R0 inst_str_found
+        IntOp $R3 $R3 + 1
+        Goto inst_str_loop
+    inst_str_found:
+        StrCpy $R0 1
+        Goto inst_str_done
+    inst_str_notfound:
+        StrCpy $R0 0
+    inst_str_done:
+        Pop $R4
+        Pop $R3
+        Pop $R2
+        Pop $R1
+        Exch $R0
+FunctionEnd
+
+; Push string, push substring, Call un.StrContains, Pop result.
+Function un.StrContains
+    Exch $R0
+    Exch
+    Exch $R1
+    Push $R2
+    Push $R3
+    Push $R4
+    StrLen $R2 $R0
+    StrCpy $R3 0
+    un_str_loop:
+        StrCpy $R4 $R1 $R2 $R3
+        StrCmp $R4 "" un_str_notfound
+        StrCmp $R4 $R0 un_str_found
+        IntOp $R3 $R3 + 1
+        Goto un_str_loop
+    un_str_found:
+        StrCpy $R0 1
+        Goto un_str_done
+    un_str_notfound:
+        StrCpy $R0 0
+    un_str_done:
+        Pop $R4
+        Pop $R3
+        Pop $R2
+        Pop $R1
+        Exch $R0
+FunctionEnd
 
 UninstallCaption "Uninstall ${productName}"
 UninstallText "Follow the prompts to remove ${productName} from this computer."
@@ -153,6 +233,23 @@ Section "Uninstall"
     
     DeleteRegKey HKLM "${uninstkey}"
     DeleteRegKey HKLM "${regkey}"
+
+    ; Per-user login entry. Also drop the legacy value auto-launch named after nw.exe
+    ; when it points at this install.
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "OnlyKey"
+    DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "OnlyKey"
+    ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "nw"
+    ${If} $0 != ""
+        StrCpy $1 "$INSTDIR\nw.exe"
+        Push $0
+        Push $1
+        Call un.StrContains
+        Pop $2
+        ${If} $2 == "1"
+            DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "nw"
+            DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" "nw"
+        ${EndIf}
+    ${EndIf}
     
     Delete "$SMPROGRAMS\${name}.lnk"
     

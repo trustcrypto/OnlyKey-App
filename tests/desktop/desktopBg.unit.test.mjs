@@ -375,38 +375,22 @@ describe('desktopBg.cjs unit', () => {
     expect(win.show).not.toHaveBeenCalled();
   });
 
-  it('registers autostart as a hidden to-tray launch', async () => {
-    const autoLaunchPath = require.resolve('auto-launch');
-    const previous = require.cache[autoLaunchPath];
-    function FakeAutoLaunch(opts) {
-      this.opts = opts;
-      FakeAutoLaunch.instances.push(this);
-      this.isEnabled = vi.fn(() => Promise.resolve(false));
-      this.enable = vi.fn(() => Promise.resolve());
-      this.disable = vi.fn(() => Promise.resolve());
-    }
-    FakeAutoLaunch.instances = [];
-    require.cache[autoLaunchPath] = {
-      id: autoLaunchPath,
-      filename: autoLaunchPath,
-      loaded: true,
-      exports: FakeAutoLaunch,
-    };
-
+  it('registers autostart outside the test process and stays hidden for --onlykey-autostart', async () => {
+    const childProcess = require('child_process');
+    const spy = vi.spyOn(childProcess, 'spawnSync');
     try {
-      createNwMock();
+      createNwMock({ argv: ['--onlykey-desktop-test', '--onlykey-autostart'] });
       const desktop = loadDesktopModule();
+      expect(desktop.launchedHiddenToTray()).toBe(true);
+      expect(desktop.shouldKeepWindowHidden()).toBe(true);
       desktop.start();
       await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
-
-      expect(FakeAutoLaunch.instances.length).toBeGreaterThan(0);
-      expect(FakeAutoLaunch.instances[0].opts.isHidden).toBe(true);
-      expect(FakeAutoLaunch.instances[0].opts.mac).toEqual({ useLaunchAgent: true });
-      expect(FakeAutoLaunch.instances[0].enable).not.toHaveBeenCalled();
-      expect(FakeAutoLaunch.instances[0].disable).not.toHaveBeenCalled();
+      const loginCalls = spy.mock.calls.filter((args) => /powershell|osascript|plutil|reg.exe/i.test(String(args[0])));
+      expect(loginCalls).toEqual([]);
+      desktop.dispatchTrayCommand('show');
+      expect(desktop.shouldKeepWindowHidden()).toBe(false);
     } finally {
-      if (previous) require.cache[autoLaunchPath] = previous;
-      else delete require.cache[autoLaunchPath];
+      spy.mockRestore();
     }
   });
 

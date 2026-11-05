@@ -11,6 +11,7 @@ describe('desktop bootstrap static checks', () => {
     expect(html).toContain("require(require('path').join(appRoot, 'desktopBg.cjs'))");
     expect(html).toContain('desktopApi.start()');
     expect(html).toContain('launchedHiddenToTray');
+    expect(html).toContain('shouldKeepWindowHidden');
     expect(html).toContain('NW desktop bootstrap');
   });
 
@@ -19,6 +20,7 @@ describe('desktop bootstrap static checks', () => {
     expect(inject).toContain('desktopBg.cjs');
     expect(inject).toContain('desktop.start');
     expect(inject).toContain('applyLaunchVisibility');
+    expect(inject).toContain('shouldKeepWindowHidden');
   });
 
   it('desktopInject.js prefers a relative require so Finder launches still boot', () => {

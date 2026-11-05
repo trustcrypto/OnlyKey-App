@@ -35,7 +35,7 @@ Do **not** pass `title: undefined` into `nw.Tray` — macOS draws that string ne
 1. `package.json` → `window.inject_js_start: desktopInject.js` calls `desktopBg.cjs` → `start()`.
 2. `window.show` is **false**. `desktopInject.js` shows the window at document-start, except an autostart launch (`--hidden`), which stays in the tray. Do not set `show` back to `true` — that flashes a window on login.
 3. `start()` clears stale `tmp/tray-*`, binds close-to-tray, calls `initTray()` in the **main renderer**, polls `tmp/tray-command.json` (for tests / fallback). It also polls `~/.config/OnlyKey/app-tmp/tray-command.json`, which the Linux `onlykey-launch` wrapper writes.
-4. Tray menu `click` handlers call `dispatchTrayCommand()` → `processTrayCommand()` in the same renderer. The autostart checkbox label is **Autostart to tray** (`isHidden: true`, macOS LaunchAgent).
+4. Tray menu `click` handlers call `dispatchTrayCommand()` → `processTrayCommand()` in the same renderer. The autostart checkbox label is **Autostart to tray**. `loginAutostart.cjs` registers one login entry that passes `--hidden --onlykey-autostart`: Windows `HKCU\...\Run\OnlyKey` (and clears a disabled StartupApproved flag; the old value was named `nw` and Task Manager left it off), macOS LaunchAgent `to.crp.onlykey` via `open -gj` on the app bundle (legacy Login Items and helper agents are removed so Dock icons do not accumulate), Linux `~/.config/autostart/OnlyKey.desktop` through `onlykey-launch`.
 5. A second launch while the window is hidden (Start menu, Dock, Applications, taskbar pin, CLI — anything that hits the same executable) is Chromium single-instance. `nw.App` `open` (Windows/Linux) and `reopen` (macOS) call `executeShowMainWindow()`. A second `--hidden` autostart does not.
 6. `scripts/start-desktop.mjs` clears tray tmp files before launch and `taskkill`s stale `nw.exe` on exit.
 
@@ -54,7 +54,7 @@ On Cinnamon/Mint/GNOME StatusNotifier, **never** mutate an already-assigned tray
 
 Correct pattern (see `buildTrayMenu` / `assignTrayMenu` in `desktopBg.cjs`):
 
-1. Resolve auto-launch enabled state **before** first menu paint.
+1. Resolve autostart enabled state **before** first menu paint.
 2. Build a full `nw.Menu` with final checkbox values.
 3. Assign `tray.menu` once (re-assign on Linux after ~250ms).
 4. On preference toggles, **rebuild** a new menu and reassign — do not remove/insert in place.

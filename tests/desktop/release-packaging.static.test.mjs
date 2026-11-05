@@ -385,12 +385,12 @@ describe('ensureOfficialNwjsApp', () => {
 describe('runtime node_modules in the app payload', () => {
   const lock = JSON.parse(fs.readFileSync(path.join(rootDir, 'package-lock.json'), 'utf8'));
 
-  it('ships what auto-launch and sshpk require, not just the two packages', () => {
+  it('ships what sshpk requires, not just the package itself', () => {
     const closure = runtimeDependencyClosure(lock).map((k) => k.replace(/^.*node_modules\//, ''));
-    for (const dep of ['auto-launch', 'applescript', 'untildify', 'mkdirp', 'winreg',
-      'sshpk', 'asn1', 'bcrypt-pbkdf', 'ecc-jsbn', 'jsbn', 'safer-buffer', 'tweetnacl']) {
+    for (const dep of ['sshpk', 'asn1', 'bcrypt-pbkdf', 'ecc-jsbn', 'jsbn', 'safer-buffer', 'tweetnacl']) {
       expect(closure).toContain(dep);
     }
+    expect(closure).not.toContain('auto-launch');
   });
 
   it('refuses a dependency the lock does not have', () => {

@@ -180,6 +180,7 @@ export const DESKTOP_SHELL_FILES = [
   'userPreferences.cjs',
   'desktopBg.cjs',
   'desktopInject.js',
+  'loginAutostart.cjs',
 ];
 
 /**
@@ -198,20 +199,20 @@ export const APP_NW_ALLOWLIST = new Set([
 
 /**
  * Vite bundles react, react-dom, zustand, openpgp, and js-sha256 into dist/.
- * Only these two are loaded via require() at runtime (sshpk is externalized
- * in vite.config.ts; auto-launch is required by desktopBg.cjs).
+ * Only sshpk is loaded via require() at runtime (externalized in vite.config.ts).
+ * Login autostart is loginAutostart.cjs in the desktop shell; it does not use
+ * the auto-launch package (that package registered Windows startup as "nw"
+ * and piled up macOS login items).
  */
-export const RUNTIME_DEPS = ['sshpk', 'auto-launch'];
+export const RUNTIME_DEPS = ['sshpk'];
 
 /**
  * Every package the RUNTIME_DEPS load, as package-lock.json `packages` keys
  * (`node_modules/x`, or a nested `node_modules/a/node_modules/x`).
  *
- * Copying the two names alone shipped them WITHOUT their own dependencies:
- * auto-launch needs applescript, untildify, mkdirp and winreg, so
- * `require('auto-launch')` threw inside the packaged app, autostart was never
- * registered, and the tray's "Autostart to tray" box could be unticked but
- * never ticked again. sshpk was missing all of its own the same way.
+ * Copying the package name alone ships it WITHOUT its own dependencies.
+ * sshpk needs asn1 and the rest of its tree; a missing one throws inside the
+ * packaged app.
  *
  * Resolution follows node's: the nearest node_modules above the requiring
  * package first, then the top level. A dependency the lock does not have is

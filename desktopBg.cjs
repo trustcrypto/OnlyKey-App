@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const userPreferences = require('./userPreferences.cjs');
+const { createLoginAutostart } = require('./loginAutostart.cjs');
 
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
 
@@ -190,6 +191,7 @@ const state = {
   stopped: false,
   pendingTimers: [],
   autoLaunch: null,
+  userRevealedWindow: false,
 };
 
 const osx = os.platform() === 'darwin';
@@ -447,6 +449,7 @@ function resolveTrayIconPath() {
 }
 
 function revealWindow(win) {
+  state.userRevealedWindow = true;
   setSuppressShow(false);
   try {
     if (win.isMinimized) win.restore();
@@ -466,6 +469,7 @@ function executeShowMainWindow() {
   const reveal = () => {
     if (state.quitting || state.stopped || !hasNw()) return;
     state.quitting = false;
+    state.userRevealedWindow = true;
     setSuppressShow(false);
     trayLog('executeShowMainWindow', {
       hasMainRef: !!state.mainAppWindow,
@@ -674,14 +678,42 @@ function collectArgv() {
   return values;
 }
 
-/** True when this process was started by the OS login entry (--hidden). */
+function hasHiddenLaunchArg(arg) {
+  return arg === '--hidden' || arg === '--onlykey-autostart' || arg.startsWith('--hidden=');
+}
+
+/** True when this process was started by the OS login entry. */
 function launchedHiddenToTray() {
-  return collectArgv().some((arg) => arg === '--hidden' || arg.startsWith('--hidden='));
+  try {
+    if (process.env.ONLYKEY_LAUNCHED_HIDDEN === '1') return true;
+  } catch {
+    // ignore
+  }
+  return collectArgv().some(hasHiddenLaunchArg);
 }
 
 function isHiddenLaunchCommand(cmdline) {
   const line = Array.isArray(cmdline) ? cmdline.map(String).join(' ') : String(cmdline || '');
-  return /(?:^|[\s"'=])--hidden(?:\s|"|'|=|$)/.test(line);
+  return /(?:^|[\s"'=])--(?:hidden|onlykey-autostart)(?:\s|"|'|=|$)/.test(line);
+}
+
+function localSuppressShow() {
+  try {
+    return localStorage.getItem(SUPPRESS_SHOW_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Autostart must not paint the window, including when a focus event arrives
+ * before the suppress flag is put back. After the user asks for the window,
+ * only an explicit hide-to-tray keeps it hidden.
+ */
+function shouldKeepWindowHidden() {
+  if (state.userRevealedWindow) return readSuppressShow() || localSuppressShow();
+  if (launchedHiddenToTray()) return true;
+  return readSuppressShow() || localSuppressShow();
 }
 
 /**
@@ -690,6 +722,7 @@ function isHiddenLaunchCommand(cmdline) {
  */
 function applyLaunchVisibility(win) {
   if (!launchedHiddenToTray()) return false;
+  state.userRevealedWindow = false;
   setSuppressShow(true);
   if (!win) return true;
   try {
@@ -845,21 +878,22 @@ function buildTrayMenu(autoLaunch) {
     checked: !!userPreferences.autoLaunch,
     click: function () {
       if (!autoLaunch) {
-        // Keep checkbox in sync with reality when auto-launch is unavailable.
+        // Keep checkbox in sync with reality when autostart is unavailable.
         autoLaunchMenuItem.checked = false;
         userPreferences.autoLaunch = false;
         return;
       }
       const next = !userPreferences.autoLaunch;
-      userPreferences.autoLaunch = next;
-      autoLaunch
-        .isEnabled()
-        .then((isEnabled) => {
-          if (isEnabled && !next) return autoLaunch.disable();
-          if (!isEnabled && next) return autoLaunch.enable();
-          return undefined;
-        })
+      const op = next ? autoLaunch.enable() : autoLaunch.disable();
+      op
         .catch(console.error)
+        .then(() => autoLaunch.isEnabled())
+        .then((enabled) => {
+          userPreferences.autoLaunch = !!enabled;
+        })
+        .catch(() => {
+          userPreferences.autoLaunch = next;
+        })
         .finally(() => {
           // Rebuild so Linux tray picks up the new checked state.
           assignTrayMenu(buildTrayMenu(autoLaunch));
@@ -928,80 +962,13 @@ function buildTrayMenu(autoLaunch) {
 }
 
 /**
- * Login autostart used to open the window (and, on macOS, a visible login
- * item). Rewrite an already-enabled entry once so the next login stays in
- * the tray. Never call this from desktop unit tests — the dev execPath can
- * resolve to a real HKCU Run value.
- */
-async function adoptHiddenAutostart(autoLaunch, launchPath, appName) {
-  const marker = path.join(tmpDir(), 'autostart-hidden-synced');
-
-  if (osx && !fs.existsSync(marker)) {
-    try {
-      const AutoLaunch = require('auto-launch');
-      const legacy = new AutoLaunch({
-        name: appName,
-        path: launchPath,
-        isHidden: true,
-        mac: { useLaunchAgent: false },
-      });
-      if (await legacy.isEnabled()) {
-        await legacy.disable();
-        await autoLaunch.enable();
-        try {
-          fs.writeFileSync(marker, '1');
-        } catch {
-          // ignore
-        }
-        return;
-      }
-    } catch (error) {
-      console.error('Legacy login-item migration failed:', error);
-    }
-  }
-
-  let enabled = false;
-  try {
-    enabled = !!(await autoLaunch.isEnabled());
-  } catch {
-    return;
-  }
-
-  if (!enabled) {
-    try {
-      if (!fs.existsSync(marker)) fs.writeFileSync(marker, '1');
-    } catch {
-      // ignore
-    }
-    return;
-  }
-
-  if (fs.existsSync(marker)) return;
-
-  try {
-    await autoLaunch.disable();
-    await autoLaunch.enable();
-    fs.writeFileSync(marker, '1');
-  } catch (error) {
-    console.error('Could not update autostart to launch in the tray:', error);
-    try {
-      await autoLaunch.enable();
-    } catch {
-      // leave the previous attempt's error
-    }
-  }
-}
-
-/**
  * macOS: the path a login entry must launch.
  *
  * process.execPath in NW.js's node context is a Chromium HELPER, not the app:
  * …/OnlyKey App.app/Contents/Frameworks/nwjs Framework.framework/Versions/<v>/
  * Helpers/nwjs Helper (Renderer).app/Contents/MacOS/nwjs Helper (Renderer).
- * auto-launch only knows Electron's helper layout, so it kept that path - and
- * named the LaunchAgent after it - and at login macOS started the renderer
- * helper with --hidden instead of the app. Use the outer bundle's own
- * executable (Contents/MacOS/<CFBundleExecutable>).
+ * Login autostart does not launch that helper. It `open`s the outer bundle.
+ * This resolves the bundle's own executable (Contents/MacOS/<CFBundleExecutable>).
  */
 function macBundleRoot(execPath) {
   const match = /^(.+?\.app)(?:\/|$)/.exec(String(execPath || ''));
@@ -1059,45 +1026,28 @@ async function initTray() {
   if (state.tray || !trayInitActive()) return;
 
   const appPath = process.execPath;
-  const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
-  // Prefer the launcher wrapper when installed under /opt so login restart
-  // goes through the same path as the desktop entry.
-  let launchPath = fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
-    ? path.join(path.dirname(appPath), 'onlykey-launch')
-    : appPath;
-  if (osx) launchPath = macLaunchPath(appPath);
   let autoLaunch = null;
   try {
-    const AutoLaunch = require('auto-launch');
-    autoLaunch = new AutoLaunch({
-      name: appName,
-      path: launchPath,
-      // --hidden on Windows/Linux; LaunchAgent ProgramArguments on macOS.
-      // The app honors --hidden by staying in the tray.
-      isHidden: true,
-      mac: { useLaunchAgent: true },
+    autoLaunch = createLoginAutostart({
+      execPath: appPath,
+      allowWrites: !isDesktopTestMode(),
     });
   } catch (error) {
-    console.error('AutoLaunch init skipped:', error);
+    console.error('Autostart init skipped:', error);
   }
 
-  // Resolve OS auto-launch state BEFORE first menu paint. Doing it afterward and
+  // Resolve OS autostart state BEFORE first menu paint. Doing it afterward and
   // calling remove()/insert() emptied the Linux tray menu (Cinnamon/Mint).
-  if (autoLaunch) {
+  // Desktop unit tests must not read or write the developer machine's login items.
+  if (autoLaunch && !isDesktopTestMode()) {
     try {
-      if (!isDesktopTestMode()) {
-        if (osx && removeHelperLaunchAgents(appPath)) {
-          // Autostart was on but pointed at a helper: register the app itself.
-          await autoLaunch.enable();
-        }
-        await adoptHiddenAutostart(autoLaunch, launchPath, appName);
-      }
+      await autoLaunch.repair();
       if (!trayInitActive()) return;
       const enabled = await autoLaunch.isEnabled();
       if (!trayInitActive()) return;
       userPreferences.autoLaunch = !!enabled;
-    } catch {
-      // auto-launch may not be supported on all platforms
+    } catch (error) {
+      console.error('Autostart repair failed:', error);
     }
   }
 
@@ -1310,6 +1260,7 @@ module.exports = {
   showMainWindow,
   quitApp,
   launchedHiddenToTray,
+  shouldKeepWindowHidden,
   applyLaunchVisibility,
   dispatchTrayCommand,
   processTrayCommand,

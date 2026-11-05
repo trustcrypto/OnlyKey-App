@@ -31,12 +31,11 @@
 
   var showWin = function () {
     try {
-      if (localStorage.getItem('onlykeySuppressShow') === '1') return;
-      var fs = require('fs');
-      var path = require('path');
-      if (fs.existsSync(path.join(nw.App.startPath, 'tmp', 'suppress-show.json'))) return;
+      if (desktop && typeof desktop.shouldKeepWindowHidden === 'function' && desktop.shouldKeepWindowHidden()) {
+        return;
+      }
     } catch {
-      // suppress-show probe is best-effort
+      // show the window if the hidden-launch check itself fails
     }
     if (win.isMinimized && win.restore) win.restore();
     if (!win.isVisible) win.show(true);
