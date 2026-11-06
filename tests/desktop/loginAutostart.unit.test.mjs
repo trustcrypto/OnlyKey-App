@@ -253,6 +253,73 @@ describe('macOS autostart files', () => {
     expect(calls.some((call) => call.file === 'osascript' && call.input && call.input.includes('delete login item'))).toBe(true);
     expect(calls.some((call) => call.file === 'killall')).toBe(false);
   });
+
+  it('skips System Events on a deferred repair and still replaces helper agents', async () => {
+    const home = tempHome();
+    homes.push(home);
+    const agents = path.join(home, 'Library', 'LaunchAgents');
+    fs.mkdirSync(agents, { recursive: true });
+    fs.writeFileSync(
+      path.join(agents, 'nwjs Helper (Renderer).plist'),
+      `<?xml version="1.0"?><plist><string>${HELPER}</string><string>--hidden</string></plist>`
+    );
+
+    const calls = [];
+    const auto = autostart.createLoginAutostart({
+      platform: 'darwin',
+      execPath: HELPER,
+      homedir: home,
+      fs,
+      run(file, args, opts) {
+        calls.push({ file, args, input: opts && opts.input });
+        if (file === 'plutil' && args.includes('-o')) {
+          return { status: 0, stdout: JSON.stringify({ 'persistent-apps': [] }), stderr: '' };
+        }
+        return { status: 0, stdout: '', stderr: '' };
+      },
+    });
+
+    const result = await auto.repair({ skipLoginItems: true });
+    expect(result.enabled).toBe(true);
+    expect(fs.existsSync(path.join(agents, 'nwjs Helper (Renderer).plist'))).toBe(false);
+    expect(fs.readFileSync(path.join(agents, 'to.crp.onlykey.plist'), 'utf8')).toContain('/usr/bin/open');
+    expect(calls.some((call) => call.file === 'osascript')).toBe(false);
+    expect(await auto.isEnabled()).toBe(true);
+
+    await auto.disable({ skipLoginItems: true });
+    expect(fs.existsSync(path.join(agents, 'to.crp.onlykey.plist'))).toBe(false);
+    expect(calls.some((call) => call.file === 'osascript')).toBe(false);
+  });
+
+  it('removes legacy login items without rewriting the LaunchAgent', async () => {
+    const home = tempHome();
+    homes.push(home);
+    const agents = path.join(home, 'Library', 'LaunchAgents');
+    fs.mkdirSync(agents, { recursive: true });
+    const plist = autostart.macLaunchAgentPlist(BUNDLE, 'to.crp.onlykey');
+    fs.writeFileSync(path.join(agents, 'to.crp.onlykey.plist'), plist);
+
+    const calls = [];
+    const auto = autostart.createLoginAutostart({
+      platform: 'darwin',
+      execPath: HELPER,
+      homedir: home,
+      fs,
+      run(file, args, opts) {
+        calls.push({ file, input: opts && opts.input });
+        if (file === 'osascript' && opts && opts.input && opts.input.includes('count of login items')) {
+          return { status: 0, stdout: `OnlyKey App\n${BUNDLE}\n---\n`, stderr: '' };
+        }
+        return { status: 0, stdout: '', stderr: '' };
+      },
+    });
+
+    const removed = await auto.removeLegacyLoginItems();
+    expect(removed.removed).toBe(1);
+    expect(fs.readFileSync(path.join(agents, 'to.crp.onlykey.plist'), 'utf8')).toBe(plist);
+    expect(calls.some((call) => call.file === 'osascript' && call.input && call.input.includes('delete login item'))).toBe(true);
+    expect(calls.some((call) => call.file === 'plutil')).toBe(false);
+  });
 });
 
 describe('windows autostart registry', () => {

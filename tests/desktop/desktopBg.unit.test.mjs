@@ -108,6 +108,24 @@ function loadDesktopModule() {
 }
 
 describe('desktopBg.cjs unit', () => {
+  it('defers macOS System Events only for a hidden launch before the window is shown', () => {
+    const desktop = loadDesktopModule();
+    expect(desktop.shouldDeferMacLoginItems('darwin', true, false)).toBe(true);
+    expect(desktop.shouldDeferMacLoginItems('darwin', true, true)).toBe(false);
+    expect(desktop.shouldDeferMacLoginItems('darwin', false, false)).toBe(false);
+    expect(desktop.shouldDeferMacLoginItems('win32', true, false)).toBe(false);
+    expect(desktop.shouldDeferMacLoginItems('linux', true, false)).toBe(false);
+  });
+
+  it('does not migrate login items over an explicit autostart off', () => {
+    const desktop = loadDesktopModule();
+    expect(desktop.macLoginItemFollowUp(false, true, false)).toBe('migrate');
+    expect(desktop.macLoginItemFollowUp(false, true, true)).toBe('remove-items');
+    expect(desktop.macLoginItemFollowUp(false, false, false)).toBe('remove-items');
+    expect(desktop.macLoginItemFollowUp(true, true, false)).toBe('remove-items');
+    expect(desktop.macLoginItemFollowUp(true, false, true)).toBe('remove-items');
+  });
+
   beforeEach(() => {
     vi.useRealTimers();
     vi.stubGlobal('localStorage', {

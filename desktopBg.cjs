@@ -14,6 +14,9 @@ const userPreferences = require('./userPreferences.cjs');
 const { createLoginAutostart } = require('./loginAutostart.cjs');
 
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
+const LOGIN_ITEM_EXPLAINED_KEY = 'onlykey.loginItemAccessExplained';
+const LOGIN_ITEM_ACCESS_DETAIL =
+  'OnlyKey uses this once to remove login items left by older versions, so the app starts once in the tray.';
 
 function isLikelyAppRoot(dir) {
   try {
@@ -192,6 +195,14 @@ const state = {
   pendingTimers: [],
   autoLaunch: null,
   userRevealedWindow: false,
+  macLoginItemsDeferred: false,
+  macLoginItemCleanupStarted: false,
+  macLoginItemsReady: false,
+  macPreferenceBeforeLoginItems: null,
+  autostartUserSet: false,
+  loginItemPromptDismissed: false,
+  macAutostartChain: Promise.resolve(),
+  loginItemExplainPromise: null,
 };
 
 const osx = os.platform() === 'darwin';
@@ -199,6 +210,231 @@ const linux = os.platform() === 'linux';
 
 function hasNw() {
   return typeof nw !== 'undefined' && !!nw?.Window;
+}
+
+/**
+ * Hidden autostart must not call System Events. Login Item cleanup waits
+ * until the user has opened the window and seen why macOS will ask.
+ */
+function shouldDeferMacLoginItems(platform, hiddenLaunch, userRevealed) {
+  return platform === 'darwin' && !!hiddenLaunch && !userRevealed;
+}
+
+/**
+ * After the note, delete leftover Login Items. Migrate them into the
+ * LaunchAgent only when autostart is still wanted and no agent exists yet.
+ * A stored "off", or a checkbox change during the note, must not be undone.
+ */
+function macLoginItemFollowUp(userSet, preferenceOn, agentEnabled) {
+  if (userSet || agentEnabled || !preferenceOn) return 'remove-items';
+  return 'migrate';
+}
+
+function loginItemAccessExplained() {
+  try {
+    return localStorage.getItem(LOGIN_ITEM_EXPLAINED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markLoginItemAccessExplained() {
+  try {
+    localStorage.setItem(LOGIN_ITEM_EXPLAINED_KEY, '1');
+  } catch {
+    // ignore
+  }
+}
+
+function loginItemAppleScriptDeferred() {
+  return osx && !state.macLoginItemsReady;
+}
+
+function enqueueMacAutostart(task) {
+  const run = state.macAutostartChain.then(task, task);
+  state.macAutostartChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
+function presentLoginItemAccessDialog() {
+  return new Promise((resolve) => {
+    const show = () => {
+      if (loginItemAccessExplained()) {
+        resolve(true);
+        return;
+      }
+      if (!document.body) {
+        resolve(false);
+        return;
+      }
+      const overlay = document.createElement('div');
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'onlykey-login-item-title');
+      overlay.setAttribute('data-testid', 'login-item-access-dialog');
+      overlay.style.cssText = [
+        'position:fixed',
+        'inset:0',
+        'z-index:400',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'padding:16px',
+        'background:rgba(0,0,0,0.7)',
+        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
+      ].join(';');
+
+      const card = document.createElement('div');
+      card.style.cssText = [
+        'width:100%',
+        'max-width:28rem',
+        'background:var(--ok-surface,#2d2d2d)',
+        'color:var(--ok-text,#fff)',
+        'border:1px solid var(--ok-border,rgba(255,255,255,0.1))',
+        'border-radius:16px',
+        'padding:24px',
+        'box-shadow:0 25px 50px rgba(0,0,0,0.45)',
+      ].join(';');
+
+      const title = document.createElement('h2');
+      title.id = 'onlykey-login-item-title';
+      title.textContent = 'Allow System Events';
+      title.style.cssText = 'margin:0 0 12px;font-size:20px;font-weight:700';
+
+      const lead = document.createElement('p');
+      lead.textContent = 'macOS will ask OnlyKey to control System Events. Choose Allow.';
+      lead.style.cssText = 'margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ok-text-secondary,#d1d5db)';
+
+      const detail = document.createElement('p');
+      detail.textContent = LOGIN_ITEM_ACCESS_DETAIL;
+      detail.style.cssText = 'margin:0;font-size:14px;line-height:1.5;color:var(--ok-text-muted,#a8b0bc)';
+
+      const actions = document.createElement('div');
+      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:12px;margin-top:20px';
+
+      const later = document.createElement('button');
+      later.type = 'button';
+      later.textContent = 'Not now';
+      later.style.cssText = [
+        'background:transparent',
+        'color:var(--ok-text,#fff)',
+        'border:0',
+        'border-radius:12px',
+        'padding:10px 20px',
+        'font-weight:600',
+        'cursor:pointer',
+      ].join(';');
+      later.addEventListener('click', () => {
+        state.loginItemPromptDismissed = true;
+        overlay.remove();
+        resolve('later');
+      });
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Continue';
+      button.style.cssText = [
+        'background:#0056b3',
+        'color:#fff',
+        'border:0',
+        'border-radius:12px',
+        'padding:10px 20px',
+        'font-weight:700',
+        'cursor:pointer',
+      ].join(';');
+      button.addEventListener('click', () => {
+        overlay.remove();
+        resolve(true);
+      });
+
+      actions.append(later, button);
+      card.append(title, lead, detail, actions);
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+      try {
+        const win = nw.Window.get();
+        if (win && win.isVisible) button.focus();
+      } catch {
+        // ignore
+      }
+    };
+
+    if (typeof document === 'undefined') {
+      resolve(false);
+      return;
+    }
+    if (document.body) {
+      show();
+      return;
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', show, { once: true });
+      return;
+    }
+    resolve(false);
+  });
+}
+
+/** Resolves true when it is safe to call System Events. */
+function explainLoginItemAccess() {
+  if (!osx || isDesktopTestMode()) return Promise.resolve(false);
+  if (loginItemAccessExplained()) return Promise.resolve(true);
+  if (state.loginItemExplainPromise) return state.loginItemExplainPromise;
+  const pending = presentLoginItemAccessDialog().then((shown) => {
+    if (!shown) state.loginItemExplainPromise = null;
+    return shown;
+  });
+  state.loginItemExplainPromise = pending;
+  return pending;
+}
+
+async function finishMacLoginItemAccess() {
+  let proceed = false;
+  try {
+    const answer = await explainLoginItemAccess();
+    if (answer === 'later') {
+      state.loginItemPromptDismissed = true;
+      state.macLoginItemCleanupStarted = false;
+      return;
+    }
+    if (answer !== true) {
+      state.macLoginItemCleanupStarted = false;
+      return;
+    }
+    proceed = true;
+    if (state.stopped || !state.autoLaunch) return;
+    const followUp = macLoginItemFollowUp(
+      state.autostartUserSet,
+      state.macPreferenceBeforeLoginItems === true,
+      await state.autoLaunch.isEnabled(),
+    );
+    if (followUp === 'remove-items') {
+      await state.autoLaunch.removeLegacyLoginItems();
+      return;
+    }
+    const result = await state.autoLaunch.repair();
+    if (state.autostartUserSet) return;
+    userPreferences.autoLaunch = !!result.enabled;
+    if (state.tray) assignTrayMenu(buildTrayMenu(state.autoLaunch));
+  } catch (error) {
+    console.error('Login item cleanup failed:', error);
+  } finally {
+    if (!proceed) return;
+    markLoginItemAccessExplained();
+    state.macLoginItemsReady = true;
+  }
+}
+
+function scheduleMacLoginItemCleanup() {
+  if (!osx || isDesktopTestMode() || state.loginItemPromptDismissed) return;
+  if (state.macLoginItemCleanupStarted) return;
+  if (!state.autoLaunch) return;
+  if (state.macLoginItemsDeferred && !state.userRevealedWindow) return;
+  state.macLoginItemCleanupStarted = true;
+  enqueueMacAutostart(() => finishMacLoginItemAccess());
 }
 
 function trayInitActive() {
@@ -463,6 +699,7 @@ function revealWindow(win) {
   }
   win.show(true);
   win.focus();
+  scheduleMacLoginItemCleanup();
 }
 
 function executeShowMainWindow() {
@@ -884,20 +1121,24 @@ function buildTrayMenu(autoLaunch) {
         return;
       }
       const next = !userPreferences.autoLaunch;
-      const op = next ? autoLaunch.enable() : autoLaunch.disable();
-      op
-        .catch(console.error)
-        .then(() => autoLaunch.isEnabled())
-        .then((enabled) => {
-          userPreferences.autoLaunch = !!enabled;
-        })
-        .catch(() => {
-          userPreferences.autoLaunch = next;
-        })
-        .finally(() => {
-          // Rebuild so Linux tray picks up the new checked state.
-          assignTrayMenu(buildTrayMenu(autoLaunch));
-        });
+      state.autostartUserSet = true;
+      enqueueMacAutostart(() => {
+        const autostartOptions = loginItemAppleScriptDeferred() ? { skipLoginItems: true } : undefined;
+        const op = next ? autoLaunch.enable(autostartOptions) : autoLaunch.disable(autostartOptions);
+        return op
+          .catch(console.error)
+          .then(() => autoLaunch.isEnabled())
+          .then((enabled) => {
+            userPreferences.autoLaunch = !!enabled;
+          })
+          .catch(() => {
+            userPreferences.autoLaunch = next;
+          })
+          .finally(() => {
+            // Rebuild so Linux tray picks up the new checked state.
+            assignTrayMenu(buildTrayMenu(autoLaunch));
+          });
+      });
     },
   });
 
@@ -1039,13 +1280,29 @@ async function initTray() {
   // Resolve OS autostart state BEFORE first menu paint. Doing it afterward and
   // calling remove()/insert() emptied the Linux tray menu (Cinnamon/Mint).
   // Desktop unit tests must not read or write the developer machine's login items.
+  // On Mac the note and System Events call happen after the tray exists, so
+  // closing the window before Continue still leaves a tray icon.
+  const deferMacLoginItems = shouldDeferMacLoginItems(
+    os.platform(),
+    launchedHiddenToTray(),
+    state.userRevealedWindow,
+  );
   if (autoLaunch && !isDesktopTestMode()) {
     try {
-      await autoLaunch.repair();
+      if (osx) {
+        state.macLoginItemsDeferred = deferMacLoginItems;
+        if (state.macPreferenceBeforeLoginItems == null && !state.autostartUserSet) {
+          state.macPreferenceBeforeLoginItems = !!userPreferences.autoLaunch;
+        }
+      }
+      await autoLaunch.repair(osx ? { skipLoginItems: true } : undefined);
       if (!trayInitActive()) return;
-      const enabled = await autoLaunch.isEnabled();
+      const enabled = !!(await autoLaunch.isEnabled());
       if (!trayInitActive()) return;
-      userPreferences.autoLaunch = !!enabled;
+      // Keep a stored "on" until the visible-window pass can see Login Items.
+      // Persisting "off" here would skip that migration if the note is dismissed.
+      const mayMigrate = osx && !enabled && state.macPreferenceBeforeLoginItems === true && !state.autostartUserSet;
+      if (!mayMigrate) userPreferences.autoLaunch = enabled;
     } catch (error) {
       console.error('Autostart repair failed:', error);
     }
@@ -1073,6 +1330,7 @@ async function initTray() {
   assignTrayMenu(settingsMenu);
   trayLog('initTray complete', { iconPath, menuItems: state.menuLabels.length });
   markTrayReady(true);
+  scheduleMacLoginItemCleanup();
 
   // Re-assign once more on next tick — some Linux tray hosts register the icon
   // asynchronously and drop the first menu attachment.
@@ -1260,6 +1518,8 @@ module.exports = {
   showMainWindow,
   quitApp,
   launchedHiddenToTray,
+  shouldDeferMacLoginItems,
+  macLoginItemFollowUp,
   shouldKeepWindowHidden,
   applyLaunchVisibility,
   dispatchTrayCommand,

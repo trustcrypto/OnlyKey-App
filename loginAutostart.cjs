@@ -14,8 +14,10 @@
  *            value is left off.
  *   macOS    ~/Library/LaunchAgents/to.crp.onlykey.plist
  *            runs `open -gj <bundle> --args --hidden --onlykey-autostart`
- *            so Launch Services owns a single Dock tile. Legacy agents and
- *            Login Items that start this app are removed.
+ *            so Launch Services owns a single Dock tile. Legacy agents are
+ *            removed immediately. Login Items are removed with System Events
+ *            only while the window is visible. Pass skipLoginItems to leave
+ *            them in place (a hidden autostart launch does this).
  *   Linux    ~/.config/autostart/OnlyKey.desktop via onlykey-launch --hidden.
  */
 'use strict';
@@ -631,18 +633,22 @@ function createLoginAutostart(options = {}) {
     return true;
   }
 
-  function repairMac() {
+  function readLoginItems() {
+    try {
+      return listLoginItems();
+    } catch (error) {
+      console.error('Could not list login items:', error);
+      return [];
+    }
+  }
+
+  function repairMac(opts = {}) {
     const paths = macPaths();
     if (!paths.bundlePath) return { changed: false, enabled: false };
     const desired = macLaunchAgentPlist(paths.bundlePath, paths.label);
     const canonicalText = readText(paths.canonical);
     const legacyNames = macLegacy(paths);
-    let loginItems = [];
-    try {
-      loginItems = listLoginItems();
-    } catch (error) {
-      console.error('Could not list login items:', error);
-    }
+    const loginItems = opts.skipLoginItems ? [] : readLoginItems();
     const plan = planMac({
       canonicalText,
       desiredText: desired,
@@ -651,36 +657,55 @@ function createLoginAutostart(options = {}) {
     });
     if (plan.write) writeCanonical(paths, desired);
     deleteAgents(paths, plan.deleteAgents);
-    deleteLoginItems(plan.deleteLoginItems);
+    if (!opts.skipLoginItems) deleteLoginItems(plan.deleteLoginItems);
     const dockChanged = pruneDock(paths.bundlePath);
     const changed = !!(plan.write || plan.deleteAgents.length || plan.deleteLoginItems.length || dockChanged);
     return { changed, enabled: plan.enabled, removed: plan.deleteAgents };
   }
 
-  function enableMac() {
+  function enableMac(opts = {}) {
     const paths = macPaths();
     if (!paths.bundlePath) throw new Error('macOS autostart needs the app bundle');
     const desired = macLaunchAgentPlist(paths.bundlePath, paths.label);
     writeCanonical(paths, desired);
     deleteAgents(paths, macLegacy(paths));
-    try {
-      deleteLoginItems(listLoginItems());
-    } catch (error) {
-      console.error('Could not remove login items:', error);
+    if (!opts.skipLoginItems) {
+      try {
+        deleteLoginItems(listLoginItems());
+      } catch (error) {
+        console.error('Could not remove login items:', error);
+      }
     }
     pruneDock(paths.bundlePath);
     return { changed: true, enabled: true };
   }
 
-  function disableMac() {
+  function disableMac(opts = {}) {
     const paths = macPaths();
     deleteAgents(paths, [path.basename(paths.canonical), ...macLegacy(paths)]);
-    try {
-      deleteLoginItems(listLoginItems());
-    } catch (error) {
-      console.error('Could not remove login items:', error);
+    if (!opts.skipLoginItems) {
+      try {
+        deleteLoginItems(listLoginItems());
+      } catch (error) {
+        console.error('Could not remove login items:', error);
+      }
     }
     return { changed: true, enabled: false };
+  }
+
+  function removeLegacyLoginItems() {
+    if (!allowWrites || platform !== 'darwin') return { removed: 0, skipped: true };
+    const paths = macPaths();
+    if (!paths.bundlePath) return { removed: 0, skipped: true };
+    let loginItems = [];
+    try {
+      loginItems = listLoginItems();
+    } catch (error) {
+      console.error('Could not list login items:', error);
+      return { removed: 0, failed: true };
+    }
+    deleteLoginItems(loginItems);
+    return { removed: loginItems.length };
   }
 
   function macEnabled() {
@@ -734,11 +759,12 @@ function createLoginAutostart(options = {}) {
     return desktopExecLine(text).includes('--hidden');
   }
 
-  function repair() {
+  function repair(options) {
     if (!allowWrites) return Promise.resolve(refuse());
+    const skipLoginItems = !!(options && options.skipLoginItems);
     return Promise.resolve().then(() => {
       if (platform === 'win32') return repairWindows();
-      if (platform === 'darwin') return repairMac();
+      if (platform === 'darwin') return repairMac({ skipLoginItems });
       if (platform === 'linux') return repairLinux();
       return refuse();
     });
@@ -758,21 +784,23 @@ function createLoginAutostart(options = {}) {
     return { changed: true, enabled: true };
   }
 
-  function enable() {
+  function enable(options) {
     if (!allowWrites) return Promise.resolve(refuse());
+    const skipLoginItems = !!(options && options.skipLoginItems);
     return Promise.resolve().then(() => {
       if (platform === 'win32') return enableWindows();
-      if (platform === 'darwin') return enableMac();
+      if (platform === 'darwin') return enableMac({ skipLoginItems });
       if (platform === 'linux') return enableLinux();
       return refuse();
     });
   }
 
-  function disable() {
+  function disable(options) {
     if (!allowWrites) return Promise.resolve(refuse());
+    const skipLoginItems = !!(options && options.skipLoginItems);
     return Promise.resolve().then(() => {
       if (platform === 'win32') return disableWindows();
-      if (platform === 'darwin') return disableMac();
+      if (platform === 'darwin') return disableMac({ skipLoginItems });
       if (platform === 'linux') {
         const dir = linuxDir();
         const names = new Set([`${name}.desktop`, ...linuxLegacy()]);
@@ -799,7 +827,12 @@ function createLoginAutostart(options = {}) {
     });
   }
 
-  return { repair, enable, disable, isEnabled, name };
+  function clearLegacyLoginItems() {
+    if (!allowWrites) return Promise.resolve({ removed: 0, skipped: true });
+    return Promise.resolve().then(() => removeLegacyLoginItems());
+  }
+
+  return { repair, enable, disable, isEnabled, removeLegacyLoginItems: clearLegacyLoginItems, name };
 }
 
 module.exports = {

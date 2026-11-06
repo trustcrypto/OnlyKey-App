@@ -34,6 +34,17 @@ describe('desktop bootstrap static checks', () => {
     expect(plist).not.toContain('com.intel.nw');
   });
 
+  it('explains the System Events prompt in the Mac plist and the desktop shell', () => {
+    const purpose = 'OnlyKey uses this once to remove login items left by older versions, so the app starts once in the tray.';
+    const plist = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'Info.plist'), 'utf8');
+    const shell = fs.readFileSync(path.join(rootDir, 'desktopBg.cjs'), 'utf8');
+    expect(plist).toContain('<key>NSAppleEventsUsageDescription</key>');
+    expect(plist).toContain(purpose);
+    expect(shell).toContain(purpose);
+    expect(shell).toContain('skipLoginItems');
+    expect(shell).toContain('shouldDeferMacLoginItems');
+  });
+
   it('linux launcher asks a running instance to show unless autostart is hidden', () => {
     const launch = fs.readFileSync(path.join(rootDir, 'resources', 'linux', 'onlykey-launch'), 'utf8');
     expect(launch).toContain('tray-command.json');
