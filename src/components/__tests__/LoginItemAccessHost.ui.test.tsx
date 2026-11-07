@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import LoginItemAccessHost from '../LoginItemAccessHost';
+import LoginItemAccessHost, { resetLoginItemAccessPrompt } from '../LoginItemAccessHost';
 import { renderWithProviders } from '../../test/render';
 
 describe('LoginItemAccessHost', () => {
   afterEach(() => {
+    resetLoginItemAccessPrompt();
     delete window.onlykeyAskLoginItemAccess;
   });
 
@@ -32,5 +33,19 @@ describe('LoginItemAccessHost', () => {
     await screen.findByRole('button', { name: 'Not now' });
     await user.click(screen.getByRole('button', { name: 'Not now' }));
     await expect(second).resolves.toBe('later');
+  });
+
+  it('opens after a remount when the shell already asked', async () => {
+    const user = userEvent.setup();
+    const first = renderWithProviders(<LoginItemAccessHost />);
+    const ask = window.onlykeyAskLoginItemAccess;
+    expect(ask).toBeTypeOf('function');
+    first.unmount();
+
+    const pending = ask!();
+    renderWithProviders(<LoginItemAccessHost />);
+    expect(await screen.findByRole('heading', { name: 'Allow System Events' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Not now' }));
+    await expect(pending).resolves.toBe('later');
   });
 });

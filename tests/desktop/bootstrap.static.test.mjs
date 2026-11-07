@@ -44,6 +44,7 @@ describe('desktop bootstrap static checks', () => {
     expect(dialog).toContain(purpose);
     expect(dialog).toContain('ConfirmDialog');
     expect(shell).toContain('onlykeyAskLoginItemAccess');
+    expect(shell).toContain('appPageWindow');
     expect(shell).not.toContain('document.createElement');
     expect(shell).toContain('skipLoginItems');
     expect(shell).toContain('shouldDeferMacLoginItems');

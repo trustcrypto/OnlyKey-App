@@ -150,6 +150,37 @@ describe('desktopBg.cjs unit', () => {
     vi.unstubAllGlobals();
   });
 
+  it('asks the page window when the inject global cannot see the dialog', async () => {
+    const { win } = createNwMock();
+    const injectWindow = { addEventListener: vi.fn() };
+    vi.stubGlobal('window', injectWindow);
+    const desktop = loadDesktopModule();
+    win.window.onlykeyAskLoginItemAccess = () => Promise.resolve(true);
+
+    await expect(desktop.requestLoginItemDecision()).resolves.toBe(true);
+    expect(injectWindow.onlykeyAskLoginItemAccess).toBeUndefined();
+  });
+
+  it('waits for the page to register the System Events dialog', async () => {
+    vi.useFakeTimers();
+    const { win } = createNwMock();
+    vi.stubGlobal('window', { addEventListener: vi.fn() });
+    const desktop = loadDesktopModule();
+    const pending = desktop.requestLoginItemDecision();
+    let settled = false;
+    pending.then(() => {
+      settled = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+    expect(settled).toBe(false);
+
+    win.window.onlykeyAskLoginItemAccess = () => Promise.resolve('later');
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(pending).resolves.toBe('later');
+    vi.useRealTimers();
+  });
+
   it('binds close handler and creates tray on start() in main context', async () => {
     const { win } = createNwMock();
     const desktop = loadDesktopModule();

@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ConfirmDialog from './dialogs/ConfirmDialog';
 
 /** Same sentence as NSAppleEventsUsageDescription in resources/osx/Info.plist. */
@@ -18,44 +19,69 @@ declare global {
 }
 
 /**
+ * The document-start inject script cannot see this page's globals. The pending
+ * request lives on the module so a remount still opens the note the shell asked for.
+ */
+let pendingResolve: ((answer: LoginItemAccessAnswer) => void) | null = null;
+const subscribers = new Set<(open: boolean) => void>();
+
+function publish(open: boolean) {
+  subscribers.forEach((notify) => notify(open));
+}
+
+function askLoginItemAccess(): Promise<LoginItemAccessAnswer> {
+  return new Promise((resolve) => {
+    pendingResolve = resolve;
+    publish(true);
+  });
+}
+
+function settleLoginItemAccess(answer: LoginItemAccessAnswer) {
+  const resolve = pendingResolve;
+  pendingResolve = null;
+  publish(false);
+  resolve?.(answer);
+}
+
+export function resetLoginItemAccessPrompt() {
+  pendingResolve = null;
+  publish(false);
+}
+
+/**
  * macOS asks the desktop shell for this answer before it talks to System Events.
  * The shell does not build UI; it calls window.onlykeyAskLoginItemAccess.
  */
 const LoginItemAccessHost: React.FC = () => {
   const [open, setOpen] = useState(false);
-  const resolveRef = useRef<((answer: LoginItemAccessAnswer) => void) | null>(null);
 
   useEffect(() => {
-    window.onlykeyAskLoginItemAccess = () =>
-      new Promise((resolve) => {
-        resolveRef.current = resolve;
-        setOpen(true);
-      });
+    window.onlykeyAskLoginItemAccess = askLoginItemAccess;
+    const notify = (next: boolean) => setOpen(next);
+    subscribers.add(notify);
+    notify(pendingResolve != null);
     window.dispatchEvent(new Event(LOGIN_ITEM_UI_READY));
     return () => {
-      delete window.onlykeyAskLoginItemAccess;
-      resolveRef.current = null;
+      subscribers.delete(notify);
     };
   }, []);
 
-  const answer = (value: LoginItemAccessAnswer) => {
-    setOpen(false);
-    const resolve = resolveRef.current;
-    resolveRef.current = null;
-    resolve?.(value);
-  };
-
-  return (
+  const dialog = (
     <ConfirmDialog
       open={open}
       title="Allow System Events"
       message={LOGIN_ITEM_ACCESS_MESSAGE}
       confirmLabel="Continue"
       cancelLabel="Not now"
-      onConfirm={() => answer(true)}
-      onCancel={() => answer('later')}
+      onConfirm={() => settleLoginItemAccess(true)}
+      onCancel={() => settleLoginItemAccess('later')}
     />
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(dialog, document.body);
+  }
+  return dialog;
 };
 
 export default LoginItemAccessHost;

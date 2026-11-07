@@ -202,6 +202,7 @@ const state = {
   loginItemPromptDismissed: false,
   macAutostartChain: Promise.resolve(),
   loginItemExplainPromise: null,
+  loginItemPoll: null,
 };
 
 const osx = os.platform() === 'darwin';
@@ -258,29 +259,69 @@ function enqueueMacAutostart(task) {
   return run;
 }
 
+/**
+ * document-start inject scripts do not share the page's JavaScript globals.
+ * nw.Window.get().window is the page where LoginItemAccessHost registers.
+ */
+function appPageWindow() {
+  const seen = [];
+  const push = (candidate) => {
+    if (candidate && !seen.includes(candidate)) seen.push(candidate);
+  };
+  try {
+    if (typeof nw !== 'undefined' && nw.Window && typeof nw.Window.get === 'function') {
+      const nwWin = nw.Window.get();
+      if (nwWin) push(nwWin.window);
+    }
+  } catch {
+    // ignore
+  }
+  if (typeof window !== 'undefined') push(window);
+  return seen;
+}
+
+function stopLoginItemPoll() {
+  if (state.loginItemPoll) {
+    clearInterval(state.loginItemPoll);
+    state.loginItemPoll = null;
+  }
+}
+
 /** The React confirm dialog owns the UI. This only waits for its answer. */
 function requestLoginItemDecision() {
   return new Promise((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve(false);
-      return;
-    }
-    let settled = false;
-    const deliver = () => {
-      if (settled) return true;
-      const ask = window.onlykeyAskLoginItemAccess;
-      if (typeof ask !== 'function') return false;
-      settled = true;
-      Promise.resolve(ask()).then(resolve, () => resolve(false));
-      return true;
+    let finished = false;
+    let asked = false;
+    const finish = (value) => {
+      if (finished) return;
+      finished = true;
+      stopLoginItemPoll();
+      resolve(value);
     };
-    if (deliver()) return;
+    const tryAsk = () => {
+      if (finished || asked) return asked;
+      for (const page of appPageWindow()) {
+        const ask = page && page.onlykeyAskLoginItemAccess;
+        if (typeof ask !== 'function') continue;
+        asked = true;
+        stopLoginItemPoll();
+        Promise.resolve()
+          .then(() => ask())
+          .then((answer) => finish(answer), () => finish(false));
+        return true;
+      }
+      return false;
+    };
     const onReady = () => {
-      window.removeEventListener(LOGIN_ITEM_UI_READY, onReady);
-      if (!deliver()) resolve(false);
+      tryAsk();
     };
-    window.addEventListener(LOGIN_ITEM_UI_READY, onReady, { once: true });
-    if (deliver()) window.removeEventListener(LOGIN_ITEM_UI_READY, onReady);
+    for (const page of appPageWindow()) {
+      if (page && typeof page.addEventListener === 'function') {
+        page.addEventListener(LOGIN_ITEM_UI_READY, onReady);
+      }
+    }
+    if (tryAsk()) return;
+    state.loginItemPoll = setInterval(tryAsk, 50);
   });
 }
 
@@ -1369,6 +1410,7 @@ function startWindowPoll(tick, maxPolls) {
 
 function stop() {
   state.stopped = true;
+  stopLoginItemPoll();
   if (state.commandPoll) {
     clearInterval(state.commandPoll);
     state.commandPoll = null;
@@ -1427,6 +1469,7 @@ module.exports = {
   launchedHiddenToTray,
   shouldDeferMacLoginItems,
   macLoginItemFollowUp,
+  requestLoginItemDecision,
   shouldKeepWindowHidden,
   applyLaunchVisibility,
   dispatchTrayCommand,
