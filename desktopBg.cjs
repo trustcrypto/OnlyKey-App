@@ -11,8 +11,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const userPreferences = require('./userPreferences.cjs');
+const { createLoginAutostart } = require('./loginAutostart.cjs');
 
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
+const LOGIN_ITEM_EXPLAINED_KEY = 'onlykey.loginItemAccessExplained';
+const LOGIN_ITEM_UI_READY = 'onlykey-login-item-ui-ready';
 
 function isLikelyAppRoot(dir) {
   try {
@@ -190,6 +193,16 @@ const state = {
   stopped: false,
   pendingTimers: [],
   autoLaunch: null,
+  userRevealedWindow: false,
+  macLoginItemsDeferred: false,
+  macLoginItemCleanupStarted: false,
+  macLoginItemsReady: false,
+  macPreferenceBeforeLoginItems: null,
+  autostartUserSet: false,
+  loginItemPromptDismissed: false,
+  macAutostartChain: Promise.resolve(),
+  loginItemExplainPromise: null,
+  loginItemPoll: null,
 };
 
 const osx = os.platform() === 'darwin';
@@ -197,6 +210,179 @@ const linux = os.platform() === 'linux';
 
 function hasNw() {
   return typeof nw !== 'undefined' && !!nw?.Window;
+}
+
+/**
+ * Hidden autostart must not call System Events. Login Item cleanup waits
+ * until the user has opened the window and seen why macOS will ask.
+ */
+function shouldDeferMacLoginItems(platform, hiddenLaunch, userRevealed) {
+  return platform === 'darwin' && !!hiddenLaunch && !userRevealed;
+}
+
+/**
+ * After the note, delete leftover Login Items. Migrate them into the
+ * LaunchAgent only when autostart is still wanted and no agent exists yet.
+ * A stored "off", or a checkbox change during the note, must not be undone.
+ */
+function macLoginItemFollowUp(userSet, preferenceOn, agentEnabled) {
+  if (userSet || agentEnabled || !preferenceOn) return 'remove-items';
+  return 'migrate';
+}
+
+function loginItemAccessExplained() {
+  try {
+    return localStorage.getItem(LOGIN_ITEM_EXPLAINED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markLoginItemAccessExplained() {
+  try {
+    localStorage.setItem(LOGIN_ITEM_EXPLAINED_KEY, '1');
+  } catch {
+    // ignore
+  }
+}
+
+function loginItemAppleScriptDeferred() {
+  return osx && !state.macLoginItemsReady;
+}
+
+function enqueueMacAutostart(task) {
+  const run = state.macAutostartChain.then(task, task);
+  state.macAutostartChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
+/**
+ * document-start inject scripts do not share the page's JavaScript globals.
+ * nw.Window.get().window is the page where LoginItemAccessHost registers.
+ */
+function appPageWindow() {
+  const seen = [];
+  const push = (candidate) => {
+    if (candidate && !seen.includes(candidate)) seen.push(candidate);
+  };
+  try {
+    if (typeof nw !== 'undefined' && nw.Window && typeof nw.Window.get === 'function') {
+      const nwWin = nw.Window.get();
+      if (nwWin) push(nwWin.window);
+    }
+  } catch {
+    // ignore
+  }
+  if (typeof window !== 'undefined') push(window);
+  return seen;
+}
+
+function stopLoginItemPoll() {
+  if (state.loginItemPoll) {
+    clearInterval(state.loginItemPoll);
+    state.loginItemPoll = null;
+  }
+}
+
+/** The React confirm dialog owns the UI. This only waits for its answer. */
+function requestLoginItemDecision() {
+  return new Promise((resolve) => {
+    let finished = false;
+    let asked = false;
+    const finish = (value) => {
+      if (finished) return;
+      finished = true;
+      stopLoginItemPoll();
+      resolve(value);
+    };
+    const tryAsk = () => {
+      if (finished || asked) return asked;
+      for (const page of appPageWindow()) {
+        const ask = page && page.onlykeyAskLoginItemAccess;
+        if (typeof ask !== 'function') continue;
+        asked = true;
+        stopLoginItemPoll();
+        Promise.resolve()
+          .then(() => ask())
+          .then((answer) => finish(answer), () => finish(false));
+        return true;
+      }
+      return false;
+    };
+    const onReady = () => {
+      tryAsk();
+    };
+    for (const page of appPageWindow()) {
+      if (page && typeof page.addEventListener === 'function') {
+        page.addEventListener(LOGIN_ITEM_UI_READY, onReady);
+      }
+    }
+    if (tryAsk()) return;
+    state.loginItemPoll = setInterval(tryAsk, 50);
+  });
+}
+
+/** Resolves true when it is safe to call System Events. */
+function explainLoginItemAccess() {
+  if (!osx || isDesktopTestMode()) return Promise.resolve(false);
+  if (loginItemAccessExplained()) return Promise.resolve(true);
+  if (state.loginItemExplainPromise) return state.loginItemExplainPromise;
+  const pending = requestLoginItemDecision().then((shown) => {
+    if (!shown) state.loginItemExplainPromise = null;
+    return shown;
+  });
+  state.loginItemExplainPromise = pending;
+  return pending;
+}
+
+async function finishMacLoginItemAccess() {
+  let proceed = false;
+  try {
+    const answer = await explainLoginItemAccess();
+    if (answer === 'later') {
+      state.loginItemPromptDismissed = true;
+      state.macLoginItemCleanupStarted = false;
+      return;
+    }
+    if (answer !== true) {
+      state.macLoginItemCleanupStarted = false;
+      return;
+    }
+    proceed = true;
+    if (state.stopped || !state.autoLaunch) return;
+    const followUp = macLoginItemFollowUp(
+      state.autostartUserSet,
+      state.macPreferenceBeforeLoginItems === true,
+      await state.autoLaunch.isEnabled(),
+    );
+    if (followUp === 'remove-items') {
+      await state.autoLaunch.removeLegacyLoginItems();
+      return;
+    }
+    const result = await state.autoLaunch.repair();
+    if (state.autostartUserSet) return;
+    userPreferences.autoLaunch = !!result.enabled;
+    if (state.tray) assignTrayMenu(buildTrayMenu(state.autoLaunch));
+  } catch (error) {
+    console.error('Login item cleanup failed:', error);
+  } finally {
+    if (proceed) {
+      markLoginItemAccessExplained();
+      state.macLoginItemsReady = true;
+    }
+  }
+}
+
+function scheduleMacLoginItemCleanup() {
+  if (!osx || isDesktopTestMode() || state.loginItemPromptDismissed) return;
+  if (state.macLoginItemCleanupStarted) return;
+  if (!state.autoLaunch) return;
+  if (state.macLoginItemsDeferred && !state.userRevealedWindow) return;
+  state.macLoginItemCleanupStarted = true;
+  enqueueMacAutostart(() => finishMacLoginItemAccess());
 }
 
 function trayInitActive() {
@@ -447,6 +633,7 @@ function resolveTrayIconPath() {
 }
 
 function revealWindow(win) {
+  state.userRevealedWindow = true;
   setSuppressShow(false);
   try {
     if (win.isMinimized) win.restore();
@@ -460,12 +647,14 @@ function revealWindow(win) {
   }
   win.show(true);
   win.focus();
+  scheduleMacLoginItemCleanup();
 }
 
 function executeShowMainWindow() {
   const reveal = () => {
     if (state.quitting || state.stopped || !hasNw()) return;
     state.quitting = false;
+    state.userRevealedWindow = true;
     setSuppressShow(false);
     trayLog('executeShowMainWindow', {
       hasMainRef: !!state.mainAppWindow,
@@ -674,14 +863,42 @@ function collectArgv() {
   return values;
 }
 
-/** True when this process was started by the OS login entry (--hidden). */
+function hasHiddenLaunchArg(arg) {
+  return arg === '--hidden' || arg === '--onlykey-autostart' || arg.startsWith('--hidden=');
+}
+
+/** True when this process was started by the OS login entry. */
 function launchedHiddenToTray() {
-  return collectArgv().some((arg) => arg === '--hidden' || arg.startsWith('--hidden='));
+  try {
+    if (process.env.ONLYKEY_LAUNCHED_HIDDEN === '1') return true;
+  } catch {
+    // ignore
+  }
+  return collectArgv().some(hasHiddenLaunchArg);
 }
 
 function isHiddenLaunchCommand(cmdline) {
   const line = Array.isArray(cmdline) ? cmdline.map(String).join(' ') : String(cmdline || '');
-  return /(?:^|[\s"'=])--hidden(?:\s|"|'|=|$)/.test(line);
+  return /(?:^|[\s"'=])--(?:hidden|onlykey-autostart)(?:\s|"|'|=|$)/.test(line);
+}
+
+function localSuppressShow() {
+  try {
+    return localStorage.getItem(SUPPRESS_SHOW_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Autostart must not paint the window, including when a focus event arrives
+ * before the suppress flag is put back. After the user asks for the window,
+ * only an explicit hide-to-tray keeps it hidden.
+ */
+function shouldKeepWindowHidden() {
+  if (state.userRevealedWindow) return readSuppressShow() || localSuppressShow();
+  if (launchedHiddenToTray()) return true;
+  return readSuppressShow() || localSuppressShow();
 }
 
 /**
@@ -690,6 +907,7 @@ function isHiddenLaunchCommand(cmdline) {
  */
 function applyLaunchVisibility(win) {
   if (!launchedHiddenToTray()) return false;
+  state.userRevealedWindow = false;
   setSuppressShow(true);
   if (!win) return true;
   try {
@@ -845,25 +1063,30 @@ function buildTrayMenu(autoLaunch) {
     checked: !!userPreferences.autoLaunch,
     click: function () {
       if (!autoLaunch) {
-        // Keep checkbox in sync with reality when auto-launch is unavailable.
+        // Keep checkbox in sync with reality when autostart is unavailable.
         autoLaunchMenuItem.checked = false;
         userPreferences.autoLaunch = false;
         return;
       }
       const next = !userPreferences.autoLaunch;
-      userPreferences.autoLaunch = next;
-      autoLaunch
-        .isEnabled()
-        .then((isEnabled) => {
-          if (isEnabled && !next) return autoLaunch.disable();
-          if (!isEnabled && next) return autoLaunch.enable();
-          return undefined;
-        })
-        .catch(console.error)
-        .finally(() => {
-          // Rebuild so Linux tray picks up the new checked state.
-          assignTrayMenu(buildTrayMenu(autoLaunch));
-        });
+      state.autostartUserSet = true;
+      enqueueMacAutostart(() => {
+        const autostartOptions = loginItemAppleScriptDeferred() ? { skipLoginItems: true } : undefined;
+        const op = next ? autoLaunch.enable(autostartOptions) : autoLaunch.disable(autostartOptions);
+        return op
+          .catch(console.error)
+          .then(() => autoLaunch.isEnabled())
+          .then((enabled) => {
+            userPreferences.autoLaunch = !!enabled;
+          })
+          .catch(() => {
+            userPreferences.autoLaunch = next;
+          })
+          .finally(() => {
+            // Rebuild so Linux tray picks up the new checked state.
+            assignTrayMenu(buildTrayMenu(autoLaunch));
+          });
+      });
     },
   });
 
@@ -928,80 +1151,13 @@ function buildTrayMenu(autoLaunch) {
 }
 
 /**
- * Login autostart used to open the window (and, on macOS, a visible login
- * item). Rewrite an already-enabled entry once so the next login stays in
- * the tray. Never call this from desktop unit tests — the dev execPath can
- * resolve to a real HKCU Run value.
- */
-async function adoptHiddenAutostart(autoLaunch, launchPath, appName) {
-  const marker = path.join(tmpDir(), 'autostart-hidden-synced');
-
-  if (osx && !fs.existsSync(marker)) {
-    try {
-      const AutoLaunch = require('auto-launch');
-      const legacy = new AutoLaunch({
-        name: appName,
-        path: launchPath,
-        isHidden: true,
-        mac: { useLaunchAgent: false },
-      });
-      if (await legacy.isEnabled()) {
-        await legacy.disable();
-        await autoLaunch.enable();
-        try {
-          fs.writeFileSync(marker, '1');
-        } catch {
-          // ignore
-        }
-        return;
-      }
-    } catch (error) {
-      console.error('Legacy login-item migration failed:', error);
-    }
-  }
-
-  let enabled = false;
-  try {
-    enabled = !!(await autoLaunch.isEnabled());
-  } catch {
-    return;
-  }
-
-  if (!enabled) {
-    try {
-      if (!fs.existsSync(marker)) fs.writeFileSync(marker, '1');
-    } catch {
-      // ignore
-    }
-    return;
-  }
-
-  if (fs.existsSync(marker)) return;
-
-  try {
-    await autoLaunch.disable();
-    await autoLaunch.enable();
-    fs.writeFileSync(marker, '1');
-  } catch (error) {
-    console.error('Could not update autostart to launch in the tray:', error);
-    try {
-      await autoLaunch.enable();
-    } catch {
-      // leave the previous attempt's error
-    }
-  }
-}
-
-/**
  * macOS: the path a login entry must launch.
  *
  * process.execPath in NW.js's node context is a Chromium HELPER, not the app:
  * …/OnlyKey App.app/Contents/Frameworks/nwjs Framework.framework/Versions/<v>/
  * Helpers/nwjs Helper (Renderer).app/Contents/MacOS/nwjs Helper (Renderer).
- * auto-launch only knows Electron's helper layout, so it kept that path - and
- * named the LaunchAgent after it - and at login macOS started the renderer
- * helper with --hidden instead of the app. Use the outer bundle's own
- * executable (Contents/MacOS/<CFBundleExecutable>).
+ * Login autostart does not launch that helper. It `open`s the outer bundle.
+ * This resolves the bundle's own executable (Contents/MacOS/<CFBundleExecutable>).
  */
 function macBundleRoot(execPath) {
   const match = /^(.+?\.app)(?:\/|$)/.exec(String(execPath || ''));
@@ -1059,45 +1215,44 @@ async function initTray() {
   if (state.tray || !trayInitActive()) return;
 
   const appPath = process.execPath;
-  const appName = appPath.includes('node_modules') ? 'OnlyKey-dev' : 'OnlyKey';
-  // Prefer the launcher wrapper when installed under /opt so login restart
-  // goes through the same path as the desktop entry.
-  let launchPath = fs.existsSync(path.join(path.dirname(appPath), 'onlykey-launch'))
-    ? path.join(path.dirname(appPath), 'onlykey-launch')
-    : appPath;
-  if (osx) launchPath = macLaunchPath(appPath);
   let autoLaunch = null;
   try {
-    const AutoLaunch = require('auto-launch');
-    autoLaunch = new AutoLaunch({
-      name: appName,
-      path: launchPath,
-      // --hidden on Windows/Linux; LaunchAgent ProgramArguments on macOS.
-      // The app honors --hidden by staying in the tray.
-      isHidden: true,
-      mac: { useLaunchAgent: true },
+    autoLaunch = createLoginAutostart({
+      execPath: appPath,
+      allowWrites: !isDesktopTestMode(),
     });
   } catch (error) {
-    console.error('AutoLaunch init skipped:', error);
+    console.error('Autostart init skipped:', error);
   }
 
-  // Resolve OS auto-launch state BEFORE first menu paint. Doing it afterward and
+  // Resolve OS autostart state BEFORE first menu paint. Doing it afterward and
   // calling remove()/insert() emptied the Linux tray menu (Cinnamon/Mint).
-  if (autoLaunch) {
+  // Desktop unit tests must not read or write the developer machine's login items.
+  // On Mac the note and System Events call happen after the tray exists, so
+  // closing the window before Continue still leaves a tray icon.
+  const deferMacLoginItems = shouldDeferMacLoginItems(
+    os.platform(),
+    launchedHiddenToTray(),
+    state.userRevealedWindow,
+  );
+  if (autoLaunch && !isDesktopTestMode()) {
     try {
-      if (!isDesktopTestMode()) {
-        if (osx && removeHelperLaunchAgents(appPath)) {
-          // Autostart was on but pointed at a helper: register the app itself.
-          await autoLaunch.enable();
+      if (osx) {
+        state.macLoginItemsDeferred = deferMacLoginItems;
+        if (state.macPreferenceBeforeLoginItems == null && !state.autostartUserSet) {
+          state.macPreferenceBeforeLoginItems = !!userPreferences.autoLaunch;
         }
-        await adoptHiddenAutostart(autoLaunch, launchPath, appName);
       }
+      await autoLaunch.repair(osx ? { skipLoginItems: true } : undefined);
       if (!trayInitActive()) return;
-      const enabled = await autoLaunch.isEnabled();
+      const enabled = !!(await autoLaunch.isEnabled());
       if (!trayInitActive()) return;
-      userPreferences.autoLaunch = !!enabled;
-    } catch {
-      // auto-launch may not be supported on all platforms
+      // Keep a stored "on" until the visible-window pass can see Login Items.
+      // Persisting "off" here would skip that migration if the note is dismissed.
+      const mayMigrate = osx && !enabled && state.macPreferenceBeforeLoginItems === true && !state.autostartUserSet;
+      if (!mayMigrate) userPreferences.autoLaunch = enabled;
+    } catch (error) {
+      console.error('Autostart repair failed:', error);
     }
   }
 
@@ -1123,6 +1278,7 @@ async function initTray() {
   assignTrayMenu(settingsMenu);
   trayLog('initTray complete', { iconPath, menuItems: state.menuLabels.length });
   markTrayReady(true);
+  scheduleMacLoginItemCleanup();
 
   // Re-assign once more on next tick — some Linux tray hosts register the icon
   // asynchronously and drop the first menu attachment.
@@ -1254,6 +1410,7 @@ function startWindowPoll(tick, maxPolls) {
 
 function stop() {
   state.stopped = true;
+  stopLoginItemPoll();
   if (state.commandPoll) {
     clearInterval(state.commandPoll);
     state.commandPoll = null;
@@ -1310,6 +1467,10 @@ module.exports = {
   showMainWindow,
   quitApp,
   launchedHiddenToTray,
+  shouldDeferMacLoginItems,
+  macLoginItemFollowUp,
+  requestLoginItemDecision,
+  shouldKeepWindowHidden,
   applyLaunchVisibility,
   dispatchTrayCommand,
   processTrayCommand,

@@ -15,6 +15,7 @@ import DeviceDialogs from './components/DeviceDialogs';
 import WorkingDialog from './components/dialogs/WorkingDialog';
 import AppUpdateHost from './components/AppUpdateHost';
 import FirmwareUpdateHost from './components/FirmwareUpdateHost';
+import LoginItemAccessHost from './components/LoginItemAccessHost';
 import ThemeToggle from './components/ThemeToggle';
 import DeviceMessages from './components/DeviceMessages';
 import { HelpTip } from './components/ui/HelpTip';
@@ -54,6 +55,7 @@ const App: React.FC = () => {
       {/* Outside sessionEpoch so a lock/unplug does not abort an in-flight download. */}
       <AppUpdateHost />
       <FirmwareUpdateHost />
+      <LoginItemAccessHost />
 
       <div className="w-56 shrink-0 bg-ok-gray flex flex-col min-h-0 h-full border-r border-white/10">
         <div className="sidebar-brand shrink-0 p-3 flex items-center justify-between gap-2 min-w-0">

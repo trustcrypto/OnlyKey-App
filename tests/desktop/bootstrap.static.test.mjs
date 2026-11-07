@@ -11,6 +11,7 @@ describe('desktop bootstrap static checks', () => {
     expect(html).toContain("require(require('path').join(appRoot, 'desktopBg.cjs'))");
     expect(html).toContain('desktopApi.start()');
     expect(html).toContain('launchedHiddenToTray');
+    expect(html).toContain('shouldKeepWindowHidden');
     expect(html).toContain('NW desktop bootstrap');
   });
 
@@ -19,6 +20,7 @@ describe('desktop bootstrap static checks', () => {
     expect(inject).toContain('desktopBg.cjs');
     expect(inject).toContain('desktop.start');
     expect(inject).toContain('applyLaunchVisibility');
+    expect(inject).toContain('shouldKeepWindowHidden');
   });
 
   it('desktopInject.js prefers a relative require so Finder launches still boot', () => {
@@ -30,6 +32,22 @@ describe('desktop bootstrap static checks', () => {
     const plist = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'Info.plist'), 'utf8');
     expect(plist).toContain('to.crp.onlykey');
     expect(plist).not.toContain('com.intel.nw');
+  });
+
+  it('explains the System Events prompt in the Mac plist and the confirm dialog', () => {
+    const purpose = 'OnlyKey uses this once to remove login items left by older versions, so the app starts once in the tray.';
+    const plist = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'Info.plist'), 'utf8');
+    const dialog = fs.readFileSync(path.join(rootDir, 'src', 'components', 'LoginItemAccessHost.tsx'), 'utf8');
+    const shell = fs.readFileSync(path.join(rootDir, 'desktopBg.cjs'), 'utf8');
+    expect(plist).toContain('<key>NSAppleEventsUsageDescription</key>');
+    expect(plist).toContain(purpose);
+    expect(dialog).toContain(purpose);
+    expect(dialog).toContain('ConfirmDialog');
+    expect(shell).toContain('onlykeyAskLoginItemAccess');
+    expect(shell).toContain('appPageWindow');
+    expect(shell).not.toContain('document.createElement');
+    expect(shell).toContain('skipLoginItems');
+    expect(shell).toContain('shouldDeferMacLoginItems');
   });
 
   it('linux launcher asks a running instance to show unless autostart is hidden', () => {

@@ -108,6 +108,24 @@ function loadDesktopModule() {
 }
 
 describe('desktopBg.cjs unit', () => {
+  it('defers macOS System Events only for a hidden launch before the window is shown', () => {
+    const desktop = loadDesktopModule();
+    expect(desktop.shouldDeferMacLoginItems('darwin', true, false)).toBe(true);
+    expect(desktop.shouldDeferMacLoginItems('darwin', true, true)).toBe(false);
+    expect(desktop.shouldDeferMacLoginItems('darwin', false, false)).toBe(false);
+    expect(desktop.shouldDeferMacLoginItems('win32', true, false)).toBe(false);
+    expect(desktop.shouldDeferMacLoginItems('linux', true, false)).toBe(false);
+  });
+
+  it('does not migrate login items over an explicit autostart off', () => {
+    const desktop = loadDesktopModule();
+    expect(desktop.macLoginItemFollowUp(false, true, false)).toBe('migrate');
+    expect(desktop.macLoginItemFollowUp(false, true, true)).toBe('remove-items');
+    expect(desktop.macLoginItemFollowUp(false, false, false)).toBe('remove-items');
+    expect(desktop.macLoginItemFollowUp(true, true, false)).toBe('remove-items');
+    expect(desktop.macLoginItemFollowUp(true, false, true)).toBe('remove-items');
+  });
+
   beforeEach(() => {
     vi.useRealTimers();
     vi.stubGlobal('localStorage', {
@@ -130,6 +148,37 @@ describe('desktopBg.cjs unit', () => {
     desktopModule = null;
     delete global.nw;
     vi.unstubAllGlobals();
+  });
+
+  it('asks the page window when the inject global cannot see the dialog', async () => {
+    const { win } = createNwMock();
+    const injectWindow = { addEventListener: vi.fn() };
+    vi.stubGlobal('window', injectWindow);
+    const desktop = loadDesktopModule();
+    win.window.onlykeyAskLoginItemAccess = () => Promise.resolve(true);
+
+    await expect(desktop.requestLoginItemDecision()).resolves.toBe(true);
+    expect(injectWindow.onlykeyAskLoginItemAccess).toBeUndefined();
+  });
+
+  it('waits for the page to register the System Events dialog', async () => {
+    vi.useFakeTimers();
+    const { win } = createNwMock();
+    vi.stubGlobal('window', { addEventListener: vi.fn() });
+    const desktop = loadDesktopModule();
+    const pending = desktop.requestLoginItemDecision();
+    let settled = false;
+    pending.then(() => {
+      settled = true;
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+    expect(settled).toBe(false);
+
+    win.window.onlykeyAskLoginItemAccess = () => Promise.resolve('later');
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(pending).resolves.toBe('later');
+    vi.useRealTimers();
   });
 
   it('binds close handler and creates tray on start() in main context', async () => {
@@ -375,38 +424,22 @@ describe('desktopBg.cjs unit', () => {
     expect(win.show).not.toHaveBeenCalled();
   });
 
-  it('registers autostart as a hidden to-tray launch', async () => {
-    const autoLaunchPath = require.resolve('auto-launch');
-    const previous = require.cache[autoLaunchPath];
-    function FakeAutoLaunch(opts) {
-      this.opts = opts;
-      FakeAutoLaunch.instances.push(this);
-      this.isEnabled = vi.fn(() => Promise.resolve(false));
-      this.enable = vi.fn(() => Promise.resolve());
-      this.disable = vi.fn(() => Promise.resolve());
-    }
-    FakeAutoLaunch.instances = [];
-    require.cache[autoLaunchPath] = {
-      id: autoLaunchPath,
-      filename: autoLaunchPath,
-      loaded: true,
-      exports: FakeAutoLaunch,
-    };
-
+  it('registers autostart outside the test process and stays hidden for --onlykey-autostart', async () => {
+    const childProcess = require('child_process');
+    const spy = vi.spyOn(childProcess, 'spawnSync');
     try {
-      createNwMock();
+      createNwMock({ argv: ['--onlykey-desktop-test', '--onlykey-autostart'] });
       const desktop = loadDesktopModule();
+      expect(desktop.launchedHiddenToTray()).toBe(true);
+      expect(desktop.shouldKeepWindowHidden()).toBe(true);
       desktop.start();
       await vi.waitFor(() => expect(desktop.getTestState().ownsTray).toBe(true), { timeout: 2000 });
-
-      expect(FakeAutoLaunch.instances.length).toBeGreaterThan(0);
-      expect(FakeAutoLaunch.instances[0].opts.isHidden).toBe(true);
-      expect(FakeAutoLaunch.instances[0].opts.mac).toEqual({ useLaunchAgent: true });
-      expect(FakeAutoLaunch.instances[0].enable).not.toHaveBeenCalled();
-      expect(FakeAutoLaunch.instances[0].disable).not.toHaveBeenCalled();
+      const loginCalls = spy.mock.calls.filter((args) => /powershell|osascript|plutil|reg.exe/i.test(String(args[0])));
+      expect(loginCalls).toEqual([]);
+      desktop.dispatchTrayCommand('show');
+      expect(desktop.shouldKeepWindowHidden()).toBe(false);
     } finally {
-      if (previous) require.cache[autoLaunchPath] = previous;
-      else delete require.cache[autoLaunchPath];
+      spy.mockRestore();
     }
   });
 

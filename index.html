@@ -60,8 +60,7 @@
           }
           var showWin = function () {
             try {
-              if (localStorage.getItem('onlykeySuppressShow') === '1') return;
-              if (fs.existsSync(path.join(nw.App.startPath, 'tmp', 'suppress-show.json'))) return;
+              if (desktopApi.shouldKeepWindowHidden && desktopApi.shouldKeepWindowHidden()) return;
             } catch (e) {}
             if (win.isMinimized && win.restore) win.restore();
             if (!win.isVisible) win.show(true);
