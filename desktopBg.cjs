@@ -422,9 +422,10 @@ async function finishMacLoginItemAccess() {
   } catch (error) {
     console.error('Login item cleanup failed:', error);
   } finally {
-    if (!proceed) return;
-    markLoginItemAccessExplained();
-    state.macLoginItemsReady = true;
+    if (proceed) {
+      markLoginItemAccessExplained();
+      state.macLoginItemsReady = true;
+    }
   }
 }
 
