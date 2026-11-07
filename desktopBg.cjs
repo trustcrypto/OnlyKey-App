@@ -15,8 +15,7 @@ const { createLoginAutostart } = require('./loginAutostart.cjs');
 
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
 const LOGIN_ITEM_EXPLAINED_KEY = 'onlykey.loginItemAccessExplained';
-const LOGIN_ITEM_ACCESS_DETAIL =
-  'OnlyKey uses this once to remove login items left by older versions, so the app starts once in the tray.';
+const LOGIN_ITEM_UI_READY = 'onlykey-login-item-ui-ready';
 
 function isLikelyAppRoot(dir) {
   try {
@@ -259,122 +258,29 @@ function enqueueMacAutostart(task) {
   return run;
 }
 
-function presentLoginItemAccessDialog() {
+/** The React confirm dialog owns the UI. This only waits for its answer. */
+function requestLoginItemDecision() {
   return new Promise((resolve) => {
-    const show = () => {
-      if (loginItemAccessExplained()) {
-        resolve(true);
-        return;
-      }
-      if (!document.body) {
-        resolve(false);
-        return;
-      }
-      const overlay = document.createElement('div');
-      overlay.setAttribute('role', 'dialog');
-      overlay.setAttribute('aria-modal', 'true');
-      overlay.setAttribute('aria-labelledby', 'onlykey-login-item-title');
-      overlay.setAttribute('data-testid', 'login-item-access-dialog');
-      overlay.style.cssText = [
-        'position:fixed',
-        'inset:0',
-        'z-index:400',
-        'display:flex',
-        'align-items:center',
-        'justify-content:center',
-        'padding:16px',
-        'background:rgba(0,0,0,0.7)',
-        'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
-      ].join(';');
-
-      const card = document.createElement('div');
-      card.style.cssText = [
-        'width:100%',
-        'max-width:28rem',
-        'background:var(--ok-surface,#2d2d2d)',
-        'color:var(--ok-text,#fff)',
-        'border:1px solid var(--ok-border,rgba(255,255,255,0.1))',
-        'border-radius:16px',
-        'padding:24px',
-        'box-shadow:0 25px 50px rgba(0,0,0,0.45)',
-      ].join(';');
-
-      const title = document.createElement('h2');
-      title.id = 'onlykey-login-item-title';
-      title.textContent = 'Allow System Events';
-      title.style.cssText = 'margin:0 0 12px;font-size:20px;font-weight:700';
-
-      const lead = document.createElement('p');
-      lead.textContent = 'macOS will ask OnlyKey to control System Events. Choose Allow.';
-      lead.style.cssText = 'margin:0 0 8px;font-size:14px;line-height:1.5;color:var(--ok-text-secondary,#d1d5db)';
-
-      const detail = document.createElement('p');
-      detail.textContent = LOGIN_ITEM_ACCESS_DETAIL;
-      detail.style.cssText = 'margin:0;font-size:14px;line-height:1.5;color:var(--ok-text-muted,#a8b0bc)';
-
-      const actions = document.createElement('div');
-      actions.style.cssText = 'display:flex;justify-content:flex-end;gap:12px;margin-top:20px';
-
-      const later = document.createElement('button');
-      later.type = 'button';
-      later.textContent = 'Not now';
-      later.style.cssText = [
-        'background:transparent',
-        'color:var(--ok-text,#fff)',
-        'border:0',
-        'border-radius:12px',
-        'padding:10px 20px',
-        'font-weight:600',
-        'cursor:pointer',
-      ].join(';');
-      later.addEventListener('click', () => {
-        state.loginItemPromptDismissed = true;
-        overlay.remove();
-        resolve('later');
-      });
-
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Continue';
-      button.style.cssText = [
-        'background:#0056b3',
-        'color:#fff',
-        'border:0',
-        'border-radius:12px',
-        'padding:10px 20px',
-        'font-weight:700',
-        'cursor:pointer',
-      ].join(';');
-      button.addEventListener('click', () => {
-        overlay.remove();
-        resolve(true);
-      });
-
-      actions.append(later, button);
-      card.append(title, lead, detail, actions);
-      overlay.appendChild(card);
-      document.body.appendChild(overlay);
-      try {
-        const win = nw.Window.get();
-        if (win && win.isVisible) button.focus();
-      } catch {
-        // ignore
-      }
-    };
-
-    if (typeof document === 'undefined') {
+    if (typeof window === 'undefined') {
       resolve(false);
       return;
     }
-    if (document.body) {
-      show();
-      return;
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', show, { once: true });
-      return;
-    }
-    resolve(false);
+    let settled = false;
+    const deliver = () => {
+      if (settled) return true;
+      const ask = window.onlykeyAskLoginItemAccess;
+      if (typeof ask !== 'function') return false;
+      settled = true;
+      Promise.resolve(ask()).then(resolve, () => resolve(false));
+      return true;
+    };
+    if (deliver()) return;
+    const onReady = () => {
+      window.removeEventListener(LOGIN_ITEM_UI_READY, onReady);
+      if (!deliver()) resolve(false);
+    };
+    window.addEventListener(LOGIN_ITEM_UI_READY, onReady, { once: true });
+    if (deliver()) window.removeEventListener(LOGIN_ITEM_UI_READY, onReady);
   });
 }
 
@@ -383,7 +289,7 @@ function explainLoginItemAccess() {
   if (!osx || isDesktopTestMode()) return Promise.resolve(false);
   if (loginItemAccessExplained()) return Promise.resolve(true);
   if (state.loginItemExplainPromise) return state.loginItemExplainPromise;
-  const pending = presentLoginItemAccessDialog().then((shown) => {
+  const pending = requestLoginItemDecision().then((shown) => {
     if (!shown) state.loginItemExplainPromise = null;
     return shown;
   });

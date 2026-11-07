@@ -34,13 +34,17 @@ describe('desktop bootstrap static checks', () => {
     expect(plist).not.toContain('com.intel.nw');
   });
 
-  it('explains the System Events prompt in the Mac plist and the desktop shell', () => {
+  it('explains the System Events prompt in the Mac plist and the confirm dialog', () => {
     const purpose = 'OnlyKey uses this once to remove login items left by older versions, so the app starts once in the tray.';
     const plist = fs.readFileSync(path.join(rootDir, 'resources', 'osx', 'Info.plist'), 'utf8');
+    const dialog = fs.readFileSync(path.join(rootDir, 'src', 'components', 'LoginItemAccessHost.tsx'), 'utf8');
     const shell = fs.readFileSync(path.join(rootDir, 'desktopBg.cjs'), 'utf8');
     expect(plist).toContain('<key>NSAppleEventsUsageDescription</key>');
     expect(plist).toContain(purpose);
-    expect(shell).toContain(purpose);
+    expect(dialog).toContain(purpose);
+    expect(dialog).toContain('ConfirmDialog');
+    expect(shell).toContain('onlykeyAskLoginItemAccess');
+    expect(shell).not.toContain('document.createElement');
     expect(shell).toContain('skipLoginItems');
     expect(shell).toContain('shouldDeferMacLoginItems');
   });
