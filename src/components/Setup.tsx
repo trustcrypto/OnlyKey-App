@@ -108,7 +108,8 @@ const Setup: React.FC = () => {
   const [backupPassphrase, setBackupPassphrase] = useState('');
   const [backupConfirm, setBackupConfirm] = useState('');
   const [backupKeyMode, setBackupKeyMode] = useState(0);
-  const [secProfileMode, setSecProfileMode] = useState(1);
+  // The second profile is always the encrypted (standard) profile.
+  const secProfileMode = 1;
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const firmwareInputRef = useRef<HTMLInputElement>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -713,32 +714,6 @@ const Setup: React.FC = () => {
                   <b>I don&apos;t want a second profile, skip this step</b>
                 </SetButton>
               </p>
-              Select a second profile type:
-              <br />
-              <br />
-              <label>
-                <input
-                  type="radio"
-                  checked={secProfileMode === 1}
-                  onChange={() => setSecProfileMode(1)}
-                />{' '}
-                <u>Standard Profile (recommended for most users)</u>
-              </label>
-              <br />
-              <label>
-                <input
-                  type="radio"
-                  checked={secProfileMode === 2}
-                  onChange={() => setSecProfileMode(2)}
-                />{' '}
-                <u>Plausible Deniability Profile</u>
-              </label>
-              <br />
-              Learn more about standard and plausible deniability profile{' '}
-              <a href="https://docs.crp.to/features.html#self-destruct" target="_blank" rel="noreferrer">
-                here
-              </a>
-              .
               <p>
                 DISCLAIMER &mdash; I understand that there is no way to recover my PIN, and, if I forget my PIN, the
                 only way to recover my OnlyKey is to perform a factory reset which wipes all sensitive information.
