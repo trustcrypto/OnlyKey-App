@@ -735,7 +735,7 @@ describe('Setup page', () => {
     expect(screen.getByRole('heading', { name: /enter a backup passphrase/i })).toBeInTheDocument();
   });
 
-  it('sets a plausible-deniability second profile during advanced Classic setup', async () => {
+  it('sets an encrypted second profile during advanced Classic setup, with no plausible-deniability option', async () => {
     const user = userEvent.setup();
     const device = createMockDeviceClient();
     seedDeviceStore({
@@ -751,11 +751,11 @@ describe('Setup page', () => {
     await waitFor(() => expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin', 'prompt'));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     expect(await screen.findByRole('heading', { name: /enter pin for second profile/i })).toBeInTheDocument();
-    await user.click(screen.getByLabelText(/plausible deniability profile/i));
+    expect(screen.queryByLabelText(/plausible deniability profile/i)).not.toBeInTheDocument();
     await user.click(screen.getByLabelText(/i understand and accept the above risk/i));
     await user.click(screen.getByRole('button', { name: /^next$/i }));
     await waitFor(() => {
-      expect(device.setSecProfileMode).toHaveBeenCalledWith(2);
+      expect(device.setSecProfileMode).toHaveBeenCalledWith(1);
       expect(device.beginClassicPinEntry).toHaveBeenCalledWith('pin2', 'commit');
     });
     expect(await screen.findByRole('heading', { name: /re-enter pin for second profile/i })).toBeInTheDocument();
