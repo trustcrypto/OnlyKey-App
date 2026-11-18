@@ -19,7 +19,7 @@ const AGENT_TOOLS = [
   {
     label: 'OnlyKey Agent',
     href: TOOLTIPS.agent.href,
-    icon: '🛡️',
+    icon: '💻',
     tip: TOOLTIPS.agentTool.text,
   },
 ];
