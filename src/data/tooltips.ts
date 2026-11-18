@@ -82,7 +82,7 @@ export const TOOLTIPS = {
   },
   webcrypt: {
     href: 'https://docs.crp.to/webcrypt.html',
-    text: 'OnlyKey WebCrypt provides a way to securely use OpenPGP in the browser. The Webcrypt app loads everything necessary to encrypt messages and files directly in the local browser without the need to send messages or files over the Internet. Data between OnlyKey and the browser is end-to-end encrypted.',
+    text: 'OnlyKey WebCrypt provides a way to securely use OpenPGP in the browser. The Webcrypt app loads everything necessary to encrypt messages and files directly in the local browser without the need to send messages or files over the Internet. Data between OnlyKey and the browser is end-to-end encrypted. For OnlyKey firmware v3.0.4 or earlier, use apps.crp.to.',
   },
   encryptMessages: {
     text: 'Securely encrypt messages in the browser using OnlyKey.',
@@ -96,14 +96,14 @@ export const TOOLTIPS = {
   decryptFiles: {
     text: 'Securely decrypt OpenPGP encrypted files in the browser using OnlyKey.',
   },
+  vault: {
+    text: 'Store passwords and other secrets encrypted in this browser with a key derived on your OnlyKey. Reading one back needs your OnlyKey. Needs firmware 3.1.0 or later.',
+  },
   agent: {
     href: 'https://docs.crp.to/onlykey-agent.html',
-    text: 'OnlyKey Agent is a hardware-based SSH and GPG agent that allows offline cold storage of your SSH and OpenPGP keys. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH and GPG.',
+    text: 'OnlyKey Agent (onlykey-agent) uses keys that stay on your OnlyKey for OpenPGP, SSH, Git signing and age on a local computer. Keys are generated on or derived by the OnlyKey and never written to disk.',
   },
-  gpgAgent: {
-    text: 'Provides a way to securely use OnlyKey for OpenPGP on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores keys off of the computer and you can still easily use GPG to do things like sign emails, git commits, software packages etc.',
-  },
-  sshAgent: {
-    text: 'Provides a way to securely use OnlyKey for SSH authentication on a local computer. Instead of keeping keys on a computer, OnlyKey generates and securely stores your keys off of the computer and you can still easily use SSH.',
+  agentTool: {
+    text: 'One agent for everything on this computer: GPG signing, encryption and decryption (email, Git commits, software packages, pass, post-quantum composite keys); SSH logins, Git push, SSH-signed commits, file transfers and tunnels; and age file encryption. Works with keys stored on the OnlyKey or derived from it.',
   },
 } as const;
