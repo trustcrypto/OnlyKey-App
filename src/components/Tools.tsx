@@ -4,12 +4,13 @@ import { HelpTip } from './ui/HelpTip';
 import { Tooltip } from './ui/Tooltip';
 import AppUpdateSettings from './AppUpdateSettings';
 
+// apps.onlykey.io serves firmware 3.1.0 and later. A key on v3.0.4 or earlier
+// cannot connect there; the page sends it to apps.crp.to.
 const WEBCRYPT_TOOLS = [
-  { label: 'Encrypt Messages', href: 'https://apps.crp.to/app/encrypt', icon: '🔒', tip: TOOLTIPS.encryptMessages.text },
-  { label: 'Decrypt Messages', href: 'https://apps.crp.to/app/decrypt', icon: '🔓', tip: TOOLTIPS.decryptMessages.text },
-  { label: 'Encrypt Files', href: 'https://apps.crp.to/app/encrypt-file', icon: '📁', tip: TOOLTIPS.encryptFiles.text },
-  { label: 'Decrypt Files', href: 'https://apps.crp.to/app/decrypt-file', icon: '📂', tip: TOOLTIPS.decryptFiles.text },
-  // The vault is on apps.onlykey.io only: it needs firmware 3.1.0.
+  { label: 'Encrypt Messages', href: 'https://apps.onlykey.io/app/encrypt', icon: '🔒', tip: TOOLTIPS.encryptMessages.text },
+  { label: 'Decrypt Messages', href: 'https://apps.onlykey.io/app/decrypt', icon: '🔓', tip: TOOLTIPS.decryptMessages.text },
+  { label: 'Encrypt Files', href: 'https://apps.onlykey.io/app/encrypt-file', icon: '📁', tip: TOOLTIPS.encryptFiles.text },
+  { label: 'Decrypt Files', href: 'https://apps.onlykey.io/app/decrypt-file', icon: '📂', tip: TOOLTIPS.decryptFiles.text },
   { label: 'Password Vault', href: 'https://apps.onlykey.io/app/vault', icon: '🗝️', tip: TOOLTIPS.vault.text },
 ];
 

@@ -12,7 +12,7 @@ describe('Tools page', () => {
     expect(screen.getByRole('heading', { name: /with onlykey agent/i })).toBeInTheDocument();
 
     const encrypt = screen.getByRole('link', { name: /encrypt messages/i });
-    expect(encrypt).toHaveAttribute('href', 'https://apps.crp.to/app/encrypt');
+    expect(encrypt).toHaveAttribute('href', 'https://apps.onlykey.io/app/encrypt');
     expect(encrypt).toHaveAttribute('target', '_blank');
 
     const vault = screen.getByRole('link', { name: /password vault/i });

@@ -82,7 +82,7 @@ export const TOOLTIPS = {
   },
   webcrypt: {
     href: 'https://docs.crp.to/webcrypt.html',
-    text: 'OnlyKey WebCrypt provides a way to securely use OpenPGP in the browser. The Webcrypt app loads everything necessary to encrypt messages and files directly in the local browser without the need to send messages or files over the Internet. Data between OnlyKey and the browser is end-to-end encrypted.',
+    text: 'OnlyKey WebCrypt provides a way to securely use OpenPGP in the browser. The Webcrypt app loads everything necessary to encrypt messages and files directly in the local browser without the need to send messages or files over the Internet. Data between OnlyKey and the browser is end-to-end encrypted. For OnlyKey firmware v3.0.4 or earlier, use apps.crp.to.',
   },
   encryptMessages: {
     text: 'Securely encrypt messages in the browser using OnlyKey.',
