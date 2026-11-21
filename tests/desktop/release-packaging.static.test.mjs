@@ -424,3 +424,44 @@ describe('runtime node_modules in the app payload', () => {
     }
   });
 });
+
+describe('Windows installer unlocks files in use', () => {
+  const nsi = fs.readFileSync(path.join(rootDir, 'resources', 'windows', 'installer.nsi'), 'utf8');
+  const prepare = fs.readFileSync(path.join(rootDir, 'resources', 'windows', 'prepare-install.ps1'), 'utf8');
+  const release = fs.readFileSync(path.join(rootDir, 'scripts', 'release.mjs'), 'utf8');
+
+  it('closes OnlyKey and skips the Abort/Retry/Ignore prompt when a DLL is still open', () => {
+    const installStart = nsi.indexOf('Section "Install"');
+    const installEnd = nsi.indexOf('SectionEnd', installStart);
+    const install = nsi.slice(installStart, installEnd);
+    expect(install.indexOf('Call PrepareInstallDirectory')).toBeGreaterThan(-1);
+    expect(install.indexOf('Call PrepareInstallDirectory')).toBeLessThan(install.indexOf('RMDir /r "$INSTDIR"'));
+    expect(install.indexOf('SetOverwrite try')).toBeLessThan(install.indexOf('File /r "${src}\\*"'));
+    expect(install.indexOf('SetOverwrite on')).toBeGreaterThan(install.indexOf('File /r "${src}\\*"'));
+    expect(install.indexOf('Call SweepPendingFiles')).toBeGreaterThan(install.indexOf('File /r "${src}\\*"'));
+
+    const uninstallStart = nsi.indexOf('Section "Uninstall"');
+    const uninstall = nsi.slice(uninstallStart);
+    expect(uninstall.indexOf('Call un.PrepareInstallDirectory')).toBeLessThan(
+      uninstall.indexOf('RMDir /r "$INSTDIR"')
+    );
+    expect(uninstall.indexOf('Call un.SweepPendingFiles')).toBeGreaterThan(
+      uninstall.indexOf('RMDir /r "$INSTDIR"')
+    );
+
+    expect(nsi).toContain('{{prepareScript}}');
+    expect(nsi).toContain('d3dcompiler_47.dll');
+    expect(nsi).toContain('RequestExecutionLevel admin');
+    expect(release).toMatch(/prepareScript:/);
+  });
+
+  it('refuses a drive root before it enumerates processes', () => {
+    expect(prepare.indexOf('DRIVE-ROOT-GUARD')).toBeLessThan(prepare.indexOf('PROCESS-ENUM'));
+    expect(prepare).toContain('taskkill.exe');
+    expect(prepare).toContain('MoveFileEx');
+    expect(prepare).toContain('ReparsePoint');
+    expect(prepare).toContain('ONLYKEY_SKIP_REBOOT_DELETE');
+    expect(prepare).toContain('ONLYKEY_REMOVE_PENDING');
+    expect(prepare).toContain('[System.IO.File]::Delete');
+  });
+});

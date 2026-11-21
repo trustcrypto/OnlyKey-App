@@ -446,6 +446,9 @@ async function buildWindowsInstaller(appDir, manifest) {
     banner: path
       .join(rootDir, 'resources', 'windows', 'setup-banner.bmp')
       .replace(/\\/g, '\\\\'),
+    prepareScript: path
+      .join(rootDir, 'resources', 'windows', 'prepare-install.ps1')
+      .replace(/\\/g, '\\\\'),
   });
   const nsiPath = path.join(tmpDir, 'installer.nsi');
   fs.writeFileSync(nsiPath, nsi);
