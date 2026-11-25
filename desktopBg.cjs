@@ -58,6 +58,21 @@ function resolveAppRoot() {
   return __dirname;
 }
 
+// A signed macOS bundle must not be written to: a file added under
+// Contents/ breaks the code signature seal. A drag-installed copy in
+// /Applications is owned by the user, so it is writable and the W_OK check
+// below would accept it. Use the per-user directory for any app root inside
+// a .app bundle; dev checkouts keep <root>/tmp.
+function appRootTmpAllowed(root) {
+  if (!root) return false;
+  return !/\.app\/Contents\//.test(`${String(root).replace(/\\/g, '/')}/`);
+}
+
+function appRootTmp() {
+  const root = resolveAppRoot();
+  return appRootTmpAllowed(root) ? path.join(root, 'tmp') : null;
+}
+
 function tmpDirCandidates() {
   const dirs = [];
   const push = (dir) => {
@@ -65,7 +80,7 @@ function tmpDirCandidates() {
     dirs.push(dir);
   };
   try {
-    push(path.join(resolveAppRoot(), 'tmp'));
+    push(appRootTmp());
   } catch {
     // ignore
   }
@@ -84,7 +99,8 @@ function tmpDir() {
   // per-user directory. Do not treat Finder cwd `/` as the app root.
   const candidates = [];
   try {
-    candidates.push(path.join(resolveAppRoot(), 'tmp'));
+    const rootTmp = appRootTmp();
+    if (rootTmp) candidates.push(rootTmp);
   } catch {
     // ignore
   }
@@ -1486,5 +1502,6 @@ module.exports = {
   isTrayReadyOnDisk,
   getTestState,
   resolveAppRoot,
+  appRootTmpAllowed,
   _state: state,
 };
