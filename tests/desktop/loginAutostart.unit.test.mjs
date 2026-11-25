@@ -300,6 +300,7 @@ describe('macOS autostart files', () => {
     fs.writeFileSync(path.join(agents, 'to.crp.onlykey.plist'), plist);
 
     const calls = [];
+    let present = true;
     const auto = autostart.createLoginAutostart({
       platform: 'darwin',
       execPath: HELPER,
@@ -308,17 +309,123 @@ describe('macOS autostart files', () => {
       run(file, args, opts) {
         calls.push({ file, input: opts && opts.input });
         if (file === 'osascript' && opts && opts.input && opts.input.includes('count of login items')) {
-          return { status: 0, stdout: `OnlyKey App\n${BUNDLE}\n---\n`, stderr: '' };
+          return { status: 0, stdout: present ? `OnlyKey App\n${BUNDLE}\n---\n` : '', stderr: '' };
         }
+        if (file === 'osascript' && opts && opts.input && opts.input.includes('delete login item')) present = false;
         return { status: 0, stdout: '', stderr: '' };
       },
     });
 
     const removed = await auto.removeLegacyLoginItems();
     expect(removed.removed).toBe(1);
+    expect(removed.remaining).toBe(0);
+    expect(autostart.loginItemLeftover(removed)).toBe(null);
     expect(fs.readFileSync(path.join(agents, 'to.crp.onlykey.plist'), 'utf8')).toBe(plist);
     expect(calls.some((call) => call.file === 'osascript' && call.input && call.input.includes('delete login item'))).toBe(true);
     expect(calls.some((call) => call.file === 'plutil')).toBe(false);
+  });
+});
+
+describe('legacy login items left behind (#262)', () => {
+  const homes = [];
+  afterEach(() => {
+    for (const home of homes.splice(0)) fs.rmSync(home, { recursive: true, force: true });
+  });
+
+  function macAuto(home, run) {
+    return autostart.createLoginAutostart({ platform: 'darwin', execPath: HELPER, homedir: home, fs, run });
+  }
+
+  it('reports an item that is still listed after System Events deleted it', async () => {
+    const home = tempHome();
+    homes.push(home);
+    const auto = macAuto(home, (file, args, opts) => {
+      if (file === 'osascript' && opts.input.includes('count of login items')) {
+        return { status: 0, stdout: `OnlyKey App\n${BUNDLE}\n---\n`, stderr: '' };
+      }
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    const result = await auto.removeLegacyLoginItems();
+    expect(result).toMatchObject({ removed: 0, remaining: 1, denied: false });
+    expect(autostart.loginItemLeftover(result)).toBe('remaining');
+  });
+
+  it('reports a refused System Events (-1743) as denied, not as nothing to do', async () => {
+    const home = tempHome();
+    homes.push(home);
+    const auto = macAuto(home, (file) => {
+      if (file === 'osascript') {
+        return { status: 1, stdout: '', stderr: 'execution error: Not authorized to send Apple events to System Events. (-1743)' };
+      }
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    const result = await auto.removeLegacyLoginItems();
+    expect(result).toMatchObject({ failed: true, denied: true, remaining: 0 });
+    expect(autostart.loginItemLeftover(result)).toBe('denied');
+  });
+
+  it('counts a failed delete as remaining when the re-check also fails', async () => {
+    const home = tempHome();
+    homes.push(home);
+    let listed = 0;
+    const auto = macAuto(home, (file, args, opts) => {
+      if (file === 'osascript' && opts.input.includes('count of login items')) {
+        listed += 1;
+        if (listed === 1) return { status: 0, stdout: `OnlyKey App\n${BUNDLE}\n---\n`, stderr: '' };
+        return { status: 1, stdout: '', stderr: 'timeout' };
+      }
+      if (file === 'osascript') return { status: 1, stdout: '', stderr: 'System Events got an error' };
+      return { status: 0, stdout: '', stderr: '' };
+    });
+    const result = await auto.removeLegacyLoginItems();
+    expect(result).toMatchObject({ removed: 0, remaining: 1, denied: false });
+  });
+
+  it('repair returns the login item outcome, and skips it on a deferred repair', async () => {
+    const home = tempHome();
+    homes.push(home);
+    const run = (file, args, opts) => {
+      if (file === 'osascript' && opts.input.includes('count of login items')) {
+        return { status: 0, stdout: `OnlyKey App\n${BUNDLE}\n---\n`, stderr: '' };
+      }
+      if (file === 'plutil' && args.includes('-o')) {
+        return { status: 0, stdout: JSON.stringify({ 'persistent-apps': [] }), stderr: '' };
+      }
+      return { status: 0, stdout: '', stderr: '' };
+    };
+    const auto = macAuto(home, run);
+    const result = await auto.repair();
+    expect(autostart.loginItemLeftover(result.loginItems)).toBe('remaining');
+    const deferred = await auto.repair({ skipLoginItems: true });
+    expect(autostart.loginItemLeftover(deferred.loginItems)).toBe(null);
+  });
+
+  it('opens the Login Items settings pane for this macOS version', () => {
+    expect(autostart.loginItemsSettingsUrl('25.1.0')).toBe('x-apple.systempreferences:com.apple.LoginItems-Settings.extension');
+    expect(autostart.loginItemsSettingsUrl('22.0.0')).toBe('x-apple.systempreferences:com.apple.LoginItems-Settings.extension');
+    expect(autostart.loginItemsSettingsUrl('21.6.0')).toBe('x-apple.systempreferences:com.apple.preferences.users');
+    const calls = [];
+    const auto = autostart.createLoginAutostart({
+      platform: 'darwin',
+      execPath: HELPER,
+      homedir: os.tmpdir(),
+      fs,
+      run(file, args) {
+        calls.push({ file, args });
+        return { status: 0, stdout: '', stderr: '' };
+      },
+    });
+    expect(auto.openLoginItemsSettings()).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].file).toBe('open');
+    expect(calls[0].args[0]).toMatch(/^x-apple\.systempreferences:/);
+  });
+
+  it('says nothing for a clean or skipped outcome', () => {
+    expect(autostart.loginItemLeftover(undefined)).toBe(null);
+    expect(autostart.loginItemLeftover({ skipped: true })).toBe(null);
+    expect(autostart.loginItemLeftover({ removed: 1, remaining: 0, denied: false })).toBe(null);
+    expect(autostart.loginItemLeftover({ removed: 0, remaining: 0, failed: true, denied: false })).toBe(null);
   });
 });
 

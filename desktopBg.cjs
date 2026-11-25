@@ -11,10 +11,11 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const userPreferences = require('./userPreferences.cjs');
-const { createLoginAutostart } = require('./loginAutostart.cjs');
+const { createLoginAutostart, loginItemLeftover } = require('./loginAutostart.cjs');
 
 const SUPPRESS_SHOW_KEY = 'onlykeySuppressShow';
 const LOGIN_ITEM_EXPLAINED_KEY = 'onlykey.loginItemAccessExplained';
+const LOGIN_ITEM_DENIED_NOTICE_KEY = 'onlykey.loginItemDeniedNoticeShown';
 const LOGIN_ITEM_UI_READY = 'onlykey-login-item-ui-ready';
 
 function isLikelyAppRoot(dir) {
@@ -216,6 +217,7 @@ const state = {
   macPreferenceBeforeLoginItems: null,
   autostartUserSet: false,
   loginItemPromptDismissed: false,
+  loginItemLeftoverShown: false,
   macAutostartChain: Promise.resolve(),
   loginItemExplainPromise: null,
   loginItemPoll: null,
@@ -374,14 +376,19 @@ async function finishMacLoginItemAccess() {
       state.macPreferenceBeforeLoginItems === true,
       await state.autoLaunch.isEnabled(),
     );
+    let outcome;
     if (followUp === 'remove-items') {
-      await state.autoLaunch.removeLegacyLoginItems();
-      return;
+      outcome = await state.autoLaunch.removeLegacyLoginItems();
+    } else {
+      const result = await state.autoLaunch.repair();
+      outcome = result && result.loginItems;
+      if (!state.autostartUserSet) {
+        userPreferences.autoLaunch = !!result.enabled;
+        if (state.tray) assignTrayMenu(buildTrayMenu(state.autoLaunch));
+      }
     }
-    const result = await state.autoLaunch.repair();
-    if (state.autostartUserSet) return;
-    userPreferences.autoLaunch = !!result.enabled;
-    if (state.tray) assignTrayMenu(buildTrayMenu(state.autoLaunch));
+    // Not awaited: the note must not hold up tray checkbox changes queued behind this task.
+    reportLeftoverLoginItems(outcome).catch((error) => console.error('Login item note failed:', error));
   } catch (error) {
     console.error('Login item cleanup failed:', error);
   } finally {
@@ -389,6 +396,69 @@ async function finishMacLoginItemAccess() {
       markLoginItemAccessExplained();
       state.macLoginItemsReady = true;
     }
+  }
+}
+
+/** Finds a function the React page registered on its window, waiting briefly for it. */
+function waitForPageHost(name, timeoutMs = 10000) {
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const look = () => {
+      for (const page of appPageWindow()) {
+        if (page && typeof page[name] === 'function') return page[name];
+      }
+      return null;
+    };
+    const first = look();
+    if (first) {
+      resolve(first);
+      return;
+    }
+    const id = setInterval(() => {
+      const fn = look();
+      if (fn || Date.now() - started > timeoutMs) {
+        clearInterval(id);
+        resolve(fn);
+      }
+    }, 100);
+  });
+}
+
+function loginItemDeniedNoticeShown() {
+  try {
+    return localStorage.getItem(LOGIN_ITEM_DENIED_NOTICE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * An older version's Open at Login entry that is still there opens the app in
+ * a window at every login (#262). Tell the user once per launch while it is
+ * there, and once ever when System Events was refused and nothing could be checked.
+ */
+async function reportLeftoverLoginItems(outcome) {
+  const kind = loginItemLeftover(outcome);
+  if (!kind || state.loginItemLeftoverShown) return;
+  if (kind === 'denied' && loginItemDeniedNoticeShown()) return;
+  const show = await waitForPageHost('onlykeyShowLoginItemLeftover');
+  if (!show || state.stopped) return;
+  state.loginItemLeftoverShown = true;
+  if (kind === 'denied') {
+    try {
+      localStorage.setItem(LOGIN_ITEM_DENIED_NOTICE_KEY, '1');
+    } catch {
+      // ignore
+    }
+  }
+  let answer;
+  try {
+    answer = await show(kind);
+  } catch {
+    answer = null;
+  }
+  if (answer === 'open' && state.autoLaunch && typeof state.autoLaunch.openLoginItemsSettings === 'function') {
+    state.autoLaunch.openLoginItemsSettings();
   }
 }
 
