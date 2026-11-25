@@ -492,6 +492,17 @@ describe('desktopBg.cjs unit', () => {
     expect(localStorage.getItem('onlykeySuppressShow')).toBeNull();
   });
 
+  it('never uses a signed macOS bundle as the tmp root', () => {
+    createNwMock();
+    const desktop = loadDesktopModule();
+    expect(desktop.appRootTmpAllowed('/Applications/OnlyKey App.app/Contents/Resources/app.nw')).toBe(false);
+    expect(desktop.appRootTmpAllowed('/Users/x/Applications/OnlyKey App.app/Contents/Resources/app.nw/')).toBe(false);
+    expect(desktop.appRootTmpAllowed('/Applications/OnlyKey App.app/Contents/MacOS')).toBe(false);
+    expect(desktop.appRootTmpAllowed(rootDir)).toBe(true);
+    expect(desktop.appRootTmpAllowed('C:\\Users\\x\\OnlyKey-App')).toBe(true);
+    expect(desktop.appRootTmpAllowed('')).toBe(false);
+  });
+
   it('command poll restores a hidden window from a launcher show file', async () => {
     const { win } = createNwMock();
     win.isVisible = false;
