@@ -319,6 +319,32 @@ function parseLoginItems(output) {
   return items;
 }
 
+/** osascript error -1743: the user has not allowed this app to control System Events. */
+function appleEventsDenied(error) {
+  const text = String((error && (error.message || error)) || '');
+  return /-1743|not authori[sz]ed to send apple events/i.test(text);
+}
+
+/** System Settings pane that lists Open at Login (Ventura and later), else Users & Groups. */
+function loginItemsSettingsUrl(darwinRelease) {
+  const major = Number.parseInt(String(darwinRelease || '').split('.')[0], 10);
+  return Number.isFinite(major) && major < 22
+    ? 'x-apple.systempreferences:com.apple.preferences.users'
+    : 'x-apple.systempreferences:com.apple.LoginItems-Settings.extension';
+}
+
+/**
+ * Whether to tell the user about a login item an older version left behind.
+ * 'remaining': items are still there after deleting them.
+ * 'denied': System Events refused, so nothing could be checked.
+ */
+function loginItemLeftover(outcome) {
+  if (!outcome || outcome.skipped) return null;
+  if (outcome.remaining > 0) return 'remaining';
+  if (outcome.denied) return 'denied';
+  return null;
+}
+
 function appleString(value) {
   return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
@@ -548,13 +574,44 @@ function createLoginAutostart(options = {}) {
   }
 
   function deleteLoginItems(items) {
+    const outcome = { failed: [], denied: false };
     for (const item of items) {
       const script = `tell application "System Events" to delete login item ${appleString(item.name)}`;
       try {
         assertRan(run('osascript', [], { input: script, timeout: 15000 }), 'osascript');
       } catch (error) {
         console.error('Could not remove login item', item.name, error);
+        outcome.failed.push(item.name);
+        if (appleEventsDenied(error)) outcome.denied = true;
       }
+    }
+    return outcome;
+  }
+
+  /**
+   * Delete the given items, then list again: System Events can report success
+   * and leave the item in place. Returns what the user may still have to remove.
+   */
+  function deleteAndCheckLoginItems(items) {
+    if (!items.length) return { removed: 0, remaining: 0, denied: false };
+    const outcome = deleteLoginItems(items);
+    let remaining = outcome.failed.length;
+    try {
+      remaining = listLoginItems().length;
+    } catch (error) {
+      console.error('Could not re-check login items:', error);
+      if (appleEventsDenied(error)) outcome.denied = true;
+    }
+    return { removed: Math.max(0, items.length - remaining), remaining, denied: outcome.denied };
+  }
+
+  /** Items to remove, or the reason they could not be listed. */
+  function readLoginItemsChecked() {
+    try {
+      return { items: listLoginItems(), failed: false, denied: false };
+    } catch (error) {
+      console.error('Could not list login items:', error);
+      return { items: [], failed: true, denied: appleEventsDenied(error) };
     }
   }
 
@@ -633,34 +690,30 @@ function createLoginAutostart(options = {}) {
     return true;
   }
 
-  function readLoginItems() {
-    try {
-      return listLoginItems();
-    } catch (error) {
-      console.error('Could not list login items:', error);
-      return [];
-    }
-  }
-
   function repairMac(opts = {}) {
     const paths = macPaths();
     if (!paths.bundlePath) return { changed: false, enabled: false };
     const desired = macLaunchAgentPlist(paths.bundlePath, paths.label);
     const canonicalText = readText(paths.canonical);
     const legacyNames = macLegacy(paths);
-    const loginItems = opts.skipLoginItems ? [] : readLoginItems();
+    const listed = opts.skipLoginItems ? { items: [], failed: false, denied: false } : readLoginItemsChecked();
     const plan = planMac({
       canonicalText,
       desiredText: desired,
       legacyNames,
-      loginItems,
+      loginItems: listed.items,
     });
     if (plan.write) writeCanonical(paths, desired);
     deleteAgents(paths, plan.deleteAgents);
-    if (!opts.skipLoginItems) deleteLoginItems(plan.deleteLoginItems);
+    let loginItems = { skipped: true };
+    if (!opts.skipLoginItems) {
+      loginItems = listed.failed
+        ? { removed: 0, remaining: 0, denied: listed.denied, failed: true }
+        : deleteAndCheckLoginItems(plan.deleteLoginItems);
+    }
     const dockChanged = pruneDock(paths.bundlePath);
     const changed = !!(plan.write || plan.deleteAgents.length || plan.deleteLoginItems.length || dockChanged);
-    return { changed, enabled: plan.enabled, removed: plan.deleteAgents };
+    return { changed, enabled: plan.enabled, removed: plan.deleteAgents, loginItems };
   }
 
   function enableMac(opts = {}) {
@@ -697,15 +750,20 @@ function createLoginAutostart(options = {}) {
     if (!allowWrites || platform !== 'darwin') return { removed: 0, skipped: true };
     const paths = macPaths();
     if (!paths.bundlePath) return { removed: 0, skipped: true };
-    let loginItems = [];
+    const listed = readLoginItemsChecked();
+    if (listed.failed) return { removed: 0, remaining: 0, failed: true, denied: listed.denied };
+    return deleteAndCheckLoginItems(listed.items);
+  }
+
+  function openLoginItemsSettings() {
+    if (platform !== 'darwin') return false;
     try {
-      loginItems = listLoginItems();
+      assertRan(run('open', [loginItemsSettingsUrl(os.release())], { timeout: 10000 }), 'open');
+      return true;
     } catch (error) {
-      console.error('Could not list login items:', error);
-      return { removed: 0, failed: true };
+      console.error('Could not open Login Items settings:', error);
+      return false;
     }
-    deleteLoginItems(loginItems);
-    return { removed: loginItems.length };
   }
 
   function macEnabled() {
@@ -832,7 +890,15 @@ function createLoginAutostart(options = {}) {
     return Promise.resolve().then(() => removeLegacyLoginItems());
   }
 
-  return { repair, enable, disable, isEnabled, removeLegacyLoginItems: clearLegacyLoginItems, name };
+  return {
+    repair,
+    enable,
+    disable,
+    isEnabled,
+    removeLegacyLoginItems: clearLegacyLoginItems,
+    openLoginItemsSettings,
+    name,
+  };
 }
 
 module.exports = {
@@ -852,6 +918,9 @@ module.exports = {
   shouldRemoveLoginItem,
   planMac,
   parseLoginItems,
+  appleEventsDenied,
+  loginItemsSettingsUrl,
+  loginItemLeftover,
   normalizeMacPath,
   isOnlyKeyDockTile,
   dockTilesToDrop,

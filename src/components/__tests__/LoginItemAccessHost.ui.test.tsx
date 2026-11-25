@@ -8,6 +8,7 @@ describe('LoginItemAccessHost', () => {
   afterEach(() => {
     resetLoginItemAccessPrompt();
     delete window.onlykeyAskLoginItemAccess;
+    delete window.onlykeyShowLoginItemLeftover;
   });
 
   it('stays closed until the desktop shell asks', () => {
@@ -47,5 +48,38 @@ describe('LoginItemAccessHost', () => {
     expect(await screen.findByRole('heading', { name: 'Allow System Events' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Not now' }));
     await expect(pending).resolves.toBe('later');
+  });
+
+  it('tells the user how to remove an older login item that is still there (#262)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginItemAccessHost />);
+    const show = window.onlykeyShowLoginItemLeftover;
+    expect(show).toBeTypeOf('function');
+
+    const remaining = show!('remaining');
+    expect(await screen.findByRole('heading', { name: 'Remove the older login item' })).toBeInTheDocument();
+    expect(screen.getByText(/still set to open at login/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Open Login Items' }));
+    await expect(remaining).resolves.toBe('open');
+    expect(screen.queryByRole('heading', { name: 'Remove the older login item' })).not.toBeInTheDocument();
+
+    const denied = show!('denied');
+    expect(await screen.findByText(/could not check for a login item/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await expect(denied).resolves.toBe('close');
+  });
+
+  it('waits for the System Events note to close before showing the leftover note', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginItemAccessHost />);
+    const access = window.onlykeyAskLoginItemAccess!();
+    const leftover = window.onlykeyShowLoginItemLeftover!('remaining');
+    expect(await screen.findByRole('heading', { name: 'Allow System Events' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Remove the older login item' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    await expect(access).resolves.toBe(true);
+    expect(await screen.findByRole('heading', { name: 'Remove the older login item' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await expect(leftover).resolves.toBe('close');
   });
 });
